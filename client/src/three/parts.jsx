@@ -3,13 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import { Environment, Lightformer, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { palette, rng } from '../lib/art';
+import { P } from '../lib/pointer';
+export { P };
 
-// Pointer is tracked on window so overlaid HTML never blocks the scene from reacting.
-export const P = { x: 0, y: 0 };
-if (typeof window !== 'undefined' && !window.__dhanyaPointer) {
-  window.__dhanyaPointer = true;
-  window.addEventListener('pointermove', e => { P.x = (e.clientX / innerWidth) * 2 - 1; P.y = -((e.clientY / innerHeight) * 2 - 1) }, { passive: true });
-}
 
 const vert = /* glsl */`
 uniform float uTime; uniform vec2 uPointer; uniform float uScroll; uniform float uAmp;

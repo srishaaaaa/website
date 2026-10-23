@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../context/App';
 import { useModal } from '../lib/hooks';
 import { inr } from '../lib/format';
-import { ProductMedia } from './ProductCard';
+import { ProductMedia } from './ProductCard3D';
 
 // Shipping figures come from the server's cart response (shipping_methods table).
 export function ShippingNote({ subtotal }) {

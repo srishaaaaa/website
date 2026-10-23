@@ -87,7 +87,8 @@ export function reviewRoutes(ctx) {
   const { db, auth } = ctx;
   const r = Router();
 
-  r.get('/', wrap(async (_req, res) => {
+  r.get('/', wrap(async (req, res) => {
+    const { page, limit } = z.object({ page: z.coerce.number().int().min(1).max(200).default(1), limit: z.coerce.number().int().min(1).max(24).default(6) }).parse(req.query);
     const summary = await one(db, `SELECT COUNT(*)::int AS count, COALESCE(ROUND(AVG(rating)::numeric, 1), 0)::float AS average FROM product_reviews WHERE status = 'published'`);
     const items = await rows(db, `
       SELECT rv.id, rv.rating, rv.body, rv.created_at, split_part(pr.full_name, ' ', 1) AS first_name,
@@ -95,8 +96,8 @@ export function reviewRoutes(ctx) {
              p.name AS product_name, p.slug AS product_slug,
              (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS product_image
       FROM product_reviews rv JOIN profiles pr ON pr.id = rv.user_id JOIN products p ON p.id = rv.product_id
-      WHERE rv.status = 'published' ORDER BY rv.created_at DESC LIMIT 12`);
-    res.json({ ...summary, items: items.map(i => ({ ...i, author: [i.first_name || 'Customer', i.last_initial && i.last_initial + '.'].filter(Boolean).join(' '), verified: true })) });
+      WHERE rv.status = 'published' ORDER BY rv.created_at DESC, rv.id DESC LIMIT $1 OFFSET $2`, [limit, (page - 1) * limit]);
+    res.json({ ...summary, page, hasMore: page * limit < summary.count, items: items.map(i => ({ ...i, author: [i.first_name || 'Customer', i.last_initial && i.last_initial + '.'].filter(Boolean).join(' '), verified: true })) });
   }));
 
   r.get('/eligible', auth.required, wrap(async (req, res) => res.json(await rows(db, `

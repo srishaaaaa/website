@@ -5,7 +5,7 @@ import { useApp } from '../context/App';
 import { useModal } from '../lib/hooks';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
-import { ProductMedia } from './ProductCard';
+import { ProductMedia } from './ProductCard3D';
 
 const HKEY = 'dhanya.searches';
 const readHist = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]') } catch { return [] } };

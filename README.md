@@ -21,9 +21,14 @@ Portal intro, 3D hero, scroll choreography, mega-menu, live search, catalog, PDP
 - Checkout builds the order from the server cart; stock is reserved atomically (no overselling) and released on failure/expiry; payments marked paid only after signature verification (pluggable provider interface; Razorpay implemented).
 - Reviews: verified-purchase only, moderated in /admin.
 
+## Homepage redesign (latest)
+- **ImmersiveHero**: pearl-ivory hero with an architectural grid, oversized DHANYA lettering behind the subject, and the seated-woman photograph kept exactly as shot. Depth comes from CSS-perspective layers (atmospheric glow plane, two gold keyline planes, ambient shadow, sheen, foreground details) driven by a smoothed pointer (touch devices get a slow ambient drift; reduced motion is static). GSAP ScrollTrigger drives the scroll composition (lettering drifts, grid gains perspective, mask reveal into the featured collection).
+- **FloatingNavbar**, **FeaturedCollections**, **ProductCard3D** (tilt, image transition, add to bag / choose size, wishlist, quick view, stock), **CustomerReviews** (approved, verified-purchase only, paginated), **StoreLocationMap**, **InstagramStrip**, **LuxuryFooter** (plum, soft fade).
+- Boutique address, hours, phone/email, Instagram and social links are **store settings** edited in /admin (API: `PUT /api/admin/settings/store`, `PUT /api/admin/settings/social`, and `PUT /api/admin/pages/:slug` for policies). With no address configured the location section shows a placeholder, never an invented pin. Set `GOOGLE_MAPS_API_KEY` (Maps Embed API, referrer-restricted) to use the keyed embed; without it a keyless Google embed is used.
+
 ## Content you must supply
 - **Photography:** products have no images yet; generated plates stand in. Set product images and `client/src/config/content.js` (`media`).
-- **Instagram / studio:** set `social.instagram` and `store` in `client/src/config/content.js`. Those sections are hidden in production until configured (shown with placeholders in dev).
+- **Boutique location, hours, social links, policies:** enter them in /admin → Store settings (policy text via the API until the Phase 5 editor).
 - **Brand story / journal copy.**
 
 ## Not yet built

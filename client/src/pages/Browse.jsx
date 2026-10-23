@@ -1,7 +1,7 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Catalog from './Catalog';
 import ProductArt from '../components/ProductArt';
-import { ProductMedia } from '../components/ProductCard';
+import { ProductMedia } from '../components/ProductCard3D';
 import { Reveal } from '../components/Motion';
 import { useApp } from '../context/App';
 

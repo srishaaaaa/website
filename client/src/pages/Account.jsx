@@ -55,6 +55,7 @@ export function Admin() {
         <tbody>{o.map(x => (
           <tr key={x.id}><td>{x.order_number}</td><td>{x.email}</td><td className="r">{inr(x.total)}</td><td>{x.payment_status}</td>
             <td><select value={x.status} aria-label={`Status for ${x.order_number}`} onChange={async ev => { try { await api('/admin/orders/' + x.order_number, { method: 'PATCH', body: { status: ev.target.value } }); setO(list => list.map(y => y.id === x.id ? { ...y, status: ev.target.value } : y)) } catch (err) { setE(err.message) } }}>{STATUSES.map(v => <option key={v}>{v}</option>)}</select></td></tr>))}</tbody></table>
+      <StoreSettingsForm />
       <h2 className="serif" style={{ fontSize: 36, margin: '40px 0 0' }}>Review moderation</h2>
       {!rv.length && <p className="muted">No reviews submitted yet.</p>}
       {rv.length > 0 && <table className="tbl"><thead><tr><th>Product</th><th>Rating</th><th>Review</th><th>Status</th></tr></thead>
@@ -62,5 +63,48 @@ export function Admin() {
           <tr key={r.id}><td>{r.product_name}</td><td>{'★'.repeat(r.rating)}</td><td>{r.body}<br /><span className="muted small">{r.email}</span></td>
             <td><select value={r.status} aria-label={`Status for review ${r.id}`} onChange={ev => moderate(r.id, ev.target.value)}>{['pending', 'published', 'rejected'].map(v => <option key={v}>{v}</option>)}</select></td></tr>))}</tbody></table>}
     </div>
+  );
+}
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Store settings (boutique location, hours, Instagram): feeds the homepage map, footer and Instagram strip.
+export function StoreSettingsForm() {
+  const { loadSite, toast } = useApp();
+  const [f, setF] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  useEffect(() => {
+    api('/store').then(({ store, social }) => setF({
+      name: store.name, address: (store.address || []).join('\n'), phone: store.phone || '', email: store.email || '',
+      label: store.hours?.label || '', open: store.hours?.open || '10:00', close: store.hours?.close || '20:00', days: store.hours?.days || [0, 1, 2, 3, 4, 5, 6],
+      igHandle: social.instagram.handle || '', igUrl: social.instagram.url || '', posts: social.instagram.posts, links: social.links, timeZone: store.timeZone,
+    })).catch(() => {});
+  }, []);
+  if (!f) return null;
+  const set = k => e => setF({ ...f, [k]: e.target.value });
+  const save = async e => {
+    e.preventDefault(); setBusy(true); setErr();
+    try {
+      const lines = f.address.split('\n').map(s => s.trim()).filter(Boolean);
+      await api('/admin/settings/store', { method: 'PUT', body: {
+        name: f.name || 'DHANYA', address: lines.length ? lines : null, phone: f.phone || null, email: f.email || null, timeZone: f.timeZone,
+        hours: f.label ? { label: f.label, open: f.open, close: f.close, days: f.days } : null } });
+      await api('/admin/settings/social', { method: 'PUT', body: { instagram: { handle: f.igHandle || null, url: f.igUrl || null, posts: f.posts }, links: f.links } });
+      toast('Store settings saved.'); loadSite();
+    } catch (x) { setErr(x.issues?.[0] ? `${x.issues[0].path}: ${x.issues[0].message}` : x.message) } finally { setBusy(false) }
+  };
+  return (
+    <form onSubmit={save} className="settings-form">
+      <h2 className="serif" style={{ fontSize: 36, margin: '40px 0 8px' }}>Store settings</h2>
+      <p className="muted small">Shown on the homepage map, footer and Instagram strip. Leave the address empty to show the “location to be announced” placeholder.</p>
+      <label className="field"><span>Boutique name</span><input value={f.name} onChange={set('name')} /></label>
+      <label className="field"><span>Address (one line per row)</span><textarea rows="3" value={f.address} onChange={set('address')} /></label>
+      <div className="two"><label className="field"><span>Phone</span><input value={f.phone} onChange={set('phone')} /></label><label className="field"><span>Email</span><input type="email" value={f.email} onChange={set('email')} /></label></div>
+      <label className="field"><span>Opening hours label (e.g. Mon – Sun · 10AM – 8PM)</span><input value={f.label} onChange={set('label')} /></label>
+      <div className="two"><label className="field"><span>Opens</span><input type="time" value={f.open} onChange={set('open')} /></label><label className="field"><span>Closes</span><input type="time" value={f.close} onChange={set('close')} /></label></div>
+      <fieldset className="days"><legend className="eyebrow">Open on</legend>{DAYS.map((d, i) => <label key={d} className="check"><input type="checkbox" checked={f.days.includes(i)} onChange={() => setF({ ...f, days: f.days.includes(i) ? f.days.filter(x => x !== i) : [...f.days, i].sort() })} /> {d}</label>)}</fieldset>
+      <div className="two"><label className="field"><span>Instagram handle</span><input value={f.igHandle} onChange={set('igHandle')} placeholder="without @" /></label><label className="field"><span>Instagram URL</span><input type="url" value={f.igUrl} onChange={set('igUrl')} /></label></div>
+      {err && <p role="alert" className="err">{err}</p>}
+      <button className="btn dark" disabled={busy}>{busy ? 'SAVING…' : 'SAVE SETTINGS'}</button>
+    </form>
   );
 }

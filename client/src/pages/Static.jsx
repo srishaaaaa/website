@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../lib/api';
 import { brand } from '../config/content';
 import { Reveal } from '../components/Motion';
 import { Emblem } from '../components/Wordmark';
@@ -32,4 +34,24 @@ export function Journal() {
 
 export function NotFound() {
   return <div className="empty page-pad"><p className="eyebrow">404</p><p className="serif big">This corner of the world does not exist.</p><Link className="btn dark" to="/">RETURN HOME</Link></div>;
+}
+
+// Policy text is written by the store in the admin; nothing legal is invented here.
+export function Policy({ slug, title }) {
+  const [state, setState] = useState({ s: 'loading' });
+  useEffect(() => {
+    let dead = false; setState({ s: 'loading' });
+    api('/pages/' + slug).then(d => !dead && setState({ s: 'ready', ...d })).catch(e => !dead && setState({ s: e.status === 404 ? 'missing' : 'error' }));
+    return () => { dead = true };
+  }, [slug]);
+  return (
+    <div className="policy">
+      <p className="eyebrow">POLICIES</p>
+      <h1 className="serif">{state.title || title}</h1>
+      {state.s === 'loading' && <p className="muted">Loading…</p>}
+      {state.s === 'missing' && <p className="muted">This policy has not been published yet. Please check back soon, or contact the boutique.</p>}
+      {state.s === 'error' && <p role="alert" className="err">This page could not be loaded.</p>}
+      {state.s === 'ready' && state.body.split(/\n{2,}/).map((p, i) => <p key={i}>{p}</p>)}
+    </div>
+  );
 }

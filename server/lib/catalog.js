@@ -4,14 +4,15 @@ const BASE_SELECT = `
   SELECT p.id, p.slug, p.name, p.description, c.name AS category, c.slug AS category_slug,
          p.base_price AS price, p.currency, p.tax_rate AS gst_rate, p.featured, p.created_at,
          (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
-         COALESCE(st.stock, 0)::int AS stock,
+         COALESCE(st.stock, 0)::int AS stock, st.single_variant,
          COALESCE(st.sizes, ARRAY[]::text[]) AS sizes, COALESCE(st.colors, ARRAY[]::text[]) AS colors
   FROM products p
   LEFT JOIN categories c ON c.id = p.category_id
   LEFT JOIN LATERAL (
     SELECT SUM(v.stock_quantity) AS stock,
            array_agg(DISTINCT v.size) FILTER (WHERE v.stock_quantity > 0) AS sizes,
-           array_agg(DISTINCT v.color) FILTER (WHERE v.stock_quantity > 0) AS colors
+           array_agg(DISTINCT v.color) FILTER (WHERE v.stock_quantity > 0) AS colors,
+           CASE WHEN COUNT(*) FILTER (WHERE v.stock_quantity > 0) = 1 THEN MIN(v.id) FILTER (WHERE v.stock_quantity > 0) END AS single_variant
     FROM product_variants v WHERE v.product_id = p.id AND v.active
   ) st ON true`;
 

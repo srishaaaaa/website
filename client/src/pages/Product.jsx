@@ -5,8 +5,8 @@ import { api } from '../lib/api';
 import { FREE_SHIPPING_AT, SHIPPING_FLAT, inr, sortSizes } from '../lib/format';
 import { useApp } from '../context/App';
 import { useFinePointer, useModal, useReduced } from '../lib/hooks';
-import { ProductMedia } from '../components/ProductCard';
-import ProductCard from '../components/ProductCard';
+import { ProductMedia } from '../components/ProductCard3D';
+import ProductCard from '../components/ProductCard3D';
 import { Magnetic, Reveal } from '../components/Motion';
 
 // Real photography when the product has images; otherwise four generated views.

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import ProductArt from './ProductArt';
@@ -20,7 +20,7 @@ const HeartIcon = ({ on }) => (
 
 // Perspective tilt + layered parallax + moving specular glare. Disabled on touch / reduced motion.
 export default function ProductCard({ p, tall = false, className = '' }) {
-  const { wish, toggleWish, setQuick } = useApp();
+  const { wish, toggleWish, setQuick, addToBag, toast } = useApp();
   const fine = useFinePointer(), reduced = useReduced();
   const ref = useRef();
   const mx = useMotionValue(0), my = useMotionValue(0);
@@ -31,6 +31,14 @@ export default function ProductCard({ p, tall = false, className = '' }) {
   const liked = wish.includes(p.slug);
   const out = p.stock < 1;
   const tilt = fine && !reduced;
+  const [adding, setAdding] = useState(false);
+  // Pieces with a single purchasable variant add straight to the bag; otherwise the visitor picks a size first.
+  const add = async () => {
+    if (!p.single_variant) return setQuick(p);
+    setAdding(true);
+    if (await addToBag({ variantId: p.single_variant })) toast(`${p.name} added to your bag.`);
+    setAdding(false);
+  };
 
   return (
     <motion.article className={`pcard ${tall ? 'tall' : ''} ${className}`} style={tilt ? { rotateX: rotX, rotateY: rotY, transformPerspective: 1000 } : undefined}
@@ -52,12 +60,17 @@ export default function ProductCard({ p, tall = false, className = '' }) {
         <button className={`icon-btn pcard-wish ${liked ? 'on' : ''}`} onClick={() => toggleWish(p.slug, p.name)} aria-pressed={liked} aria-label={liked ? `Remove ${p.name} from wishlist` : `Save ${p.name} to wishlist`}>
           <HeartIcon on={liked} />
         </button>
-        <button className="pcard-quick" onClick={() => setQuick(p)} aria-label={`Quick view ${p.name}`}>QUICK VIEW</button>
+        <div className="pcard-actions">
+          <button className="pcard-quick" onClick={() => setQuick(p)} aria-label={`Quick view ${p.name}`}>QUICK VIEW</button>
+          {!out && <button className="pcard-add" onClick={add} disabled={adding} aria-label={p.single_variant ? `Add ${p.name} to bag` : `Choose a size for ${p.name}`}>{adding ? '…' : p.single_variant ? 'ADD TO BAG' : 'CHOOSE SIZE'}</button>}
+        </div>
       </div>
       <div className="pcard-meta">
         <div>
           <h3 className="serif">{p.name}</h3>
           <p className="muted">{p.category}</p>
+          {p.sizes?.length > 0 && <p className="pcard-sizes" aria-label={`Available sizes: ${p.sizes.join(', ')}`}>{[...p.sizes].sort((a, b) => ['XS','S','M','L','XL','XXL'].indexOf(a) - ['XS','S','M','L','XL','XXL'].indexOf(b)).join(' · ')}</p>}
+          {!out && p.stock <= 3 && <p className="pcard-low">Only {p.stock} left</p>}
         </div>
         <div className="pcard-price">
           <span>{inr(p.price)}</span>

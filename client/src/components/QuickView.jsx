@@ -5,7 +5,7 @@ import { useApp } from '../context/App';
 import { useModal, useReduced } from '../lib/hooks';
 import { api } from '../lib/api';
 import { inr, sortSizes } from '../lib/format';
-import { ProductMedia } from './ProductCard';
+import { ProductMedia } from './ProductCard3D';
 
 // Quick view fetches fresh variant/stock data from the server before offering add-to-bag.
 export default function QuickView() {

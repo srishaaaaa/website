@@ -39,6 +39,13 @@ export function AppProvider({ children }) {
   }, []);
   useEffect(loadCatalog, [loadCatalog]);
 
+  // --- admin-managed store content: boutique location + hours, social links ---
+  const [site, setSite] = useState({ store: null, social: null, map: null, status: 'loading' });
+  const loadSite = useCallback(() => {
+    api('/store').then(d => setSite({ ...d, status: 'ready' })).catch(() => setSite(s => ({ ...s, status: 'error' })));
+  }, []);
+  useEffect(loadSite, [loadSite]);
+
   // --- auth (httpOnly cookie session; the browser only ever sees the public profile) ---
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
@@ -99,11 +106,11 @@ export function AppProvider({ children }) {
   const [reviewOpen, setReviewOpen] = useState(false);
 
   const value = useMemo(() => ({
-    entered, enter, replayIntro, catalog, loadCatalog, toasts, toast, dismissToast,
+    entered, enter, replayIntro, catalog, loadCatalog, site, loadSite, toasts, toast, dismissToast,
     cart: cartState.items, cartInfo: cartState, bagOpen, setBagOpen, bagCount: cartState.count, bagSubtotal: cartState.subtotal,
     addToBag, setQty, removeItem, clearCart, loadCart,
     wish, toggleWish, user, authReady, signIn, signOut,
     searchOpen, setSearchOpen, menuOpen, setMenuOpen, quick, setQuick, reviewOpen, setReviewOpen,
-  }), [entered, catalog, toasts, cartState, bagOpen, wish, user, authReady, searchOpen, menuOpen, quick, reviewOpen]); // eslint-disable-line
+  }), [entered, catalog, site, toasts, cartState, bagOpen, wish, user, authReady, searchOpen, menuOpen, quick, reviewOpen]); // eslint-disable-line
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

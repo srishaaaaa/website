@@ -13,6 +13,7 @@ const schema = z.object({
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+  GOOGLE_MAPS_API_KEY: z.string().optional().transform(v => v || undefined), // browser Embed API key (restrict by referrer)
   RESERVATION_MINUTES: z.coerce.number().default(30),
 });
 

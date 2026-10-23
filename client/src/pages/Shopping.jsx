@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
-import ProductCard from '../components/ProductCard';
+import ProductCard from '../components/ProductCard3D';
 import { BagLines, ShippingNote } from '../components/CartDrawer';
 
 export function Wishlist() {

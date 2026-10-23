@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../context/App';
 import { useModal, useReduced } from '../lib/hooks';
 import Wordmark from './Wordmark';
 import ProductArt from './ProductArt';
-import { ProductMedia } from './ProductCard';
+import { ProductMedia } from './ProductCard3D';
 import { inr } from '../lib/format';
 
 const Icon = ({ d, children }) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true">{children || <path d={d} />}</svg>;
@@ -78,42 +78,51 @@ function MobileMenu() {
   );
 }
 
-export default function Nav() {
+const LINKS = [['HOME', '/', true], ['SHOP', '/shop'], ['COLLECTIONS', '/collections'], ['OUR STORY', '/about']];
+
+export default function FloatingNavbar() {
   const { entered, bagCount, wish, setBagOpen, setSearchOpen, setMenuOpen, user } = useApp();
   const { pathname } = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mega, setMega] = useState(false);
   const closeT = useRef();
-  const home = pathname === '/';
 
-  useEffect(() => { const f = () => setScrolled(scrollY > 40); f(); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, []);
+  useEffect(() => { const f = () => setScrolled(scrollY > 60); f(); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, []);
   useEffect(() => setMega(false), [pathname]);
   useEffect(() => { const k = e => e.key === 'Escape' && setMega(false); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, []);
   const open = () => { clearTimeout(closeT.current); setMega(true) };
   const later = () => { clearTimeout(closeT.current); closeT.current = setTimeout(() => setMega(false), 140) };
+  const isActive = (to, end) => (end ? pathname === to : pathname === to || pathname.startsWith(to + '/'));
 
   return (
     <>
-      <motion.header className={`site-header ${scrolled || !home || mega ? 'solid' : ''}`} initial={{ opacity: 0, y: -24 }} animate={entered ? { opacity: 1, y: 0 } : { opacity: 0, y: -24 }} transition={{ duration: 0.9, delay: entered ? 0.2 : 0, ease: [0.22, 1, 0.36, 1] }}
+      <motion.header className={`site-header ${scrolled ? 'compact' : ''}`} initial={{ opacity: 0, y: -24 }} animate={entered ? { opacity: 1, y: 0 } : { opacity: 0, y: -24 }} transition={{ duration: 0.9, delay: entered ? 0.2 : 0, ease: [0.22, 1, 0.36, 1] }}
         onMouseLeave={later} onMouseEnter={() => mega && open()}>
         <div className="hdr">
           <button className="icon-btn burger" onClick={() => setMenuOpen(true)} aria-label="Open menu"><svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.4" fill="none" aria-hidden="true"><path d="M3 8h18M3 16h18" /></svg></button>
           <Wordmark className="hdr-logo" />
-          <nav className="primary" aria-label="Primary">
-            <div className="has-mega" onMouseEnter={open} onFocus={open} onBlur={e => !e.currentTarget.contains(e.relatedTarget) && later()}>
-              <NavLink to="/shop" aria-haspopup="true" aria-expanded={mega}>SHOP</NavLink>
-            </div>
-            <NavLink to="/collections" end onMouseEnter={later}>COLLECTIONS</NavLink>
-            <NavLink to="/about" onMouseEnter={later}>OUR WORLD</NavLink>
-            <NavLink to="/journal" onMouseEnter={later}>JOURNAL</NavLink>
+          <nav className="primary" aria-label="Primary" onMouseLeave={() => {}}>
+            {LINKS.map(([label, to, end]) => {
+              const on = isActive(to, end);
+              const link = (
+                <Link key={to} to={to} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined} onMouseEnter={to === '/shop' ? open : later} {...(to === '/shop' ? { 'aria-haspopup': 'true', 'aria-expanded': mega } : {})}>
+                  {on && <motion.i className="nav-pill" layoutId="nav-pill" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}
+                  <span>{label}</span>
+                </Link>
+              );
+              return to === '/shop' ? <div key={to} className="has-mega" onFocus={open} onBlur={e => !e.currentTarget.contains(e.relatedTarget) && later()}>{link}</div> : link;
+            })}
           </nav>
           <div className="hdr-tools">
-            <button className="icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search" data-cursor="SEARCH"><SearchI /></button>
-            <Link className="icon-btn hide-sm" to={user ? '/account' : '/login'} aria-label={user ? 'Account' : 'Sign in'}><UserI /></Link>
-            <Link className="icon-btn hide-sm" to="/wishlist" aria-label={`Wishlist, ${wish.length} saved`}><HeartI />{wish.length > 0 && <b className="count">{wish.length}</b>}</Link>
-            <button className="icon-btn" onClick={() => setBagOpen(true)} aria-label={`Shopping bag, ${bagCount} items`} data-cursor="BAG"><BagI />
-              {bagCount > 0 && <motion.b key={bagCount} className="count" initial={{ scale: 1.7 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 14 }}>{bagCount}</motion.b>}
-            </button>
+            <div className="tools-pill">
+              <button className="tool" onClick={() => setSearchOpen(true)} aria-label="Search" data-cursor="SEARCH"><SearchI /><span>SEARCH</span></button>
+              <i className="sep hide-sm" aria-hidden="true" />
+              <Link className="tool hide-sm" to={user ? '/account' : '/login'} aria-label={user ? 'Account' : 'Sign in'}><UserI /><span>PROFILE</span></Link>
+              <Link className="tool hide-sm" to="/wishlist" aria-label={`Wishlist, ${wish.length} saved`}><HeartI /><span>WISHLIST</span>{wish.length > 0 && <b className="count">{wish.length}</b>}</Link>
+              <button className="cart-pill" onClick={() => setBagOpen(true)} aria-label={`Shopping bag, ${bagCount} items`} data-cursor="BAG"><BagI /><span>BAG</span>
+                {bagCount > 0 && <motion.b key={bagCount} className="cart-n" initial={{ scale: 1.7 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 14 }}>{bagCount}</motion.b>}
+              </button>
+            </div>
           </div>
         </div>
         <AnimatePresence>{mega && <div onMouseEnter={open} onMouseLeave={later}><MegaMenu onNavigate={() => setMega(false)} /></div>}</AnimatePresence>

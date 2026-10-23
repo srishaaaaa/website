@@ -139,3 +139,33 @@ test('orders and reviews are scoped to the owner and gated by purchase', async (
   const pub = (await client()('GET', '/reviews')).body;
   assert.equal(pub.count, 1); assert.equal(pub.average, 5); assert.equal(pub.items[0].author, 'Asha R.');
 });
+
+test('store settings: empty by default, staff-only to edit, map only for a configured address', async () => {
+  const c = client();
+  let s = (await c('GET', '/store')).body;
+  assert.equal(s.store.address, null); assert.equal(s.map, null, 'no invented location');
+  assert.equal((await c('PUT', '/admin/settings/store', { name: 'DHANYA', address: ['1 Main Road'] })).status, 401);
+  const shopper = client(); await shopper('POST', '/auth/register', { email: 'nostaff@test.dev', password: 'Password123!' });
+  assert.equal((await shopper('PUT', '/admin/settings/store', { name: 'DHANYA', address: ['1 Main Road'] })).status, 403);
+  const staff = client(); await staff('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  assert.equal((await staff('PUT', '/admin/settings/store', { name: 'DHANYA', hours: { label: 'x', open: '25:00', close: '20:00', days: [1] } })).status, 400, 'invalid hours rejected');
+  const ok = await staff('PUT', '/admin/settings/store', { name: 'DHANYA', address: ['1 Main Road', 'Bengaluru 560001'], phone: '+91 99999 00000', hours: { label: 'Mon–Sun · 10AM–8PM', open: '10:00', close: '20:00', days: [0, 1, 2, 3, 4, 5, 6] } });
+  assert.equal(ok.status, 200);
+  s = (await c('GET', '/store')).body;
+  assert.deepEqual(s.store.address, ['1 Main Road', 'Bengaluru 560001']);
+  assert.match(s.map.embedUrl, /google\.com\/maps/); assert.match(s.map.directionsUrl, /destination=/);
+  assert.equal((await c('GET', '/pages/privacy')).status, 404, 'unpublished policy is not invented');
+  assert.equal((await staff('PUT', '/admin/pages/privacy', { title: 'Privacy', body: 'Policy text' })).status, 200);
+  assert.equal((await c('GET', '/pages/privacy')).body.title, 'Privacy');
+});
+
+test('catalog exposes a direct-add variant only for single-variant pieces; reviews paginate', async () => {
+  const c = client();
+  await db.query(`UPDATE product_variants SET stock_quantity = 0 WHERE product_id = (SELECT id FROM products WHERE slug = 'rose-organza-dress') AND size <> 'M'`);
+  const p = (await c('GET', '/products?q=Rose%20Organza')).body.items[0];
+  assert.equal(p.single_variant, await variantOf('rose-organza-dress', 'M'));
+  const multi = (await c('GET', '/products?q=Champagne')).body.items[0];
+  assert.equal(multi.single_variant, null);
+  const r = (await c('GET', '/reviews?limit=1&page=1')).body;
+  assert.equal(r.items.length, 1); assert.equal(r.hasMore, false);
+});

@@ -5,7 +5,7 @@ import { useModal } from '../lib/hooks';
 import { toQuery, useFilters } from '../lib/filters';
 import { api } from '../lib/api';
 import { SIZE_ORDER, inr } from '../lib/format';
-import ProductCard, { CardSkeletons } from '../components/ProductCard';
+import ProductCard, { CardSkeletons } from '../components/ProductCard3D';
 import ProductArt from '../components/ProductArt';
 
 const PAGE = 12;

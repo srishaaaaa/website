@@ -43,6 +43,10 @@ export async function seed(db, cfg, log = console.log) {
     await col('festive-edit', 'The Festive Edit', 'For celebrations.', 1, ['plum-festive-lehenga', 'banarasi-silk-saree', 'gold-thread-co-ord']);
     await col('evening-edit', 'The Evening Edit', 'After-dark silhouettes.', 2, ['rose-organza-dress', 'dusk-silk-dress', 'midnight-kurta-set']);
 
+    // Store settings start empty: no invented address, hours or social handles.
+    await t.query(`INSERT INTO store_settings (key, value) VALUES ('store', $1), ('social', $2) ON CONFLICT (key) DO NOTHING`,
+      [JSON.stringify({ name: 'DHANYA', address: null, phone: null, email: null, timeZone: 'Asia/Kolkata', hours: null }), JSON.stringify({ instagram: { handle: null, url: null, posts: [] }, links: [] })]);
+
     if (cfg.ADMIN_EMAIL && cfg.ADMIN_PASSWORD) {
       await t.query(`INSERT INTO profiles (email, password_hash, full_name, role) VALUES ($1,$2,'Owner','owner') ON CONFLICT (lower(email)) DO NOTHING`,
         [cfg.ADMIN_EMAIL, await bcrypt.hash(cfg.ADMIN_PASSWORD, 12)]);
