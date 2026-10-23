@@ -29,8 +29,8 @@ export function About() {
           <p className="ab-sub">{brand.promise}</p>
           <div className="ab-cta"><Link className="btn solid pill" to="/shop" data-cursor="SHOP">EXPLORE COLLECTION</Link><Link className="hl-link" to="/collections" data-cursor="EXPLORE">VIEW COLLECTIONS</Link></div>
         </div>
-        <div className="ab-photo">
-          <img src={media.heroImageWide} alt="A woman seated in a sage-gold saree against a rose-pink wall" width="669" height="585" />
+        <div className="ab-photo cut">
+          <picture><source srcSet={media.heroCutoutWebp} type="image/webp" /><img src={media.heroCutout} alt={media.heroAlt} /></picture>
           {total > 0 && <span className="ab-chip c1"><b>{total}</b> pieces</span>}
           {cols.length > 0 && <span className="ab-chip c2"><b>{cols.length}</b> collections</span>}
         </div>

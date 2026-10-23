@@ -244,3 +244,26 @@ h1, h2 { text-wrap: balance }
 .rev-head h2 { font-size: clamp(38px, 5.8vw, 96px) }
 .about2 .btn.solid, .reviews .btn.solid { background: var(--ob); color: var(--ivory); border-color: var(--ob) }
 .about2 .btn.solid:hover:not(:disabled) { background: var(--gold); color: var(--ob); border-color: var(--gold) }
+
+/* ---- tall (standing) subjects are sized by height ---- */
+.ps.tall { width: auto; height: min(86vh, 920px); right: clamp(60px, 13vw, 280px); bottom: 0 }
+@media (max-width: 1180px) { .ps.tall { right: 6vw } }
+@media (max-width: 959px) { .ps.tall { height: auto; width: min(72vw, 420px); right: auto; bottom: auto } }
+.ab-photo.cut { display: grid; place-items: end center; border-radius: 30px; background: radial-gradient(70% 70% at 50% 40%, rgba(240, 186, 200, .5), rgba(244, 239, 230, .2)); padding: 28px 28px 0; min-height: 420px }
+.ab-photo.cut img { box-shadow: none; border-radius: 0; max-height: 640px; width: auto; max-width: 100%; filter: drop-shadow(0 24px 30px rgba(90, 50, 50, .22)) }
+
+/* ---- compact footer ---- */
+.site-footer { padding: 28px var(--pad) 22px }
+.footer-fade { height: clamp(60px, 8vw, 110px); margin-top: calc(-1 * clamp(60px, 8vw, 110px)) }
+.foot-grid { gap: clamp(24px, 4vw, 60px) }
+.foot-h { font-size: 17px; margin-bottom: 14px }
+.site-footer li { margin-bottom: 7px; font-size: 14px }
+.site-footer address, .site-footer .muted { font-size: 14px; line-height: 1.55; margin-bottom: 6px }
+.soc { margin: 12px 0 16px } .soc a { width: 42px; height: 42px; border-radius: 10px }
+.news { gap: 6px; margin-top: 4px } .news .foot-sub { font-size: 13px; margin-bottom: 4px } .news-row input { padding: 11px 14px } .news-row .btn { padding: 11px 18px }
+.foot-pol { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; opacity: .75; margin-top: 12px } .foot-pol a:hover { color: var(--gold) }
+.foot-mark { margin: clamp(24px, 3vw, 44px) 0 clamp(16px, 2vw, 28px); font-size: clamp(44px, 7vw, 112px) }
+.foot-mark .logo-tile { width: clamp(38px, 5vw, 78px) !important; height: clamp(38px, 5vw, 78px) !important; border-radius: clamp(10px, 1.2vw, 18px) }
+.foot-base { padding-top: 16px; font-size: 12px; justify-content: space-between }
+.foot-base strong { font-weight: 700 }
+.foot-tag { letter-spacing: .3em; font-size: 11px } .foot-tag i { font-style: normal; margin: 0 .35em; opacity: .7 }
