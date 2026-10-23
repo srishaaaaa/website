@@ -14,6 +14,8 @@ export const storeSchema = z.object({
   phone: nullableText(30),
   email: z.string().trim().email().nullable().default(null),
   timeZone: text(60).default('Asia/Kolkata'),
+  location: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).nullable().default(null),
+  mapsUrl: z.string().trim().url().nullable().default(null),
   hours: z.object({ label: text(120), open: hhmm, close: hhmm, days: z.array(z.number().int().min(0).max(6)).min(1).max(7) }).nullable().default(null),
 });
 export const socialSchema = z.object({
@@ -23,9 +25,10 @@ export const socialSchema = z.object({
   }).default({}),
   links: z.array(z.object({ label: text(40).min(1), url: z.string().url() })).max(6).default([]),
 });
+export const flagsSchema = z.object({ demoReviews: z.boolean().default(false) });
 export const pageSchema = z.object({ title: text(120).min(1), body: text(20000) });
 
-const DEFAULTS = { store: storeSchema.parse({}), social: socialSchema.parse({}) };
+const DEFAULTS = { store: storeSchema.parse({}), social: socialSchema.parse({}), flags: flagsSchema.parse({}) };
 const PAGE_SLUGS = ['privacy', 'terms', 'shipping-returns'];
 
 export async function readSetting(db, key) {
@@ -40,16 +43,21 @@ export default function settingsRoutes({ db, cfg, auth }) {
   r.get('/store', wrap(async (_req, res) => {
     const [store, social] = await Promise.all([readSetting(db, 'store'), readSetting(db, 'social')]);
     let map = null;
-    if (store.address?.length) {
-      const q = encodeURIComponent([store.name, ...store.address].join(', '));
+    if (store.location || store.address?.length) {
+      // Exact coordinates (from the boutique's Google Maps pin) win over a free-text address.
+      const q = encodeURIComponent(store.location ? `${store.location.lat},${store.location.lng}` : [store.name, ...store.address].join(', '));
+      const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${q}`;
       map = {
         embedUrl: cfg.GOOGLE_MAPS_API_KEY
           ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(cfg.GOOGLE_MAPS_API_KEY)}&q=${q}`
-          : `https://www.google.com/maps?q=${q}&output=embed`,
-        directionsUrl: `https://www.google.com/maps/dir/?api=1&destination=${q}`,
+          : `https://www.google.com/maps?q=${q}&z=17&output=embed`,
+        directionsUrl,
+        placeUrl: store.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${q}`,
       };
     }
-    res.json({ store, social, map });
+    const ship = await one(db, 'SELECT base_amount, free_over FROM shipping_methods WHERE active ORDER BY id LIMIT 1');
+    const flags = await readSetting(db, 'flags');
+    res.json({ store, social, map, flags, shipping: ship ? { amount: ship.base_amount, freeOver: ship.free_over } : null, checkout: { reservationMinutes: cfg.RESERVATION_MINUTES } });
   }));
 
   r.get('/pages/:slug', wrap(async (req, res) => {
@@ -67,6 +75,7 @@ export default function settingsRoutes({ db, cfg, auth }) {
   };
   r.put('/admin/settings/store', staff, wrap(async (req, res) => { const v = storeSchema.parse(req.body); await save(req, 'store', v); res.json(v) }));
   r.put('/admin/settings/social', staff, wrap(async (req, res) => { const v = socialSchema.parse(req.body); await save(req, 'social', v); res.json(v) }));
+  r.put('/admin/settings/flags', staff, wrap(async (req, res) => { const v = flagsSchema.parse(req.body); await save(req, 'flags', v); res.json(v) }));
   r.put('/admin/pages/:slug', staff, wrap(async (req, res) => {
     if (!PAGE_SLUGS.includes(req.params.slug)) throw new HttpError(404, 'Unknown page');
     const v = pageSchema.parse(req.body); await save(req, 'page:' + req.params.slug, v); res.json(v);

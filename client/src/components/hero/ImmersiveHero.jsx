@@ -23,7 +23,7 @@ export default function ImmersiveHero() {
   const show = entered; // entrance waits for the intro to finish
   const cats = catalog.categories.map(c => c.name.toLowerCase());
   // The supporting line names the boutique's real product categories (from the database).
-  const support = cats.length ? `A luxury boutique for ${list(cats)}.` : 'A contemporary luxury boutique with an Indian soul.';
+  const support = cats.length ? `A luxury boutique for ${list(cats.slice(0, 4))}${cats.length > 4 ? ' and more' : ''}.` : 'A contemporary luxury boutique with an Indian soul.';
   const anim = d => ({ ...rise(d), animate: show ? { opacity: 1, y: 0 } : undefined });
 
   return (

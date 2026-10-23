@@ -9,7 +9,7 @@ const num = v => (v === null || v === '' || isNaN(+v) ? null : +v);
 export function useFilters() {
   const [sp, setSp] = useSearchParams();
   const f = useMemo(() => ({
-    category: list(sp.get('category')), size: list(sp.get('size')), color: list(sp.get('color')),
+    category: list(sp.get('category')), material: list(sp.get('material')), size: list(sp.get('size')), color: list(sp.get('color')),
     min: num(sp.get('min')), max: num(sp.get('max')), stock: sp.get('stock') === '1',
     sort: sp.get('sort') || 'featured', view: sp.get('view') === '3' ? 3 : 2,
   }), [sp]);
@@ -23,7 +23,7 @@ export function useFilters() {
     setSp(n, { replace: true });
   };
   const clear = () => { const n = new URLSearchParams(); if (sp.get('q')) n.set('q', sp.get('q')); setSp(n, { replace: true }) };
-  const count = f.category.length + f.size.length + f.color.length + (f.min != null ? 1 : 0) + (f.max != null ? 1 : 0) + (f.stock ? 1 : 0);
+  const count = f.category.length + f.material.length + f.size.length + f.color.length + (f.min != null ? 1 : 0) + (f.max != null ? 1 : 0) + (f.stock ? 1 : 0);
   return { f, set, clear, count };
 }
 
@@ -33,6 +33,7 @@ export function toQuery(f, base = {}, page = 1, limit = 12) {
   if (base.collection) p.set('collection', base.collection);
   if (base.q) p.set('q', base.q);
   if (f.category.length) p.set('category', f.category.join(','));
+  if (f.material.length) p.set('material', f.material.join(','));
   if (f.size.length) p.set('size', f.size.join(','));
   if (f.color.length) p.set('color', f.color.join(','));
   if (f.min != null) p.set('min', Math.round(f.min * 100));

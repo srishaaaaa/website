@@ -22,7 +22,8 @@ export default function StoreLocationMap() {
   const { store, map } = site;
   const state = useMemo(() => openState(store), [store]);
   if (site.status === 'loading') return null;
-  const configured = !!(store?.address?.length && map);
+  const configured = !!map;
+  const lines = store?.address?.length ? store.address : null;
   const tel = store?.phone && `tel:${store.phone.replace(/[^+\d]/g, '')}`;
   return (
     <section className="studio ivory-sec" aria-labelledby="st-h">
@@ -32,7 +33,7 @@ export default function StoreLocationMap() {
           <h2 id="st-h" className="serif">FIND YOUR WAY<br />TO DHANYA.</h2>
           {configured ? (
             <>
-              <address><span className="pin" aria-hidden="true">⌖</span><span><strong>{store.address[0]}</strong>{store.address.length > 1 && <><br />{store.address.slice(1).join(', ')}</>}</span></address>
+              {lines && <address><span className="pin" aria-hidden="true">⌖</span><span><strong>{lines[0]}</strong>{lines.length > 1 && <><br />{lines.slice(1).join(', ')}</>}</span></address>}
               {store.hours && <p className="hours"><span className="pin" aria-hidden="true">◷</span><span><strong>{store.hours.label}</strong>{state && <><br /><b className={state.open ? 'is-open' : ''}>{state.text}</b></>}</span></p>}
               <div className="studio-cta">
                 <a className="btn solid pill" href={map.directionsUrl} target="_blank" rel="noopener noreferrer" data-cursor="GO">GET DIRECTIONS →</a>
@@ -50,10 +51,10 @@ export default function StoreLocationMap() {
           {configured
             ? <iframe title={`Map showing ${store.name}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen src={map.embedUrl} />
             : <div className="map-placeholder" role="img" aria-label="Boutique location to be announced"><Emblem size={120} /><span className="eyebrow">Location to be announced</span></div>}
-          {configured && <a className="map-open" href={map.directionsUrl} target="_blank" rel="noopener noreferrer">OPEN IN MAPS ↗</a>}
+          {configured && <a className="map-open" href={map.placeUrl || map.directionsUrl} target="_blank" rel="noopener noreferrer">OPEN IN MAPS ↗</a>}
           {configured && (
             <div className="map-card"><span className="pin-badge" aria-hidden="true">⌖</span>
-              <div><strong>{store.name}</strong><span className="muted small">{store.address[store.address.length - 1]}</span></div>
+              <div><strong>{store.name}</strong><span className="muted small">{lines ? lines[lines.length - 1] : 'Tap for directions'}</span></div>
               {state && <span className={`status ${state.open ? 'open' : ''}`}>{state.open ? 'OPEN' : 'CLOSED'}</span>}</div>
           )}
         </div>

@@ -2,7 +2,7 @@ import { rows, one } from '../db/index.js';
 
 const BASE_SELECT = `
   SELECT p.id, p.slug, p.name, p.description, c.name AS category, c.slug AS category_slug,
-         p.base_price AS price, p.currency, p.tax_rate AS gst_rate, p.featured, p.created_at,
+         p.base_price AS price, p.material, p.currency, p.tax_rate AS gst_rate, p.featured, p.created_at,
          (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
          COALESCE(st.stock, 0)::int AS stock, st.single_variant,
          COALESCE(st.sizes, ARRAY[]::text[]) AS sizes, COALESCE(st.colors, ARRAY[]::text[]) AS colors
@@ -28,6 +28,7 @@ function where(f, { baseOnly = false } = {}) {
   if (f.featured) w.push('p.featured');
   if (!baseOnly) {
     if (f.category?.length) w.push(`c.slug = ANY(${add(f.category)})`);
+    if (f.material?.length) w.push(`p.material = ANY(${add(f.material)})`);
     if (f.size?.length) w.push(`EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.active AND v.stock_quantity > 0 AND v.size = ANY(${add(f.size)}))`);
     if (f.color?.length) w.push(`EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.active AND v.stock_quantity > 0 AND v.color = ANY(${add(f.color)}))`);
     if (f.min != null) w.push(`p.base_price >= ${add(f.min)}`);
@@ -57,13 +58,14 @@ export async function listProducts(q, f) {
 export async function facets(q, f) {
   const { sql, a } = where(f, { baseOnly: true });
   const from = `FROM products p LEFT JOIN categories c ON c.id = p.category_id WHERE ${sql}`;
-  const [categories, sizes, colors, price] = await Promise.all([
+  const [categories, sizes, colors, price, materials] = await Promise.all([
     rows(q, `SELECT DISTINCT c.slug, c.name, c.display_order ${from} AND c.id IS NOT NULL ORDER BY c.display_order, c.name`, a),
     rows(q, `SELECT DISTINCT v.size FROM product_variants v JOIN products p ON p.id = v.product_id LEFT JOIN categories c ON c.id = p.category_id WHERE v.active AND v.stock_quantity > 0 AND ${sql}`, a),
     rows(q, `SELECT DISTINCT v.color FROM product_variants v JOIN products p ON p.id = v.product_id LEFT JOIN categories c ON c.id = p.category_id WHERE v.active AND v.stock_quantity > 0 AND ${sql}`, a),
     one(q, `SELECT COALESCE(MAX(p.base_price), 0)::int AS max ${from}`, a),
+    rows(q, `SELECT DISTINCT p.material ${from} AND p.material IS NOT NULL ORDER BY p.material`, a),
   ]);
-  return { categories: categories.map(({ slug, name }) => ({ slug, name })), sizes: sizes.map(r => r.size), colors: colors.map(r => r.color).sort(), maxPrice: price.max };
+  return { categories: categories.map(({ slug, name }) => ({ slug, name })), sizes: sizes.map(r => r.size), colors: colors.map(r => r.color).sort(), materials: materials.map(r => r.material), maxPrice: price.max };
 }
 
 export async function productBySlug(q, slug) {

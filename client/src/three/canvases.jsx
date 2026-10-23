@@ -76,11 +76,10 @@ export function FabricCanvas({ quality, reduced }) {
   const mix = useRef(0.4);
   return (
     <Stage className="scene fabric-scene" quality={quality} reduced={reduced} camera={{ position: [0, 0, 6.5], fov: 50, near: 0.1, far: 50 }}>
-      <color attach="background" args={['#1a0f1e']} />
       <FabricRig reduced={reduced} />
       <Atmosphere sparkles={quality.low ? 20 : 60} sparkleArea={[12, 6, 6]} lightMix={mix} />
-      <Silk segments={quality.low ? [96, 56] : [180, 100]} size={[18, 9]} position={[0, 0, 0]} rotation={[-0.55, 0, 0]} amp={1.6} mixRef={mix} colors={['#2b1631', '#D9B779']} opacity={0.98} />
-      <Sparkles count={quality.low ? 12 : 30} scale={[10, 5, 4]} size={3} speed={0.12} color="#F5F0E8" opacity={0.5} />
+      <Silk segments={quality.low ? [96, 56] : [180, 100]} size={[18, 9]} position={[0, 0, 0]} rotation={[-0.55, 0, 0]} amp={1.6} mixRef={mix} colors={['#c98f96', '#E4C98F']} opacity={0.96} />
+      <Sparkles count={quality.low ? 12 : 30} scale={[10, 5, 4]} size={3} speed={0.12} color="#C6A46A" opacity={0.6} />
     </Stage>
   );
 }

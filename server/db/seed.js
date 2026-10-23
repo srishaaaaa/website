@@ -1,37 +1,51 @@
 import bcrypt from 'bcryptjs';
 import { one } from './index.js';
+import { CATEGORIES, COLLECTIONS_BY_FLAG, CORE, DEMO_REVIEWS, MORE, SIZE_SETS } from './catalog-data.js';
 
-// Placeholder catalog so the storefront has something real to render. Replace with genuine inventory in /admin.
-const CATEGORIES = [['Sarees', 'sarees'], ['Kurtas', 'kurtas'], ['Dresses', 'dresses'], ['Co-ords', 'co-ords'], ['Festive', 'festive']];
-// [slug, name, category, price(paise), gst%, featured, colors, stockBySize]
-const PRODUCTS = [
-  ['banarasi-silk-saree', 'Banarasi Silk Saree', 'sarees', 1850000, 5, true, ['Default'], { S: 10, M: 10, L: 10 }],
-  ['midnight-kurta-set', 'Midnight Kurta Set', 'kurtas', 680000, 5, true, ['Midnight', 'Ivory'], { S: 8, M: 8, L: 0 }],
-  ['champagne-co-ord', 'Champagne Co-ord Set', 'co-ords', 540000, 5, true, ['Default'], { S: 10, M: 10, L: 10 }],
-  ['rose-organza-dress', 'Rose Organza Dress', 'dresses', 920000, 12, false, ['Default'], { S: 6, M: 6, L: 6 }],
-  ['plum-festive-lehenga', 'Plum Festive Lehenga', 'festive', 3200000, 12, true, ['Default'], { S: 4, M: 4, L: 4 }],
-  ['ivory-chanderi-saree', 'Ivory Chanderi Saree', 'sarees', 1280000, 5, false, ['Default'], { S: 5, M: 5, L: 5 }],
-  ['onyx-anarkali-kurta', 'Onyx Anarkali Kurta', 'kurtas', 890000, 5, false, ['Default'], { S: 0, M: 0, L: 0 }],
-  ['gold-thread-co-ord', 'Gold Thread Co-ord', 'co-ords', 760000, 5, false, ['Default'], { S: 7, M: 7, L: 7 }],
-  ['dusk-silk-dress', 'Dusk Silk Dress', 'dresses', 1150000, 12, true, ['Default'], { S: 3, M: 3, L: 3 }],
-];
+const skuOf = (...p) => p.join('-').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+// Deterministic stock so the sample catalogue shows a realistic mix (in stock, low, sold out) every time it is seeded.
+const stockFor = (slug, size, flags) => {
+  if (flags.includes('X')) return 0;
+  let h = 0; for (const ch of slug + size) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h % 7 === 0 ? 0 : 1 + (h % 9);
+};
+const gstFor = rupees => (rupees <= 2500 ? 5 : 18);
+
+async function addProduct(t, { slug, name, category, price, gst, featured, material, variants }) {
+  const c = await one(t, 'SELECT id FROM categories WHERE slug = $1', [category]);
+  const p = await one(t, `INSERT INTO products (slug, name, description, category_id, base_price, tax_rate, material, status, featured)
+    VALUES ($1,$2,'Replace with your real product description.',$3,$4,$5,$6,'active',$7) ON CONFLICT (slug) DO NOTHING RETURNING id`, [slug, name, c.id, price, gst, material ?? null, featured]);
+  if (!p) return false;
+  const params = [], values = [];
+  for (const v of variants) { params.push(p.id, v.sku, v.size, v.color, v.stock); const n = params.length; values.push(`($${n - 4},$${n - 3},$${n - 2},$${n - 1},$${n})`) }
+  const rows = (await t.query(`INSERT INTO product_variants (product_id, sku, size, color, stock_quantity) VALUES ${values.join(',')} RETURNING id, stock_quantity`, params)).rows;
+  const stocked = rows.filter(r => r.stock_quantity > 0);
+  if (stocked.length) {
+    const mp = [], mv = [];
+    for (const r of stocked) { mp.push(r.id, r.stock_quantity); const n = mp.length; mv.push(`($${n - 1},$${n},'initial_stock')`) }
+    await t.query(`INSERT INTO inventory_movements (variant_id, quantity_change, reason) VALUES ${mv.join(',')}`, mp);
+  }
+  return true;
+}
 
 export async function seed(db, cfg, log = console.log) {
   await db.tx(async t => {
-    for (const [i, [name, slug]] of CATEGORIES.entries())
-      await t.query('INSERT INTO categories (name, slug, display_order) VALUES ($1,$2,$3) ON CONFLICT (slug) DO NOTHING', [name, slug, i]);
+    for (const [i, [name, slug]] of CATEGORIES.entries()) {
+      await t.query('INSERT INTO categories (name, slug, display_order) VALUES ($1,$2,$3) ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, display_order = EXCLUDED.display_order', [name, slug, i]);
+    }
     await t.query(`INSERT INTO shipping_methods (code, name, base_amount, free_over) VALUES ('standard','Standard shipping',9900,500000) ON CONFLICT (code) DO NOTHING`);
 
-    for (const [slug, name, cat, price, gst, featured, colors, stock] of PRODUCTS) {
-      const c = await one(t, 'SELECT id FROM categories WHERE slug = $1', [cat]);
-      const p = await one(t, `INSERT INTO products (slug, name, description, category_id, base_price, tax_rate, status, featured)
-        VALUES ($1,$2,'Replace with your real product description.',$3,$4,$5,'active',$6) ON CONFLICT (slug) DO NOTHING RETURNING id`, [slug, name, c.id, price, gst, featured]);
-      if (!p) continue;
-      for (const color of colors) for (const [size, qty] of Object.entries(stock)) {
-        const sku = `${slug}-${color}-${size}`.toUpperCase().replace(/[^A-Z0-9]+/g, '-');
-        const v = await one(t, 'INSERT INTO product_variants (product_id, sku, size, color, stock_quantity) VALUES ($1,$2,$3,$4,$5) RETURNING id', [p.id, sku, size, color, qty]);
-        if (qty) await t.query(`INSERT INTO inventory_movements (variant_id, quantity_change, reason) VALUES ($1,$2,'initial_stock')`, [v.id, qty]);
-      }
+    for (const [slug, name, category, price, gst, featured, colors, stock, material] of CORE) {
+      const variants = colors.flatMap(color => Object.entries(stock).map(([size, qty]) => ({ sku: skuOf(slug, color, size), size, color, stock: qty })));
+      await addProduct(t, { slug, name, category, price, gst, featured, material, variants });
+      await t.query('UPDATE products SET material = $2 WHERE slug = $1 AND material IS NULL', [slug, material]);
+    }
+    const flagged = { T: [], B: [] };
+    for (const [slug, name, category, rupees, material, colors, sizeSet, flags] of MORE) {
+      const variants = colors.flatMap(color => SIZE_SETS[sizeSet].map(size => ({ sku: skuOf(slug, color, size), size, color, stock: stockFor(slug, size + color, flags) })));
+      if (!flags.includes('X') && variants.every(v => v.stock === 0)) variants[0].stock = 3;
+      await addProduct(t, { slug, name, category, price: rupees * 100, gst: gstFor(rupees), featured: flags.includes('F'), material, variants });
+      for (const f of ['T', 'B']) if (flags.includes(f)) flagged[f].push(slug);
     }
 
     const col = async (slug, name, description, order, products) => {
@@ -42,6 +56,7 @@ export async function seed(db, cfg, log = console.log) {
     await col('curated-edit', 'The Curated Edit', 'Pieces chosen by the boutique.', 0, ['banarasi-silk-saree', 'midnight-kurta-set', 'champagne-co-ord', 'dusk-silk-dress']);
     await col('festive-edit', 'The Festive Edit', 'For celebrations.', 1, ['plum-festive-lehenga', 'banarasi-silk-saree', 'gold-thread-co-ord']);
     await col('evening-edit', 'The Evening Edit', 'After-dark silhouettes.', 2, ['rose-organza-dress', 'dusk-silk-dress', 'midnight-kurta-set']);
+    for (const [slug, name, description, order, flag] of COLLECTIONS_BY_FLAG) await col(slug, name, description, order, flagged[flag]);
 
     // Store settings start empty: no invented address, hours or social handles.
     await t.query(`INSERT INTO store_settings (key, value) VALUES ('store', $1), ('social', $2) ON CONFLICT (key) DO NOTHING`,
@@ -53,4 +68,19 @@ export async function seed(db, cfg, log = console.log) {
     }
   });
   log('Seeded (idempotent). Sample products are placeholders — replace with real inventory and images.');
+}
+
+// Sample reviews: clearly flagged (is_demo), labelled "Sample review" in the UI, switchable off via flags.demoReviews.
+export async function seedDemoReviews(db, log = console.log) {
+  await db.tx(async t => {
+    const has = await one(t, 'SELECT 1 AS x FROM product_reviews WHERE is_demo LIMIT 1');
+    if (!has) {
+      for (const [i, [slug, author, rating, body]] of DEMO_REVIEWS.entries()) {
+        await t.query(`INSERT INTO product_reviews (product_id, user_id, rating, body, status, is_demo, author_name, created_at)
+          SELECT id, NULL, $2, $3, 'published', true, $4, now() - ($5 || ' hours')::interval FROM products WHERE slug = $1`, [slug, rating, body, author, String(i * 7)]);
+      }
+    }
+    await t.query(`INSERT INTO store_settings (key, value) VALUES ('flags', $1) ON CONFLICT (key) DO NOTHING`, [JSON.stringify({ demoReviews: true })]);
+  });
+  log('Sample reviews added (flagged as samples).');
 }

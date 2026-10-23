@@ -7,7 +7,7 @@ import { rows } from '../db/index.js';
 const num = z.coerce.number().int().min(0).optional();
 const query = z.object({
   q: z.string().trim().max(100).optional(), collection: z.string().max(80).optional(), featured: z.enum(['1', 'true']).optional(),
-  category: csv, size: csv, color: csv, slugs: csv, min: num, max: num, stock: z.enum(['1', 'true']).optional(),
+  category: csv, material: csv, size: csv, color: csv, slugs: csv, min: num, max: num, stock: z.enum(['1', 'true']).optional(),
   sort: z.enum(['featured', 'newest', 'price-asc', 'price-desc']).default('featured'),
   page: z.coerce.number().int().min(1).max(500).default(1), limit: z.coerce.number().int().min(1).max(48).default(12),
   facets: z.enum(['1']).optional(),

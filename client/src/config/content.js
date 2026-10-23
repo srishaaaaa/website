@@ -10,6 +10,8 @@ export const brand = {
 // While an entry is null the site renders deterministic generative placeholders.
 export const media = {
   heroImage: '/images/hero-saree.jpg',         // the editorial photograph at the centre of the hero
+  heroCutout: '/images/hero-saree-cutout.png',         // transparent cut-out of the same photograph (soft-feathered)
+  heroCutoutWebp: '/images/hero-saree-cutout.webp',
   heroImageWide: '/images/hero-saree-wide.png', // landscape crop of the same shoot
   details: [],                                  // real texture / embroidery close-ups; the "World of Details" section appears only when filled
 };

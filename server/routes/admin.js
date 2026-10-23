@@ -31,8 +31,8 @@ export default function admin({ db, auth }) {
   }));
 
   r.get('/reviews', staff, wrap(async (_req, res) => res.json(await rows(db, `
-    SELECT rv.id, rv.rating, rv.body, rv.status, rv.created_at, p.name AS product_name, pr.email
-    FROM product_reviews rv JOIN products p ON p.id = rv.product_id JOIN profiles pr ON pr.id = rv.user_id
+    SELECT rv.id, rv.rating, rv.body, rv.status, rv.created_at, rv.is_demo, p.name AS product_name, COALESCE(pr.email, rv.author_name || ' (sample)') AS email
+    FROM product_reviews rv JOIN products p ON p.id = rv.product_id LEFT JOIN profiles pr ON pr.id = rv.user_id
     ORDER BY rv.status = 'pending' DESC, rv.id DESC LIMIT 200`))));
   r.patch('/reviews/:id', staff, wrap(async (req, res) => {
     const { status } = z.object({ status: z.enum(['published', 'rejected', 'pending']) }).parse(req.body);

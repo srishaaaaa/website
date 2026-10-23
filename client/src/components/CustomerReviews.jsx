@@ -59,46 +59,54 @@ function ReviewModal() {
   );
 }
 
-// Approved, verified-purchase reviews only, paged from the database.
+// Published reviews from the database, as a swipeable carousel. Sample reviews (if switched on) are labelled as such.
 export default function CustomerReviews() {
   const { setReviewOpen } = useApp();
   const [data, setData] = useState(null);
   const [more, setMore] = useState(false);
+  const track = useRef();
   const load = useCallback(async page => {
     try {
       const d = await api(`/reviews?page=${page}&limit=6`);
       setData(prev => (page === 1 || !prev ? d : { ...d, items: [...prev.items, ...d.items] }));
-    } catch { setData(prev => prev ?? { count: 0, average: 0, items: [], hasMore: false, page: 1 }) }
+    } catch { setData(prev => prev ?? { count: 0, average: 0, items: [], hasMore: false, page: 1, onlySamples: false }) }
   }, []);
   useEffect(() => { load(1) }, [load]);
   if (!data) return null;
-  const viewMore = async () => { setMore(true); await load(data.page + 1); setMore(false) };
+  const slide = d => track.current?.scrollBy({ left: d * Math.min(360, innerWidth * 0.8), behavior: 'smooth' });
+  const viewMore = async () => { setMore(true); await load(data.page + 1); setMore(false); setTimeout(() => slide(1), 150) };
   return (
-    <section className="reviews ivory-sec" aria-labelledby="rev-h">
+    <section className="reviews light-sec" aria-labelledby="rev-h">
       <Reveal className="rev-head">
         <p className="eyebrow">OUR COMMUNITY</p>
-        <h2 id="rev-h" className="serif">LOVED BEYOND<br />THE FIRST LOOK.</h2>
+        <h2 id="rev-h">LOVED BEYOND THE FIRST LOOK.</h2>
         <div className="rev-bar">
-          {data.count > 0 && <span className="rev-pill"><Stars n={Math.round(data.average)} /><strong>{data.average.toFixed(1)} / 5</strong><span className="muted">from {data.count} verified {data.count === 1 ? 'review' : 'reviews'}</span></span>}
+          {data.count > 0 && <span className="rev-pill"><Stars n={Math.round(data.average)} /><strong>{data.average.toFixed(1)} / 5</strong><span className="muted">FROM {data.count} {data.onlySamples ? 'SAMPLE' : 'VERIFIED'} {data.count === 1 ? 'REVIEW' : 'REVIEWS'}</span></span>}
           <button className="btn solid pill" onClick={() => setReviewOpen(true)} data-cursor="WRITE">WRITE A REVIEW</button>
         </div>
       </Reveal>
       {data.count === 0 && <p className="muted center rev-empty">No reviews yet. Purchased a piece? Be the first to share your thoughts.</p>}
       {data.items.length > 0 && (
-        <ul className="rev-grid">
-          {data.items.map((r, i) => (
-            <Reveal as="li" key={r.id} delay={(i % 3) * 0.08} className="rev-card">
-              <div className="rev-top"><Stars n={r.rating} size={15} /><span className="rev-verified"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>Verified purchase</span></div>
-              <blockquote className="serif">“{r.body}”</blockquote>
-              <div className="rev-foot">
-                <Link to={`/product/${r.product_slug}`} className="rev-thumb" aria-label={`View ${r.product_name}`}><ProductMedia p={{ slug: r.product_slug, name: r.product_name, image: r.product_image }} view={1} /></Link>
-                <p><strong>{r.author}</strong><Link to={`/product/${r.product_slug}`} className="muted small">{r.product_name}</Link></p>
-              </div>
-            </Reveal>
-          ))}
-        </ul>
+        <>
+          <ul className="rv-track" ref={track} tabIndex={0} aria-label="Customer reviews">
+            {data.items.map(r => (
+              <li key={r.id} className="rv-card">
+                <div className="rv-bg" aria-hidden="true"><ProductMedia p={{ slug: r.product_slug, name: r.product_name, image: r.product_image }} view={r.id % 4} /></div>
+                <div className="rv-top"><span className="rv-stars"><Stars n={r.rating} size={13} /></span><Link className="rv-tag" to={`/product/${r.product_slug}`}>{r.product_name}</Link></div>
+                <div className="rv-body">
+                  <blockquote className="quote">“{r.body}”</blockquote>
+                  <p className="rv-by"><strong>{r.author}</strong><span>{r.demo ? 'Sample review' : 'Verified purchase'}</span></p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="rv-nav">
+            <button className="icon-btn lg" onClick={() => slide(-1)} aria-label="Previous reviews">‹</button>
+            {data.hasMore && <button className="btn dark pill" onClick={viewMore} disabled={more}>{more ? 'LOADING…' : 'VIEW MORE REVIEWS'}</button>}
+            <button className="icon-btn lg" onClick={() => slide(1)} aria-label="Next reviews">›</button>
+          </div>
+        </>
       )}
-      {data.hasMore && <div className="center"><button className="btn dark pill" onClick={viewMore} disabled={more}>{more ? 'LOADING…' : 'VIEW MORE REVIEWS'}</button></div>}
       <ReviewModal />
     </section>
   );

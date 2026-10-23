@@ -26,6 +26,13 @@ Portal intro, 3D hero, scroll choreography, mega-menu, live search, catalog, PDP
 - **FloatingNavbar**, **FeaturedCollections**, **ProductCard3D** (tilt, image transition, add to bag / choose size, wishlist, quick view, stock), **CustomerReviews** (approved, verified-purchase only, paginated), **StoreLocationMap**, **InstagramStrip**, **LuxuryFooter** (plum, soft fade).
 - Boutique address, hours, phone/email, Instagram and social links are **store settings** edited in /admin (API: `PUT /api/admin/settings/store`, `PUT /api/admin/settings/social`, and `PUT /api/admin/pages/:slug` for policies). With no address configured the location section shows a placeholder, never an invented pin. Set `GOOGLE_MAPS_API_KEY` (Maps Embed API, referrer-restricted) to use the keyed embed; without it a keyless Google embed is used.
 
+## Latest changes
+- Homepage restyled to one warm cream palette with a heavy grotesque display face (Archivo) and italic serif quotes (Newsreader); the seated-woman photograph is a soft-edged cut-out in front of the oversized DHANYA lettering.
+- Sample catalogue (53 pieces: sarees by fabric, bridal silk, trending, lehengas, salwar suits, kurtas, dresses, co-ords, couple combos, blouses, dupattas) with a Fabric filter. **All names, prices and stock are placeholders.**
+- Clearly-labelled **sample reviews** (flagged in the database, shown as "Sample review", switch off in /admin → Store settings).
+- Boutique location pinned from the owner Google Maps link (Dhanyas Boutique, Kumbakonam). Street address, PIN, phone and hours are not set yet — add them in /admin.
+- Redesigned About page (live counts, categories, how it works, features row, map).
+
 ## Content you must supply
 - **Photography:** products have no images yet; generated plates stand in. Set product images and `client/src/config/content.js` (`media`).
 - **Boutique location, hours, social links, policies:** enter them in /admin → Store settings (policy text via the API until the Phase 5 editor).

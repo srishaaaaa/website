@@ -11,6 +11,7 @@ import FeaturedCollections from '../components/FeaturedCollections';
 import CustomerReviews from '../components/CustomerReviews';
 import InstagramStrip from '../components/InstagramStrip';
 import StoreLocationMap from '../components/StoreLocationMap';
+import ServiceHighlights from '../components/ServiceHighlights';
 import { brand, media } from '../config/content';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -20,7 +21,7 @@ function CollectionPortal({ cols }) {
   if (!cols.length) return null;
   return (
     <section className="portal" data-portal aria-labelledby="portal-h">
-      <div className="portal-head"><p className="eyebrow gold">COLLECTIONS</p><h2 id="portal-h" className="serif">Choose your world.</h2></div>
+      <div className="portal-head"><p className="eyebrow">COLLECTIONS</p><h2 id="portal-h">CHOOSE YOUR WORLD.</h2></div>
       <div className="portal-track" data-track>
         {cols.map((c, i) => (
           <Link key={c.slug} to={`/collections/${c.slug}`} className="panel" data-panel data-cursor="EXPLORE">
@@ -39,7 +40,7 @@ function LivingFabric({ webgl, quality, reduced }) {
   return (
     <section ref={ref} className="fabric" aria-label="The Living Fabric">
       {webgl && near && <Suspense fallback={null}><FabricCanvas quality={quality} reduced={reduced} /></Suspense>}
-      <div className="fabric-copy"><p className="eyebrow gold">THE LIVING FABRIC</p><h2 className="fabric-h">CRAFTED TO<br />BE FELT.</h2><p className="muted hide-touch">Move your cursor across the silk.</p></div>
+      <div className="fabric-copy"><p className="eyebrow">THE LIVING FABRIC</p><h2 className="fabric-h">CRAFTED TO<br />BE FELT.</h2><p className="muted hide-touch">Move your cursor across the silk.</p></div>
     </section>
   );
 }
@@ -48,11 +49,11 @@ function Story() {
   const lines = ['A boutique with an Indian soul,', 'a digital world of its own.', brand.promise];
   return (
     <section className="story" data-story aria-labelledby="story-h">
-      <p className="eyebrow gold">THE DHANYA STORY</p>
+      <p className="eyebrow">THE DHANYA STORY</p>
       <h2 id="story-h" className="sr">The DHANYA story</h2>
       <div className="story-lines">{lines.map((l, i) => <p key={i} data-line className="serif">{l}</p>)}</div>
       <div className="story-words" aria-label={brand.personality.join(', ')}>{brand.personality.map(w => <span key={w} data-word>{w}</span>)}</div>
-      <Link to="/about" className="btn" data-cursor="DISCOVER">OUR STORY</Link>
+      <Link to="/about" className="btn dark pill" data-cursor="DISCOVER">OUR STORY</Link>
     </section>
   );
 }
@@ -72,7 +73,7 @@ function FinalPortal() {
     <section className="final" data-final aria-labelledby="final-h">
       <div className="final-arch" aria-hidden="true"><i /><i /><i /></div>
       <h2 id="final-h" className="final-h">YOUR WORLD.<br />YOUR EXPRESSION.</h2>
-      <Magnetic><Link className="btn solid" to="/shop" data-cursor="DISCOVER">DISCOVER YOUR NEXT LOOK</Link></Magnetic>
+      <Magnetic><Link className="btn solid pill" to="/shop" data-cursor="DISCOVER">DISCOVER YOUR NEXT LOOK</Link></Magnetic>
     </section>
   );
 }
@@ -113,8 +114,6 @@ export default function Home() {
     mm.add('(prefers-reduced-motion: no-preference)', () => {
       gsap.fromTo('[data-line]', { opacity: 0.1, y: 40 }, { opacity: 1, y: 0, stagger: 0.25, ease: 'none', scrollTrigger: { trigger: '[data-story]', start: 'top 70%', end: 'center 40%', scrub: true } });
       gsap.fromTo('[data-word]', { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, ease: 'none', scrollTrigger: { trigger: '.story-words', start: 'top 90%', end: 'top 55%', scrub: true } });
-      gsap.fromTo('[data-story]', { backgroundColor: '#09090D' }, { backgroundColor: '#211426', ease: 'none', scrollTrigger: { trigger: '[data-story]', start: 'top bottom', end: 'center center', scrub: true } });
-      gsap.fromTo('[data-final]', { backgroundColor: '#211426' }, { backgroundColor: '#0f0b14', ease: 'none', scrollTrigger: { trigger: '[data-final]', start: 'top bottom', end: 'top 30%', scrub: true } });
       gsap.fromTo('.final-arch i', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, stagger: 0.12, ease: 'none', scrollTrigger: { trigger: '[data-final]', start: 'top 80%', end: 'center center', scrub: true } });
     });
     document.fonts?.ready.then(() => ScrollTrigger.refresh());
@@ -129,6 +128,7 @@ export default function Home() {
       <LivingFabric webgl={webgl} quality={quality} reduced={reduced} />
       <Story />
       <Details />
+      <ServiceHighlights />
       <CustomerReviews />
       <InstagramStrip />
       <StoreLocationMap />

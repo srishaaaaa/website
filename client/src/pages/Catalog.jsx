@@ -12,7 +12,7 @@ const PAGE = 12;
 const SORTS = [['featured', 'Featured'], ['newest', 'Newest'], ['price-asc', 'Price: low to high'], ['price-desc', 'Price: high to low']];
 const rank = s => { const i = SIZE_ORDER.indexOf(s); return i < 0 ? 99 : i };
 const toggle = (list, v) => (list.includes(v) ? list.filter(x => x !== v) : [...list, v]);
-const NO_FACETS = { categories: [], sizes: [], colors: [], maxPrice: 0 };
+const NO_FACETS = { categories: [], materials: [], sizes: [], colors: [], maxPrice: 0 };
 
 function FilterDrawer({ open, onClose, fx, f, set, clear, count, total }) {
   const ref = useRef();
@@ -31,6 +31,7 @@ function FilterDrawer({ open, onClose, fx, f, set, clear, count, total }) {
             <header className="drawer-head"><h2 className="serif">Refine</h2><button className="icon-btn" onClick={onClose} aria-label="Close filters">✕</button></header>
             <div className="drawer-body filters">
               {group('Category', fx.categories.map(c => ({ value: c.slug, label: c.name })), 'category')}
+              {group('Fabric', plain(fx.materials || []), 'material')}
               {group('Size', plain([...fx.sizes].sort((a, b) => rank(a) - rank(b))), 'size')}
               {group('Colour', plain(fx.colors), 'color')}
               <fieldset><legend className="eyebrow">Price (₹)</legend>
@@ -81,6 +82,7 @@ export default function Catalog({ base = {}, title, eyebrow, intro, banner, empt
   const catName = slug => fx.categories.find(c => c.slug === slug)?.name || slug;
   const chips = [
     ...f.category.map(v => ({ v: catName(v), remove: () => set({ category: f.category.filter(x => x !== v) }) })),
+    ...f.material.map(v => ({ v, remove: () => set({ material: f.material.filter(x => x !== v) }) })),
     ...f.size.map(v => ({ v: `Size ${v}`, remove: () => set({ size: f.size.filter(x => x !== v) }) })),
     ...f.color.map(v => ({ v, remove: () => set({ color: f.color.filter(x => x !== v) }) })),
   ];

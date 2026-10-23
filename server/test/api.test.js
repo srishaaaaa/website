@@ -41,11 +41,12 @@ after(async () => { server.close(); await db.close() });
 test('catalog: filters, sort, pagination and facets come from the database', async () => {
   const c = client();
   const all = await c('GET', '/products?limit=48&facets=1');
-  assert.equal(all.body.total, 9); assert.ok(all.body.facets.categories.length >= 5);
+  assert.ok(all.body.total >= 45, 'full sample catalogue is seeded'); assert.ok(all.body.facets.materials.includes('Kanjivaram silk')); assert.ok(all.body.facets.categories.length >= 5);
   const sarees = await c('GET', '/products?category=sarees');
-  assert.deepEqual(sarees.body.items.map(p => p.category_slug), ['sarees', 'sarees']);
+  assert.ok(sarees.body.items.length >= 2 && sarees.body.items.every(p => p.category_slug === 'sarees'));
+  const silk = (await c('GET', '/products?material=Kanjivaram%20silk&limit=48')).body; assert.ok(silk.total >= 2 && silk.items.every(p => p.material === 'Kanjivaram silk'));
   const cheap = await c('GET', '/products?sort=price-asc&limit=3');
-  assert.ok(cheap.body.items[0].price <= cheap.body.items[1].price); assert.equal(cheap.body.pages, 3);
+  assert.ok(cheap.body.items[0].price <= cheap.body.items[1].price); assert.equal(cheap.body.pages, Math.ceil(cheap.body.total / 3));
   const inStock = await c('GET', '/products?stock=1&limit=48');
   assert.ok(!inStock.body.items.some(p => p.slug === 'onyx-anarkali-kurta'), 'sold-out product excluded');
   const sizeL = await c('GET', '/products?size=L&category=kurtas');
@@ -168,4 +169,30 @@ test('catalog exposes a direct-add variant only for single-variant pieces; revie
   assert.equal(multi.single_variant, null);
   const r = (await c('GET', '/reviews?limit=1&page=1')).body;
   assert.equal(r.items.length, 1); assert.equal(r.hasMore, false);
+});
+
+test('collections: trending and bridal sarees exist; sample reviews are flagged, labelled and switchable', async () => {
+  const c = client();
+  const cols = (await c('GET', '/collections')).body.map(x => x.slug);
+  assert.ok(cols.includes('trending-sarees') && cols.includes('bridal-silk-sarees'));
+  assert.ok((await c('GET', '/products?collection=bridal-silk-sarees&limit=48')).body.total >= 3);
+  assert.ok((await c('GET', '/products?category=couple-combos')).body.total >= 5 && (await c('GET', '/products?category=lehengas')).body.total >= 5);
+  const { seedDemoReviews } = await import('../db/seed.js');
+  await seedDemoReviews(db, () => {}); // also switches the flag on
+  const on = (await c('GET', '/reviews?limit=24')).body;
+  assert.ok(on.count >= 10 && on.items.some(i => i.demo === true && i.verified === false), 'sample reviews are labelled, never "verified"');
+  const staff = client(); await staff('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  assert.equal((await staff('PUT', '/admin/settings/flags', { demoReviews: false })).status, 200);
+  const off = (await c('GET', '/reviews?limit=24')).body;
+  assert.ok(off.items.every(i => !i.demo), 'switching the flag off hides every sample review');
+});
+
+test('store location: exact coordinates drive the map pin and directions', async () => {
+  const staff = client(); await staff('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const put = await staff('PUT', '/admin/settings/store', { name: 'DHANYA', address: ['Dhanyas Boutique', 'Kumbakonam'], location: { lat: 10.955736, lng: 79.3927131 }, mapsUrl: 'https://maps.app.goo.gl/w29JhPYvqcJgynb56' });
+  assert.equal(put.status, 200);
+  const { map } = (await client()('GET', '/store')).body;
+  assert.match(map.embedUrl, /10\.955736%2C79\.3927131/); assert.match(map.directionsUrl, /destination=10\.955736%2C79\.3927131/);
+  assert.equal(map.placeUrl, 'https://maps.app.goo.gl/w29JhPYvqcJgynb56');
+  assert.equal((await staff('PUT', '/admin/settings/store', { name: 'DHANYA', location: { lat: 999, lng: 0 } })).status, 400, 'impossible coordinates rejected');
 });

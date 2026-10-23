@@ -170,7 +170,7 @@ input, select, textarea { font: inherit; color: inherit }
 .mobile-menu { position: fixed; inset: 0; z-index: 140; background: radial-gradient(120% 80% at 50% 0%, #2b1733, var(--ob)); display: flex; flex-direction: column; padding: 14px var(--pad) calc(24px + env(safe-area-inset-bottom)); overflow: auto }
 .mm-top { display: flex; align-items: center; justify-content: space-between }
 .mobile-menu nav { margin: 8vh 0 4vh }
-.mm-link { display: block; font-size: clamp(44px, 13vw, 76px); line-height: 1.12; font-weight: 300 }
+.mm-link { display: block; font-size: clamp(44px, 13vw, 76px); line-height: 1.12; font-weight: 800 }
 .mm-cats { display: flex; flex-wrap: wrap; gap: 8px }
 .mm-foot { margin-top: auto; padding-top: 28px; display: grid; gap: 10px }
 
@@ -186,7 +186,7 @@ input, select, textarea { font: inherit; color: inherit }
 .intro-center { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 22px; padding: 24px }
 .intro-emblem { color: var(--gold) }
 .intro-k { color: var(--gold); font-size: clamp(11px, 1.4vw, 14px); font-weight: 500 }
-.intro-h { font-size: clamp(36px, 7vw, 100px); line-height: .98; font-weight: 300; letter-spacing: .02em }
+.intro-h { font-size: clamp(36px, 7vw, 100px); line-height: .98; font-weight: 800; letter-spacing: .02em }
 .enter-btn { position: relative; margin-top: 10px; padding: 20px 64px; border-radius: 999px; overflow: hidden; letter-spacing: .5em; font-size: 12px; font-weight: 500; color: var(--ivory); border: 1px solid rgba(245, 240, 232, .35); background: linear-gradient(115deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .03) 38%, rgba(198, 164, 106, .3) 62%, rgba(255, 255, 255, .1)); backdrop-filter: blur(10px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 8px 40px rgba(198, 164, 106, .22); transition: transform .5s var(--ease), box-shadow .5s }
 .enter-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(150px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .6), transparent 60%); opacity: 0; transition: opacity .35s }
 .enter-btn:hover::before, .enter-btn:focus-visible::before { opacity: .75 }
@@ -199,7 +199,7 @@ input, select, textarea { font: inherit; color: inherit }
 /* ============ home ============ */
 .hero { position: relative; height: 100svh; min-height: 620px; overflow: hidden; background: var(--ob) }
 .hero-copy { position: absolute; z-index: 3; left: var(--pad); bottom: clamp(70px, 14vh, 150px); max-width: min(1200px, 92vw) }
-.hero-h { font-size: clamp(42px, 7.4vw, 124px); line-height: .9; font-weight: 300; margin: .18em 0 .28em; perspective: 900px }
+.hero-h { font-size: clamp(42px, 7.4vw, 124px); line-height: .9; font-weight: 800; margin: .18em 0 .28em; perspective: 900px }
 .hero-h span { display: block; transform-origin: 50% 100% }
 .hero-sub { max-width: 36ch; font-size: clamp(14px, 1.3vw, 17px); opacity: .78; margin-bottom: 30px }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 14px }
@@ -208,7 +208,7 @@ input, select, textarea { font: inherit; color: inherit }
 @keyframes cue { 0% { transform: translateY(-100%) } 100% { transform: translateY(260%) } }
 .portal { position: relative; height: 100svh; background: var(--ob); overflow: hidden }
 .portal-head { position: absolute; z-index: 2; top: clamp(70px, 11vh, 120px); left: var(--pad) }
-.portal-head h2 { font-size: clamp(34px, 4.5vw, 64px); font-weight: 300 }
+.portal-head h2 { font-size: clamp(34px, 4.5vw, 64px); font-weight: 800 }
 .portal-track { display: flex; gap: 2.5vw; height: 100%; padding: clamp(160px, 26vh, 260px) var(--pad) 6vh; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none }
 .portal-track::-webkit-scrollbar { display: none }
 .portal-track.pinned { overflow: visible; scroll-snap-type: none; width: max-content }
@@ -219,21 +219,21 @@ input, select, textarea { font: inherit; color: inherit }
 .panel-txt p { opacity: .6; font-size: 14px }
 .ivory-sec { padding: clamp(80px, 12vw, 180px) 0 }
 .sec-head { padding: 0 var(--pad); margin-bottom: clamp(36px, 6vw, 90px); max-width: 900px }
-.sec-head h2 { font-size: clamp(36px, 5.2vw, 78px); line-height: 1; font-weight: 300; margin-top: 12px }
+.sec-head h2 { font-size: clamp(36px, 5.2vw, 78px); line-height: 1; font-weight: 800; margin-top: 12px }
 .edit-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(16px, 3vw, 48px); padding: 0 var(--pad); align-items: start; margin-bottom: 70px }
 .edit-item.e0 { grid-column: 1 / 6 } .edit-item.e1 { grid-column: 6 / 10; margin-top: 16vh } .edit-item.e2 { grid-column: 10 / 13; margin-top: 5vh }
 .edit-item.e3 { grid-column: 2 / 6 } .edit-item.e4 { grid-column: 7 / 11; margin-top: 10vh }
 .fabric { position: relative; height: 100svh; min-height: 560px; background: #1a0f1e; overflow: hidden }
 .fabric-copy { position: absolute; z-index: 2; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px; pointer-events: none; mix-blend-mode: normal }
-.fabric-h { font-family: var(--serif); font-weight: 300; font-size: clamp(54px, 11vw, 190px); line-height: .88; letter-spacing: .02em; text-shadow: 0 6px 50px rgba(9, 9, 13, .55) }
+.fabric-h { font-family: var(--serif); font-weight: 800; font-size: clamp(54px, 11vw, 190px); line-height: .88; letter-spacing: .02em; text-shadow: 0 6px 50px rgba(9, 9, 13, .55) }
 .story { background: var(--ob); padding: clamp(100px, 16vw, 220px) var(--pad); display: grid; gap: 40px; justify-items: start }
-.story-lines p { font-size: clamp(30px, 5.4vw, 84px); line-height: 1.08; font-weight: 300; max-width: 20ch; margin-bottom: .35em }
+.story-lines p { font-size: clamp(30px, 5.4vw, 84px); line-height: 1.08; font-weight: 800; max-width: 20ch; margin-bottom: .35em }
 .story-lines p:last-child { color: var(--gold); font-style: italic; max-width: 26ch }
 .story-words { display: flex; flex-wrap: wrap; gap: 10px 34px; font-size: 12px; letter-spacing: .34em; text-transform: uppercase; opacity: .9 }
 .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; padding: 0 var(--pad) }
 .details-grid img { width: 100%; aspect-ratio: 1; object-fit: cover }
 .final { position: relative; min-height: 100svh; display: grid; place-content: center; justify-items: center; gap: 36px; text-align: center; padding: 120px var(--pad); overflow: hidden; background: #211426 }
-.final-h { font-family: var(--serif); font-weight: 300; font-size: clamp(42px, 8vw, 130px); line-height: .95; position: relative; z-index: 1 }
+.final-h { font-family: var(--serif); font-weight: 800; font-size: clamp(42px, 8vw, 130px); line-height: .95; position: relative; z-index: 1 }
 .final .btn { position: relative; z-index: 1 }
 .final-arch { position: absolute; inset: 0; display: grid; place-items: center }
 .final-arch i { position: absolute; width: min(60vw, 520px); aspect-ratio: 3/4.6; border: 1px solid var(--line); border-radius: 999px 999px 0 0 }
@@ -275,7 +275,7 @@ input, select, textarea { font: inherit; color: inherit }
 .cat-hero.with-banner { min-height: 46vh; display: flex; align-items: flex-end; color: var(--ivory); padding-bottom: 50px; --ink: #F5F0E8 }
 .cat-banner { position: absolute; inset: 0 } .cat-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(9, 9, 13, .78), rgba(9, 9, 13, .1) 70%) }
 .cat-hero-in { position: relative; display: grid; gap: 10px }
-.cat-hero h1 { font-size: clamp(44px, 7vw, 110px); line-height: .95; font-weight: 300 }
+.cat-hero h1 { font-size: clamp(44px, 7vw, 110px); line-height: .95; font-weight: 800 }
 .cat-intro { max-width: 46ch; opacity: .8 }
 .toolbar { position: sticky; top: 64px; z-index: 20; display: flex; align-items: center; gap: 18px; padding: 12px var(--pad); background: rgba(245, 240, 232, .88); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(9, 9, 13, .1) }
 .toolbar .btn { padding: 11px 22px }
@@ -307,13 +307,13 @@ input, select, textarea { font: inherit; color: inherit }
 .acc { border-top: 1px solid rgba(9, 9, 13, .18); padding: 18px 0 } .acc:last-of-type { border-bottom: 1px solid rgba(9, 9, 13, .18) }
 .acc summary { cursor: pointer; letter-spacing: .24em; font-size: 12px; text-transform: uppercase; list-style: none; display: flex; justify-content: space-between } .acc summary::after { content: '+' } .acc[open] summary::after { content: '–' } .acc summary::-webkit-details-marker { display: none }
 .acc div { padding-top: 12px; opacity: .8 }
-.related { padding: 100px 0 0 } .related h2 { padding: 0 var(--pad); font-size: clamp(32px, 4vw, 56px); font-weight: 300 }
+.related { padding: 100px 0 0 } .related h2 { padding: 0 var(--pad); font-size: clamp(32px, 4vw, 56px); font-weight: 800 }
 .sticky-buy { display: none }
 .skeleton-pdp { display: grid; grid-template-columns: 1.3fr 1fr; gap: 5vw }
 
 /* ============ cart / checkout / auth / account / about ============ */
 .cart-page, .checkout, .account, .auth { padding: 130px var(--pad) 90px; min-height: 100vh }
-.cart-page h1, .checkout h1, .account h1, .auth h1 { font-size: clamp(40px, 5vw, 76px); font-weight: 300; margin-bottom: 20px }
+.cart-page h1, .checkout h1, .account h1, .auth h1 { font-size: clamp(40px, 5vw, 76px); font-weight: 800; margin-bottom: 20px }
 .cart-cols, .checkout { display: grid; grid-template-columns: 1.4fr 1fr; gap: clamp(30px, 5vw, 80px); align-items: start }
 .checkout form { max-width: 560px }
 .summary { display: grid; gap: 14px; padding: 28px; border: 1px solid rgba(9, 9, 13, .16); position: sticky; top: 100px }
@@ -322,7 +322,7 @@ input, select, textarea { font: inherit; color: inherit }
 .tbl th { text-align: left; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; opacity: .6; font-weight: 500 }
 .tbl th, .tbl td { padding: 14px 10px; border-bottom: 1px solid rgba(9, 9, 13, .14) } .tbl .r { text-align: right }
 .about-hero { min-height: 80svh; display: grid; place-content: center; justify-items: center; gap: 24px; text-align: center; padding: 140px var(--pad) 80px; background: radial-gradient(70% 60% at 50% 40%, #33193d, var(--ob)) }
-.about-hero h1 { font-size: clamp(34px, 6vw, 92px); line-height: 1; font-weight: 300; max-width: 18ch }
+.about-hero h1 { font-size: clamp(34px, 6vw, 92px); line-height: 1; font-weight: 800; max-width: 18ch }
 .about-body { padding: clamp(70px, 10vw, 140px) var(--pad); display: grid; gap: 34px; justify-items: start }
 .about-body .lead { font-size: clamp(28px, 4vw, 56px); line-height: 1.1; max-width: 24ch }
 .traits { display: flex; flex-wrap: wrap; gap: 10px 36px; letter-spacing: .3em; text-transform: uppercase; font-size: 12px }
@@ -371,7 +371,7 @@ code { font-family: ui-monospace, monospace; font-size: .9em; background: rgba(9
 .stars { display: inline-flex; gap: 2px; color: #d9a441 }
 .reviews { padding-bottom: clamp(60px, 8vw, 120px) }
 .rev-head, .insta-head { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 0 var(--pad); margin-bottom: clamp(30px, 4vw, 60px) }
-.rev-head h2, .insta-head h2, .studio-info h2 { font-size: clamp(38px, 6vw, 92px); line-height: 1; font-weight: 300 }
+.rev-head h2, .insta-head h2, .studio-info h2 { font-size: clamp(38px, 6vw, 92px); line-height: 1; font-weight: 800 }
 .rev-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; align-items: center }
 .rev-pill { display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; background: #fff; border-radius: 999px; box-shadow: 0 4px 24px rgba(9, 9, 13, .06); font-size: 13px; letter-spacing: .06em; flex-wrap: wrap; justify-content: center }
 .rev-empty { margin-bottom: 20px }
