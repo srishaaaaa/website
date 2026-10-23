@@ -1,0 +1,23 @@
+{
+  "name": "dhanya-server",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file=../.env index.js",
+    "start": "node --env-file=../.env index.js",
+    "migrate": "node --env-file=../.env db/cli.js migrate",
+    "seed": "node --env-file=../.env db/cli.js seed",
+    "test": "node --test test/api.test.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.11",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0",
+    "zod": "^3.23.8"
+  }
+}
