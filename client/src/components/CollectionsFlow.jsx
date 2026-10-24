@@ -59,7 +59,7 @@ export default function CollectionsFlow() {
         <div className="cf-track" ref={track} role="list" aria-label="Collections">
           {cols.map((c, i) => (
             <Link key={c.slug} to={`/collections/${c.slug}`} role="listitem" className="cf-card" data-cursor="EXPLORE" aria-label={`${c.name}, ${c.product_count} pieces`}>
-              <span className="cf-img"><ProductMedia p={{ slug: c.cover?.slug || c.slug, name: c.name, image: c.hero_image || c.cover?.image, image_pos: c.hero_pos }} view={i % 4} /></span>
+              <span className="cf-img"><ProductMedia p={{ slug: c.cover?.slug || c.slug, name: c.name, image: c.hero_image || c.cover?.image, image_pos: c.hero_pos }} view={i % 4} eager /></span>
               <span className="cf-shade" aria-hidden="true" />
               <span className="cf-txt">
                 <span className="eyebrow">{String(i + 1).padStart(2, '0')} · {c.product_count} {c.product_count === 1 ? 'piece' : 'pieces'}</span>

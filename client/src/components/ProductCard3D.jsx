@@ -12,8 +12,8 @@ function Photo({ className = '', style, ...rest }) {
   return <img {...rest} className={`${className} ${ok ? 'is-in' : ''}`} style={style} onLoad={() => setOk(true)} ref={el => { if (el && el.complete && el.naturalWidth && !ok) setOk(true) }} />;
 }
 
-export function ProductMedia({ p, view = 0, className = '', priority = false }) {
-  const load = priority ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: 'lazy', decoding: 'async' };
+export function ProductMedia({ p, view = 0, className = '', priority = false, eager = false }) {
+  const load = priority ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: eager ? 'eager' : 'lazy', decoding: 'async' };
   if (p.image) {
     if (view === 1 && p.image2) return <Photo className={`media ${className}`} src={p.image2} alt="" {...load} />;
     // A real photo is always shown whole: the old zoomed/shifted "views" only suit the generated artwork below.

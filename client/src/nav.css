@@ -128,3 +128,4 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
   .bh-tile a { height: 100%; grid-template-rows: minmax(0, 1fr) auto auto }
   .bh-tile-img { aspect-ratio: auto; min-height: 0 }
 }
+.cf-img { background: #ecdfca }
