@@ -47,11 +47,8 @@ Portal intro, 3D hero, scroll choreography, mega-menu, live search, catalog, PDP
 - Beige x red identity, Playfair Display serif + Archivo, layered hero (ivory panel, overlapping model photo, textile inset, "For you" panel), looping ticker, tabbed saree catalogue with search, editorial band, retail/wholesale enquiries + contact, three reel slots, Shop Story, live map, footer.
 - **Photos you add** (Admin → Storefront images): hero model (transparent PNG best), textile close-up, editorial photo, Our Story photo, category/collection covers, reels. Until added, those frames stay blank by design.
 - **Enquiries** are stored in the database (Admin → Enquiries) and can be answered by phone/WhatsApp. WhatsApp links are built from the phone number in Store settings.
-- **Sample data**: demo products, reviews and enquiries are flagged . Delete them one by one (Products & images, Review moderation, Enquiries) or all at once at Admin → Sample data. Real data is never touched.  re-creates the sample data; use > seed
-> npm run seed --prefix server --admin-only
-
-> seed
-> node --env-file=../.env db/cli.js seed
+- **Sample data**: demo products, reviews and enquiries are flagged `sample`. Delete them one by one (Products & images, Review moderation, Enquiries) or all at once at Admin → Sample data. Real data is never touched.
+  - `npm run seed` re-creates the sample data (it is idempotent, so run it only on a fresh database). To create only the owner account and the structure, with no demo data, run `npm run seed -- --admin-only` from inside the `server` folder.
 
 Seeded (idempotent). Sample products are placeholders — replace with real inventory and images.
 Sample reviews added (flagged as samples).
