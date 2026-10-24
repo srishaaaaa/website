@@ -63,6 +63,32 @@ test('CDN caching: public catalogue reads are cacheable, personal and admin resp
     const r = await c('GET', path, undefined, true);
     assert.doesNotMatch(r.headers['cache-control'] ?? '', /s-maxage/, path + ' must not be edge-cached');
   }
+  const fresh = await c('GET', '/store?_=123', undefined, true);
+  assert.equal(fresh.headers['cache-control'], 'no-store', 'a request asking for fresh data is never cached');
   const post = await c('POST', '/newsletter', { email: 'cache@test.dev' }, true);
   assert.doesNotMatch(post.headers['cache-control'] ?? '', /s-maxage/, 'writes are never cached');
+});
+
+test('cover positions: staff set the visible part of category / collection covers and storefront photos; the site receives them', async () => {
+  const o = client(); await o('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const cat = (await o('GET', '/admin/categories')).body[0];
+  assert.ok('pos' in cat && 'fallback' in cat, 'admin list shows the position and the product photo being used');
+  assert.equal((await o('PUT', `/admin/categories/${cat.id}/focus`, { pos: '40% 12%' })).status, 200);
+  assert.equal((await o('PUT', `/admin/categories/${cat.id}/focus`, { pos: 'top' })).status, 400);
+  assert.equal((await o('PUT', '/admin/categories/99999999/focus', { pos: '1% 1%' })).status, 404);
+  assert.equal((await o('GET', '/categories')).body.find(c => c.id === cat.id).image_pos, '40% 12%');
+  assert.equal((await o('PUT', `/admin/categories/${cat.id}/focus`, { pos: null })).status, 200);
+  assert.equal((await o('GET', '/categories')).body.find(c => c.id === cat.id).image_pos, null);
+
+  const col = (await o('GET', '/admin/collections')).body[0];
+  assert.equal((await o('PUT', `/admin/collections/${col.id}/focus`, { pos: '55% 30%' })).status, 200);
+  assert.equal((await o('GET', '/admin/collections')).body.find(c => c.id === col.id).pos, '55% 30%');
+  assert.equal((await o('GET', '/collections')).body.find(c => c.id === col.id)?.hero_pos ?? '55% 30%', '55% 30%');
+
+  const cur = (await o('GET', '/store')).body.branding;
+  assert.equal((await o('PUT', '/admin/settings/branding', { ...cur, textilePos: '30% 70%', editorialPos: '50% 20%', storyPos: '12% 60%' })).status, 200);
+  const b = (await o('GET', '/store')).body.branding; assert.deepEqual([b.textilePos, b.editorialPos, b.storyPos], ['30% 70%', '50% 20%', '12% 60%']);
+  assert.equal((await o('PUT', '/admin/settings/branding', { ...cur, storyPos: 'left' })).status, 400);
+  const shopper = client(); await shopper('POST', '/auth/register', { email: 'cover-shopper@test.dev', password: 'Password123!' });
+  assert.equal((await shopper('PUT', `/admin/categories/${cat.id}/focus`, { pos: '1% 1%' })).status, 403);
 });

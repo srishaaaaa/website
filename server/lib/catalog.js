@@ -84,13 +84,13 @@ export async function productBySlug(q, slug) {
 }
 
 export const listCategories = (q) => rows(q, `
-  SELECT c.id, c.name, c.slug, c.description, c.image_url,
+  SELECT c.id, c.name, c.slug, c.description, c.image_url, c.image_pos,
          (SELECT image_url FROM product_images i JOIN products p ON p.id = i.product_id WHERE p.category_id = c.id AND p.status = 'active' ORDER BY p.featured DESC, i.display_order, i.id LIMIT 1) AS cover_image,
          (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id AND p.status = 'active') AS product_count
   FROM categories c WHERE c.active ORDER BY c.display_order, c.name`);
 
 export const listCollections = (q) => rows(q, `
-  SELECT col.id, col.name, col.slug, col.description, col.hero_image,
+  SELECT col.id, col.name, col.slug, col.description, col.hero_image, col.hero_pos,
          (SELECT COUNT(*)::int FROM collection_products cp JOIN products p ON p.id = cp.product_id WHERE cp.collection_id = col.id AND p.status = 'active') AS product_count,
          (SELECT json_build_object('slug', p.slug, 'name', p.name, 'image', (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1))
             FROM collection_products cp JOIN products p ON p.id = cp.product_id

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
 import { useApp } from '../context/App';
 import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import LogoCard from '../components/LogoCard';
-import { DEFAULT_LOGO } from '../components/Wordmark';
 import PosInventory from './PosInventory';
+import { AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
+import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
 
 // Dhanya POS: the in-store billing module of the admin. Everything the screen shows comes from the API; prices, stock,
@@ -20,7 +21,7 @@ const k = p => p >= 10000000 ? `₹${(p / 10000000).toFixed(1).replace(/\.0$/, '
 const MODES = [['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']];
 const MODE_LABEL = { cash: 'Cash', upi: 'GPay / UPI', card: 'Card', split: 'Split' };
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `k-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-const TABS = { billing: false, analytics: true, orders: false, inventory: true, customers: false, coupons: true, birthdays: true, expenses: true, settings: true, 'ws-billing': false, 'ws-inventory': false, 'ws-analytics': true };
+const TABS = { billing: false, analytics: true, advance: false, orders: false, inventory: true, customers: false, coupons: true, birthdays: true, expenses: true, settings: true, 'ws-billing': false, 'ws-inventory': false, 'ws-analytics': true };
 
 // ---- live preview of the bill (the server recomputes everything on checkout) ----
 function preview(lines, { isGst, gstRate, discountType, discountValue, deliveryFee }) {
@@ -34,72 +35,14 @@ function preview(lines, { isGst, gstRate, discountType, discountValue, deliveryF
 const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{children}</p> : null;
 const Empty = ({ children }) => <p className="dpos-empty">{children}</p>;
 
-// ============================ invoice ============================
-function Invoice({ sale, shop, onClose, onChanged, manager }) {
-  const [s, setS] = useState(sale); const [err, setErr] = useState(); const [busy, setBusy] = useState(false);
-  const showGst = shop?.gstin && shop.showGst?.[s.channel];
-  const print = () => {
-    document.body.classList.add('dpos-printing');
-    const done = () => { document.body.classList.remove('dpos-printing'); window.removeEventListener('afterprint', done) };
-    window.addEventListener('afterprint', done); window.print();
-  };
-  useEffect(() => () => document.body.classList.remove('dpos-printing'), []);
-  const voidIt = async () => {
-    const reason = window.prompt('Reason for voiding this invoice? Stock will be returned.'); if (!reason) return;
-    setBusy(true); setErr();
-    try { setS(await api(`/admin/pos/sales/${s.invoiceNo}/void`, { method: 'POST', body: { reason } })); onChanged?.() } catch (e) { setErr(e.message) } finally { setBusy(false) }
-  };
-  return (
-    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label={`Invoice ${s.invoiceNo}`} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="dpos-sheet">
-        <div className="dpos-invoice">
-          <img className="dpos-inv-logo" src={shop?.logo || DEFAULT_LOGO} alt="" />
-          <h2>{shop?.name || 'DHANYA'}</h2>
-          <p className="c">{(shop?.address || []).join(', ')}{shop?.phone ? ` · ${shop.phone}` : ''}{showGst ? ` · GSTIN ${shop.gstin}` : ''}</p>
-          <p className="c"><b>{s.isGst ? 'TAX INVOICE' : 'BILL OF SUPPLY'}{s.channel === 'wholesale' ? ' · WHOLESALE' : ''}{s.source === 'online' ? ' · ONLINE ORDER' : ''}</b></p>
-          {s.status === 'voided' && <p className="dpos-void-stamp">VOID{s.voidReason ? ` · ${s.voidReason}` : ''}</p>}
-          <hr />
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-            <span><b>{s.invoiceNo}</b><br />{dmy(s.billDate)} · {new Date(s.createdAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', timeStyle: 'short' })}</span>
-            <span style={{ textAlign: 'right' }}>{s.customerName || 'Walk-in customer'}{s.customerPhone ? <><br />{s.customerPhone}</> : null}{s.customerAddress ? <><br /><span className="muted">{s.customerAddress}</span></> : null}{s.cashier ? <><br /><span className="muted">Billed by {s.cashier}</span></> : null}</span>
-          </div>
-          <table><thead><tr><th>Item</th><th className="r">Qty</th><th className="r">Price</th><th className="r">Amount</th></tr></thead>
-            <tbody>{s.items.map((i, n) => (
-              <tr key={n}><td>{i.name}{i.variant?.size ? <span className="muted"> ({i.variant.size}{i.variant.color && i.variant.color !== 'Default' ? `, ${i.variant.color}` : ''})</span> : null}{i.sku ? <div className="muted small">{i.sku}</div> : null}</td>
-                <td className="r">{i.quantity}</td><td className="r">{inr(i.unitPrice)}</td><td className="r">{inr(i.lineTotal)}</td></tr>))}</tbody></table>
-          <hr />
-          <div className="dpos-sum">
-            <div><span>Subtotal</span><span>{inr(s.subtotal)}</span></div>
-            {s.discount > 0 && <div><span>Discount{s.couponCode ? ` (${s.couponCode})` : s.discountType === 'percent' ? ` (${s.discountValue}%)` : ''}</span><span>− {inr(s.discount)}</span></div>}
-            {s.isGst && <div><span>GST{s.gstRate != null ? ` @ ${s.gstRate}%` : ''}</span><span>{inr(s.tax)}</span></div>}
-            {s.deliveryFee > 0 && <div><span>Delivery</span><span>{inr(s.deliveryFee)}</span></div>}
-            <div className="tot"><span>Total</span><span>{inr(s.total)}</span></div>
-          </div>
-          <hr />
-          <div className="dpos-sum">
-            <div><span>Payment</span><span>{MODE_LABEL[s.paymentMode]}{s.paymentRef ? ` · ${s.paymentRef}` : ''}</span></div>
-            {s.paymentMode === 'split' && <><div><span>Cash</span><span>{inr(s.payCash)}</span></div><div><span>UPI</span><span>{inr(s.payUpi)}</span></div><div><span>Card</span><span>{inr(s.payCard)}</span></div></>}
-            {s.paymentMode === 'cash' && s.change > 0 && <><div><span>Cash received</span><span>{inr(s.cashTendered)}</span></div><div><span>Change</span><span>{inr(s.change)}</span></div></>}
-          </div>
-          {s.notes && <p className="muted small">Note: {s.notes}</p>}
-          <p className="c">Thank you for shopping with us.</p>
-        </div>
-        <Err>{err}</Err>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-          <button className="dpos-btn" onClick={print}>Print</button>
-          {manager && s.status === 'completed' && <button className="dpos-btn danger" disabled={busy} onClick={voidIt}>Void invoice</button>}
-          <button className="dpos-btn ghost" onClick={onClose} style={{ marginLeft: 'auto' }}>Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const CheckI = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
+const ClockI = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>;
 
 // ============================ billing ============================
 const blankCustom = (service = false) => ({ key: uuid(), custom: true, service, name: '', priceStr: '', qty: 1, taxRate: 5 });
 const GST_RATES = [0, 5, 12, 18, 28];
 
-function Billing({ channel, shop, onSale }) {
+function Billing({ channel, shop, onSale, onAdvance }) {
   const ws = channel === 'wholesale';
   const [q, setQ] = useState(''); const [results, setResults] = useState(null); const [searching, setSearching] = useState(false);
   const [lines, setLines] = useState(ws ? [blankCustom()] : []);
@@ -112,7 +55,7 @@ function Billing({ channel, shop, onSale }) {
   const [mode, setMode] = useState('cash'); const [tendered, setTendered] = useState('');
   const [split, setSplit] = useState({ cash: '', upi: '', card: '' }); const [ref, setRef] = useState(''); const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
-  const key = useRef(null);
+  const key = useRef(null); const [advOpen, setAdvOpen] = useState(false);
 
   useEffect(() => { if (shop?.gstin && !gstTouched.current) setIsGst(true) }, [shop]);
   useEffect(() => { if (ws) api('/admin/pos/ws/items').then(setWsItems).catch(() => {}) }, [ws]);
@@ -182,6 +125,14 @@ function Billing({ channel, shop, onSale }) {
       onSale(sale); clearOrder();
       if (!ws) { setQ(''); api('/admin/pos/catalog').then(setResults).catch(() => {}) }
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
+  };
+
+  // Save as advance order: books the items at today's prices with a deposit; stock is taken and the bill is made when the customer collects.
+  const saveAdvance = async ({ deposit, depositMode, deliveryDate, notes: n }) => {
+    const note = [n, notes.trim()].filter(Boolean).join(' · ');
+    const adv = await api('/admin/pos/advances', { method: 'POST', body: { items: body.items, customerName: body.customerName, customerPhone: body.customerPhone, customerAddress: body.customerAddress,
+      isGst, ...(flat != null ? { gstRate: flat } : {}), discountType, discountValue, deliveryFee, deposit, depositMode, ...(deliveryDate ? { deliveryDate } : {}), ...(note ? { notes: note } : {}) } });
+    setAdvOpen(false); clearOrder(); onAdvance(adv);
   };
 
   const lineEls = lines.map(l => (
@@ -259,41 +210,43 @@ function Billing({ channel, shop, onSale }) {
               {coupon ? <button className="dpos-btn ghost sm" onClick={() => { setCoupon(null); setCouponMsg(); setCouponIn('') }}>Remove</button> : <button className="dpos-btn sm" disabled={!couponIn.trim()} onClick={applyCoupon}>Apply</button>}</div>
             {couponMsg && <p className={couponMsg.ok ? 'dpos-ok' : 'dpos-err'} style={{ marginTop: 8 }}>{couponMsg.t}</p>}
           </div>}
-          <div className="dpos-sum" style={{ marginBottom: 12 }}>
-            <div><span>Subtotal ({priced.reduce((s, l) => s + l.qty, 0)} items)</span><b>{inr(bill.subtotal)}</b></div>
-            <div style={{ alignItems: 'center' }}><span>Delivery</span><input aria-label="Delivery charge in rupees" inputMode="decimal" value={delivery} onChange={e => setDelivery(e.target.value)} placeholder="0" style={{ maxWidth: 130, textAlign: 'right' }} /></div>
-            {(shop?.deliveryPresets || []).length > 0 && <div style={{ alignItems: 'center' }}><span className="muted small">Quick pick</span><select aria-label="Delivery quick pick" value="" onChange={e => e.target.value !== '' && setDelivery(rupees(+e.target.value))} style={{ maxWidth: 200 }}><option value="">Choose…</option>{shop.deliveryPresets.map((p, i) => <option key={i} value={p.fee}>{p.name} · {inr(p.fee)}</option>)}</select></div>}
+          <label className="f" style={{ marginBottom: 16 }}>Note (optional)<input value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} placeholder="Shown on the bill" /></label>
+          <div className="dpos-ledger">
+            <div className="dpos-lrow"><span>Subtotal ({priced.reduce((t, l) => t + l.qty, 0)} items) <small className="dpos-excl">EXCL. GST</small></span><b>{inr(bill.subtotal)}</b></div>
+            {bill.discount > 0 && <div className="dpos-lrow"><span>Discount</span><span>− {inr(bill.discount)}</span></div>}
+            <div className="dpos-lrow"><span>Delivery</span><input aria-label="Delivery charge in rupees" inputMode="decimal" value={delivery} onChange={e => setDelivery(e.target.value)} placeholder="0" /></div>
+            {(shop?.deliveryPresets || []).length > 0 && <div className="dpos-lrow"><span className="muted small">Quick pick</span><select aria-label="Delivery quick pick" value="" onChange={e => e.target.value !== '' && setDelivery(rupees(+e.target.value))}><option value="">Choose…</option>{shop.deliveryPresets.map((p, i) => <option key={i} value={p.fee}>{p.name} · {inr(p.fee)}</option>)}</select></div>}
           </div>
           <div className="dpos-two" role="radiogroup" aria-label="Invoice type">
             <button role="radio" aria-checked={!isGst} className={!isGst ? 'on' : ''} onClick={() => { gstTouched.current = true; setIsGst(false) }}>Non-GST bill</button>
             <button role="radio" aria-checked={isGst} className={isGst ? 'on' : ''} onClick={() => { gstTouched.current = true; setIsGst(true) }}>GST invoice</button></div>
-          {isGst && <div style={{ marginTop: 10 }}><label className="f">GST rate<select value={gstRate} onChange={e => setGstRate(e.target.value)}><option value="item">Each item’s own GST rate</option>{GST_RATES.map(r => <option key={r} value={r}>{r}% on the whole bill</option>)}</select></label>
-            {shop?.gstin ? <p className="sub" style={{ marginTop: 6 }}>GSTIN {shop.gstin}{shop.showGst?.[channel] ? ' is printed on the invoice.' : ' is saved (turn on “show on invoices” in Delivery & GST to print it).'}</p> : <p className="sub" style={{ marginTop: 6 }}>Add your GSTIN in Delivery &amp; GST to print it on invoices.</p>}</div>}
-          <div className="dpos-sum" style={{ marginTop: 14 }}>
-            {bill.discount > 0 && <div><span>Discount</span><span>− {inr(bill.discount)}</span></div>}
-            {isGst && <div><span>GST{flat != null ? ` @ ${flat}%` : ''}</span><span>{inr(bill.tax)}</span></div>}
-            {deliveryFee > 0 && <div><span>Delivery</span><span>{inr(deliveryFee)}</span></div>}
-            <div className="tot"><span>Total</span><span>{inr(bill.total)}</span></div>
+          {isGst && <>
+            <div className="dpos-gstrow"><b>GST <small>(+ ADDED)</small></b>
+              <label className="dpos-pct"><input aria-label="GST percentage for the whole bill" inputMode="numeric" value={gstRate === 'item' ? '' : gstRate} placeholder="item" onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 2); setGstRate(v === '' ? 'item' : String(Math.min(28, +v))) }} /> %</label>
+              <b className="acc">{inr(bill.tax)}</b></div>
+            <p className="sub" style={{ margin: '6px 0 0' }}>{gstRate === 'item' ? 'Each item uses its own GST rate. Type a % to charge one rate on the whole bill.' : `${gstRate}% GST on the whole bill. Clear the box to use each item’s own rate.`}{shop?.gstin ? '' : ' Add your GSTIN in Delivery & GST to print it on invoices.'}</p></>}
+          <p className="dpos-flabel">FINANCIAL OPTION</p>
+          <div className="dpos-pills" role="radiogroup" aria-label="Payment method">{MODES.map(([v, l]) => <button key={v} role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l.replace('GPay / UPI', 'GPay')}</button>)}</div>
+          <hr className="dpos-hr" />
+          <div className="dpos-grand"><span>GRAND TOTAL</span><b>{inr(bill.total)}</b></div>
+          <div className="dpos-paybox" id="dpos-pay">
+            <p className="dpos-pl">{mode === 'upi' ? 'GPAY' : mode.toUpperCase()} PAYMENT</p>
+            {mode === 'cash' && <><label className="f">Amount Received (₹)<input className="bigin" inputMode="decimal" value={tendered} onChange={e => setTendered(e.target.value)} placeholder={bill.total ? rupees(bill.total) : '0.00'} /></label>
+              <p className="sub" style={{ marginTop: 8 }}>{tenderedP >= bill.total ? `Change to return: ${inr(tenderedP - bill.total)}` : `Short by ${inr(bill.total - tenderedP)}`}</p></>}
+            {mode === 'split' && <><div className="dpos-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>{['cash', 'upi', 'card'].map(m => <label className="f" key={m}>{m === 'upi' ? 'GPay' : MODE_LABEL[m]} ₹<input inputMode="decimal" value={split[m]} onChange={e => setSplit({ ...split, [m]: e.target.value })} placeholder="0" /></label>)}</div>
+              <p className="sub" style={{ marginTop: 8 }}>{splitSum === bill.total ? 'Split matches the total ✓' : `${splitSum > bill.total ? 'Over' : 'Short'} by ${inr(Math.abs(bill.total - splitSum))}`}</p></>}
+            {mode !== 'cash' && <label className="f" style={{ marginTop: mode === 'split' ? 12 : 0 }}>{mode === 'card' ? 'Slip / approval no.' : 'Transaction ID'} (optional)<input value={ref} onChange={e => setRef(e.target.value)} maxLength={80} /></label>}
           </div>
+          <p className="sub" style={{ margin: '8px 2px 14px' }}>GPay / UPI and card are confirmed by the cashier at the counter; no payment gateway is attached.</p>
+          <Err>{err}</Err>
+          {problem && priced.length > 0 && <p className="sub" role="status" style={{ marginBottom: 10 }}>{problem}</p>}
+          <button className="dpos-cta" disabled={!!problem || busy} onClick={submit}><CheckI /> {busy ? 'SAVING…' : 'COMPLETE SALE'}</button>
+          {!ws && <button className="dpos-cta amber" disabled={!priced.length || busy} onClick={() => setAdvOpen(true)}><ClockI /> SAVE AS ADVANCE ORDER</button>}
         </section>
-
-        <section className="dpos-card"><h2>Financial option</h2>
-          <div className="dpos-seg" role="radiogroup" aria-label="Payment method" style={{ marginBottom: 12 }}>{MODES.map(([v, l]) => <button key={v} role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l}</button>)}</div>
-          {mode === 'cash' && <>
-            <label className="f">Cash received ₹<input inputMode="decimal" value={tendered} onChange={e => setTendered(e.target.value)} placeholder={rupees(bill.total)} /></label>
-            <p className="sub" style={{ marginTop: 8 }}>{tenderedP >= bill.total ? `Change to return: ${inr(tenderedP - bill.total)}` : `Short by ${inr(bill.total - tenderedP)}`}</p></>}
-          {mode === 'split' && <>
-            <div className="dpos-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>{['cash', 'upi', 'card'].map(m => <label className="f" key={m}>{m === 'upi' ? 'GPay / UPI' : MODE_LABEL[m]} ₹<input inputMode="decimal" value={split[m]} onChange={e => setSplit({ ...split, [m]: e.target.value })} placeholder="0" /></label>)}</div>
-            <p className="sub" style={{ marginTop: 8 }}>{splitSum === bill.total ? 'Split matches the total ✓' : `${splitSum > bill.total ? 'Over' : 'Short'} by ${inr(Math.abs(bill.total - splitSum))}`}</p></>}
-          {(mode === 'upi' || mode === 'card' || mode === 'split') && <label className="f" style={{ marginTop: 12 }}>{mode === 'card' ? 'Card slip / approval no.' : 'UPI transaction ID'} (optional)<input value={ref} onChange={e => setRef(e.target.value)} maxLength={80} /></label>}
-          <p className="sub" style={{ marginTop: 10 }}>GPay / UPI and card are confirmed by the cashier at the counter; there is no payment gateway attached to Dhanya POS.</p>
-          <label className="f" style={{ marginTop: 12 }}>Note (optional)<input value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} /></label>
-        </section>
-
-        <Err>{err}</Err>
-        {problem && priced.length > 0 && <p className="sub" role="status">{problem}</p>}
-        <button className="dpos-btn big" disabled={!!problem || busy} onClick={submit}>{busy ? 'Saving…' : `Complete sale · ${inr(bill.total)}`}</button>
       </div>
+      <div className="dpos-mbar"><span>{priced.reduce((t, l) => t + l.qty, 0)} items<b>{inr(bill.total)}</b></span>
+        <button className="dpos-cta" onClick={() => document.getElementById('dpos-pay')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Review &amp; pay</button></div>
+      {advOpen && <AdvanceModal total={bill.total} onClose={() => setAdvOpen(false)} onSave={saveAdvance} />}
     </div>
   );
 }
@@ -305,7 +258,7 @@ function BillsTable({ rows, onOpen, empty = 'No bills found.' }) {
   return (
     <div className="dpos-tw"><table><thead><tr><th>Invoice</th><th>Bill date</th><th>Customer</th><th>Type</th><th>Payment</th><th className="r">Items</th><th className="r">Total</th></tr></thead>
       <tbody>{rows.map(r => (
-        <tr key={r.invoiceNo} className={`click ${r.status === 'voided' ? 'voided' : ''}`} tabIndex={0} onClick={() => onOpen(r.invoiceNo)} onKeyDown={e => e.key === 'Enter' && onOpen(r.invoiceNo)}>
+        <tr key={r.invoiceNo} className={`click ${r.status === 'voided' ? 'voided' : ''}`} tabIndex={0} onClick={() => onOpen(r.invoiceNo, r)} onKeyDown={e => e.key === 'Enter' && onOpen(r.invoiceNo, r)}>
           <td><b>{r.invoiceNo}</b>{r.status === 'voided' && <> <span className="dpos-pill bad">Void</span></>}</td><td>{dmy(r.billDate)}</td>
           <td>{r.customerName || <span className="muted">Walk-in</span>}{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
           <td><span className="dpos-pill">{r.isGst ? 'GST' : 'Non-GST'}</span> {r.source === 'online' && <span className="dpos-pill ok">Online</span>}</td>
@@ -313,30 +266,6 @@ function BillsTable({ rows, onOpen, empty = 'No bills found.' }) {
   );
 }
 const GST_CHIPS = [['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']];
-
-function Orders({ channel, openInvoice, tick, manager }) {
-  const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all'); const [gst, setGst] = useState('all');
-  const [rows, setRows] = useState(null); const [err, setErr] = useState();
-  const [from, to] = periodRange(per);
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const p = new URLSearchParams({ q, channel, gst }); if (manager) { p.set('from', from); p.set('to', to) }
-      api('/admin/pos/sales?' + p).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message));
-    }, 200);
-    return () => clearTimeout(t);
-  }, [q, from, to, gst, channel, tick, manager]);
-  return (
-    <section className="dpos-card">
-      <div className="dpos-bar-tools" style={{ marginBottom: 14 }}>
-        <input type="search" style={{ maxWidth: 320 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Invoice no., name or mobile" aria-label="Search bills" />
-        <Chips label="Bills" value={gst} onChange={setGst} options={GST_CHIPS} />
-        {manager && <PeriodFilter value={per} onChange={setPer} />}
-      </div>
-      {!manager && <p className="sub" style={{ marginBottom: 8 }}>Cashiers see today’s bills. Owners and admins can search the full history.</p>}
-      <Err>{err}</Err><BillsTable rows={rows} onOpen={openInvoice} />
-    </section>
-  );
-}
 
 // ============================ analytics ============================
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'], DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -409,8 +338,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
       {tab === 'products' && <section className="dpos-card"><h2>Product-wise sales</h2>
         {!rep ? <Empty>Loading…</Empty> : !rep.products.length ? <Empty>No sales in this period.</Empty> : <div className="dpos-tw"><table><thead><tr><th>#</th><th>Item</th><th className="r">Units</th><th className="r">Revenue</th></tr></thead><tbody>{rep.products.map((p, i) => <tr key={p.name}><td>{i + 1}</td><td>{p.name}</td><td className="r">{p.qty}</td><td className="r"><b>{inr(p.revenue)}</b></td></tr>)}</tbody></table></div>}</section>}
 
-      {tab === 'coupons' && <section className="dpos-card"><h2>Coupon usage</h2>
-        {!rep ? <Empty>Loading…</Empty> : !rep.coupons.length ? <Empty>No coupons were used in this period.</Empty> : <div className="dpos-tw"><table><thead><tr><th>Code</th><th className="r">Times used</th><th className="r">Discount given</th><th className="r">Sales with coupon</th></tr></thead><tbody>{rep.coupons.map(c => <tr key={c.code}><td><b>{c.code}</b></td><td className="r">{c.uses}</td><td className="r">{inr(c.discount)}</td><td className="r">{inr(c.revenue)}</td></tr>)}</tbody></table></div>}</section>}
+      {tab === 'coupons' && <CouponPanel rep={rep} openInvoice={openInvoice} />}
     </>
   );
 }
@@ -579,6 +507,10 @@ function Settings({ onSaved }) {
             <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}><input type="checkbox" checked={s.showGstRetail} onChange={e => setS({ ...s, showGstRetail: e.target.checked })} /><span><b>Show on retail invoices</b><br /><span className="muted small">POS bills</span></span></label>
             <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}><input type="checkbox" checked={s.showGstWholesale} onChange={e => setS({ ...s, showGstWholesale: e.target.checked })} /><span><b>Show on wholesale invoices</b><br /><span className="muted small">Wholesale billing bills</span></span></label>
           </div>
+          <div className="dpos-grid" style={{ marginTop: 14 }}>
+            <label className="f">State · place of supply (printed on invoices)<select value={s.state || 'Tamil Nadu (33)'} onChange={e => setS({ ...s, state: e.target.value })}>{STATES.map(x => <option key={x}>{x}</option>)}</select></label>
+          </div>
+          <label className="f" style={{ marginTop: 14 }}>Terms &amp; notes printed on the invoice (one point per line)<textarea rows={3} maxLength={600} value={s.terms || ''} onChange={e => setS({ ...s, terms: e.target.value })} placeholder="e.g. Custom-stitched and altered garments are made to order and are non-returnable." /></label>
           <p className="sub" style={{ marginTop: 12 }}>Invoice numbers run automatically: DP-YEAR-000001 for retail and DW-YEAR-000001 for wholesale.</p>
         </section>
         <section className="dpos-card"><h2><Icon n="truck" />Delivery &amp; packing quick picks</h2>
@@ -637,25 +569,30 @@ function WsInventory({ manager }) {
 export default function AdminPos() {
   const { user, authReady } = useApp();
   const { tab = 'billing' } = useParams();
-  const [shop, setShop] = useState(null); const [invoice, setInvoice] = useState(null); const [tick, setTick] = useState(0); const [err, setErr] = useState();
+  const nav = useNavigate();
+  const [shop, setShop] = useState(null); const [done, setDone] = useState(null); const [tick, setTick] = useState(0); const [err, setErr] = useState();
   const allowed = user && ['owner', 'admin', 'cashier'].includes(user.role);
   const manager = !!user && ['owner', 'admin'].includes(user.role);
   const stocker = !!user && ['owner', 'admin', 'inventory'].includes(user.role);
   const loadShop = useCallback(() => api('/admin/pos/shop').then(setShop).catch(e => setErr(e.message)), []);
   useEffect(() => { if (allowed) loadShop() }, [allowed, loadShop]);
-  const openInvoice = useCallback(no => api('/admin/pos/sales/' + encodeURIComponent(no)).then(setInvoice).catch(e => setErr(e.message)), []);
+  // The invoice is a page of its own (/invoice/<token>): print it, share it, copy its link.
+  const openInvoice = useCallback((no, row) => row?.shareToken ? nav('/invoice/' + row.shareToken) : api('/admin/pos/sales/' + encodeURIComponent(no)).then(x => nav('/invoice/' + x.shareToken)).catch(e => setErr(e.message)), [nav]);
 
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (!allowed) return <div className="empty page-pad"><p className="serif big">Staff access only.</p><Link className="btn dark" to="/">RETURN HOME</Link></div>;
   if (!(tab in TABS) || (TABS[tab] && !manager)) return <Navigate to="/admin/billing" replace />;
 
-  const onSale = sale => { setInvoice(sale); setTick(t => t + 1) };
+  const onSale = sale => { setDone(sale); setTick(t => t + 1) };
+  const onAdvance = () => { setTick(t => t + 1); nav('/admin/billing/advance') };
+  const onBilled = (sale, invoiceNo) => { setTick(t => t + 1); if (sale) setDone(sale); else if (invoiceNo) openInvoice(invoiceNo) };
   const goExpenses = () => { window.location.assign('/admin/billing/expenses') };
   const body = {
-    billing: <Billing channel="retail" shop={shop} onSale={onSale} />,
+    billing: <Billing channel="retail" shop={shop} onSale={onSale} onAdvance={onAdvance} />,
     analytics: <Analytics channel="retail" openInvoice={openInvoice} tick={tick} goExpenses={goExpenses} />,
-    orders: <Orders channel="retail" openInvoice={openInvoice} tick={tick} manager={manager} />,
+    advance: <AdvanceOrders manager={manager} tick={tick} onBilled={onBilled} />,
+    orders: <OrderHistory manager={manager} tick={tick} openInvoice={openInvoice} onChanged={() => setTick(t => t + 1)} />,
     inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <Coupons />, birthdays: <Birthdays shop={shop} />,
     expenses: <Expenses />, settings: <Settings onSaved={loadShop} />,
     'ws-billing': <Billing channel="wholesale" shop={shop} onSale={onSale} />,
@@ -663,18 +600,18 @@ export default function AdminPos() {
     'ws-analytics': <Analytics channel="wholesale" openInvoice={openInvoice} tick={tick} goExpenses={goExpenses} />,
   }[tab];
   const sub = {
-    billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'All bills — full store & channel insights', orders: 'Every retail bill, searchable',
+    billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'All bills — full store & channel insights', advance: 'Orders booked with a deposit, billed when the customer collects', orders: 'Manage and track past invoices',
     inventory: 'Manage products and stock — add, edit and adjust', customers: 'Customer details with date of birth', coupons: 'Discount codes for the till', birthdays: 'Customers to wish and reward',
     expenses: 'Money out, subtracted from net earnings', settings: 'Logo, GST number on invoices and delivery quick picks',
     'ws-billing': 'Wholesale invoice generator with GST', 'ws-inventory': 'Simple items — code, company/manufacturer, colour', 'ws-analytics': 'Performance of the wholesale billing centre',
   }[tab];
-  const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Orders', inventory: 'Inventory', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings',
+  const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings',
     'ws-billing': 'WS Billing', 'ws-inventory': 'Wholesale Inventory', 'ws-analytics': 'Wholesale Analytics' }[tab];
   return (
     <AdminShell title={title} sub={sub}>
       <Err>{err}</Err>
       {body}
-      {invoice && <Invoice key={invoice.invoiceNo} sale={invoice} shop={shop} manager={manager} onClose={() => setInvoice(null)} onChanged={() => setTick(t => t + 1)} />}
+      {done && <BillDone sale={done} shop={shop} onClose={() => setDone(null)} />}
     </AdminShell>
   );
 }

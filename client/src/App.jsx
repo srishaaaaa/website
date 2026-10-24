@@ -23,7 +23,7 @@ import { About, Journal, NotFound, Policy } from './pages/Static';
 const lazyEl = (load, name) => { const C = lazy(() => load().then(m => ({ default: name ? m[name] : m.default }))); return <Suspense fallback={<div className="page-pad"><p className="muted">Loading…</p></div>}><C /></Suspense> };
 const store = () => import('./pages/AdminStore'), media = () => import('./pages/AdminMedia'), more = () => import('./pages/AdminMore');
 const A = {
-  pos: lazyEl(() => import('./pages/AdminPos')),
+  pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
   categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
   products: lazyEl(media, 'AdminProducts'), storefront: lazyEl(media, 'AdminStorefront'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
@@ -32,6 +32,7 @@ const A = {
 export default function App() {
   const { entered, enter, setBagOpen, setSearchOpen, setMenuOpen, setQuick } = useApp();
   const location = useLocation();
+  const bare = location.pathname.startsWith('/invoice/'); // the invoice page is a clean document: no site header, footer, intro or overlays
 
   // Overlays never outlive a navigation.
   useEffect(() => { setBagOpen(false); setSearchOpen(false); setMenuOpen(false); setQuick(null) }, [location.pathname]); // eslint-disable-line
@@ -39,8 +40,8 @@ export default function App() {
   return (
     <>
       <a className="skip-link" href="#main">Skip to content</a>
-      <AnimatePresence>{!entered && <Intro key="intro" onDone={enter} />}</AnimatePresence>
-      <FloatingNavbar />
+      <AnimatePresence>{!entered && !bare && <Intro key="intro" onDone={enter} />}</AnimatePresence>
+      {!bare && <FloatingNavbar />}
       <PageTransition>
         <Routes location={location}>
           <Route path="/" element={<Home />} />
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/admin/storefront" element={A.storefront} />
           <Route path="/admin/enquiries" element={A.enquiries} />
           <Route path="/admin/sample" element={A.sample} />
+          <Route path="/invoice/:token" element={A.invoice} />
           <Route path="/admin/billing" element={A.pos} />
           <Route path="/admin/billing/:tab" element={A.pos} />
           <Route path="/about" element={<About />} />
@@ -75,8 +77,8 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </PageTransition>
-      <LuxuryFooter />
-      <CartDrawer /><SearchOverlay /><QuickView /><Toasts /><Cursor />
+      {!bare && <><LuxuryFooter />
+      <CartDrawer /><SearchOverlay /><QuickView /><Toasts /><Cursor /></>}
     </>
   );
 }

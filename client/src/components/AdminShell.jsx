@@ -2,6 +2,8 @@ import { Link, NavLink } from 'react-router-dom';
 import { useApp } from '../context/App';
 import '../pos.css';
 import '../pos2.css';
+import '../pos3.css';
+import '../invoice.css';
 
 // The admin layout (sidebar + "Dashboard" top bar + cards) shared by every admin page. Admin only: it is imported solely by
 // code-split admin pages, so public visitors never download this or pos.css.
@@ -32,6 +34,7 @@ const ICONS = {
   layers: <><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 13 9 5 9-5" /></>,
   eye: <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
   swap: <path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />,
+  clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   flask: <><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3" /></>,
 };
 export const Icon = ({ n, size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICONS[n]}</svg>;
@@ -39,7 +42,7 @@ export const Icon = ({ n, size = 18 }) => <svg width={size} height={size} viewBo
 // [path, label, icon, managerOnly]
 export const NAV = [
   { group: 'Retail billing', items: [
-    ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/orders', 'Orders', 'orders'],
+    ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/advance', 'Advance Orders', 'clock'], ['/admin/billing/orders', 'Order History', 'orders'],
     ['/admin/billing/inventory', 'Inventory', 'box', true], ['/admin/billing/customers', 'Customers', 'user'], ['/admin/billing/coupons', 'Coupons', 'tag', true],
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true], ['/admin/billing/settings', 'Delivery & GST', 'truck', true]] },
   { group: 'Wholesale', items: [['/admin/billing/ws-billing', 'WS Billing', 'doc'], ['/admin/billing/ws-inventory', 'WS Inventory', 'shop'], ['/admin/billing/ws-analytics', 'WS Analytics', 'trend', true]] },

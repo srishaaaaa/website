@@ -12,6 +12,7 @@ import settingsRoutes from './routes/settings.js';
 import { enquiryAdmin, enquiryRoutes } from './routes/enquiries.js';
 import sampleAdmin from './routes/sample.js';
 import posRoutes from './routes/pos.js';
+import invoicePublic from './routes/invoice.js';
 import { mediaAdmin, mediaPublic } from './routes/media.js';
 import { cartRoutes, wishlistRoutes, newsletterRoutes, reviewRoutes } from './routes/shopper.js';
 import { commerceRoutes, webhookRoute } from './routes/commerce.js';
@@ -32,7 +33,10 @@ export function createApp({ db, cfg, payments = createRazorpayProvider(cfg) }) {
   // Public, non-personal catalogue reads are cached at the CDN edge: after the first visitor, everyone gets them in milliseconds,
   // and a slightly stale copy is served instantly while a fresh one is fetched in the background. Nothing user-specific is listed here.
   const PUBLIC_READS = /^\/(store|categories|collections(\/[a-z0-9-]+)?|products(\/[a-z0-9-]+)?|reviews)$/;
-  app.use('/api', (req, res, next) => { if (req.method === 'GET' && PUBLIC_READS.test(req.path)) res.set('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=60'); next() });
+  app.use('/api', (req, res, next) => {
+    if (req.method === 'GET' && PUBLIC_READS.test(req.path)) res.set('Cache-Control', '_' in req.query ? 'no-store' : 'public, max-age=0, s-maxage=30, stale-while-revalidate=60'); // ?_= means "fresh please" (staff, or right after a change)
+    next();
+  });
 
   // Health + a quick configuration check (no secrets): shows which schema is read and whether the boutique location is set.
   app.get('/api/health', async (_req, res) => {
@@ -55,6 +59,7 @@ export function createApp({ db, cfg, payments = createRazorpayProvider(cfg) }) {
   app.use('/api/admin', enquiryAdmin(ctx));
   app.use('/api/admin', sampleAdmin(ctx));
   app.use('/api/admin', posRoutes(ctx));
+  app.use('/api', invoicePublic(ctx));
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Not found')));
   app.use(errorHandler());
   return app;

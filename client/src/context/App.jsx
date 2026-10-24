@@ -50,6 +50,8 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   useEffect(() => { api('/auth/me').then(d => setUser(d.user)).catch(() => {}).finally(() => setAuthReady(true)) }, []);
+  const staff = !!user && user.role !== 'customer';
+  useEffect(() => { window.__fresh = staff; if (staff) { loadSite(); loadCatalog() } }, [staff]); // eslint-disable-line react-hooks/exhaustive-deps
   const signIn = useCallback(u => setUser(u), []);
   const signOut = useCallback(async () => { await api('/auth/logout', { method: 'POST' }).catch(() => {}); setUser(null) }, []);
 

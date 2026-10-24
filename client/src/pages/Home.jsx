@@ -22,7 +22,7 @@ function Story() {
   return (
     <section className="story3" id="story" aria-labelledby="story-h">
       <Reveal className="story3-card">
-        <img className="story3-img" src={b.storyImage || media.storyImage} alt={b.storyAlt || media.storyAlt} loading="lazy" width="736" height="920" />
+        <img className="story3-img" style={b.storyPos ? { objectPosition: b.storyPos } : undefined} src={b.storyImage || media.storyImage} alt={b.storyAlt || media.storyAlt} loading="lazy" width="736" height="920" />
         <svg className="story3-arch" viewBox="0 0 400 520" fill="none" stroke="currentColor" strokeWidth="1.1" aria-hidden="true">
           <path d="M40 520V230c0-26 14-40 32-46 8-20 22-30 42-28 10-20 28-28 46-24 8-16 22-22 40-22s32 6 40 22c18-4 36 4 46 24 20-2 34 8 42 28 18 6 32 20 32 46v290" />
           <path d="M72 520V240c0-20 10-30 26-36 6-16 18-22 34-20 8-16 22-22 38-18 6-12 18-18 30-18s24 6 30 18c16-4 30 2 38 18 16-2 28 4 34 20 16 6 26 16 26 36v280" opacity=".55" />

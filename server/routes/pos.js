@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
-import { adjustStock, birthdays, couponProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
+import { adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const paise = z.number().int().min(0).max(100_000_000);
@@ -44,6 +44,8 @@ const settingsBody = z.object({
   showGstRetail: z.boolean().default(false),
   showGstWholesale: z.boolean().default(false),
   deliveryPresets: z.array(z.object({ name: text(60).min(1), fee: paise })).max(20).default([]),
+  state: text(60).default('Tamil Nadu (33)'),
+  terms: text(600).default('Custom-stitched and altered garments are made to order and are non-returnable.'),
 });
 const couponBody = z.object({
   code: text(40).regex(/^[A-Za-z0-9_-]{3,40}$/, 'Use 3-40 letters, digits, - or _'),
@@ -60,6 +62,13 @@ const colourBody = z.object({ color: text(40).min(1), price: paise.nullable().de
 const slugify = x => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const stockBody = z.object({ variantId: z.number().int().positive(), type: z.enum(['restock', 'return', 'loss', 'reconcile']), qty: z.number().int().min(0).max(1_000_000), note: text(100).optional() })
   .refine(b => b.type === 'reconcile' || b.qty >= 1, { message: 'Enter a quantity of at least 1', path: ['qty'] });
+const advanceBody = z.object({
+  items: z.array(item).min(1).max(100),
+  customerName: text(120).default(''), customerPhone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits').default(''), customerAddress: text(300).default(''),
+  isGst: z.boolean().default(false), gstRate: z.number().int().min(0).max(28).optional(),
+  discountType: z.enum(['percent', 'fixed']).default('fixed'), discountValue: paise.default(0), deliveryFee: paise.default(0),
+  deposit: paise, depositMode: z.enum(['cash', 'upi', 'card']).default('cash'), deliveryDate: date.nullable().optional(), notes: text(500).optional(),
+});
 const id = z.coerce.number().int().positive();
 
 const SETTINGS_DEFAULT = settingsBody.parse({});
@@ -73,16 +82,7 @@ export default function pos({ db, auth }) {
   const manager = auth.role('owner', 'admin');
   const stockers = auth.role('owner', 'admin', 'inventory');
 
-  r.get('/pos/shop', biller, wrap(async (_req, res) => {
-    const s = (await one(db, "SELECT value FROM store_settings WHERE key = 'store'"))?.value ?? {};
-    const logo = (await one(db, "SELECT value FROM store_settings WHERE key = 'branding'"))?.value?.logo ?? null;
-    const cfg = await getSetting(db, 'invoice', SETTINGS_DEFAULT);
-    res.json({
-      name: s.name || 'DHANYA', address: s.address ?? [], phone: s.phone ?? null, email: s.email ?? null, logo,
-      gstin: cfg.gstin || '', showGst: { retail: !!cfg.showGstRetail, wholesale: !!cfg.showGstWholesale },
-      deliveryPresets: cfg.deliveryPresets ?? [],
-    });
-  }));
+  r.get('/pos/shop', biller, wrap(async (_req, res) => res.json(await shopInfo(db))));
   r.get('/pos/settings', manager, wrap(async (_req, res) => res.json({ ...SETTINGS_DEFAULT, ...(await getSetting(db, 'invoice', {})) })));
   r.put('/pos/settings', manager, wrap(async (req, res) => {
     const v = settingsBody.parse(req.body);
@@ -102,7 +102,7 @@ export default function pos({ db, auth }) {
     res.status(sale.duplicate ? 200 : 201).json(sale);
   }));
   r.get('/pos/sales', biller, wrap(async (req, res) => {
-    const f = z.object({ q: text(80).default(''), from: date.optional(), to: date.optional(), channel, gst: gstFilter }).parse(req.query);
+    const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), source: z.enum(['all', 'offline', 'online']).default('all'), from: date.optional(), to: date.optional(), channel, gst: gstFilter }).parse(req.query);
     // Cashiers only see today's bills; owner/admin can search the full history.
     if (req.user.role === 'cashier') f.from = f.to = today();
     res.json(await listSales(db, f));
@@ -120,6 +120,24 @@ export default function pos({ db, auth }) {
     const { from, to, channel: ch, gst } = z.object({ from: date, to: date, channel, gst: gstFilter }).parse(req.query);
     if (from > to) throw new HttpError(400, 'From date is after To date');
     res.json(await report(db, from, to, ch, gst));
+  }));
+
+  // ---- advance orders (deposit now, bill on collection) ----
+  r.post('/pos/advances', biller, wrap(async (req, res) => res.status(201).json(await createAdvance(db, req.user, advanceBody.parse(req.body)))));
+  r.get('/pos/advances', biller, wrap(async (req, res) => res.json(await listAdvances(db, z.object({ status: z.enum(['all', 'pending', 'ready', 'completed', 'cancelled']).default('all'), q: text(80).default('') }).parse(req.query)))));
+  r.get('/pos/advances/:code', biller, wrap(async (req, res) => {
+    const a = await getAdvance(db, req.params.code);
+    if (!a) throw new HttpError(404, 'Advance order not found');
+    res.json(a);
+  }));
+  r.patch('/pos/advances/:code/status', biller, wrap(async (req, res) => {
+    const { status } = z.object({ status: z.enum(['pending', 'ready', 'cancelled']) }).parse(req.body);
+    if (status === 'cancelled' && !['owner', 'admin'].includes(req.user.role)) throw new HttpError(403, 'Only an owner or admin can cancel an advance order');
+    res.json(await setAdvanceStatus(db, req.user, req.params.code, status));
+  }));
+  r.post('/pos/advances/:code/finalize', biller, wrap(async (req, res) => {
+    const d = z.object({ balanceMode: z.enum(['cash', 'upi', 'card']).default('cash'), paymentRef: text(80).optional() }).parse(req.body);
+    res.json(await finalizeAdvance(db, req.user, req.params.code, d));
   }));
 
   // ---- coupons ----

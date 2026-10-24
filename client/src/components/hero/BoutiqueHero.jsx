@@ -69,7 +69,7 @@ export default function BoutiqueHero() {
           </div>
 
           <motion.figure className="bh-inset" {...anim(1)}>
-            <div className={`bh-inset-img ${site.status === 'loading' ? 'skel' : ''}`}>{b.textileImage ? <img src={b.textileImage} alt={b.textileAlt || 'Close-up of saree fabric and zari work'} loading="lazy" decoding="async" /> : site.status !== 'loading' && <BlankFrame label="Textile close-up" />}</div>
+            <div className={`bh-inset-img ${site.status === 'loading' ? 'skel' : ''}`}>{b.textileImage ? <img src={b.textileImage} alt={b.textileAlt || 'Close-up of saree fabric and zari work'} loading="lazy" decoding="async" style={b.textilePos ? { objectPosition: b.textilePos } : undefined} /> : site.status !== 'loading' && <BlankFrame label="Textile close-up" />}</div>
             <figcaption>CRAFTED ELEGANCE</figcaption>
           </motion.figure>
           </div>

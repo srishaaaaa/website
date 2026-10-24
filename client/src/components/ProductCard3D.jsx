@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import ProductArt from './ProductArt';
@@ -6,19 +6,10 @@ import { useApp } from '../context/App';
 import { useFinePointer, useReduced } from '../lib/hooks';
 import { inr } from '../lib/format';
 
-// A product photo is always shown whole. When its shape does not match the frame, the spare space is filled with a soft blurred copy of the
-// same photo (so there is never an empty band and never a cropped head). It fades in once loaded.
-function Photo({ className = '', style, src, alt, ...rest }) {
-  const [ok, setOk] = useState(false); const [pad, setPad] = useState(false); const el = useRef(null);
-  const check = () => { const i = el.current; if (!i || !i.naturalWidth || !i.clientHeight) return; const nr = i.naturalWidth / i.naturalHeight; setPad(Math.abs(i.clientWidth / i.clientHeight - nr) / nr > 0.03) };
-  useEffect(() => { const i = el.current; if (!i || typeof ResizeObserver === 'undefined') return; const ro = new ResizeObserver(check); ro.observe(i); return () => ro.disconnect() }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <>
-      {pad && <span className={`ph-blur ${ok ? 'is-in' : ''}`} style={{ backgroundImage: `url("${src}")` }} aria-hidden="true" />}
-      <img {...rest} src={src} alt={alt} className={`${className} ${ok ? 'is-in' : ''}`} style={style} onLoad={() => { setOk(true); check() }}
-        ref={r => { el.current = r; if (r && r.complete && r.naturalWidth) { if (!ok) setOk(true); check() } }} />
-    </>
-  );
+// A photo fades in once it has loaded (never a half-drawn image) and is framed on the focus point chosen in the admin.
+function Photo({ className = '', style, ...rest }) {
+  const [ok, setOk] = useState(false);
+  return <img {...rest} className={`${className} ${ok ? 'is-in' : ''}`} style={style} onLoad={() => setOk(true)} ref={el => { if (el && el.complete && el.naturalWidth && !ok) setOk(true) }} />;
 }
 
 export function ProductMedia({ p, view = 0, className = '', priority = false }) {

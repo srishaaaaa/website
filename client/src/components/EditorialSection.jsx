@@ -11,7 +11,7 @@ export default function EditorialSection() {
     <section className="ed" aria-labelledby="ed-h">
       <div className="ed-in">
         <Reveal className="ed-photo">
-          {b.editorialImage ? <img src={b.editorialImage} alt={b.editorialAlt || 'A saree draped in warm light'} loading="lazy" /> : <BlankFrame label="Editorial photo" className="tall" />}
+          {b.editorialImage ? <img src={b.editorialImage} style={b.editorialPos ? { objectPosition: b.editorialPos } : undefined} alt={b.editorialAlt || 'A saree draped in warm light'} loading="lazy" /> : <BlankFrame label="Editorial photo" className="tall" />}
         </Reveal>
         <Reveal className="ed-copy" delay={0.1}>
           <p className="ed-label"><i aria-hidden="true" />DHANYA BOUTIQUE</p>

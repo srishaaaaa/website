@@ -26,7 +26,7 @@ export default function CategoryCircles() {
         {shown.map((c, i) => (
           <Reveal as="li" key={c.slug} delay={(i % 4) * 0.07}>
             <Link to={`/shop?category=${c.slug}`} className="cc-card" data-cursor="VIEW" aria-label={`${c.name}, ${c.product_count} pieces`}>
-              <span className="cc-photo"><ProductMedia p={{ slug: c.slug, name: c.name, image: c.image_url || c.cover_image }} view={i % 4} /></span>
+              <span className="cc-photo"><ProductMedia p={{ slug: c.slug, name: c.name, image: c.image_url || c.cover_image, image_pos: c.image_pos }} view={i % 4} /></span>
               <span className="cc-go" aria-hidden="true">↗</span>
               <span className="cc-plate"><strong>{c.name}</strong><em>{c.product_count} {c.product_count === 1 ? 'piece' : 'pieces'}</em></span>
             </Link>

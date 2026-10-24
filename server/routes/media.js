@@ -120,8 +120,16 @@ export function mediaAdmin({ db, auth }) {
   }));
 
   // ---- category + collection cover images ----
-  const covers = (table, col) => {
-    r.get(`/${table}`, staff, wrap(async (_req, res) => res.json(await rows(db, `SELECT id, name, slug, ${col} AS image FROM ${table} ORDER BY display_order, id`))));
+  const covers = (table, col, posCol, fallbackSql) => {
+    // `fallback` is the product photo the site uses while no cover is uploaded, so staff can position the photo that is really shown.
+    r.get(`/${table}`, staff, wrap(async (_req, res) => res.json(await rows(db, `SELECT t.id, t.name, t.slug, t.${col} AS image, t.${posCol} AS pos, (${fallbackSql}) AS fallback FROM ${table} t ORDER BY t.display_order, t.id`))));
+    r.put(`/${table}/:id/focus`, staff, wrap(async (req, res) => {
+      const { pos } = z.object({ pos: z.string().regex(/^\d{1,3}% \d{1,3}%$/).nullable() }).parse(req.body);
+      const u = await db.query(`UPDATE ${table} SET ${posCol} = $2 WHERE id = $1 RETURNING id`, [pid.parse(req.params.id), pos]);
+      if (!u.rows.length) throw new HttpError(404, 'Not found');
+      await audit(db, req.user.id, `${table}.focus`, table, req.params.id);
+      res.json({ ok: true });
+    }));
     r.put(`/${table}/:id/image`, staff, wrap(async (req, res) => {
       const { url } = z.object({ url: imageUrl.nullable() }).parse(req.body);
       const old = await one(db, `SELECT ${col} AS image FROM ${table} WHERE id = $1`, [pid.parse(req.params.id)]);
@@ -132,7 +140,7 @@ export function mediaAdmin({ db, auth }) {
       res.json({ ok: true });
     }));
   };
-  covers('categories', 'image_url');
-  covers('collections', 'hero_image');
+  covers('categories', 'image_url', 'image_pos', `SELECT image_url FROM product_images i JOIN products p ON p.id = i.product_id WHERE p.category_id = t.id AND p.status = 'active' ORDER BY p.featured DESC, i.display_order, i.id LIMIT 1`);
+  covers('collections', 'hero_image', 'hero_pos', `SELECT (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) FROM collection_products cp JOIN products p ON p.id = cp.product_id WHERE cp.collection_id = t.id AND p.status = 'active' ORDER BY cp.display_order, p.id LIMIT 1`);
   return r;
 }

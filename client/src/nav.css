@@ -90,21 +90,16 @@ img, video, canvas { max-width: 100% }
 .mega-all:hover { background: var(--red, #5a1560); transform: translateY(-1px); gap: 16px }
 
 /* ---- photo framing ----
-   Product photos are shown whole (never cropped). Spare space is filled by .ph-blur, a blurred copy of the same photo, which is only added
-   when the photo's shape differs from its frame. The hero arch is the one place that crops on purpose (to the focus point set in the admin). */
-img.media { object-fit: contain; object-position: 50% 50% }
-.ph-blur { position: absolute; z-index: -1; inset: -8%; width: auto; height: auto; background-size: cover; background-position: center; filter: blur(18px) saturate(1.1); opacity: 0; transition: opacity .45s ease; pointer-events: none }
-.ph-blur.is-in { opacity: 1 }
-.pcard-frame, .cu-photo > a, .quick-media, .bag-thumb, .s-thumb, .mega-img, .bh-tile-img, .lb-img, .fc-photo, .pan, .stage-img, .thumbs button, .panel-img, .cc-photo, .cc-card { position: relative; isolation: isolate; overflow: hidden }
-.cu-photo > a, .pan, .stage-img, .cc-photo { position: absolute }
-.cu-photo { isolation: isolate }
+   Photos always fill their frame (no empty bands). What stays visible is the focus point set in the admin (inline object-position);
+   without one, the crop favours the upper part of the photo, where faces are. */
+img.media { object-fit: cover; object-position: 50% 20% }
+.cc-photo > img.media { object-position: 50% 15% }
 img.media, .bh-arch img { opacity: 0; transition: opacity .45s ease }
 img.media.is-in, .bh-arch img.is-in { opacity: 1 }
-@media (prefers-reduced-motion: reduce) { img.media, .bh-arch img, .ph-blur { transition: none } }
+@media (prefers-reduced-motion: reduce) { img.media, .bh-arch img { transition: none } }
 .pcard-frame, .cu-photo, .quick-media, .bag-thumb, .s-thumb, .mega-img, .bh-tile-img, .lb-img, .fc-photo, .stage, .thumbs button, .panel-img, .cc-card { background: #ecdfca }
 .site-header .mega-img { aspect-ratio: 3 / 4 }
 .fc-photo { aspect-ratio: 3 / 4 }
-.bh-model .bh-arch img.media { object-fit: cover }
 @media (max-width: 859px) { .quick-media { aspect-ratio: 3 / 4; max-height: 62vh; margin: 0 auto } }
 .adm-img, .adm-th { background: #efe6da }
 .adm-img img, .adm-th img { object-fit: contain }

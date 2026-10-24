@@ -22,7 +22,7 @@ export function Collections() {
         {collections.map((c, i) => (
           <Reveal key={c.slug} delay={(i % 3) * 0.08}>
             <Link to={`/collections/${c.slug}`} className="col-card" data-cursor="EXPLORE">
-              <span className="col-img">{c.hero_image ? <img className="media" src={c.hero_image} alt="" loading="lazy" /> : <ProductMedia p={{ slug: c.cover?.slug || c.slug, image: c.cover?.image }} view={i % 4} />}</span>
+              <span className="col-img">{c.hero_image ? <img className="media" src={c.hero_image} alt="" loading="lazy" style={c.hero_pos ? { objectPosition: c.hero_pos } : undefined} /> : <ProductMedia p={{ slug: c.cover?.slug || c.slug, image: c.cover?.image, image_pos: c.hero_pos }} view={i % 4} />}</span>
               <span className="col-txt"><span className="eyebrow">{c.product_count} {c.product_count === 1 ? 'piece' : 'pieces'}</span><span className="serif">{c.name}</span></span>
             </Link>
           </Reveal>

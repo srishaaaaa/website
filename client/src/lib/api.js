@@ -1,7 +1,14 @@
 // All requests are same-origin (Vite proxy in dev). The session and guest-cart cookies are httpOnly,
 // so no credential ever lives in JavaScript-accessible storage. The custom header is the CSRF guard.
+// Public catalogue reads are cached at the CDN for ~30s. Staff (who are editing that very content), and anyone for two minutes after they
+// changed something, must never be shown the cached copy, so those reads carry a unique ?_= which the server never caches.
+const CACHED_READ = /^\/(store|categories|collections(\/[a-z0-9-]+)?|products(\/[a-z0-9-]+)?|reviews)(\?|$)/;
+const wantsFresh = () => typeof window !== 'undefined' && (window.__fresh || Date.now() < (window.__freshUntil || 0));
+
 export async function api(path, opts = {}) {
   let r;
+  const reading = !opts.method || opts.method === 'GET';
+  if (reading && CACHED_READ.test(path) && wantsFresh()) { path += (path.includes('?') ? '&' : '?') + '_=' + Date.now(); if (typeof window !== 'undefined' && window.__pre) delete window.__pre[path] }
   // The page shell already started the homepage reads (see index.html); take that response once instead of asking again.
   const pre = !opts.method && !opts.body && typeof window !== 'undefined' && window.__pre?.[path];
   if (pre) { delete window.__pre[path]; r = await pre; if (r && !r.ok) r = null }
@@ -13,6 +20,7 @@ export async function api(path, opts = {}) {
   }) } catch { throw Object.assign(new Error('Cannot reach the server. Check your connection and try again.'), { status: 0 }) }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(d.error || (r.status >= 500 ? `The server had a problem (error ${r.status}). Check /api/health on this site.` : r.status === 404 ? 'The server API was not found (404). The site may not be deployed with its API.' : `Request failed (${r.status})`)), { status: r.status, code: d.code, issues: d.issues });
+  if (!reading && typeof window !== 'undefined') window.__freshUntil = Date.now() + 120000;
   return d;
 }
 

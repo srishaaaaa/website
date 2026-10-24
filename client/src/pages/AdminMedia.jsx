@@ -106,11 +106,12 @@ export function AdminProducts() {
                 <div className="adm-ph"><h2 className="serif adm-h2">{sel.name}</h2><button className="adm-del" onClick={delProduct}>Delete product</button></div>
                 <ColourPanel productId={sel.id} onChanged={refreshSel} />
                 <Drop onFiles={add} busy={busy} />
-                <p className="muted small" style={{ margin: '8px 0 0' }}>Photos are always shown whole on the website. Any spare space around a photo is filled with a soft blur of the same photo, so nothing is cropped and nothing looks empty.</p>
+                <p className="muted small" style={{ margin: '8px 0 0' }}>Tip: click a photo on the part that must always stay visible (a face, the zari border). The website crops around that point.</p>
                 <ul className="adm-gal">
                   {imgs.map((im, i) => (
                     <li key={im.id}>
-                      <div className="adm-img"><img src={im.url} alt={im.alt || sel.name} /><span className="adm-pos">{i + 1}</span></div>
+                      <div className="adm-img"><FocusImage src={im.url} alt={im.alt || sel.name} x={im.focusX} y={im.focusY} onPick={(x, y) => saveFocus(im, x, y)}><span className="adm-pos">{i + 1}</span></FocusImage></div>
+                      {im.focusX != null && <button className="link-u small" onClick={() => saveFocus(im, null, null)}>Reset focus</button>}
                       <input aria-label={`Alt text for photo ${i + 1}`} defaultValue={im.alt} onBlur={e => saveAlt(im, e.target.value.trim())} placeholder="Describe the photo" />
                       {(sel.colors || []).filter(c => c !== 'Default').length > 0 && <label className="adm-col"><span className="muted small">Shows for</span>
                         <select aria-label={`Colour for photo ${i + 1}`} value={im.color || ''} onChange={e => saveColor(im, e.target.value)}><option value="">All colours</option>{(sel.colors || []).filter(c => c !== 'Default').map(c => <option key={c} value={c}>{c}</option>)}</select></label>}
@@ -139,8 +140,8 @@ function Slot({ title, hint, value, fallback, onUpload, onReset, alt, onAlt, acc
     <section className="adm-card">
       <h2 className="serif adm-h2">{title}</h2>
       <p className="muted small">{hint}</p>
-      <div className="adm-prev">{(value || fallback) ? (onPos && value ? <FocusImage src={value} alt="" x={pt?.[0]} y={pt?.[1]} box={4 / 3} onPick={(x, y) => onPos(`${x}% ${y}%`)} /> : <img src={value || fallback} alt="" />) : <span className="muted small">Blank — nothing added yet</span>}</div>
-      {onPos && value && <p className="muted small">Click the photo on the part that must stay visible (usually her face).{pos && <> <button className="link-u small" onClick={() => onPos(null)}>Reset focus</button></>}</p>}
+      <div className="adm-prev">{(value || fallback) ? (onPos ? <FocusImage src={value || fallback} alt="" x={pt?.[0]} y={pt?.[1]} box={4 / 3} onPick={(x, y) => onPos(`${x}% ${y}%`)} /> : <img src={value || fallback} alt="" />) : <span className="muted small">Blank — nothing added yet</span>}</div>
+      {onPos && (value || fallback) && <p className="muted small">Click the photo on the part that must stay visible (usually her face).{pos && <> <button className="link-u small" onClick={() => onPos(null)}>Reset focus</button></>}</p>}
       <Drop onFiles={fs => fs[0] && onUpload(fs[0])} multiple={false} accept={accept} busy={busy} label={value ? 'Custom image in use' : 'Using the built-in image'} />
       <label className="field"><span>Describe the image (for screen readers)</span><input value={alt} onChange={e => onAlt(e.target.value)} /></label>
       {value && <button className="link-u small" onClick={onReset}>Reset to the built-in image</button>}
@@ -161,6 +162,7 @@ export function AdminStorefront() {
   const run = async (key, fn, ok) => { setBusy(key); setErr(); try { await fn(); toast(ok); refresh() } catch (e) { setErr(e.message) } finally { setBusy('') } };
   const saveBranding = next => api('/admin/settings/branding', { method: 'PUT', body: { ...next, logoAlt: next.logoAlt || null, heroAlt: next.heroAlt || null, storyAlt: next.storyAlt || null, textileAlt: next.textileAlt || null, editorialAlt: next.editorialAlt || null } });
   const setCover = (kind, id) => async file => run(`${kind}${id}`, async () => { const up = await uploadImage(file); await api(`/admin/${kind}/${id}/image`, { method: 'PUT', body: { url: up.url } }); (kind === 'categories' ? setCats : setCols)(l => l.map(x => x.id === id ? { ...x, image: up.url } : x)) }, 'Cover updated.');
+  const saveCoverFocus = (kind, id, pos) => run(`${kind}${id}`, async () => { await api(`/admin/${kind}/${id}/focus`, { method: 'PUT', body: { pos } }); (kind === 'categories' ? setCats : setCols)(l => l.map(x => x.id === id ? { ...x, pos } : x)) }, pos ? 'Position saved.' : 'Position reset.');
   const clearCover = (kind, id) => run(`${kind}${id}`, async () => { await api(`/admin/${kind}/${id}/image`, { method: 'PUT', body: { url: null } }); (kind === 'categories' ? setCats : setCols)(l => l.map(x => x.id === id ? { ...x, image: null } : x)) }, 'Cover removed.');
   const savePosts = next => run('ig', async () => {
     const s = await api('/store'); const ig = s.social.instagram;
@@ -182,15 +184,15 @@ export function AdminStorefront() {
               hint="The full-length model in the hero. A tall photo with a TRANSPARENT background (PNG or WebP) overlaps the ivory panel best. Until you add one the frame stays blank."
               onUpload={f => run('hero', async () => { const up = await uploadImage(f); const next = { ...b, heroModel: up.url }; await saveBranding(next); setB(next) }, 'Hero model updated.')}
               onReset={() => run('hero', async () => { const next = { ...b, heroModel: null, heroAlt: '' }; await saveBranding(next); setB(next) }, 'Hero model removed.')} />
-            <Slot title="Textile close-up" accept="image/jpeg,image/png,image/webp" busy={busy === 'textile'} value={b.textileImage} fallback="" alt={b.textileAlt} onAlt={v => setB({ ...b, textileAlt: v })}
+            <Slot title="Textile close-up" accept="image/jpeg,image/png,image/webp" busy={busy === 'textile'} value={b.textileImage} fallback="" pos={b.textilePos} onPos={v => run('textile', async () => { const next = { ...b, textilePos: v }; await saveBranding(next); setB(next) }, 'Position saved.')} alt={b.textileAlt} onAlt={v => setB({ ...b, textileAlt: v })}
               hint="A square close-up of silk, zari or pleats shown beside the headline as CRAFTED ELEGANCE."
               onUpload={f => run('textile', async () => { const up = await uploadImage(f); const next = { ...b, textileImage: up.url }; await saveBranding(next); setB(next) }, 'Textile photo updated.')}
               onReset={() => run('textile', async () => { const next = { ...b, textileImage: null, textileAlt: '' }; await saveBranding(next); setB(next) }, 'Textile photo removed.')} />
-            <Slot title="Editorial photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'editorial'} value={b.editorialImage} fallback="" alt={b.editorialAlt} onAlt={v => setB({ ...b, editorialAlt: v })}
+            <Slot title="Editorial photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'editorial'} value={b.editorialImage} fallback="" pos={b.editorialPos} onPos={v => run('editorial', async () => { const next = { ...b, editorialPos: v }; await saveBranding(next); setB(next) }, 'Position saved.')} alt={b.editorialAlt} onAlt={v => setB({ ...b, editorialAlt: v })}
               hint="A tall fashion photograph beside TRADITION, WOVEN INTO EVERY THREAD."
               onUpload={f => run('editorial', async () => { const up = await uploadImage(f); const next = { ...b, editorialImage: up.url }; await saveBranding(next); setB(next) }, 'Editorial photo updated.')}
               onReset={() => run('editorial', async () => { const next = { ...b, editorialImage: null, editorialAlt: '' }; await saveBranding(next); setB(next) }, 'Editorial photo removed.')} />
-            <Slot title="Our Story photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'story'} value={b.storyImage} fallback="/images/story.jpg" alt={b.storyAlt} onAlt={v => setB({ ...b, storyAlt: v })}
+            <Slot title="Our Story photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'story'} value={b.storyImage} fallback="/images/story.jpg" pos={b.storyPos} onPos={v => run('story', async () => { const next = { ...b, storyPos: v }; await saveBranding(next); setB(next) }, 'Position saved.')} alt={b.storyAlt} onAlt={v => setB({ ...b, storyAlt: v })}
               hint="A wide photograph works best (the wine-coloured text panel covers the right half)."
               onUpload={f => run('story', async () => { const up = await uploadImage(f); const next = { ...b, storyImage: up.url }; await saveBranding(next); setB(next) }, 'Story photo updated.')}
               onReset={() => run('story', async () => { const next = { ...b, storyImage: null, storyAlt: '' }; await saveBranding(next); setB(next) }, 'Story photo reset.')} />
@@ -201,10 +203,13 @@ export function AdminStorefront() {
         {[['Category covers', 'categories', cats], ['Collection covers', 'collections', cols]].map(([title, kind, rows]) => (
           <section key={kind} className="adm-block">
             <h2 className="serif adm-h2">{title}</h2>
+            <p className="muted small">Click a photo on the part that must stay visible (a face, the zari border). The website frames the photo around that point.</p>
             <ul className="adm-covers">{rows.map(c => (
               <li key={c.id}>
-                <div className="adm-cover">{c.image ? <img src={c.image} alt="" /> : <i>Generated placeholder</i>}</div>
+                <div className="adm-cover">{(c.image || c.fallback) ? <FocusImage src={c.image || c.fallback} alt="" x={c.pos ? parseInt(c.pos, 10) : null} y={c.pos ? parseInt(c.pos.split('% ')[1], 10) : null} onPick={(x, y) => saveCoverFocus(kind, c.id, `${x}% ${y}%`)} /> : <i>Generated placeholder</i>}</div>
                 <b>{c.name}</b>
+                {!c.image && c.fallback && <span className="muted small">Showing a product photo</span>}
+                {c.pos && <button className="link-u small" onClick={() => saveCoverFocus(kind, c.id, null)}>Reset position</button>}
                 <div className="adm-act">
                   <label className="btn dark pill adm-file">{busy === `${kind}${c.id}` ? '…' : c.image ? 'REPLACE' : 'UPLOAD'}<input type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files[0]; e.target.value = ''; f && setCover(kind, c.id)(f) }} /></label>
                   {c.image && <button className="danger" onClick={() => clearCover(kind, c.id)}>Remove</button>}
