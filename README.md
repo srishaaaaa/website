@@ -49,7 +49,7 @@ Portal intro, 3D hero, scroll choreography, mega-menu, live search, catalog, PDP
 - **Enquiries** are stored in the database (Admin → Enquiries) and can be answered by phone/WhatsApp. WhatsApp links are built from the phone number in Store settings.
 - **Sample data**: demo products, reviews and enquiries are flagged `sample`. Delete them one by one (Products & images, Review moderation, Enquiries) or all at once at Admin → Sample data. Real data is never touched.
   - `npm run seed` re-creates the sample data (it is idempotent, so run it only on a fresh database). To create only the owner account and the structure, with no demo data, run `npm run seed -- --admin-only` from inside the `server` folder.
-- Business details used: phone 73586 70411, email Srisakthipugazhtex@gmail.com, Instagram @srisakthipugazhtex (provisional; edit in Admin → Store settings).
+- Business details used: owner Ananthi M, Dhanyas Boutique, phone 80980 89591, email dhanyasboutique2015@gmail.com, Instagram @ananthinathan84 (edit any time in Admin → Store settings).
 
 ## Content you must supply
 - **Photography:** products have no images yet; generated plates stand in. Set product images and `client/src/config/content.js` (`media`).

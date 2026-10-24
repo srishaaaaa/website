@@ -139,12 +139,12 @@ export function AdminStorefront() {
   const [b, setB] = useState(null); const [cats, setCats] = useState([]); const [cols, setCols] = useState([]);
   const [posts, setPosts] = useState([]); const [busy, setBusy] = useState(''); const [err, setErr] = useState();
 
-  useEffect(() => { if (state === 'ok' && site.branding) { setB({ heroCutout: null, heroDepth: null, heroAlt: '', storyImage: null, storyAlt: '', heroModel: null, textileImage: null, editorialImage: null, textileAlt: '', editorialAlt: '', ...site.branding, heroAlt: site.branding.heroAlt || '', storyAlt: site.branding.storyAlt || '', textileAlt: site.branding.textileAlt || '', editorialAlt: site.branding.editorialAlt || '' }); setPosts(site.social?.instagram?.posts || []) } }, [state, site.branding, site.social]);
+  useEffect(() => { if (state === 'ok' && site.branding) { setB({ logo: null, logoAlt: '', heroCutout: null, heroDepth: null, heroAlt: '', storyImage: null, storyAlt: '', heroModel: null, textileImage: null, editorialImage: null, textileAlt: '', editorialAlt: '', ...site.branding, logoAlt: site.branding.logoAlt || '', heroAlt: site.branding.heroAlt || '', storyAlt: site.branding.storyAlt || '', textileAlt: site.branding.textileAlt || '', editorialAlt: site.branding.editorialAlt || '' }); setPosts(site.social?.instagram?.posts || []) } }, [state, site.branding, site.social]);
   useEffect(() => { if (state !== 'ok') return; api('/admin/categories').then(setCats).catch(() => {}); api('/admin/collections').then(setCols).catch(() => {}) }, [state]);
 
   const refresh = () => { loadSite(); loadCatalog() };
   const run = async (key, fn, ok) => { setBusy(key); setErr(); try { await fn(); toast(ok); refresh() } catch (e) { setErr(e.message) } finally { setBusy('') } };
-  const saveBranding = next => api('/admin/settings/branding', { method: 'PUT', body: { ...next, heroAlt: next.heroAlt || null, storyAlt: next.storyAlt || null, textileAlt: next.textileAlt || null, editorialAlt: next.editorialAlt || null } });
+  const saveBranding = next => api('/admin/settings/branding', { method: 'PUT', body: { ...next, logoAlt: next.logoAlt || null, heroAlt: next.heroAlt || null, storyAlt: next.storyAlt || null, textileAlt: next.textileAlt || null, editorialAlt: next.editorialAlt || null } });
   const setCover = (kind, id) => async file => run(`${kind}${id}`, async () => { const up = await uploadImage(file); await api(`/admin/${kind}/${id}/image`, { method: 'PUT', body: { url: up.url } }); (kind === 'categories' ? setCats : setCols)(l => l.map(x => x.id === id ? { ...x, image: up.url } : x)) }, 'Cover updated.');
   const clearCover = (kind, id) => run(`${kind}${id}`, async () => { await api(`/admin/${kind}/${id}/image`, { method: 'PUT', body: { url: null } }); (kind === 'categories' ? setCats : setCols)(l => l.map(x => x.id === id ? { ...x, image: null } : x)) }, 'Cover removed.');
   const savePosts = next => run('ig', async () => {
@@ -160,6 +160,10 @@ export function AdminStorefront() {
         {err && <p role="alert" className="err">{err}</p>}
         {b && (
           <div className="adm-slots">
+            <Slot title="Logo" accept="image/png,image/webp,image/jpeg" busy={busy === 'logo'} value={b.logo} fallback="" alt={b.logoAlt} onAlt={v => setB({ ...b, logoAlt: v })}
+              hint="Your boutique logo, shown in the site header and menu. A square or round image works best (PNG with a transparent background is ideal). Until you add one, the DHANYA text wordmark is shown. You can replace it whenever you like."
+              onUpload={f => run('logo', async () => { const up = await uploadImage(f); const next = { ...b, logo: up.url }; await saveBranding(next); setB(next) }, 'Logo updated.')}
+              onReset={() => run('logo', async () => { const next = { ...b, logo: null, logoAlt: '' }; await saveBranding(next); setB(next) }, 'Logo removed. The text wordmark is back.')} />
             <Slot title="Hero model photo" accept="image/png,image/webp,image/jpeg" busy={busy === 'hero'} value={b.heroModel} fallback="" alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
               hint="The full-length model in the hero. A tall photo with a TRANSPARENT background (PNG or WebP) overlaps the ivory panel best. Until you add one the frame stays blank."
               onUpload={f => run('hero', async () => { const up = await uploadImage(f); const next = { ...b, heroModel: up.url }; await saveBranding(next); setB(next) }, 'Hero model updated.')}

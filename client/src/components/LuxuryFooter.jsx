@@ -62,6 +62,7 @@ export default function LuxuryFooter() {
             {store?.address?.length ? <address>{store.address.join(', ')}</address> : <p className="muted">Boutique location coming soon.</p>}
             {store?.hours && <p className="muted">{store.hours.label}</p>}
             <ul>
+              {store?.owner && <li>{store.owner}</li>}
               {tel && <li><a href={tel}>{store.phone}</a></li>}
               {store?.email && <li><a href={`mailto:${store.email}`}>{store.email}</a></li>}
             </ul>

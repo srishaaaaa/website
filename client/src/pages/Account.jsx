@@ -77,7 +77,7 @@ export function StoreSettingsForm() {
   const [f, setF] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   useEffect(() => {
     api('/store').then(({ store, social, flags }) => setF({
-      name: store.name, address: (store.address || []).join('\n'), lat: store.location?.lat ?? '', lng: store.location?.lng ?? '', mapsUrl: store.mapsUrl || '', phone: store.phone || '', email: store.email || '',
+      name: store.name, owner: store.owner || '', address: (store.address || []).join('\n'), lat: store.location?.lat ?? '', lng: store.location?.lng ?? '', mapsUrl: store.mapsUrl || '', phone: store.phone || '', email: store.email || '',
       label: store.hours?.label || '', open: store.hours?.open || '10:00', close: store.hours?.close || '20:00', days: store.hours?.days || [0, 1, 2, 3, 4, 5, 6],
       demo: !!flags?.demoReviews, igHandle: social.instagram.handle || '', igUrl: social.instagram.url || '', posts: social.instagram.posts, links: social.links, timeZone: store.timeZone,
     })).catch(() => {});
@@ -89,7 +89,7 @@ export function StoreSettingsForm() {
     try {
       const lines = f.address.split('\n').map(s => s.trim()).filter(Boolean);
       await api('/admin/settings/store', { method: 'PUT', body: {
-        name: f.name || 'DHANYA', address: lines.length ? lines : null, phone: f.phone || null, email: f.email || null, timeZone: f.timeZone,
+        name: f.name || 'DHANYA', owner: f.owner || null, address: lines.length ? lines : null, phone: f.phone || null, email: f.email || null, timeZone: f.timeZone,
         location: f.lat !== '' && f.lng !== '' ? { lat: Number(f.lat), lng: Number(f.lng) } : null, mapsUrl: f.mapsUrl || null,
         hours: f.label ? { label: f.label, open: f.open, close: f.close, days: f.days } : null } });
       await api('/admin/settings/social', { method: 'PUT', body: { instagram: { handle: f.igHandle || null, url: f.igUrl || null, posts: f.posts }, links: f.links } });
@@ -101,7 +101,7 @@ export function StoreSettingsForm() {
     <form onSubmit={save} className="settings-form">
       <h2 className="serif" style={{ fontSize: 36, margin: '40px 0 8px' }}>Store settings</h2>
       <p className="muted small">Shown on the homepage map, footer and Instagram strip. Leave the address empty to show the “location to be announced” placeholder.</p>
-      <label className="field"><span>Boutique name</span><input value={f.name} onChange={set('name')} /></label>
+      <div className="two"><label className="field"><span>Boutique name</span><input value={f.name} onChange={set('name')} /></label><label className="field"><span>Owner / contact person</span><input value={f.owner} onChange={set('owner')} /></label></div>
       <label className="field"><span>Address (one line per row)</span><textarea rows="3" value={f.address} onChange={set('address')} /></label>
       <label className="field"><span>Google Maps link (optional)</span><input type="url" value={f.mapsUrl} onChange={set('mapsUrl')} placeholder="https://maps.app.goo.gl/…" /></label>
       <div className="two"><label className="field"><span>Latitude</span><input inputMode="decimal" value={f.lat} onChange={set('lat')} /></label><label className="field"><span>Longitude</span><input inputMode="decimal" value={f.lng} onChange={set('lng')} /></label></div>

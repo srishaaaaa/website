@@ -212,3 +212,9 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 /* ---- password show/hide ---- */
 .field .pw { position: relative; display: block } .field .pw input { width: 100%; padding-right: 52px }
 .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; color: var(--maroon); opacity: .7; transition: opacity .2s } .pw-eye:hover, .pw-eye:focus-visible { opacity: 1 }
+
+/* uploaded logo (Admin → Storefront images → Logo) */
+.wordmark.has-logo { display: inline-flex; flex-direction: row; align-items: center }
+.wm-logo { height: 54px; width: 54px; object-fit: cover; border-radius: 50%; display: block; box-shadow: 0 2px 10px rgba(60, 20, 70, .28) }
+@media (max-width: 767px) { .wm-logo { height: 44px; width: 44px } }
+.mm-top .wm-logo { height: 60px; width: 60px }

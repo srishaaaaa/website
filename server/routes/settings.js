@@ -11,6 +11,7 @@ const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM');
 export const storeSchema = z.object({
   name: text(80).default('DHANYA'),
   address: z.array(text(160).min(1)).max(5).nullable().default(null),
+  owner: nullableText(80),
   phone: nullableText(30),
   email: z.string().trim().email().nullable().default(null),
   timeZone: text(60).default('Asia/Kolkata'),
@@ -28,6 +29,7 @@ export const socialSchema = z.object({
 export const flagsSchema = z.object({ demoReviews: z.boolean().default(false) });
 // Storefront imagery managed from the admin (each is an uploaded image URL or null to use the built-in default).
 export const brandingSchema = z.object({
+  logo: z.string().max(500).nullable().default(null), logoAlt: z.string().trim().max(200).nullable().default(null),
   heroCutout: z.string().max(500).nullable().default(null), heroDepth: z.string().max(500).nullable().default(null), heroAlt: z.string().trim().max(200).nullable().default(null),
   storyImage: z.string().max(500).nullable().default(null), storyAlt: z.string().trim().max(200).nullable().default(null),
   heroModel: z.string().max(500).nullable().default(null), textileImage: z.string().max(500).nullable().default(null), editorialImage: z.string().max(500).nullable().default(null),

@@ -38,7 +38,7 @@ export default function EnquirySection() {
           <h2 id="eq-h">ENQUIRE WITH<br />DHANYA BOUTIQUE.</h2>
           <p className="eq-p">Looking for a particular saree, or buying in bulk for your own shop? Tell us what you need and we will get back to you.</p>
           <ul className="eq-links">
-            {tel && <li><a href={tel}><Ico><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" /></Ico><span><b>Call</b>{store.phone}</span></a></li>}
+            {tel && <li><a href={tel}><Ico><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" /></Ico><span><b>Call</b>{store.owner ? `${store.owner} · ` : ''}{store.phone}</span></a></li>}
             {wa && <li><a href={wa} target="_blank" rel="noopener noreferrer"><Ico><path d="M3 21l1.6-4.6A8.5 8.5 0 1 1 8 19.6z" /><path d="M9 9.5c.4 2 2.5 4 4.7 4.8l1.3-1.3-1.8-1-.9.7a4 4 0 0 1-1.9-1.9l.7-.9-1-1.8z" /></Ico><span><b>WhatsApp</b>Chat with us</span></a></li>}
             {store?.email && <li><a href={`mailto:${store.email}`}><Ico><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></Ico><span><b>Email</b>{store.email}</span></a></li>}
             {ig && <li><a href={ig} target="_blank" rel="noopener noreferrer"><Ico><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4.2" /></Ico><span><b>Instagram</b>@{social.instagram.handle || 'follow us'}</span></a></li>}

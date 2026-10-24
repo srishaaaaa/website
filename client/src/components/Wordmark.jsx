@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useApp } from '../context/App';
 
 // Emblem: four hairline petals rotated around a point — a quiet nod to woven textile geometry.
 export function Emblem({ size = 28, className = '', glow = false }) {
@@ -16,6 +17,13 @@ export function LogoTile({ size = 38 }) {
 
 // DHANYA over BOUTIQUE: a high-contrast serif name with a small, widely spaced descriptor.
 export default function Wordmark({ to = '/', className = '', onClick }) {
+  const { site } = useApp();
+  const logo = site.branding?.logo;
+  if (logo) return (
+    <Link to={to} onClick={onClick} className={`wordmark has-logo ${className}`} aria-label="Home" data-cursor="HOME">
+      <img className="wm-logo" src={logo} alt={site.branding.logoAlt || site.store?.name || 'DHANYA BOUTIQUE'} />
+    </Link>
+  );
   return (
     <Link to={to} onClick={onClick} className={`wordmark ${className}`} aria-label="DHANYA BOUTIQUE — home" data-cursor="HOME">
       <span className="wm-a">DHANYA</span><span className="wm-b">BOUTIQUE</span>
