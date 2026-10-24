@@ -87,9 +87,12 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .is-scaled .bh-discover { padding-left: calc(25% + 14px); padding-right: 22px }
 
 /* Phones get their own layout: copy on the left, a full-height arched photo on the right, quality badges underneath. */
-.bh-feats { display: none }
+.bh-feats, .bh-brand { display: none }
 @media (max-width: 699px) {
-  .bh { padding-bottom: 150px; min-height: 100vh; min-height: 100svh; display: flex; align-items: flex-start } /* the ticker and next section appear only on scroll */
+  .bh { padding-top: 104px; padding-bottom: 150px; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: stretch }
+  .bh .bh-brand { display: grid; justify-items: center; gap: 6px; margin: 14px 0 18px; line-height: 1 }
+  .bh .bh-brand b { font-family: var(--serif); font-weight: 800; font-size: 30px; letter-spacing: .14em; text-transform: uppercase; color: var(--maroon) }
+  .bh .bh-brand i { font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .5em; text-transform: uppercase; color: var(--antique) } /* the ticker and next section appear only on scroll */
   .bh .bh-wrap { min-height: 0; width: 100% }
   .bh .bh-panel { width: 100%; min-height: 0; padding: 20px 14px 22px; padding-right: 41%; border-radius: 24px }
   .bh .bh-discover, .bh .bh-tint, .bh .bh-inset { display: none }

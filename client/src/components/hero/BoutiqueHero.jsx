@@ -36,7 +36,7 @@ export default function BoutiqueHero() {
   // Below 1100px keep the desktop composition: lay the hero out 1100px wide and zoom it down to the available width.
   useLayoutEffect(() => {
     const fit = () => {
-      const sec = ref.current, wrap = sec && sec.firstElementChild;
+      const sec = ref.current, wrap = sec && sec.querySelector('.bh-wrap');
       if (!wrap) return;
       const cs = getComputedStyle(sec);
       const avail = sec.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
@@ -52,6 +52,7 @@ export default function BoutiqueHero() {
 
   return (
     <section ref={ref} className="bh" data-hero aria-label="DHANYA BOUTIQUE">
+      <p className="bh-brand" aria-hidden="true"><b>{(site.store?.name || 'Dhanyas Boutique').split(' ')[0]}</b><i>{(site.store?.name || 'Dhanyas Boutique').split(' ').slice(1).join(' ') || 'BOUTIQUE'}</i></p>
       <div className="bh-wrap">
         <aside className="bh-discover" aria-labelledby="bh-for">
           <h2 id="bh-for" className="bh-for">FOR YOU</h2>
