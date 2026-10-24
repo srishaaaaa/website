@@ -103,4 +103,17 @@ export const DEMO_REVIEWS = [
   ['linen-saree-sand', 'Pooja T.', 5, 'Light enough to wear all day and it still looks polished.'],
   ['plum-festive-lehenga', 'Nisha B.', 5, 'Made every festive photo better. The plum is richer in person.'],
   ['chikankari-kurta-white', 'Aarti G.', 5, 'Crisp, fine embroidery and very comfortable for long days.'],
+  // Saree-focused samples (all flagged and labelled as samples; delete from Admin → Sample data)
+  ['kanjivaram-bridal-saree-emerald', 'Shruthi M.', 5, 'The emerald and gold combination is breathtaking. It held its fall beautifully through the whole ceremony.'],
+  ['banarasi-bridal-brocade-saree-gold', 'Revathi K.', 5, 'Heavy brocade that still drapes softly. My mother kept touching the border all evening.'],
+  ['tussar-silk-saree-saffron', 'Deepa S.', 4, 'Lovely natural texture and a rich saffron. I would wash it gently and keep it for special days.'],
+  ['mysore-silk-saree-wine', 'Gayathri R.', 5, 'Smooth, light and the wine shade is deep and elegant. Perfect for a family function.'],
+  ['uppada-silk-saree-peacock', 'Harini V.', 5, 'The peacock colour glows in daylight. Very easy to pleat and carry all day.'],
+  ['organza-saree-blush', 'Nandhini P.', 5, 'Feather light and so pretty in photographs. The blush tone suits every skin tone.'],
+  ['satin-georgette-saree-sage', 'Swathi L.', 4, 'A modern colour with a lovely flow. It slips a little at first, so a good pin helps.'],
+  ['linen-saree-sand', 'Anitha B.', 5, 'Breathable and elegant for a hot day. It looks crisp even after hours of wear.'],
+  ['cotton-handloom-saree-indigo', 'Vimala D.', 5, 'Soft after the first wash and the indigo is deep. My everyday favourite now.'],
+  ['bandhani-georgette-saree-coral', 'Jaya T.', 5, 'The bandhani work is neat and the coral is cheerful. Many compliments at the festival.'],
+  ['ivory-chanderi-saree', 'Mythili A.', 5, 'Classic ivory with a delicate sheen. Exactly what I wanted for an afternoon wedding.'],
+  ['sequin-shimmer-saree-midnight', 'Pavithra N.', 4, 'A showstopper for evening events. The sequins are secure and it is lighter than it looks.'],
 ];

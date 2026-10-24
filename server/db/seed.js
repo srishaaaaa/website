@@ -77,17 +77,19 @@ export async function seed(db, cfg, log = console.log, { sample = true } = {}) {
 
 // Sample reviews: clearly flagged (is_demo), labelled "Sample review" in the UI, switchable off via flags.demoReviews.
 export async function seedDemoReviews(db, log = console.log) {
+  // Tops up any missing sample review (matched by product + author). Existing ones are left alone.
   await db.tx(async t => {
-    const has = await one(t, 'SELECT 1 AS x FROM product_reviews WHERE is_demo LIMIT 1');
-    if (!has) {
-      for (const [i, [slug, author, rating, body]] of DEMO_REVIEWS.entries()) {
-        await t.query(`INSERT INTO product_reviews (product_id, user_id, rating, body, status, is_demo, author_name, created_at)
-          SELECT id, NULL, $2, $3, 'published', true, $4, now() - ($5 || ' hours')::interval FROM products WHERE slug = $1`, [slug, rating, body, author, String(i * 7)]);
-      }
+    let n = 0;
+    for (const [i, [slug, author, rating, body]] of DEMO_REVIEWS.entries()) {
+      const r = await t.query(`INSERT INTO product_reviews (product_id, user_id, rating, body, status, is_demo, author_name, created_at)
+        SELECT p.id, NULL, $2, $3, 'published', true, $4, now() - ($5 || ' hours')::interval FROM products p
+        WHERE p.slug = $1 AND NOT EXISTS (SELECT 1 FROM product_reviews x WHERE x.product_id = p.id AND x.is_demo AND x.author_name = $4)
+        RETURNING id`, [slug, rating, body, author, String(i * 9)]);
+      n += r.rows.length;
     }
     await t.query(`INSERT INTO store_settings (key, value) VALUES ('flags', $1) ON CONFLICT (key) DO NOTHING`, [JSON.stringify({ demoReviews: true })]);
+    log(`Sample reviews: ${n} added (flagged as samples).`);
   });
-  log('Sample reviews added (flagged as samples).');
 }
 
 const ENQ = [
