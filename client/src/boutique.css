@@ -204,3 +204,7 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .adm-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px } .adm-counts li { display: grid; gap: 2px; padding: 16px; border-radius: 18px; background: var(--beige) } .adm-counts strong { font-family: var(--serif); font-size: 38px; line-height: 1; color: var(--maroon) } .adm-counts span { font-size: 12px; opacity: .65 }
 .adm-enq li .adm-del { justify-self: start }
 @media (max-width: 1099px) { .bh-panel { order: 1 } .bh-model { order: 2 } .bh-discover { order: 3; border-radius: 0 0 26px 26px; margin-top: -1px } }
+/* enquiry band now sits directly above the footer */
+.studio + .eq { margin-top: 0 }
+.footer-fade { background: var(--maroon) }
+.site-footer { background: linear-gradient(180deg, #5b1820 0%, #4d141b 100%); margin-top: calc(-1 * clamp(36px, 4.5vw, 64px)) }

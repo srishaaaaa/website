@@ -48,8 +48,8 @@ function Details() {
   );
 }
 
-// Order: hero → ticker → curated catalogue → editorial → collections → reviews → enquiries/contact →
-// categories → Instagram reels → shop story → live map → footer.
+// Order: hero → ticker → curated catalogue → editorial → collections → reviews →
+// categories → Instagram reels → shop story → live map → enquiries/contact → footer.
 export default function Home() {
   const { hash } = useLocation();
 
@@ -70,11 +70,11 @@ export default function Home() {
       <Details />
       <ServiceHighlights />
       <CustomerReviews />
-      <EnquirySection />
       <CategoryCircles />
       <InstagramStrip />
       <Story />
       <StoreLocationMap />
+      <EnquirySection />
     </div>
   );
 }

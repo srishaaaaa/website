@@ -5,7 +5,7 @@ const schema = z.object({
   PORT: z.coerce.number().default(4000),
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
   DATABASE_URL: z.string().optional().transform(v => v || undefined),
-  DB_SCHEMA: z.string().regex(/^[a-z_][a-z0-9_]*$/).default('public'), // isolate DHANYA inside a shared database
+  DB_SCHEMA: z.string().regex(/^[a-z_][a-z0-9_]*$/).default('dhanya'), // DHANYA lives in its own schema so it never mixes with other apps in a shared database
   PGLITE_DIR: z.string().default('./data/pgdata'), // 'memory' for tests
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   ADMIN_EMAIL: z.string().email().optional().or(z.literal('').transform(() => undefined)),

@@ -28,7 +28,12 @@ export function createApp({ db, cfg, payments = createRazorpayProvider(cfg) }) {
   app.use(express.json({ limit: '100kb' }), cookieParser());
   app.use('/api', csrfGuard());
 
-  app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  // Health + a quick configuration check (no secrets): shows which schema is read and whether the boutique location is set.
+  app.get('/api/health', async (_req, res) => {
+    let storeConfigured = null;
+    try { const r = await db.query("SELECT value FROM store_settings WHERE key = 'store'"); storeConfigured = !!(r.rows[0]?.value?.address?.length || r.rows[0]?.value?.location) } catch { storeConfigured = 'unreadable' }
+    res.json({ ok: true, db: db.kind, schema: db.kind === 'postgres' ? cfg.DB_SCHEMA : null, storeConfigured });
+  });
   app.use('/api/auth', authRoutes(ctx));
   app.use('/api', catalogRoutes(ctx));
   app.use('/api/cart', cartRoutes(ctx));
