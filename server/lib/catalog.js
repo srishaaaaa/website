@@ -84,6 +84,7 @@ export async function productBySlug(q, slug) {
 
 export const listCategories = (q) => rows(q, `
   SELECT c.id, c.name, c.slug, c.description, c.image_url,
+         (SELECT image_url FROM product_images i JOIN products p ON p.id = i.product_id WHERE p.category_id = c.id AND p.status = 'active' ORDER BY p.featured DESC, i.display_order, i.id LIMIT 1) AS cover_image,
          (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id AND p.status = 'active') AS product_count
   FROM categories c WHERE c.active ORDER BY c.display_order, c.name`);
 

@@ -110,7 +110,7 @@ function Model3D({ cutout, depth, reduced }) {
     g.rotation.x += (-py * 0.1 - g.rotation.x) * 0.06;
   });
   return (
-    <group ref={group} position={[viewport.width / 2 - w / 2 - viewport.width * 0.012, 0, 0.1]}>
+    <group ref={group} position={[0, -viewport.height * 0.02, 0.1]}>
       <mesh>
         <planeGeometry args={[w, h, 120, 156]} />
         <shaderMaterial vertexShader={modelVert} fragmentShader={modelFrag} uniforms={uniforms.current} transparent side={THREE.DoubleSide} />

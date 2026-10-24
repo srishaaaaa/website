@@ -8,6 +8,7 @@ import ImmersiveHero from '../components/hero/ImmersiveHero';
 import FeaturedCollections from '../components/FeaturedCollections';
 import CollectionsFlow from '../components/CollectionsFlow';
 import CategoryCircles from '../components/CategoryCircles';
+import AboutBand from '../components/AboutBand';
 import CustomerReviews from '../components/CustomerReviews';
 import InstagramStrip from '../components/InstagramStrip';
 import StoreLocationMap from '../components/StoreLocationMap';
@@ -77,6 +78,7 @@ export default function Home() {
     <div ref={root} className="home">
       <ImmersiveHero />
       <CategoryCircles />
+      <AboutBand />
       <FeaturedCollections />
       <CollectionsFlow />
       <Story />

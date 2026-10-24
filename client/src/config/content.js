@@ -17,6 +17,10 @@ export const brand = {
 // While an entry is null the site renders deterministic generative placeholders.
 export const media = {
   heroCutout: '/images/hero-cutout.png',   // transparent cut-out of the hero model (soft-feathered edges)
+  heroSides: [
+    { src: '/images/hero-side-1.jpg', alt: 'A model in a crimson Banarasi saree with a gold border, one hand on her hip' },
+    { src: '/images/hero-side-2.jpg', alt: 'A model in a red saree with gold detailing against a deep green wall' },
+  ],
   heroDepth: '/images/hero-depth.png',        // estimated depth map of the cut-out (drives the 3D mesh)
   heroCutoutWebp: '/images/hero-cutout.webp',
   heroAlt: 'A woman in a peach-pink striped saree and a gold blouse, mid-turn as her pallu flies out behind her',

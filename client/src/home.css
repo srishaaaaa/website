@@ -505,3 +505,76 @@ h1, h2 { text-wrap: balance }
 .insta-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 380px)); justify-content: center }
 @media (max-width: 767px) { .insta-grid { grid-template-columns: none; grid-auto-flow: column; justify-content: start } }
 .insta-empty { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #efe6da 0 14px, #f4ede2 14px 28px); box-shadow: none; border: 1.5px dashed rgba(9,9,13,.25) } .insta-empty span { font-size: 12px; letter-spacing: .2em; font-weight: 700; text-transform: uppercase; opacity: .5 }
+
+/* ---- featured categories: tall photo cards with label plates ---- */
+.cc { padding-bottom: clamp(24px, 3vw, 48px) }
+.cc-bar { max-width: 1500px; margin: 0 auto clamp(20px, 2.6vw, 34px); display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 14px; border-top: 1px solid rgba(9, 9, 13, .12) }
+.cc-title { font-size: 13px; letter-spacing: .22em; font-weight: 700; font-family: var(--sans); text-transform: uppercase }
+.cc-sort select { padding: 9px 36px 9px 16px; border-radius: 999px; border: 1px solid rgba(9, 9, 13, .18); background: #fff; font: 600 12px var(--sans); letter-spacing: .06em; cursor: pointer }
+.cc-grid { max-width: 1500px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(14px, 1.8vw, 26px); padding: 0 }
+.cc-card { position: relative; display: block; aspect-ratio: 3 / 4.3; border-radius: 26px; overflow: hidden; background: var(--plum); box-shadow: 0 20px 44px rgba(90, 50, 50, .16); isolation: isolate }
+.cc-photo, .cc-photo > * { position: absolute; inset: 0; width: 100%; height: 100% } .cc-photo > * { object-fit: cover; transition: transform 1.2s var(--ease) }
+.cc-card:hover .cc-photo > * { transform: scale(1.07) }
+.cc-card::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, rgba(40, 12, 24, .5), transparent 42%); pointer-events: none }
+.cc-go { position: absolute; z-index: 2; right: 14px; top: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, .92); display: grid; place-items: center; font-size: 16px; transition: transform .45s var(--ease), background .3s }
+.cc-card:hover .cc-go { transform: rotate(45deg) scale(1.08); background: #fff }
+.cc-plate { position: absolute; z-index: 2; left: 18px; right: 18px; bottom: 18px; padding: 14px 16px; border-radius: 14px; background: rgba(245, 238, 232, .88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: grid; text-align: center; color: var(--ob) }
+.cc-plate strong { font-size: 15px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase } .cc-plate em { font-style: normal; font-size: 12px; opacity: .6 }
+.cc-more { text-align: center; margin-top: 26px }
+@media (max-width: 959px) { .cc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+/* ---- about band: three columns ---- */
+.ab3 { background: var(--cream); padding: clamp(14px, 2vw, 30px) var(--pad) clamp(40px, 5vw, 80px); color: var(--ob); --ink: #09090D; --paper: #F5F0E8 }
+.ab3-grid { max-width: 1500px; margin: 0 auto; padding-top: clamp(26px, 3vw, 46px); border-top: 1px solid rgba(9, 9, 13, .12); display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.5fr) minmax(0, .9fr); gap: clamp(22px, 3.4vw, 56px); align-items: start }
+.ab3-h2 { font-family: var(--sans); font-size: 13px; letter-spacing: .22em; font-weight: 700; margin-bottom: 18px; color: #7a2240 }
+.ab3-media .ab3-h2 { display: none }
+.ab3-photo { display: block; aspect-ratio: 1; border-radius: 26px; overflow: hidden; background: #e9dccb; box-shadow: 0 18px 40px rgba(90, 50, 50, .14) } .ab3-photo > * { width: 100%; height: 100%; object-fit: cover; transition: transform 1s var(--ease) } .ab3-photo:hover > * { transform: scale(1.06) }
+.ab3-copy p { font-size: 15px; line-height: 1.75; color: rgba(9, 9, 13, .72); margin-bottom: 12px; max-width: 62ch }
+.ab3-cap { font-size: 11px !important; letter-spacing: .2em; font-weight: 700; color: rgba(9, 9, 13, .5) !important; margin: 22px 0 12px !important }
+.ab3-new ul { display: flex; flex-wrap: wrap; gap: 12px }
+.ab3-dot { display: block; width: clamp(48px, 4.6vw, 64px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: var(--plum); box-shadow: 0 6px 16px rgba(90, 50, 50, .2), inset 0 0 0 2px #fff; transition: transform .4s var(--ease) } .ab3-dot:hover { transform: translateY(-4px) scale(1.06) } .ab3-dot > * { width: 100%; height: 100%; object-fit: cover }
+.ab3-rate { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px } .ab3-rate span { opacity: .65 }
+.ab3-lead { font-size: 15px; line-height: 1.7; color: rgba(9, 9, 13, .72); margin-bottom: 10px }
+.ab3-cats { font-size: 12px; letter-spacing: .08em; font-weight: 600; opacity: .55; margin-bottom: 18px }
+.ab3-btn { display: block; text-align: center; padding: 18px 22px; border-radius: 6px; background: #7a2240; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .2em; margin: 8px 0 14px; box-shadow: 0 12px 28px rgba(122, 34, 64, .28); transition: background .4s var(--ease), transform .4s var(--ease) } .ab3-btn:hover { background: #5b1730; transform: translateY(-2px) }
+.ab3-link { display: flex; justify-content: center; gap: 8px; padding: 13px 20px; border-radius: 999px; border: 1px solid rgba(122, 34, 64, .45); color: #7a2240; font-size: 13px; font-weight: 600; transition: background .35s, color .35s } .ab3-link:hover { background: #7a2240; color: #fff }
+@media (max-width: 959px) { .ab3-grid { grid-template-columns: 1fr } .ab3-media .ab3-h2 { display: block } .ab3-copy > .ab3-h2 { display: none } .ab3-photo { aspect-ratio: 4 / 3 } }
+
+/* ============ triptych hero: two framed photographs flank the 3D model ============ */
+.hl-panel.tri { height: auto; min-height: 0; padding: clamp(16px, 2.2vw, 32px); display: block;
+  background: radial-gradient(60% 60% at 50% 18%, rgba(255, 255, 255, .6), transparent 70%), linear-gradient(180deg, #f6ecdf, #f1e3d3) }
+.tri-grid { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.75fr) minmax(0, 1fr); gap: clamp(12px, 1.6vw, 24px); align-items: start; height: clamp(440px, calc(100svh - 360px), 620px) }
+.tri-side { margin: 0; height: 74%; border-radius: 22px; overflow: hidden; background: var(--plum); box-shadow: 0 22px 46px rgba(90, 40, 50, .2); transform: translate3d(calc(var(--px) * -6px), calc(var(--py) * 4px), 0) }
+.tri-side:last-of-type { transform: translate3d(calc(var(--px) * 6px), calc(var(--py) * 4px), 0) }
+.tri-side img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; display: block }
+.tri-main { position: relative; height: 100%; border-radius: 26px; overflow: hidden; isolation: isolate; background: radial-gradient(70% 60% at 50% 38%, #9c3355 0%, #6e1a33 52%, #470c20 100%); box-shadow: 0 30px 70px rgba(100, 30, 50, .3) }
+.tri-main .hl-stage { position: absolute; inset: 0; right: auto; bottom: auto; height: auto; width: 100%; aspect-ratio: auto; z-index: 2 }
+.tri-main .ps-aura { left: 20%; top: 8%; width: 60%; height: 70%; background: radial-gradient(closest-side, rgba(255, 214, 170, .45), transparent) }
+.tri-main .ps-3d { left: 0 }
+.tri-main .ps-model { left: 50%; right: auto; transform: translateX(-50%) }
+.tri-main .ps-floor { right: auto; left: 50%; transform: translateX(-50%); width: 56%; background: radial-gradient(closest-side, rgba(0, 0, 0, .4), transparent) }
+.tri-word { position: absolute; z-index: 1; left: 0; right: 0; bottom: 4%; text-align: center; will-change: transform }
+.tri-word span { display: block; font-family: var(--serif); font-weight: 800; font-size: clamp(60px, 11vw, 190px); line-height: .8; letter-spacing: .02em; color: rgba(229, 200, 143, .2); white-space: nowrap; user-select: none }
+.tri-main .hl-trend { right: 14px; bottom: 14px; z-index: 4; max-width: 270px }
+.tri-copy { position: relative; z-index: 3; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(18px, 3vw, 56px); align-items: end; margin-top: clamp(20px, 2.6vw, 38px) }
+.tri-copy .et { font-size: clamp(34px, 4.9vw, 82px); margin: 0 }
+.tri-copy-r .hl-line { margin-bottom: 6px } .tri-copy-r .hl-sub { margin-bottom: 18px; max-width: 46ch }
+.tri-trust { position: relative; left: auto; bottom: auto; margin-top: clamp(18px, 2.4vw, 30px); padding-top: 18px; border-top: 1px solid rgba(9, 9, 13, .09); z-index: 3 }
+@media (max-width: 1100px) { .tri-main .hl-trend { display: none } }
+@media (max-width: 959px) {
+  .hl-panel.tri { padding: 14px }
+  .tri-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; height: auto; gap: 10px }
+  .tri-main { grid-column: 1 / -1; grid-row: 1; height: min(118vw, 560px) }
+  .tri-side { height: auto; aspect-ratio: 3 / 4 }
+  .tri-copy { grid-template-columns: 1fr; gap: 14px; margin-top: 22px; padding: 0 6px }
+  .tri-copy .et { font-size: clamp(36px, 10.5vw, 70px) }
+  .tri-trust { padding-inline: 6px }
+}
+.tri-main .hl-stage { height: 100%; bottom: 0 }
+.tri-grid { height: clamp(380px, calc(100svh - 440px), 560px) }
+.tri-copy { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) }
+.tri-copy .et { font-size: clamp(30px, 4.2vw, 70px) } .tri-copy .et-line { white-space: nowrap }
+@media (max-width: 959px) { .tri-main .hl-stage { height: 100% } .tri-grid { height: auto } .tri-copy .et { font-size: clamp(28px, 8.4vw, 60px) } }
+.tri-main .hl-trend { bottom: auto; top: 14px; right: 14px; max-width: 250px; padding: 8px 14px 8px 8px } .tri-main .hl-trend-img { width: 52px; height: 66px }
+@media (max-width: 959px) { .tri-copy { grid-template-columns: minmax(0, 1fr) } }
+@media (max-width: 959px) { .tri-copy .et-line { white-space: normal } .tri-copy .et { font-size: clamp(30px, 9.2vw, 64px) } }
