@@ -24,7 +24,7 @@ export async function createDb(cfg) {
       await admin.connect(); await admin.query(`CREATE SCHEMA IF NOT EXISTS ${cfg.DB_SCHEMA}`); await admin.end();
       opts.options = `-c search_path=${cfg.DB_SCHEMA}`;
     }
-    const pool = new pg.Pool({ connectionString: url.toString(), ...opts });
+    const pool = new pg.Pool({ connectionString: url.toString(), ...opts, max: Number(process.env.PG_POOL_MAX) || opts.max });
     const wrap = c => ({ query: (s, p) => c.query(s, p), exec: s => c.query(s) });
     return {
       kind: 'postgres', ...wrap(pool),

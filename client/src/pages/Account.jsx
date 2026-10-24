@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
+import { AdminTabs } from './AdminMedia';
 
 const when = d => new Date(d).toLocaleDateString('en-IN');
 
@@ -50,6 +51,7 @@ export function Admin() {
   return (
     <div className="account">
       <p className="eyebrow">ADMIN</p><h1 className="serif">Orders</h1>
+      <AdminTabs />
       {s && <p>Paid orders: {s.paidOrders} · Gross: {inr(s.gross)} · Average: {inr(s.averageOrder)}</p>}
       <table className="tbl"><thead><tr><th>Order</th><th>Email</th><th className="r">Total</th><th>Payment</th><th>Status</th></tr></thead>
         <tbody>{o.map(x => (

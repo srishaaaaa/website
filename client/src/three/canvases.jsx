@@ -1,8 +1,9 @@
-import { Suspense, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useMemo, useRef } from 'react';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { useInView, usePageVisible } from '../lib/hooks';
+import { depthTextureFromAlpha } from './depth';
 import { Arches, Atmosphere, P, Silk } from './parts';
 
 // Renders only while visible; pauses when scrolled away or the tab is hidden.
@@ -61,25 +62,89 @@ export function PortalCanvas({ entering, quality, reduced }) {
   );
 }
 
-/* ---- Living Fabric: a larger silk field the visitor can disturb with the pointer ---- */
-function FabricRig({ reduced }) {
+/* ---- Hero: the model is a real 3D object. Her cut-out is displaced by an estimated depth map (2.5D mesh) and lit
+   softly, then turns gently with the pointer so her form reads as volume. A silk ribbon matched to her saree flows
+   behind her pallu, with a little gold dust. Transparent canvas over the light hero. ---- */
+const modelVert = `
+uniform sampler2D uDepth; uniform float uScale; uniform float uCam;
+varying vec2 vUv;
+void main(){
+  vUv = uv;
+  float d = texture2D(uDepth, uv).r;
+  vec3 p = position; float z = d * uScale; p.z += z;
+  p.xy *= (uCam - z) / uCam; // cancel perspective growth so the resting pose matches the photograph exactly
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`;
+const modelFrag = `
+uniform sampler2D uMap; uniform sampler2D uDepth; uniform float uTexel;
+varying vec2 vUv;
+void main(){
+  vec4 c = texture2D(uMap, vUv);
+  if (c.a < 0.02) discard;
+  // soft relief lighting derived from the depth map (no geometry normals needed)
+  float dl = texture2D(uDepth, vUv - vec2(uTexel, 0.)).r, dr = texture2D(uDepth, vUv + vec2(uTexel, 0.)).r;
+  float dd = texture2D(uDepth, vUv - vec2(0., uTexel)).r, du = texture2D(uDepth, vUv + vec2(0., uTexel)).r;
+  vec3 n = normalize(vec3((dl - dr) * 3.2, (dd - du) * 3.2, 1.0));
+  float lit = dot(n, normalize(vec3(-.35, .5, .8)));
+  vec3 col = c.rgb * (0.92 + 0.16 * lit);
+  gl_FragColor = vec4(col, c.a);
+  #include <colorspace_fragment>
+}`;
+
+function Model3D({ cutout, depth, reduced }) {
+  const { viewport } = useThree();
+  const maps = useLoader(THREE.TextureLoader, depth ? [cutout, depth] : [cutout]);
+  const map = maps[0];
+  // No depth map supplied (e.g. a custom hero upload)? Derive a roundness map from the cut-out's silhouette.
+  const depthTex = useMemo(() => (depth ? maps[1] : depthTextureFromAlpha(map.image)), [depth, maps, map]);
+  map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4; depthTex.colorSpace = THREE.NoColorSpace;
+  const group = useRef();
+  const aspect = map.image.width / map.image.height;
+  let h = viewport.height * 0.98, w = h * aspect;
+  const fit = Math.min(1, (viewport.width * 0.62) / w); h *= fit; w *= fit; // never wider than its share of the stage
+  const uniforms = useRef({ uMap: { value: map }, uDepth: { value: depthTex }, uScale: { value: 0.45 }, uCam: { value: 6.9 }, uTexel: { value: 1 / (depthTex.image.width || 540) } });
+  useFrame(({ clock }) => {
+    const g = group.current; if (!g) return;
+    const t = clock.elapsedTime, px = reduced ? 0 : P.x, py = reduced ? 0 : P.y;
+    g.rotation.y += (px * 0.26 + (reduced ? 0 : Math.sin(t * 0.5) * 0.05) - g.rotation.y) * 0.06;
+    g.rotation.x += (-py * 0.1 - g.rotation.x) * 0.06;
+  });
+  return (
+    <group ref={group} position={[viewport.width / 2 - w / 2 - viewport.width * 0.012, 0, 0.1]}>
+      <mesh>
+        <planeGeometry args={[w, h, 120, 156]} />
+        <shaderMaterial vertexShader={modelVert} fragmentShader={modelFrag} uniforms={uniforms.current} transparent side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+function HeroRig({ reduced }) {
   useFrame(({ camera }) => {
-    if (reduced) return;
-    camera.position.x += (P.x * 0.6 - camera.position.x) * 0.04;
-    camera.position.y += (P.y * 0.35 - camera.position.y) * 0.04;
+    const px = reduced ? 0 : P.x, py = reduced ? 0 : P.y;
+    camera.position.x += (px * 0.35 - camera.position.x) * 0.04;
+    camera.position.y += (py * 0.2 - camera.position.y) * 0.04;
     camera.lookAt(0, 0, 0);
   });
   return null;
 }
 
-export function FabricCanvas({ quality, reduced }) {
-  const mix = useRef(0.4);
+function HeroScene({ quality, reduced, cutout, depth }) {
+  const { viewport } = useThree();
+  const mix = useRef(0.5);
   return (
-    <Stage className="scene fabric-scene" quality={quality} reduced={reduced} camera={{ position: [0, 0, 6.5], fov: 50, near: 0.1, far: 50 }}>
-      <FabricRig reduced={reduced} />
-      <Atmosphere sparkles={quality.low ? 20 : 60} sparkleArea={[12, 6, 6]} lightMix={mix} />
-      <Silk segments={quality.low ? [96, 56] : [180, 100]} size={[18, 9]} position={[0, 0, 0]} rotation={[-0.55, 0, 0]} amp={1.6} mixRef={mix} colors={['#c98f96', '#E4C98F']} opacity={0.96} />
-      <Sparkles count={quality.low ? 12 : 30} scale={[10, 5, 4]} size={3} speed={0.12} color="#C6A46A" opacity={0.6} />
+    <>
+      <HeroRig reduced={reduced} />
+      <Sparkles count={quality.low ? 24 : 60} scale={[viewport.width, viewport.height, 3]} size={3.2} speed={0.14} color="#C6A46A" opacity={0.7} />
+      <Model3D key={cutout} cutout={cutout} depth={depth} reduced={reduced} />
+    </>
+  );
+}
+
+export function HeroCanvas({ quality, reduced, cutout, depth }) {
+  return (
+    <Stage className="scene hero-silk" quality={quality} reduced={reduced} camera={{ position: [0, 0, 7], fov: 40, near: 0.1, far: 40 }}>
+      <HeroScene quality={quality} reduced={reduced} cutout={cutout} depth={depth} />
     </Stage>
   );
 }

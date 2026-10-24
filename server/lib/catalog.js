@@ -2,7 +2,8 @@ import { rows, one } from '../db/index.js';
 
 const BASE_SELECT = `
   SELECT p.id, p.slug, p.name, p.description, c.name AS category, c.slug AS category_slug,
-         p.base_price AS price, p.material, p.currency, p.tax_rate AS gst_rate, p.featured, p.created_at,
+         p.base_price AS price, p.material, p.currency,
+         (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id OFFSET 1 LIMIT 1) AS image2, p.tax_rate AS gst_rate, p.featured, p.created_at,
          (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
          COALESCE(st.stock, 0)::int AS stock, st.single_variant,
          COALESCE(st.sizes, ARRAY[]::text[]) AS sizes, COALESCE(st.colors, ARRAY[]::text[]) AS colors

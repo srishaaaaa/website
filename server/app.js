@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js';
 import catalogRoutes from './routes/catalog.js';
 import adminRoutes from './routes/admin.js';
 import settingsRoutes from './routes/settings.js';
+import { mediaAdmin, mediaPublic } from './routes/media.js';
 import { cartRoutes, wishlistRoutes, newsletterRoutes, reviewRoutes } from './routes/shopper.js';
 import { commerceRoutes, webhookRoute } from './routes/commerce.js';
 
@@ -34,7 +35,9 @@ export function createApp({ db, cfg, payments = createRazorpayProvider(cfg) }) {
   app.use('/api/newsletter', newsletterRoutes(ctx));
   app.use('/api', settingsRoutes(ctx));
   app.use('/api', commerceRoutes(ctx));
+  app.use('/api', mediaPublic(ctx));
   app.use('/api/admin', adminRoutes(ctx));
+  app.use('/api/admin', mediaAdmin(ctx));
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Not found')));
   app.use(errorHandler());
   return app;

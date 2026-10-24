@@ -196,3 +196,45 @@ test('store location: exact coordinates drive the map pin and directions', async
   assert.equal(map.placeUrl, 'https://maps.app.goo.gl/w29JhPYvqcJgynb56');
   assert.equal((await staff('PUT', '/admin/settings/store', { name: 'DHANYA', location: { lat: 999, lng: 0 } })).status, 400, 'impossible coordinates rejected');
 });
+
+test('admin media: staff-only validated uploads, product galleries, covers and branding', async () => {
+  // 1x1 PNG and a few non-images
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==', 'base64');
+  const raw = jar => async (path, body, type) => { const r = await fetch(base + path, { method: 'POST', body, headers: { 'Content-Type': type, 'X-Requested-With': 'dhanya', Cookie: jar() } }); return { status: r.status, body: await r.json().catch(() => null) } };
+  const login = async () => { const r = await fetch(base + '/auth/login', { method: 'POST', body: JSON.stringify({ email: 'owner@test.dev', password: 'OwnerPass123!' }), headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'dhanya' } }); return r.headers.getSetCookie().map(c => c.split(';')[0]).join('; ') };
+  const cookie = await login(); const staff = raw(() => cookie), anon = raw(() => '');
+  assert.equal((await anon('/admin/media', PNG, 'image/png')).status, 401);
+  const shopper = client(); await shopper('POST', '/auth/register', { email: 'media-shopper@test.dev', password: 'Password123!' });
+  assert.equal((await staff('/admin/media', Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), 'image/png')).status, 400, 'fake image rejected');
+  assert.equal((await staff('/admin/media', PNG, 'image/jpeg')).status, 400, 'declared type must match the real type');
+  const up = await staff('/admin/media?name=test.png', PNG, 'image/png');
+  assert.equal(up.status, 201); assert.match(up.body.url, /^\/api\/media\/\d+$/);
+  const got = await fetch(base + up.body.url.replace('/api', ''));
+  assert.equal(got.status, 200); assert.equal(got.headers.get('content-type'), 'image/png'); assert.match(got.headers.get('cache-control'), /immutable/);
+  assert.deepEqual(Buffer.from(await got.arrayBuffer()), PNG, 'served bytes equal uploaded bytes');
+
+  const api = client(); await api('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const list = (await api('GET', '/admin/products?q=Banarasi')).body; assert.ok(list.length >= 1);
+  const pId = list.find(p => p.slug === 'banarasi-silk-saree').id;
+  const a1 = await api('POST', `/admin/products/${pId}/images`, { url: up.body.url, alt: 'Front' });
+  assert.equal(a1.status, 201); assert.equal(a1.body.length, 1);
+  const up2 = await staff('/admin/media', PNG, 'image/png');
+  const a2 = await api('POST', `/admin/products/${pId}/images`, { url: up2.body.url, alt: 'Detail' });
+  assert.deepEqual(a2.body.map(i => i.alt), ['Front', 'Detail']);
+  const reordered = await api('PUT', `/admin/products/${pId}/images/order`, { ids: [a2.body[1].id, a2.body[0].id] });
+  assert.deepEqual(reordered.body.map(i => i.alt), ['Detail', 'Front']);
+  assert.equal((await api('POST', `/admin/products/${pId}/images`, { url: 'javascript:alert(1)' })).status, 400, 'unsafe URLs rejected');
+  const pub = (await client()('GET', '/products/banarasi-silk-saree')).body;
+  assert.equal(pub.images.length, 2);
+  const card = (await client()('GET', '/products?q=Banarasi%20Silk')).body.items.find(p => p.slug === 'banarasi-silk-saree');
+  assert.ok(card.image && card.image2, 'cards get a hover image from the second photo');
+  const rem = await api('DELETE', `/admin/images/${reordered.body[0].id}`); assert.equal(rem.body.length, 1);
+  assert.equal((await fetch(base + up2.body.url.replace('/api', ''))).status, 404, 'orphaned upload is cleaned up');
+
+  const cats = (await api('GET', '/admin/categories')).body; assert.ok(cats.length >= 10);
+  assert.equal((await api('PUT', `/admin/categories/${cats[0].id}/image`, { url: up.body.url })).status, 200);
+  assert.equal((await client()('GET', '/categories')).body[0].image_url, up.body.url);
+  assert.equal((await api('PUT', '/admin/settings/branding', { heroCutout: up.body.url, heroAlt: 'Model' })).status, 200);
+  assert.equal((await client()('GET', '/store')).body.branding.heroCutout, up.body.url);
+  assert.equal((await shopper('GET', '/admin/products')).status, 403, 'customers cannot manage images');
+});

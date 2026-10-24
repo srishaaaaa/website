@@ -6,9 +6,12 @@
     "seed": "npm run seed --prefix server",
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "migrate": "npm run migrate --prefix server",
-    "test": "npm test --prefix server"
+    "test": "npm test --prefix server",
+    "build": "npm run build --prefix client",
+    "vercel-build": "npm run build --prefix client"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
-  }
+  },
+  "type": "module"
 }

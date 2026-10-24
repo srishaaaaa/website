@@ -33,6 +33,12 @@ Portal intro, 3D hero, scroll choreography, mega-menu, live search, catalog, PDP
 - Boutique location pinned from the owner Google Maps link (Dhanyas Boutique, Kumbakonam). Street address, PIN, phone and hours are not set yet — add them in /admin.
 - Redesigned About page (live counts, categories, how it works, features row, map).
 
+## Latest (design pass + admin images)
+- Hero: rounded editorial panel; the model is a real 3D mesh (cut-out displaced by an AI-estimated depth map, lit by relief shading, turns gently with the pointer). Lookbook (tabbed, real queries), 3D coverflow of collections, wine-panel Our Story, softer image boxes, refined shop menu type.
+- **Admin → Products & images / Storefront images**: upload product photos (drag-drop, reorder, alt text, remove), category and collection covers, the hero model, the Our Story photo and Instagram photos. Images are stored in Postgres (`media_files`) and served from `/api/media/:id`.
+- **One-project deploy**: see DEPLOY.md (vercel.json + api/index.js).
+- tools/make-cutout.py makes a soft-edged transparent cut-out from any model photo.
+
 ## Content you must supply
 - **Photography:** products have no images yet; generated plates stand in. Set product images and `client/src/config/content.js` (`media`).
 - **Boutique location, hours, social links, policies:** enter them in /admin → Store settings (policy text via the API until the Phase 5 editor).

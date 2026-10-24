@@ -8,6 +8,7 @@ import { inr } from '../lib/format';
 
 export function ProductMedia({ p, view = 0, className = '' }) {
   if (p.image) {
+    if (view === 1 && p.image2) return <img className={`media ${className}`} src={p.image2} alt="" loading="lazy" />;
     const zoom = view ? { transform: `scale(${1 + view * 0.35})`, objectPosition: ['50% 50%', '30% 25%', '70% 70%', '50% 35%'][view % 4] } : undefined;
     return <img className={`media ${className}`} src={p.image} alt={view ? '' : p.name} loading="lazy" style={zoom} />;
   }
@@ -19,7 +20,7 @@ const HeartIcon = ({ on }) => (
 );
 
 // Perspective tilt + layered parallax + moving specular glare. Disabled on touch / reduced motion.
-export default function ProductCard({ p, tall = false, className = '' }) {
+export default function ProductCard({ p, tall = false, className = '', index = null }) {
   const { wish, toggleWish, setQuick, addToBag, toast } = useApp();
   const fine = useFinePointer(), reduced = useReduced();
   const ref = useRef();
@@ -55,6 +56,7 @@ export default function ProductCard({ p, tall = false, className = '' }) {
             <div className="pcard-img b"><ProductMedia p={p} view={1} /></div>
           </motion.div>
           <span className="pcard-glare" aria-hidden="true" />
+          {index != null && <span className="pcard-no" aria-hidden="true">No. {String(index + 1).padStart(2, '0')}</span>}
           {out && <span className="pcard-badge">SOLD OUT</span>}
         </Link>
         <button className={`icon-btn pcard-wish ${liked ? 'on' : ''}`} onClick={() => toggleWish(p.slug, p.name)} aria-pressed={liked} aria-label={liked ? `Remove ${p.name} from wishlist` : `Save ${p.name} to wishlist`}>
