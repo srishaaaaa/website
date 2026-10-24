@@ -89,21 +89,22 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 /* Phones get their own layout: copy on the left, a full-height arched photo on the right, quality badges underneath. */
 .bh-feats { display: none }
 @media (max-width: 699px) {
-  .bh .bh-wrap { min-height: 0 }
-  .bh .bh-panel { width: 100%; min-height: 0; padding: 20px 14px 22px; padding-right: 43%; border-radius: 24px 24px 0 0 }
+  .bh { padding-bottom: 26px; min-height: 100vh; min-height: 100svh; display: flex; align-items: flex-start } /* the ticker and next section appear only on scroll */
+  .bh .bh-wrap { min-height: 0; width: 100% }
+  .bh .bh-panel { width: 100%; min-height: 0; padding: 20px 14px 22px; padding-right: 41%; border-radius: 24px }
   .bh .bh-discover, .bh .bh-tint, .bh .bh-inset { display: none }
-  .bh .bh-pill { font-size: 10px; padding: 5px 14px 5px 5px } .bh .bh-pill i { width: 20px; height: 20px }
+  .bh .bh-pill { font-size: 9px; letter-spacing: .08em; white-space: nowrap; gap: 8px; padding: 5px 12px 5px 5px } .bh .bh-pill i { width: 18px; height: 18px }
   .bh .bh-headline { margin-top: 16px }
-  .bh .et { font-size: 13.6vw }
+  .bh .bh-headline .et { font-size: 8.1vw }
   .bh .bh-spark { width: 22px }
   .bh .bh-row { display: block; margin-top: 14px }
   .bh .bh-col { flex: none }
   .bh .bh-desc { max-width: none; font-size: 13px; line-height: 1.55 }
-  .bh .bh-facts { max-width: none; flex-wrap: wrap; margin: 14px 0 16px } .bh .bh-facts li { flex: none; font-size: 10.5px; letter-spacing: .1em } .bh .bh-facts li + li { padding-left: 10px }
-  .bh .bh-btn { max-width: 100%; font-size: 10px; letter-spacing: .1em; padding: 6px 6px 6px 16px; gap: 10px } .bh .bh-btn b { width: 34px; height: 34px; font-size: 15px }
+  .bh .bh-facts { max-width: none; flex-direction: column; gap: 4px; margin: 14px 0 16px } .bh .bh-facts li { flex: none; padding: 0; font-size: 10px; letter-spacing: .08em } .bh .bh-facts li + li { padding: 0; border-left: 0 }
+  .bh .bh-btn { max-width: 100%; white-space: nowrap; font-size: 9px; letter-spacing: .06em; padding: 5px 5px 5px 14px; gap: 8px } .bh .bh-btn b { width: 30px; height: 30px; font-size: 14px }
   .bh .bh-cta { gap: 6px }
   .bh .bh-link { font-size: 11px; letter-spacing: .14em; padding: 10px 0 }
-  .bh .bh-model { left: auto; right: 12px; top: 14px; bottom: 14px; width: 38%; height: auto }
+  .bh .bh-model { left: auto; right: 12px; top: 14px; bottom: 14px; width: 33%; height: auto }
   .bh .bh-feats { display: flex; justify-content: space-between; gap: 6px; margin: 18px 0 0 }
   .bh .bh-feats li { flex: 1; display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 10px; line-height: 1.25; color: rgba(33, 23, 20, .85) }
   .bh .bh-feats svg { width: 24px; height: 24px; color: var(--red) }
