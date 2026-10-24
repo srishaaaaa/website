@@ -62,6 +62,7 @@ export function AdminProducts() {
     try { await api(`/admin/products/${sel.id}`, { method: 'DELETE' }); toast(`${sel.name} deleted.`); setSel(null); load(); loadCatalog() } catch (e) { setErr(e.message) }
   };
   const del = async im => { if (!confirm('Remove this photo?')) return; try { changed(await api(`/admin/images/${im.id}`, { method: 'DELETE' })) } catch (e) { setErr(e.message) } };
+  const saveColor = async (im, color) => { try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { color: color || null } })); toast(color ? `That photo now shows for ${color}.` : 'That photo now shows for every colour.') } catch (e) { setErr(e.message) } };
   const saveAlt = async (im, alt) => { if (alt === im.alt) return; try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { alt } })) } catch (e) { setErr(e.message) } };
 
   return (
@@ -91,6 +92,8 @@ export function AdminProducts() {
                     <li key={im.id}>
                       <div className="adm-img"><img src={im.url} alt={im.alt || sel.name} /><span className="adm-pos">{i + 1}</span></div>
                       <input aria-label={`Alt text for photo ${i + 1}`} defaultValue={im.alt} onBlur={e => saveAlt(im, e.target.value.trim())} placeholder="Describe the photo" />
+                      {(sel.colors || []).filter(c => c !== 'Default').length > 0 && <label className="adm-col"><span className="muted small">Shows for</span>
+                        <select aria-label={`Colour for photo ${i + 1}`} value={im.color || ''} onChange={e => saveColor(im, e.target.value)}><option value="">All colours</option>{(sel.colors || []).filter(c => c !== 'Default').map(c => <option key={c} value={c}>{c}</option>)}</select></label>}
                       <div className="adm-act">
                         <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move earlier">←</button>
                         <button onClick={() => move(i, 1)} disabled={i === imgs.length - 1} aria-label="Move later">→</button>

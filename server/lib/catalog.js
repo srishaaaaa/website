@@ -76,7 +76,7 @@ export async function productBySlug(q, slug) {
   const [variants, images] = await Promise.all([
     rows(q, `SELECT v.id, v.sku, v.size, v.color, v.stock_quantity AS stock, COALESCE(v.price_override, $2) AS price
              FROM product_variants v WHERE v.product_id = $1 AND v.active ORDER BY v.id`, [p.id, p.price]),
-    rows(q, 'SELECT image_url AS url, alt_text AS alt, variant_id FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [p.id]),
+    rows(q, 'SELECT image_url AS url, alt_text AS alt, variant_id, color FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [p.id]),
   ]);
   const related = await rows(q, `${BASE_SELECT} WHERE p.status = 'active' AND p.id <> $1 ORDER BY (p.category_id IS NOT DISTINCT FROM (SELECT category_id FROM products WHERE id = $1)) DESC, p.featured DESC, p.id DESC LIMIT 4`, [p.id]);
   return { ...p, material: extra.material, variants, images, related };

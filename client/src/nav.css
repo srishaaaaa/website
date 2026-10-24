@@ -88,3 +88,19 @@ img, video, canvas { max-width: 100% }
 .mega-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px clamp(26px, 3.4vw, 48px); border-top: 1px solid rgba(198, 160, 82, .4); background: linear-gradient(180deg, rgba(51, 5, 51, .03), rgba(51, 5, 51, .07)); font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: rgba(33, 23, 20, .7) }
 .mega-all { display: inline-flex; align-items: center; gap: 10px; padding: 11px 22px; border-radius: 999px; background: var(--maroon, #330533); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .2em; transition: background .25s, transform .3s var(--ease), gap .3s var(--ease) }
 .mega-all:hover { background: var(--red, #5a1560); transform: translateY(-1px); gap: 16px }
+
+/* ---- product photos are always shown whole (never cropped) ----
+   Photos that are not an exact fit sit on a soft sand mat instead of being cut off. Decorative zoomed crops carry an inline style and are left alone. */
+img.media:not([style]) { object-fit: contain; object-position: 50% 50% }
+.pcard-frame, .cu-photo, .quick-media, .bag-thumb, .s-thumb, .mega-img, .bh-tile-img, .lb-img, .fc-photo, .stage, .thumbs button, .panel-img, .adm-img, .adm-th { background: var(--sand, #e3d3bd) }
+.site-header .mega-img { aspect-ratio: 3 / 4 }
+.fc-photo { aspect-ratio: 3 / 4 }
+.adm-img img, .adm-th img, .dpos-res img { object-fit: contain }
+@media (max-width: 859px) { .quick-media { aspect-ratio: 3 / 4; max-height: 62vh; margin: 0 auto } }
+.adm-col { display: grid; gap: 4px; margin: 6px 0 }
+.adm-col select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--sand, #e3d3bd); background: #fff }
+
+/* category arch cards: the whole photo, pinned to the top so any spare space falls under the name plate */
+.cc-card { background: var(--sand, #e3d3bd) }
+.cc-photo img.media:not([style]) { object-fit: contain; object-position: 50% 0 }
+.cc-card:hover .cc-photo > * { transform: none }

@@ -74,6 +74,39 @@ function EditModal({ product, categories, onClose, onDone }) {
   );
 }
 
+// One colour option = a row of sizes with opening stock, optionally with its own price.
+const colourGroups = p => { const m = new Map(); for (const v of p.variants) { const g = m.get(v.color) || { name: v.color, stock: 0, price: v.price, sizes: [] }; g.stock += v.stock; g.sizes.push(v.size); m.set(v.color, g) } return [...m.values()] };
+function ColourModal({ product, onClose, onDone }) {
+  const sizes0 = [...new Set(product.variants.map(v => v.size))];
+  const [color, setColor] = useState(''); const [price, setPrice] = useState(''); const [rows, setRows] = useState((sizes0.length ? sizes0 : ['Free Size']).map(size => ({ size, stock: '' })));
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const submit = async e => {
+    e.preventDefault(); setBusy(true); setErr();
+    try { await api(`/admin/pos/products/${product.id}/colours`, { method: 'POST', body: { color: color.trim(), price: price.trim() ? toPaise(price) : null, sizes: rows.filter(r => r.size.trim()).map(r => ({ size: r.size.trim(), stock: parseInt(r.stock, 10) || 0 })) } }); onDone(); onClose() }
+    catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
+  };
+  return (
+    <Modal title="Add colour option" sub={product.name} onClose={onClose}>
+      <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
+        <div className="dpos-grid">
+          <label className="f">Colour name<input required autoFocus value={color} maxLength={40} onChange={e => setColor(e.target.value)} placeholder="e.g. Wine Purple" /></label>
+          <label className="f">Price for this colour ₹ (optional)<input inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} placeholder={rupees(product.price)} /></label>
+        </div>
+        <div className="dpos-box"><b>Sizes &amp; stock for this colour</b>
+          {rows.map((r, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginTop: 10 }}>
+              <input aria-label="Size" placeholder="Size" value={r.size} onChange={e => setRows(x => x.map((y, n) => n === i ? { ...y, size: e.target.value } : y))} />
+              <input aria-label="Opening stock" inputMode="numeric" placeholder="Stock" value={r.stock} onChange={e => setRows(x => x.map((y, n) => n === i ? { ...y, stock: e.target.value.replace(/\D/g, '') } : y))} />
+              <button type="button" className="dpos-btn ghost sm" aria-label="Remove size" disabled={rows.length === 1} onClick={() => setRows(x => x.filter((_, n) => n !== i))}>✕</button></div>))}
+          <button type="button" className="dpos-btn ghost sm" style={{ marginTop: 10 }} onClick={() => setRows(x => [...x, { size: '', stock: '' }])}>+ Add size</button></div>
+        <p className="sub">After adding the colour, open Products &amp; images and set each photo’s “Shows for” colour, so shoppers see that colour’s photos when they pick it.</p>
+        <Err>{err}</Err>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Adding…' : 'Add colour'}</button></div>
+      </form>
+    </Modal>
+  );
+}
+
 const blankVar = () => ({ size: 'Free Size', color: 'Default', sku: '', stock: '' });
 function AddModal({ categories, onClose, onDone }) {
   const [f, setF] = useState({ name: '', price: '', tax: 5, cat: '', status: 'active' }); const [vars, setVars] = useState([blankVar()]); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
@@ -127,6 +160,7 @@ export default function PosInventory({ manager, stocker }) {
     try { await api(`/admin/pos/products/${p.id}/variants`, { method: 'POST', body: { size: nv.size.trim(), color: nv.color.trim() || 'Default', sku: (nv.sku.trim() || `${p.slug}-${slugify(nv.size)}-${slugify(nv.color) || 'default'}`).toUpperCase(), stock: parseInt(nv.stock, 10) || 0 } }); setNv({ size: '', color: '', sku: '', stock: '' }); load() }
     catch (x) { setErr(x.issues?.[0]?.message || x.message) }
   };
+  const removeColour = async (p, name) => { if (!confirm(`Remove the colour “${name}” and all its sizes from ${p.name}? Past bills keep their own copy.`)) return; try { await api(`/admin/pos/products/${p.id}/colours?color=${encodeURIComponent(name)}`, { method: 'DELETE' }); toast('Colour removed.'); load() } catch (e) { setErr(e.message) } };
   const stockDone = (vid, n) => { setList(l => l.map(p => ({ ...p, variants: p.variants.map(v => v.id === vid ? { ...v, stock: n } : v), stock: p.variants.some(v => v.id === vid) ? p.variants.reduce((s, v) => s + (v.id === vid ? n : v.stock), 0) : p.stock }))); toast(`Stock updated: ${n} left`) };
   const tag = s => s < 1 ? <span className="dpos-pill bad">Out</span> : s <= LOW ? <span className="dpos-pill bad">Low</span> : null;
 
@@ -163,6 +197,12 @@ export default function PosInventory({ manager, stocker }) {
                 <div className="dpos-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
                   {[['Selling price', inr(p.price)], ['Category', p.category || '—'], ['GST', `${p.taxRate}%`], ['Status', p.status]].map(([l, v]) => <div key={l}><span className="muted small" style={{ letterSpacing: '.1em', fontWeight: 800, textTransform: 'uppercase' }}>{l}</span><div style={{ fontWeight: 800 }}>{v}</div></div>)}
                 </div>
+                <div>
+                  <div className="dpos-head" style={{ marginBottom: 8 }}><b className="muted small" style={{ letterSpacing: '.1em', textTransform: 'uppercase' }}>Colour options</b>{manager && <button className="dpos-btn sm" onClick={() => setModal({ t: 'colour', p })}>+ Add colour</button>}</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{colourGroups(p).map(c => (
+                    <span key={c.name} className="dpos-pill" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '7px 12px', fontSize: 11 }}>{c.name} · {c.stock} in stock{c.price !== p.price ? ` · ${inr(c.price)}` : ''}
+                      {manager && colourGroups(p).length > 1 && <button type="button" aria-label={`Remove colour ${c.name}`} style={{ color: '#b3261e', fontWeight: 800 }} onClick={() => removeColour(p, c.name)}>✕</button>}</span>))}</div>
+                </div>
                 <div className="dpos-tw"><table><thead><tr><th>Size</th><th>Colour</th><th>SKU</th><th className="r">Stock</th><th /></tr></thead>
                   <tbody>{p.variants.map(v => <tr key={v.id}><td>{v.size}</td><td>{v.color}</td><td className="muted small">{v.sku}</td><td className="r"><b>{v.stock}</b> {tag(v.stock)}</td><td className="r">{stocker && <button className="dpos-btn ghost sm" onClick={() => setModal({ t: 'stock', p, vid: v.id })}>Stock</button>}</td></tr>)}</tbody></table></div>
                 {manager && <form onSubmit={e => addVariant(p, e)} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr)) auto', gap: 8 }}>
@@ -174,6 +214,7 @@ export default function PosInventory({ manager, stocker }) {
       </section>
       {modal?.t === 'stock' && <StockModal product={list.find(x => x.id === modal.p.id) || modal.p} variantId={modal.vid} onClose={() => setModal(null)} onDone={stockDone} />}
       {modal?.t === 'edit' && <EditModal product={modal.p} categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product saved.'); load() }} />}
+      {modal?.t === 'colour' && <ColourModal product={modal.p} onClose={() => setModal(null)} onDone={() => { toast('Colour added.'); load() }} />}
       {modal?.t === 'add' && <AddModal categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product added.'); load() }} />}
     </>
   );

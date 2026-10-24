@@ -10,10 +10,17 @@ import ProductCard from '../components/ProductCard3D';
 import { Magnetic, Reveal } from '../components/Motion';
 
 // Real photography when the product has images; otherwise four generated views.
-const slidesOf = p => (p.images?.length ? p.images.map(im => ({ p: { ...p, image: im.url, name: im.alt || p.name }, view: 0 })) : [0, 1, 2, 3].map(v => ({ p, view: v })));
+// Photos tagged with the chosen colour come first, then the untagged ones; a colour with no tagged photos shows the untagged (or all) photos.
+const slidesOf = (p, color) => {
+  if (!p.images?.length) return [0, 1, 2, 3].map(v => ({ p, view: v }));
+  const mine = p.images.filter(im => im.color && color && im.color.toLowerCase() === color.toLowerCase());
+  const general = p.images.filter(im => !im.color);
+  const list = mine.length ? [...mine, ...general] : general.length ? general : p.images;
+  return list.map(im => ({ p: { ...p, image: im.url, name: im.alt || p.name }, view: 0 }));
+};
 
-function Lightbox({ p, index, setIndex, onClose }) {
-  const slides = slidesOf(p), N = slides.length;
+function Lightbox({ p, color, index, setIndex, onClose }) {
+  const slides = slidesOf(p, color), N = slides.length;
   const ref = useRef(); useModal(true, onClose, ref);
   useEffect(() => {
     const k = e => { if (e.key === 'ArrowRight') setIndex(i => (i + 1) % N); if (e.key === 'ArrowLeft') setIndex(i => (i + N - 1) % N) };
@@ -30,11 +37,12 @@ function Lightbox({ p, index, setIndex, onClose }) {
   );
 }
 
-function Gallery({ p }) {
-  const slides = slidesOf(p), N = slides.length;
+function Gallery({ p, color }) {
+  const slides = slidesOf(p, color), N = slides.length;
   const [index, setIndex] = useState(0);
   const [zoom, setZoom] = useState(false);
   const [pan, setPan] = useState({ x: 50, y: 50 });
+  const [hover, setHover] = useState(false);
   const fine = useFinePointer(), reduced = useReduced();
   const touch = useRef(null);
   return (
@@ -44,17 +52,17 @@ function Gallery({ p }) {
       </ul>
       <div className="stage" data-cursor="ZOOM" role="button" tabIndex={0} aria-label="Open full-screen image viewer" onClick={() => setZoom(true)} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setZoom(true))}
         onPointerMove={fine && !reduced ? e => { const r = e.currentTarget.getBoundingClientRect(); setPan({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) } : undefined}
-        onPointerLeave={() => setPan({ x: 50, y: 50 })}
+        onPointerEnter={() => setHover(true)} onPointerLeave={() => { setPan({ x: 50, y: 50 }); setHover(false) }}
         onTouchStart={e => { touch.current = e.touches[0].clientX }}
         onTouchEnd={e => { if (touch.current == null) return; const d = e.changedTouches[0].clientX - touch.current; if (Math.abs(d) > 45) setIndex(i => (i + (d < 0 ? 1 : N - 1)) % N); touch.current = null }}>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div key={index} className="stage-img" initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="pan" style={fine && !reduced ? { transform: `scale(1.12) translate(${(50 - pan.x) * 0.06}%, ${(50 - pan.y) * 0.06}%)` } : undefined}><ProductMedia p={slides[index].p} view={slides[index].view} /></div>
+            <div className="pan" style={fine && !reduced ? { transform: `scale(${hover ? 1.12 : 1}) translate(${(50 - pan.x) * 0.06}%, ${(50 - pan.y) * 0.06}%)` } : undefined}><ProductMedia p={slides[index].p} view={slides[index].view} /></div>
           </motion.div>
         </AnimatePresence>
         <span className="stage-count" aria-hidden="true">{index + 1} / {N}</span>
       </div>
-      <AnimatePresence>{zoom && <Lightbox p={p} index={index} setIndex={setIndex} onClose={() => setZoom(false)} />}</AnimatePresence>
+      <AnimatePresence>{zoom && <Lightbox p={p} color={color} index={index} setIndex={setIndex} onClose={() => setZoom(false)} />}</AnimatePresence>
     </div>
   );
 }
@@ -105,11 +113,11 @@ export default function Product() {
     <div className="pdp-wrap">
       <nav className="crumbs" aria-label="Breadcrumb"><Link to="/shop">Shop</Link><span aria-hidden="true">/</span>{p.category && <><Link to={`/shop?category=${p.category_slug}`}>{p.category}</Link><span aria-hidden="true">/</span></>}<span aria-current="page">{p.name}</span></nav>
       <div className="pdp">
-        <Gallery p={p} />
+        <Gallery key={color || 'all'} p={p} color={color} />
         <div className="pdp-info">
           <p className="eyebrow">{p.category}</p>
           <h1 className="serif">{p.name}</h1>
-          <p className="price big">{inr(variant?.price ?? p.price)} <small>+ {p.gst_rate}% GST</small></p>
+          <p className="price big">{inr(variant?.price ?? (sizes.length && sizes.every(v => v.price === sizes[0].price) ? sizes[0].price : p.price))} <small>+ {p.gst_rate}% GST</small></p>
 
           {colors.length > 1 && (
             <fieldset><legend className="eyebrow">Colour — {color}</legend>

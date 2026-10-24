@@ -75,21 +75,22 @@ export function mediaAdmin({ db, auth }) {
     const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
     res.json(await rows(db, `
       SELECT p.id, p.slug, p.name, p.status, p.is_sample, c.name AS category,
+             COALESCE((SELECT array_agg(DISTINCT v.color ORDER BY v.color) FROM product_variants v WHERE v.product_id = p.id), ARRAY[]::text[]) AS colors,
              (SELECT COUNT(*)::int FROM product_images i WHERE i.product_id = p.id) AS image_count,
              (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image
       FROM products p LEFT JOIN categories c ON c.id = p.category_id
       WHERE $1 = '' OR p.name ILIKE $2 OR p.slug ILIKE $2 ORDER BY (SELECT COUNT(*) FROM product_images i WHERE i.product_id = p.id), p.id DESC LIMIT 300`, [q, like]));
   }));
-  const gallery = (productId) => rows(db, 'SELECT id, image_url AS url, alt_text AS alt, display_order FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [productId]);
+  const gallery = (productId) => rows(db, 'SELECT id, image_url AS url, alt_text AS alt, color, display_order FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [productId]);
   const pid = z.coerce.number().int().positive();
 
   r.get('/products/:id/images', staff, wrap(async (req, res) => res.json(await gallery(pid.parse(req.params.id)))));
   r.post('/products/:id/images', staff, wrap(async (req, res) => {
     const id = pid.parse(req.params.id);
-    const d = z.object({ url: imageUrl, alt: z.string().trim().max(200).default('') }).parse(req.body);
+    const d = z.object({ url: imageUrl, alt: z.string().trim().max(200).default(''), color: z.string().trim().max(40).nullable().default(null) }).parse(req.body);
     if (!(await one(db, 'SELECT 1 AS x FROM products WHERE id = $1', [id]))) throw new HttpError(404, 'Product not found');
-    await db.query(`INSERT INTO product_images (product_id, image_url, alt_text, display_order)
-                    VALUES ($1, $2, $3, COALESCE((SELECT MAX(display_order) + 1 FROM product_images WHERE product_id = $1), 0))`, [id, d.url, d.alt]);
+    await db.query(`INSERT INTO product_images (product_id, image_url, alt_text, color, display_order)
+                    VALUES ($1, $2, $3, $4, COALESCE((SELECT MAX(display_order) + 1 FROM product_images WHERE product_id = $1), 0))`, [id, d.url, d.alt, d.color]);
     await audit(db, req.user.id, 'product.image.add', 'product', id, { url: d.url });
     res.status(201).json(await gallery(id));
   }));
@@ -100,8 +101,9 @@ export function mediaAdmin({ db, auth }) {
     res.json(await gallery(id));
   }));
   r.patch('/images/:imageId', staff, wrap(async (req, res) => {
-    const { alt } = z.object({ alt: z.string().trim().max(200) }).parse(req.body);
-    const u = await db.query('UPDATE product_images SET alt_text = $2 WHERE id = $1 RETURNING product_id', [pid.parse(req.params.imageId), alt]);
+    const d = z.object({ alt: z.string().trim().max(200).optional(), color: z.string().trim().max(40).nullable().optional() }).refine(b => b.alt !== undefined || b.color !== undefined, 'Nothing to change').parse(req.body);
+    const u = await db.query('UPDATE product_images SET alt_text = CASE WHEN $2::boolean THEN $3 ELSE alt_text END, color = CASE WHEN $4::boolean THEN $5 ELSE color END WHERE id = $1 RETURNING product_id',
+      [pid.parse(req.params.imageId), d.alt !== undefined, d.alt ?? null, d.color !== undefined, d.color || null]);
     if (!u.rows.length) throw new HttpError(404, 'Image not found');
     res.json(await gallery(u.rows[0].product_id));
   }));

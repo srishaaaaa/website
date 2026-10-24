@@ -9,8 +9,8 @@ import { inr } from '../lib/format';
 export function ProductMedia({ p, view = 0, className = '' }) {
   if (p.image) {
     if (view === 1 && p.image2) return <img className={`media ${className}`} src={p.image2} alt="" loading="lazy" />;
-    const zoom = view ? { transform: `scale(${1 + view * 0.35})`, objectPosition: ['50% 50%', '30% 25%', '70% 70%', '50% 35%'][view % 4] } : undefined;
-    return <img className={`media ${className}`} src={p.image} alt={view ? '' : p.name} loading="lazy" style={zoom} />;
+    // A real photo is always shown whole: the old zoomed/shifted "views" only suit the generated artwork below.
+    return <img className={`media ${className}`} src={p.image} alt={view ? '' : p.name} loading="lazy" />;
   }
   return <ProductArt seed={p.slug} view={view} className={className} />;
 }

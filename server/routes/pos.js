@@ -55,6 +55,9 @@ const customerBody = z.object({ name: text(120).default(''), phone: text(20).reg
 const expenseBody = z.object({ title: text(120).min(1), category: text(60).default('General'), amount: z.number().int().min(1).max(100_000_000), paymentMode: z.enum(['cash', 'upi', 'card']).default('cash'), notes: text(300).nullable().default(null), date: date.optional() });
 const productPatch = z.object({ name: text(160).min(1), price: paise, taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']) });
 const variantBody = z.object({ size: text(40).min(1), color: text(40).default('Default'), sku: text(80).min(1), stock: z.number().int().min(0).max(1_000_000).default(0) });
+const colourBody = z.object({ color: text(40).min(1), price: paise.nullable().default(null),
+  sizes: z.array(z.object({ size: text(40).min(1), stock: z.number().int().min(0).max(1_000_000).default(0), sku: text(80).optional() })).min(1).max(30) });
+const slugify = x => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const stockBody = z.object({ variantId: z.number().int().positive(), type: z.enum(['restock', 'return', 'loss', 'reconcile']), qty: z.number().int().min(0).max(1_000_000), note: text(100).optional() })
   .refine(b => b.type === 'reconcile' || b.qty >= 1, { message: 'Enter a quantity of at least 1', path: ['qty'] });
 const id = z.coerce.number().int().positive();
@@ -204,6 +207,37 @@ export default function pos({ db, auth }) {
       return row;
     }).catch(e => { if (e.code === '23505') throw new HttpError(409, 'That SKU or size/colour already exists for this product'); throw e });
     res.status(201).json(out);
+  }));
+  // A colour option = one new variant per size, all in one transaction, optionally with its own price.
+  r.post('/pos/products/:id/colours', manager, wrap(async (req, res) => {
+    const d = colourBody.parse(req.body); const pid = id.parse(req.params.id);
+    if (new Set(d.sizes.map(x => x.size.toLowerCase())).size !== d.sizes.length) throw new HttpError(400, 'Each size can only be listed once');
+    const out = await db.tx(async t => {
+      const p = await one(t, 'SELECT slug FROM products WHERE id = $1', [pid]);
+      if (!p) throw new HttpError(404, 'Product not found');
+      if (await one(t, 'SELECT 1 AS x FROM product_variants WHERE product_id = $1 AND lower(color) = lower($2)', [pid, d.color])) throw new HttpError(409, 'That colour already exists on this product');
+      for (const s of d.sizes) {
+        const sku = (s.sku || `${p.slug}-${slugify(d.color)}-${slugify(s.size)}`).toUpperCase();
+        const v = await one(t, 'INSERT INTO product_variants (product_id, sku, size, color, price_override, stock_quantity) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id', [pid, sku, s.size, d.color, d.price, s.stock]);
+        if (s.stock) await t.query('INSERT INTO inventory_movements (variant_id, quantity_change, reason) VALUES ($1,$2,$3)', [v.id, s.stock, 'initial_stock']);
+      }
+      await audit(t, req.user.id, 'pos.colour.add', 'product', pid, { color: d.color, sizes: d.sizes.length });
+      return { created: d.sizes.length };
+    }).catch(e => { if (e.code === '23505') throw new HttpError(409, 'A SKU for that colour / size already exists'); throw e });
+    res.status(201).json(out);
+  }));
+  r.delete('/pos/products/:id/colours', manager, wrap(async (req, res) => {
+    const { color } = z.object({ color: text(40).min(1) }).parse(req.query); const pid = id.parse(req.params.id);
+    await db.tx(async t => {
+      const all = await rows(t, 'SELECT id, color FROM product_variants WHERE product_id = $1', [pid]);
+      const mine = all.filter(v => v.color.toLowerCase() === color.toLowerCase());
+      if (!mine.length) throw new HttpError(404, 'Colour not found');
+      if (mine.length === all.length) throw new HttpError(400, 'A product needs at least one colour — add another before removing this one', 'last_colour');
+      await t.query('DELETE FROM product_variants WHERE product_id = $1 AND lower(color) = lower($2)', [pid, color]);
+      await t.query('UPDATE product_images SET color = NULL WHERE product_id = $1 AND lower(color) = lower($2)', [pid, color]);
+      await audit(t, req.user.id, 'pos.colour.remove', 'product', pid, { color });
+    });
+    res.json({ ok: true });
   }));
   r.post('/pos/stock', stockers, wrap(async (req, res) => res.json(await adjustStock(db, req.user, stockBody.parse(req.body)))));
 
