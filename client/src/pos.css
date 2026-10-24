@@ -1,0 +1,124 @@
+/* Dhanya POS (admin only). Every selector is scoped to .dpos; this file is imported only by the lazily loaded POS page,
+   so public pages never load it. Print rules apply only while body.dpos-printing is set (during an invoice print). */
+.dpos { --ink: #121214; --paper: #f3f1ec; --d-ink: #121214; --d-mut: #6f6b66; --d-line: #e7e1d6; --d-bg: #f3f1ec; --d-card: #fff; --d-ok: #1c7a4b; --d-bad: #b3261e;
+  min-height: 100vh; padding: 110px clamp(12px, 2.5vw, 32px) 60px; background: var(--d-bg); color: var(--d-ink); font-family: var(--sans); display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start }
+.dpos *, .dpos *::before, .dpos *::after { box-sizing: border-box }
+.dpos h1, .dpos h2, .dpos h3 { font-family: var(--sans); font-weight: 800; letter-spacing: -.01em; margin: 0 }
+.dpos h1, .dpos h2, .dpos h3 { text-transform: none }
+.dpos h1 { font-size: clamp(26px, 3vw, 34px) } .dpos h2 { font-size: 17px } .dpos h3 { font-size: 15px }
+.dpos .sub { color: var(--d-mut); font-size: 14px; margin-top: 2px }
+.dpos .muted { color: var(--d-mut) } .dpos .small { font-size: 12px }
+
+/* sidebar */
+.dpos-side { position: sticky; top: 96px; background: var(--d-card); border-radius: 22px; padding: 14px; display: grid; gap: 4px; max-height: calc(100vh - 116px); overflow: auto }
+.dpos-brand { display: flex; align-items: center; gap: 10px; padding: 8px 10px 14px; border-bottom: 1px solid var(--d-line); margin-bottom: 6px }
+.dpos-brand b { font-size: 15px; letter-spacing: .16em; text-transform: uppercase } .dpos-brand i { font-style: normal; font-size: 10px; letter-spacing: .2em; color: var(--d-mut) }
+.dpos-grp { font-size: 10px; letter-spacing: .24em; color: #aaa59d; font-weight: 800; padding: 14px 12px 4px }
+.dpos-nav { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; font-size: 14px; font-weight: 700; color: #55524d; text-align: left; width: 100%; transition: background .15s }
+.dpos-nav:hover { background: #f4f2ee } .dpos-nav.on { background: var(--d-ink); color: #fff }
+.dpos-nav svg { flex: none }
+
+/* top bar */
+.dpos-top { display: flex; align-items: center; gap: 16px; background: var(--d-card); border-radius: 18px; padding: 10px 14px; border: 1px solid var(--d-line) }
+.dpos-top-t { font-weight: 800; font-size: 17px; margin-right: auto; padding-left: 6px }
+.dpos-view { font-size: 14px; font-weight: 600; color: #55524d } .dpos-view:hover { color: var(--d-ink) }
+.dpos-av { width: 38px; height: 38px; border-radius: 50%; background: var(--d-ink); color: #fff; display: grid; place-items: center; font-weight: 800 }
+
+/* existing admin content (products, storefront images, enquiries, sample data, settings) inherits the same look */
+.dpos .adm, .dpos .settings-form { display: grid; gap: 16px }
+.dpos .adm-help { max-width: none; margin: 0; color: var(--d-mut); font-size: 14px }
+.dpos .adm-split > aside, .dpos .adm-split > div, .dpos .adm-slots > *, .dpos .adm-enq li, .dpos .adm-counts li { border-radius: 20px }
+.dpos .adm-enq li { background: #fff; border: 1px solid var(--d-line) }
+.dpos .adm-counts li { background: #fff; border: 1px solid var(--d-line) } .dpos .adm-counts strong { color: var(--d-ink); font-family: var(--sans); font-weight: 800 }
+.dpos .btn { border-radius: 999px; padding: 12px 20px; font-size: 12px; font-weight: 800; letter-spacing: .12em; border: 1px solid var(--d-ink); color: var(--d-ink); background: #fff }
+.dpos .btn:hover:not(:disabled) { background: var(--d-ink); color: #fff }
+.dpos .btn.solid, .dpos .btn.dark.solid { background: var(--d-ink); color: #fff }
+.dpos .field span { font-size: 11px; letter-spacing: .14em; font-weight: 800; color: var(--d-mut); opacity: 1 }
+.dpos .field input, .dpos .field textarea, .dpos .field select { border-radius: 14px; border: 1px solid var(--d-line) }
+.dpos .tbl { margin: 0 } .dpos .tbl th { font-size: 10px; letter-spacing: .16em; font-weight: 800; color: var(--d-mut); opacity: 1 } .dpos .tbl th, .dpos .tbl td { border-bottom: 1px solid #f0ece4 }
+.dpos .err { background: #fdecea; color: var(--d-bad); padding: 10px 14px; border-radius: 12px }
+.dpos .link-u { text-decoration: underline }
+.dpos .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px }
+.dpos .muted { opacity: 1 }
+
+/* cards, forms */
+.dpos-main { display: grid; gap: 18px; min-width: 0 }
+.dpos-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap }
+.dpos-card { background: var(--d-card); border-radius: 22px; padding: 20px 22px; border: 1px solid var(--d-line) }
+.dpos-card > h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 14px }
+.dpos label.f { display: grid; gap: 6px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: var(--d-mut) }
+.dpos input, .dpos select, .dpos textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--d-line); border-radius: 14px; background: #fff; color: var(--d-ink); font: inherit; font-size: 14px; letter-spacing: 0; text-transform: none; font-weight: 500 }
+.dpos input:focus, .dpos select:focus { outline: 2px solid var(--d-ink); outline-offset: 1px }
+.dpos input[type=checkbox], .dpos input[type=radio] { width: auto }
+.dpos-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }
+.dpos-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 999px; background: var(--d-ink); color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; border: 1px solid var(--d-ink); transition: opacity .15s }
+.dpos-btn:hover:not(:disabled) { opacity: .85 } .dpos-btn:disabled { opacity: .4; cursor: not-allowed }
+.dpos-btn.ghost { background: #fff; color: var(--d-ink); border-color: var(--d-line) } .dpos-btn.ghost:hover:not(:disabled) { border-color: var(--d-ink); opacity: 1 }
+.dpos-btn.danger { background: #fff; color: var(--d-bad); border-color: rgba(179, 38, 30, .4) }
+.dpos-btn.big { width: 100%; padding: 17px; font-size: 14px }
+.dpos-btn.sm { padding: 7px 13px; font-size: 11px }
+.dpos-err { background: #fdecea; color: var(--d-bad); padding: 10px 14px; border-radius: 12px; font-size: 14px }
+.dpos-ok { background: #e6f4ec; color: var(--d-ok); padding: 10px 14px; border-radius: 12px; font-size: 14px }
+.dpos-empty { padding: 34px 10px; text-align: center; color: var(--d-mut) }
+.dpos-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; background: #eee; color: #555 }
+.dpos-pill.ok { background: #e6f4ec; color: var(--d-ok) } .dpos-pill.bad { background: #fdecea; color: var(--d-bad) } .dpos-pill.warn { background: #fff3d6; color: #8a5a00 }
+
+/* tables */
+.dpos-tw { overflow-x: auto }
+.dpos table { width: 100%; border-collapse: collapse; font-size: 14px }
+.dpos th { text-align: left; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--d-mut); font-weight: 800; padding: 12px 10px; border-bottom: 1px solid var(--d-line); white-space: nowrap }
+.dpos td { padding: 12px 10px; border-bottom: 1px solid #f0ece4; vertical-align: middle }
+.dpos td.r, .dpos th.r { text-align: right } .dpos tr.click { cursor: pointer } .dpos tr.click:hover td { background: #faf8f4 }
+.dpos tr.voided td { opacity: .5; text-decoration: line-through }
+.dpos td input, .dpos td select { padding: 8px 10px; border-radius: 10px }
+
+/* billing layout */
+.dpos-bill { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 18px; align-items: start }
+.dpos-col { display: grid; gap: 18px; min-width: 0 }
+.dpos-sticky { position: sticky; top: 96px }
+.dpos-results { display: grid; gap: 8px; margin-top: 12px; max-height: 340px; overflow: auto }
+.dpos-res { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--d-line); border-radius: 14px; text-align: left; width: 100%; background: #fff }
+.dpos-res:hover:not(:disabled) { border-color: var(--d-ink) } .dpos-res:disabled { opacity: .45; cursor: not-allowed }
+.dpos-res img { width: 42px; height: 42px; object-fit: cover; border-radius: 10px; background: #eee; flex: none }
+.dpos-res span { display: grid; flex: 1; min-width: 0 } .dpos-res b { font-size: 14px } .dpos-res em { font-style: normal; font-size: 12px; color: var(--d-mut) }
+.dpos-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px 0; border-bottom: 1px solid #f0ece4 }
+.dpos-line:last-child { border-bottom: 0 }
+.dpos-qty { display: inline-flex; align-items: center; border: 1px solid var(--d-line); border-radius: 999px; overflow: hidden }
+.dpos-qty button { width: 32px; height: 32px; font-size: 18px; line-height: 1 } .dpos-qty button:hover { background: #f4f2ee }
+.dpos-qty input { width: 54px; text-align: center; border: 0; border-radius: 0; padding: 6px 0 }
+.dpos-sum { display: grid; gap: 8px; font-size: 14px } .dpos-sum div { display: flex; justify-content: space-between; gap: 12px }
+.dpos-sum .tot { font-size: 22px; font-weight: 800; padding-top: 10px; border-top: 1px solid var(--d-line) }
+.dpos-seg { display: flex; gap: 6px; flex-wrap: wrap }
+.dpos-seg button { padding: 10px 16px; border-radius: 999px; border: 1px solid var(--d-line); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: #fff }
+.dpos-seg button.on { background: var(--d-ink); color: #fff; border-color: var(--d-ink) }
+
+/* analytics */
+.dpos-kpis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }
+.dpos-kpi { background: #fff; border-radius: 20px; padding: 18px 20px; border: 1px solid var(--d-line); display: grid; gap: 8px }
+.dpos-kpi span { font-size: 10px; letter-spacing: .2em; font-weight: 800; color: var(--d-mut); text-transform: uppercase } .dpos-kpi b { font-size: 30px; line-height: 1 }
+.dpos-bars { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 8px; overflow-x: auto }
+.dpos-bar { flex: 1 0 22px; max-width: 54px; display: grid; align-items: end; height: 100%; text-align: center; font-size: 10px; color: var(--d-mut) }
+.dpos-bar i { display: block; background: var(--d-ink); border-radius: 6px 6px 0 0; min-height: 3px }
+
+/* invoice modal */
+.dpos-modal { position: fixed; inset: 0; z-index: 400; background: rgba(10, 10, 12, .55); display: grid; place-items: start center; padding: 24px 12px; overflow: auto }
+.dpos-sheet { background: #fff; border-radius: 20px; width: min(560px, 100%); padding: 22px }
+.dpos-invoice { font-size: 13px; color: #111; display: grid; gap: 10px }
+.dpos-invoice h2 { font-size: 20px; text-align: center; letter-spacing: .12em; text-transform: uppercase }
+.dpos-invoice .c { text-align: center; color: #555; font-size: 12px }
+.dpos-invoice table th, .dpos-invoice table td { padding: 6px 4px; font-size: 12px }
+.dpos-invoice hr { border: 0; border-top: 1px dashed #bbb; width: 100% }
+.dpos-void-stamp { text-align: center; font-weight: 800; color: var(--d-bad); letter-spacing: .3em; border: 2px solid var(--d-bad); padding: 6px; border-radius: 8px }
+
+@media (max-width: 1099px) { .dpos-bill { grid-template-columns: 1fr } .dpos-sticky { position: static } }
+@media (max-width: 899px) {
+  .dpos { grid-template-columns: 1fr; padding-top: 96px }
+  .dpos-side { position: static; max-height: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px } .dpos-brand, .dpos-grp { width: 100%; padding: 6px 8px }
+  .dpos-nav { width: auto; padding: 9px 12px; font-size: 13px }
+}
+
+@media print {
+  body.dpos-printing * { visibility: hidden !important }
+  body.dpos-printing .dpos-invoice, body.dpos-printing .dpos-invoice * { visibility: visible !important }
+  body.dpos-printing .dpos-invoice { position: absolute; left: 0; top: 0; width: 80mm; max-width: 100%; padding: 4mm; margin: 0 }
+}

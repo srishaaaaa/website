@@ -75,38 +75,30 @@ export default function CustomerReviews() {
   }, []);
   useEffect(() => { load(1) }, [load]);
 
-  // Slow drift to the left (~35px/s). Pauses while the visitor hovers, touches, focuses or swipes, then resumes; at the end it eases back to the start.
+  // Slow, continuous drift to the left (~35px/s). It never pauses on hover or swipe; tapping (or pressing Enter on) a review stops it,
+  // and tapping a review again sets it moving. At the end it eases back to the start and carries on.
   const ready = !!data?.items.length;
   useEffect(() => {
     const el = track.current;
     if (!ready || !el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const SPEED = 35;
-    let raf, last = 0, pos = el.scrollLeft, hold = 0, resume = 0, idle = false;
-    const pause = ms => { idle = true; clearTimeout(resume); if (ms) resume = setTimeout(() => { idle = false; pos = el.scrollLeft }, ms) };
-    const enter = () => pause(0), leave = () => { clearTimeout(resume); resume = setTimeout(() => { idle = false; pos = el.scrollLeft }, 600) };
-    const touch = () => pause(3500);
+    let raf, last = 0, pos = el.scrollLeft, hold = 0, stopped = false;
+    const toggle = e => { if (e.type === 'keydown' && !(e.key === 'Enter' || e.key === ' ')) return; if (e.type === 'click' && !e.target.closest('.rv-card')) return; if (e.type === 'keydown') e.preventDefault(); stopped = !stopped; pos = el.scrollLeft };
     const tick = t => {
       raf = requestAnimationFrame(tick);
       const dt = Math.min(t - last, 64) / 1000; last = t;
-      if (idle || document.hidden) return;
+      if (stopped || document.hidden) return;
       const max = el.scrollWidth - el.clientWidth;
       if (max <= 0) return;
-      if (Math.abs(el.scrollLeft - pos) > 3) { pos = el.scrollLeft; hold = t + 2500 } // moved by the arrows or a swipe: let it settle first
+      if (Math.abs(el.scrollLeft - pos) > 3) { pos = el.scrollLeft; hold = t + 700 } // moved by the arrows or a swipe: let that settle, then carry on from there
       if (hold > t) return;
-      if (pos >= max - 1) { hold = t + 2000; pos = 0; el.scrollTo({ left: 0, behavior: 'smooth' }); setTimeout(() => { pos = el.scrollLeft }, 1200); return }
+      if (pos >= max - 1) { hold = t + 1500; pos = 0; el.scrollTo({ left: 0, behavior: 'smooth' }); setTimeout(() => { pos = el.scrollLeft }, 1200); return }
       pos += SPEED * dt; el.scrollLeft = pos;
     };
     el.style.scrollSnapType = 'none'; // snapping would fight the drift
-    el.addEventListener('pointerenter', enter); el.addEventListener('pointerleave', leave);
-    el.addEventListener('touchstart', touch, { passive: true }); el.addEventListener('wheel', touch, { passive: true });
-    el.addEventListener('focusin', enter); el.addEventListener('focusout', leave);
+    el.addEventListener('click', toggle); el.addEventListener('keydown', toggle);
     raf = requestAnimationFrame(t => { last = t; tick(t) });
-    return () => {
-      cancelAnimationFrame(raf); clearTimeout(resume); el.style.scrollSnapType = '';
-      el.removeEventListener('pointerenter', enter); el.removeEventListener('pointerleave', leave);
-      el.removeEventListener('touchstart', touch); el.removeEventListener('wheel', touch);
-      el.removeEventListener('focusin', enter); el.removeEventListener('focusout', leave);
-    };
+    return () => { cancelAnimationFrame(raf); el.style.scrollSnapType = ''; el.removeEventListener('click', toggle); el.removeEventListener('keydown', toggle) };
   }, [ready]);
   if (!data) return null;
   const slide = d => track.current?.scrollBy({ left: d * Math.min(360, innerWidth * 0.8), behavior: 'smooth' });

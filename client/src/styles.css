@@ -449,7 +449,9 @@ a.insta-tile:hover { transform: translateY(-6px) } .insta-tile img { width: 100%
 }
 
 /* "Shop is here" label: the embedded map is centred on the shop, so Google's pin sits at the middle; this bubble points down at it and bobs gently. */
-.map-here { position: absolute; left: 50%; top: 50%; z-index: 2; pointer-events: none; transform: translate(-50%, calc(-100% - 76px)) }
+/* Black pin drawn over Google's red one: its tip sits exactly on the map centre (the shop), and the bubble's tail points at its top. */
+.map-pin { position: absolute; left: 50%; top: 50%; z-index: 2; pointer-events: none; transform: translate(-50%, -100%); filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .35)) }
+.map-here { position: absolute; left: 50%; top: 50%; z-index: 3; pointer-events: none; transform: translate(-50%, calc(-100% - 62px)) }
 .map-here span { position: relative; display: block; padding: 9px 16px; border-radius: 999px; background: #09090D; color: #fff; font: 800 11px/1 var(--sans); letter-spacing: .16em; white-space: nowrap; box-shadow: 0 8px 22px rgba(0, 0, 0, .3); animation: map-hop 1.4s cubic-bezier(.45, 0, .55, 1) infinite }
 .map-here span::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 12px; height: 12px; background: #09090D; transform: translateX(-50%) rotate(45deg); border-radius: 2px }
 @keyframes map-hop { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-9px) } }

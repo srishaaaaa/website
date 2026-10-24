@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from './context/App';
@@ -15,9 +15,18 @@ import Home from './pages/Home';
 import { Shop, Collections, CollectionPage, Search } from './pages/Browse';
 import Product from './pages/Product';
 import { Wishlist, CartPage, Checkout, Auth } from './pages/Shopping';
-import { Account, Admin } from './pages/Account';
-import { AdminEnquiries, AdminProducts, AdminSample, AdminStorefront } from './pages/AdminMedia';
+import { Account } from './pages/Account';
 import { About, Journal, NotFound, Policy } from './pages/Static';
+
+// Dhanya POS is admin-only and code-split: public visitors never download it.
+// Each lazy element is created once at module level (never inside render).
+const lazyEl = (load, name) => { const C = lazy(() => load().then(m => ({ default: name ? m[name] : m.default }))); return <Suspense fallback={<div className="page-pad"><p className="muted">Loading…</p></div>}><C /></Suspense> };
+const store = () => import('./pages/AdminStore'), media = () => import('./pages/AdminMedia');
+const A = {
+  pos: lazyEl(() => import('./pages/AdminPos')),
+  orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
+  products: lazyEl(media, 'AdminProducts'), storefront: lazyEl(media, 'AdminStorefront'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
+};
 
 export default function App() {
   const { entered, enter, setBagOpen, setSearchOpen, setMenuOpen, setQuick } = useApp();
@@ -45,11 +54,16 @@ export default function App() {
           <Route path="/login" element={<Auth mode="login" />} />
           <Route path="/register" element={<Auth mode="register" />} />
           <Route path="/account" element={<Account />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/products" element={<AdminProducts />} />
-          <Route path="/admin/storefront" element={<AdminStorefront />} />
-          <Route path="/admin/enquiries" element={<AdminEnquiries />} />
-          <Route path="/admin/sample" element={<AdminSample />} />
+          <Route path="/admin" element={A.orders} />
+          <Route path="/admin/reviews" element={A.reviews} />
+          <Route path="/admin/users" element={A.users} />
+          <Route path="/admin/settings" element={A.settings} />
+          <Route path="/admin/products" element={A.products} />
+          <Route path="/admin/storefront" element={A.storefront} />
+          <Route path="/admin/enquiries" element={A.enquiries} />
+          <Route path="/admin/sample" element={A.sample} />
+          <Route path="/admin/billing" element={A.pos} />
+          <Route path="/admin/billing/:tab" element={A.pos} />
           <Route path="/about" element={<About />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/privacy" element={<Policy slug="privacy" title="Privacy policy" />} />

@@ -2,18 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, NavLink } from 'react-router-dom';
 import { api, uploadImage, uploadMedia } from '../lib/api';
 import { useApp } from '../context/App';
-
-export function AdminTabs() {
-  return (
-    <nav className="adm-tabs" aria-label="Admin sections">
-      <NavLink to="/admin" end>Orders &amp; settings</NavLink>
-      <NavLink to="/admin/products">Products &amp; images</NavLink>
-      <NavLink to="/admin/storefront">Storefront images</NavLink>
-      <NavLink to="/admin/enquiries">Enquiries</NavLink>
-      <NavLink to="/admin/sample">Sample data</NavLink>
-    </nav>
-  );
-}
+import AdminShell from '../components/AdminShell';
 
 // Guards admin screens: signed in AND staff. (The API enforces the role too; this only avoids a dead page.)
 function useStaff() {
@@ -76,9 +65,8 @@ export function AdminProducts() {
 
   return (
     <Gate state={state}>
-      <div className="account adm">
-        <p className="eyebrow">ADMIN</p><h1 className="serif">Products &amp; images</h1>
-        <AdminTabs />
+      <AdminShell title="Products &amp; images">
+      <div className="adm">
         <p className="muted adm-help">Recommended: 3 photos per piece (full view, detail, back or styled), portrait 3:4, at least 1200×1600. The <b>first</b> photo is the card image and the <b>second</b> appears when a card is hovered. Big photos are shrunk automatically before upload.</p>
         {err && <p role="alert" className="err">{err}</p>}
         <div className="adm-split">
@@ -115,6 +103,7 @@ export function AdminProducts() {
           </section>
         </div>
       </div>
+      </AdminShell>
     </Gate>
   );
 }
@@ -154,9 +143,8 @@ export function AdminStorefront() {
 
   return (
     <Gate state={state}>
-      <div className="account adm">
-        <p className="eyebrow">ADMIN</p><h1 className="serif">Storefront images</h1>
-        <AdminTabs />
+      <AdminShell title="Storefront images">
+      <div className="adm">
         {err && <p role="alert" className="err">{err}</p>}
         {b && (
           <div className="adm-slots">
@@ -213,6 +201,7 @@ export function AdminStorefront() {
             </li>))}</ul>
         </section>
       </div>
+      </AdminShell>
     </Gate>
   );
 }
@@ -225,9 +214,8 @@ export function AdminEnquiries() {
   const setStatus = async (id, status) => { try { await api('/admin/enquiries/' + id, { method: 'PATCH', body: { status } }); setRows(r => r.map(x => x.id === id ? { ...x, status } : x)) } catch (e) { setErr(e.message) } };
   return (
     <Gate state={state}>
-      <div className="account adm">
-        <p className="eyebrow">ADMIN</p><h1 className="serif">Enquiries</h1>
-        <AdminTabs />
+      <AdminShell title="Enquiries">
+      <div className="adm">
         <p className="muted adm-help">Retail and wholesale enquiries sent from the website. Call or WhatsApp the customer, then mark the enquiry as contacted or closed.</p>
         {err && <p role="alert" className="err">{err}</p>}
         {!rows && !err && <p className="muted">Loading…</p>}
@@ -242,6 +230,7 @@ export function AdminEnquiries() {
             <button className="adm-del" onClick={() => remove(e)}>Delete</button>
           </li>))}</ul>
       </div>
+      </AdminShell>
     </Gate>
   );
 }
@@ -261,10 +250,9 @@ export function AdminSample() {
   const total = c ? c.products + c.reviews + c.enquiries : 0;
   return (
     <Gate state={state}>
-      <div className="account adm">
-        <p className="eyebrow">ADMIN</p><h1 className="serif">Sample data</h1>
-        <AdminTabs />
-        <p className="muted adm-help">The demo catalogue, reviews and enquiries are here so the site looks complete while you set it up. Delete them one at a time from <Link className="link-u" to="/admin/products">Products &amp; images</Link>, <Link className="link-u" to="/admin">Review moderation</Link> and <Link className="link-u" to="/admin/enquiries">Enquiries</Link>, or remove everything at once below. Only items marked <span className="adm-sample">sample</span> are ever removed here.</p>
+      <AdminShell title="Sample data">
+      <div className="adm">
+        <p className="muted adm-help">The demo catalogue, reviews and enquiries are here so the site looks complete while you set it up. Delete them one at a time from <Link className="link-u" to="/admin/products">Products &amp; images</Link>, <Link className="link-u" to="/admin/reviews">Reviews</Link> and <Link className="link-u" to="/admin/enquiries">Enquiries</Link>, or remove everything at once below. Only items marked <span className="adm-sample">sample</span> are ever removed here.</p>
         {err && <p role="alert" className="err">{err}</p>}
         {!c && !err && <p className="muted">Loading…</p>}
         {c && (
@@ -279,6 +267,7 @@ export function AdminSample() {
           </div>
         )}
       </div>
+      </AdminShell>
     </Gate>
   );
 }

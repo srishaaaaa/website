@@ -85,5 +85,19 @@ export default function admin({ db, auth }) {
     });
     res.json({ ok: true, stock: left });
   }));
+  // Users & roles. Everyone staff can see accounts; only an owner can change a role (never their own, never another owner's).
+  r.get('/users', staff, wrap(async (_req, res) => res.json(await rows(db,
+    `SELECT id, email, full_name AS name, role, created_at FROM profiles ORDER BY (role = 'customer'), id LIMIT 500`))));
+  r.patch('/users/:id/role', auth.role('owner'), wrap(async (req, res) => {
+    const { role } = z.object({ role: z.enum(['customer', 'cashier', 'inventory', 'admin']) }).parse(req.body);
+    const id = z.coerce.number().int().parse(req.params.id);
+    if (id === req.user.id) throw new HttpError(400, 'You cannot change your own role');
+    const u = await one(db, 'SELECT role FROM profiles WHERE id = $1', [id]);
+    if (!u) throw new HttpError(404, 'User not found');
+    if (u.role === 'owner') throw new HttpError(403, 'An owner account cannot be changed here');
+    await db.query('UPDATE profiles SET role = $2, updated_at = now() WHERE id = $1', [id, role]);
+    await audit(db, req.user.id, 'user.role', 'user', id, { from: u.role, to: role });
+    res.json({ ok: true });
+  }));
   return r;
 }
