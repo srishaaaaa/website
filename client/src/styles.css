@@ -447,3 +447,10 @@ a.insta-tile:hover { transform: translateY(-6px) } .insta-tile img { width: 100%
   .hl-copy { position: relative; left: auto; bottom: auto; top: auto; padding: 0 var(--pad) 48px; max-width: 100% }
   .hl-word { bottom: auto; top: 22svh; font-size: 34vw }
 }
+
+/* "Shop is here" label: the embedded map is centred on the shop, so Google's pin sits at the middle; this bubble points down at it and bobs gently. */
+.map-here { position: absolute; left: 50%; top: 50%; z-index: 2; pointer-events: none; transform: translate(-50%, calc(-100% - 76px)) }
+.map-here span { position: relative; display: block; padding: 9px 16px; border-radius: 999px; background: #09090D; color: #fff; font: 800 11px/1 var(--sans); letter-spacing: .16em; white-space: nowrap; box-shadow: 0 8px 22px rgba(0, 0, 0, .3); animation: map-hop 1.4s cubic-bezier(.45, 0, .55, 1) infinite }
+.map-here span::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 12px; height: 12px; background: #09090D; transform: translateX(-50%) rotate(45deg); border-radius: 2px }
+@keyframes map-hop { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-9px) } }
+@media (prefers-reduced-motion: reduce) { .map-here span { animation: none } }

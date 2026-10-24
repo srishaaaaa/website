@@ -61,6 +61,7 @@ export default function StoreLocationMap() {
           {configured
             ? <iframe title={`Map showing ${store.name}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen src={map.embedUrl} />
             : <div className="map-placeholder" role="img" aria-label="Boutique location to be announced"><Emblem size={120} /><span className="eyebrow">Location to be announced</span></div>}
+          {configured && <div className="map-here" aria-hidden="true"><span>SHOP IS HERE</span></div>}
           {configured && <a className="map-open" href={map.placeUrl || map.directionsUrl} target="_blank" rel="noopener noreferrer">OPEN IN MAPS ↗</a>}
           {configured && (
             <div className="map-card">
