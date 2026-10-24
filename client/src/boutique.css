@@ -86,6 +86,10 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .is-scaled .bh-model { left: 52%; width: 26% }
 .is-scaled .bh-discover { padding-left: calc(25% + 14px); padding-right: 22px }
 .is-phone .bh-model { left: 50.5%; width: 25% }
+/* phone: larger tap targets for the facts, button and enquiry link */
+.is-phone .bh-facts { max-width: none } .is-phone .bh-facts li { font-size: 12.5px; letter-spacing: .08em }
+.is-phone .bh-btn { font-size: 13.5px; letter-spacing: .16em; padding: 10px 10px 10px 30px; gap: 14px } .is-phone .bh-btn b { width: 46px; height: 46px; font-size: 20px }
+.is-phone .bh-link { font-size: 13.5px; letter-spacing: .16em; padding: 12px 0 }
 .is-phone .bh-discover, .is-phone .bh-tint { display: none }
 /* ---- ticker ---- */
 .tk { background: var(--red); color: var(--ivory); overflow: hidden; border-block: 1px solid rgba(255, 255, 255, .22); padding: 15px 0; position: relative; z-index: 5 }
