@@ -39,3 +39,15 @@ export async function uploadImage(file) {
   if (!r.ok) throw new Error(d.error || 'Upload failed');
   return d;
 }
+
+// Admin: uploads an image OR a short video (MP4/WebM up to 4 MB) and returns { id, url, bytes, video }.
+export async function uploadMedia(file) {
+  if (!/^video\/(mp4|webm)$/.test(file.type)) return { ...(await uploadImage(file)), video: false };
+  if (file.size > 3.9 * 1024 * 1024) throw new Error('Videos must be under 4 MB here. Trim or compress the clip, or paste a video link instead.');
+  const r = await fetch('/api/admin/media?name=' + encodeURIComponent(file.name || 'video'), {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': file.type, 'X-Requested-With': 'dhanya' }, body: file,
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Upload failed');
+  return { ...d, video: true };
+}

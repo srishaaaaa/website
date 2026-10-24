@@ -39,6 +39,10 @@ Portal intro, 3D hero, scroll choreography, mega-menu, live search, catalog, PDP
 - **One-project deploy**: see DEPLOY.md (vercel.json + api/index.js).
 - tools/make-cutout.py makes a soft-edged transparent cut-out from any model photo.
 
+## Reels, map, Our Story (latest)
+- Homepage has a reel strip (up to 6 vertical MP4/WebM clips or photos; autoplay muted on screen, tap to unmute). Add them in Admin → Storefront images → Reels & photos (upload under 4 MB each, or paste a direct https .mp4 link). Videos stream with HTTP Range support.
+- Visit-us map shows the boutique pin and address (AGM Apartment, 26, Kasthooribhai Road, Srinivas Nagar, Sakkottai, Kumbakonam 612001). Phone and opening hours are not set: add them in Admin → Orders & settings → Store settings.
+
 ## Content you must supply
 - **Photography:** products have no images yet; generated plates stand in. Set product images and `client/src/config/content.js` (`media`).
 - **Boutique location, hours, social links, policies:** enter them in /admin → Store settings (policy text via the API until the Phase 5 editor).

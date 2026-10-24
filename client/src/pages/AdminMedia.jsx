@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, NavLink } from 'react-router-dom';
-import { api, uploadImage } from '../lib/api';
+import { api, uploadImage, uploadMedia } from '../lib/api';
 import { useApp } from '../context/App';
 
 export function AdminTabs() {
@@ -182,11 +182,17 @@ export function AdminStorefront() {
         ))}
 
         <section className="adm-block">
-          <h2 className="serif adm-h2">Instagram photos</h2>
-          <p className="muted small">Up to 3 images shown in the “View more on Instagram” strip. The strip appears once an Instagram URL is set in Orders &amp; settings → Store settings.</p>
-          <Drop onFiles={async fs => { if (!fs.length) return; setBusy('ig-up'); setErr(); try { const next = [...posts]; for (const f of fs.slice(0, 3 - posts.length)) { const up = await uploadImage(f); next.push({ image: up.url, alt: 'Instagram post' }) } await savePosts(next) } catch (e) { setErr(e.message) } finally { setBusy('') } }} busy={busy === 'ig-up'} label={`${posts.length} of 3 added`} />
+          <h2 className="serif adm-h2">Reels &amp; photos (homepage strip)</h2>
+          <p className="muted small">Up to 6 vertical clips (MP4 or WebM, under 4 MB each, 9:16 works best) or photos, shown in the “View more on Instagram” strip. Clips autoplay silently while on screen and visitors can unmute. For bigger videos, paste a direct https link to an .mp4 below. The strip appears once you add something or set an Instagram URL in Orders &amp; settings.</p>
+          <Drop accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" onFiles={async fs => { if (!fs.length) return; setBusy('ig-up'); setErr(); try { const next = [...posts]; for (const f of fs.slice(0, 6 - posts.length)) { const up = await uploadMedia(f); next.push(up.video ? { video: up.url, alt: 'Boutique video' } : { image: up.url, alt: 'Instagram post' }) } await savePosts(next) } catch (e) { setErr(e.message) } finally { setBusy('') } }} busy={busy === 'ig-up'} label={`${posts.length} of 6 added`} />
+          <form className="adm-url" onSubmit={e => { e.preventDefault(); const u = e.currentTarget.elements.url.value.trim(); if (!/^https:\/\/\S+$/.test(u)) return setErr('Enter a full https:// link to the video file.'); if (posts.length >= 6) return setErr('You can add up to 6.'); e.currentTarget.reset(); savePosts([...posts, { video: u, alt: 'Boutique video' }]) }}>
+            <input name="url" type="url" placeholder="…or paste a link to an .mp4 video (https://…)" aria-label="Video link" /><button className="btn dark pill">ADD LINK</button>
+          </form>
           <ul className="adm-covers">{posts.map((p, i) => (
-            <li key={p.image}><div className="adm-cover"><img src={p.image} alt="" /></div><button className="danger" onClick={() => savePosts(posts.filter((_, j) => j !== i))}>Remove</button></li>))}</ul>
+            <li key={(p.video || p.image) + i}>
+              <div className="adm-cover">{p.video ? <video src={p.video} muted playsInline preload="metadata" /> : <img src={p.image} alt="" />}</div>
+              <div className="adm-act"><span className="muted small">{p.video ? 'Video' : 'Photo'}</span><button className="danger" onClick={() => savePosts(posts.filter((_, j) => j !== i))}>Remove</button></div>
+            </li>))}</ul>
         </section>
       </div>
     </Gate>

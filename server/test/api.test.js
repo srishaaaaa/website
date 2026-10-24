@@ -238,3 +238,22 @@ test('admin media: staff-only validated uploads, product galleries, covers and b
   assert.equal((await client()('GET', '/store')).body.branding.heroCutout, up.body.url);
   assert.equal((await shopper('GET', '/admin/products')).status, 403, 'customers cannot manage images');
 });
+
+test('media: short videos upload (validated), stream with Range, and can be used as social posts', async () => {
+  const MP4 = Buffer.concat([Buffer.from('0000001866747970', 'hex'), Buffer.from('mp42', 'ascii'), Buffer.alloc(200, 7)]);
+  const login = async () => { const r = await fetch(base + '/auth/login', { method: 'POST', body: JSON.stringify({ email: 'owner@test.dev', password: 'OwnerPass123!' }), headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'dhanya' } }); return r.headers.getSetCookie().map(c => c.split(';')[0]).join('; ') };
+  const cookie = await login();
+  const send = (body, type) => fetch(base + '/admin/media', { method: 'POST', body, headers: { 'Content-Type': type, 'X-Requested-With': 'dhanya', Cookie: cookie } });
+  assert.equal((await send(Buffer.from('not a video at all, just text'), 'video/mp4')).status, 400, 'fake video rejected');
+  const up = await send(MP4, 'video/mp4'); assert.equal(up.status, 201);
+  const { url } = await up.json(); const path = url.replace('/api', '');
+  const full = await fetch(base + path); assert.equal(full.status, 200); assert.equal(full.headers.get('accept-ranges'), 'bytes'); assert.equal(full.headers.get('content-type'), 'video/mp4');
+  const part = await fetch(base + path, { headers: { Range: 'bytes=0-9' } });
+  assert.equal(part.status, 206); assert.equal(part.headers.get('content-range'), `bytes 0-9/${MP4.length}`); assert.equal((await part.arrayBuffer()).byteLength, 10);
+  assert.equal((await fetch(base + path, { headers: { Range: 'bytes=99999-' } })).status, 416);
+  const api = client(); await api('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const social = (await client()('GET', '/store')).body.social;
+  const ok = await api('PUT', '/admin/settings/social', { ...social, instagram: { ...social.instagram, url: 'https://www.instagram.com/dhanya', posts: [{ video: url, alt: 'Reel' }, { image: url.replace(/\d+$/, '1') }] } });
+  assert.equal(ok.status, 200);
+  assert.equal((await api('PUT', '/admin/settings/social', { ...social, instagram: { ...social.instagram, posts: [{ alt: 'empty' }] } })).status, 400, 'a post needs an image or a video');
+});

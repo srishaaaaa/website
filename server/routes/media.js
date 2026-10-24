@@ -13,9 +13,12 @@ export function sniff(b) {
   if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
   if (b.subarray(0, 8).equals(PNG)) return 'image/png';
   if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+  if (b.toString('ascii', 4, 8) === 'ftyp') return 'video/mp4';
+  if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return 'video/webm';
   return null;
 }
 
+export const mediaUrl = z.string().max(500).refine(u => /^\/api\/media\/\d+$/.test(u) || /^https:\/\/\S+$/.test(u), 'Use an uploaded file or an https URL');
 export const imageUrl = z.string().max(500).refine(u => /^\/api\/media\/\d+$/.test(u) || /^https:\/\/\S+$/.test(u), 'Use an uploaded image or an https URL');
 const ref = id => `/api/media/${id}`;
 
@@ -37,8 +40,17 @@ export function mediaPublic({ db }) {
     if (req.get('if-none-match') === etag) return res.status(304).end();
     const f = await one(db, 'SELECT data, mime FROM media_files WHERE id = $1', [id]);
     if (!f) throw new HttpError(404, 'Image not found');
-    res.statusCode = 200;
-    for (const [k, v] of Object.entries({ 'Content-Type': f.mime, 'Content-Length': f.data.length, 'Cache-Control': 'public, max-age=31536000, immutable', ETag: etag, 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'cross-origin' })) res.setHeader(k, v);
+    const total = f.data.length;
+    const base = { 'Content-Type': f.mime, 'Accept-Ranges': 'bytes', 'Cache-Control': 'public, max-age=31536000, immutable', ETag: etag, 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'cross-origin' };
+    const rg = /^bytes=(\d*)-(\d*)$/.exec(req.get('range') || '');
+    if (rg && (rg[1] || rg[2])) {
+      let s = rg[1] === '' ? total - Number(rg[2]) : Number(rg[1]), e = rg[1] === '' || rg[2] === '' ? total - 1 : Math.min(Number(rg[2]), total - 1);
+      s = Math.max(0, s);
+      if (s > e || s >= total) { res.statusCode = 416; res.setHeader('Content-Range', `bytes */${total}`); return res.end() }
+      res.statusCode = 206; for (const [k, v] of Object.entries({ ...base, 'Content-Range': `bytes ${s}-${e}/${total}`, 'Content-Length': e - s + 1 })) res.setHeader(k, v);
+      return res.end(f.data.subarray(s, e + 1));
+    }
+    res.statusCode = 200; for (const [k, v] of Object.entries({ ...base, 'Content-Length': total })) res.setHeader(k, v);
     res.end(f.data);
   }));
   return r;
@@ -48,10 +60,10 @@ export function mediaAdmin({ db, auth }) {
   const r = Router();
   const staff = auth.role('owner', 'admin');
 
-  r.post('/media', staff, express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: MAX_BYTES }), wrap(async (req, res) => {
-    if (!Buffer.isBuffer(req.body) || !req.body.length) throw new HttpError(400, 'Send the image file as the request body (JPEG, PNG or WebP, up to 4 MB)');
+  r.post('/media', staff, express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'], limit: MAX_BYTES }), wrap(async (req, res) => {
+    if (!Buffer.isBuffer(req.body) || !req.body.length) throw new HttpError(400, 'Send the file as the request body (JPEG, PNG, WebP, MP4 or WebM, up to 4 MB)');
     const mime = sniff(req.body);
-    if (!mime || mime !== req.get('content-type')?.split(';')[0]) throw new HttpError(400, 'That file is not a valid JPEG, PNG or WebP image');
+    if (!mime || mime !== req.get('content-type')?.split(';')[0]) throw new HttpError(400, 'That file is not a valid JPEG, PNG, WebP, MP4 or WebM file');
     const name = String(req.query.name || '').slice(0, 120) || null;
     const f = await one(db, 'INSERT INTO media_files (data, mime, bytes, original_name, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING id, bytes', [req.body, mime, req.body.length, name, req.user.id]);
     res.status(201).json({ id: f.id, url: ref(f.id), bytes: f.bytes });

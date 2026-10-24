@@ -21,7 +21,7 @@ export const media = {
   heroCutoutWebp: '/images/hero-cutout.webp',
   heroAlt: 'A woman in a peach-pink striped saree and a gold blouse, mid-turn as her pallu flies out behind her',
   storyImage: '/images/story.jpg',
-  storyAlt: 'A woman in a maroon silk saree with gold stripes, her pallu sweeping out behind her',
+  storyAlt: 'A woman in a red silk saree with gold buttis, her pallu lifting behind her as she turns',
   details: [],                                  // real texture / embroidery close-ups; the "World of Details" section appears only when filled
 };
 // Boutique location, opening hours and social links are managed in the admin (store settings), not here.

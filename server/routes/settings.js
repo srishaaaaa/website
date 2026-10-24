@@ -21,7 +21,7 @@ export const storeSchema = z.object({
 export const socialSchema = z.object({
   instagram: z.object({
     handle: nullableText(60), url: z.string().trim().url().nullable().default(null),
-    posts: z.array(z.object({ image: text(300).min(1), href: z.string().url().optional(), alt: text(160).default('') })).max(6).default([]),
+    posts: z.array(z.object({ image: text(300).optional(), video: text(500).optional(), href: z.string().url().optional(), alt: text(160).default('') }).refine(p => p.image || p.video, 'Add an image or a video')).max(6).default([]),
   }).default({}),
   links: z.array(z.object({ label: text(40).min(1), url: z.string().url() })).max(6).default([]),
 });
