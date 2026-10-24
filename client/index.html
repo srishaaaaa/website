@@ -10,9 +10,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500&family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#09090D}
+.boot{position:fixed;inset:0;display:grid;place-content:center;justify-items:center;gap:18px;background:radial-gradient(60% 50% at 50% 42%,#1a1020 0,#09090D 100%);color:#F5F0E8;font-family:'Playfair Display',Georgia,serif}
+.boot svg{width:84px;height:84px;animation:boot-spin 6s linear infinite}
+.boot b{font-weight:700;font-size:30px;letter-spacing:.38em;padding-left:.38em}
+.boot small{font:500 10px/1 Archivo,system-ui,sans-serif;letter-spacing:.5em;padding-left:.5em;color:#C6A46A}
+.boot i{display:block;width:150px;height:2px;border-radius:2px;background:rgba(198,164,106,.22);overflow:hidden;position:relative}
+.boot i::after{content:'';position:absolute;inset:0;width:40%;background:#C6A46A;border-radius:2px;animation:boot-bar 1.3s ease-in-out infinite}
+@keyframes boot-spin{to{transform:rotate(360deg)}}
+@keyframes boot-bar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+@media (prefers-reduced-motion:reduce){.boot svg,.boot i::after{animation:none}}
+</style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><div class="boot" role="status" aria-label="Loading DHANYA">
+<svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#C6A46A" stroke-width="1.5"><ellipse cx="32" cy="32" rx="9" ry="26"/><ellipse cx="32" cy="32" rx="9" ry="26" transform="rotate(45 32 32)"/><ellipse cx="32" cy="32" rx="9" ry="26" transform="rotate(90 32 32)"/><ellipse cx="32" cy="32" rx="9" ry="26" transform="rotate(135 32 32)"/></g></svg>
+<b>DHANYA</b><small>BOUTIQUE</small><i></i></div></div>
 <noscript>DHANYA needs JavaScript to run.</noscript>
 <script type="module" src="/src/main.jsx"></script>
 </body>
