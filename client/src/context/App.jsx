@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../lib/api';
+import { api, apiRetry } from '../lib/api';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -33,7 +33,7 @@ export function AppProvider({ children }) {
   const [catalog, setCatalog] = useState({ categories: [], collections: [], featured: [], status: 'loading' });
   const loadCatalog = useCallback(() => {
     setCatalog(c => ({ ...c, status: 'loading' }));
-    Promise.all([api('/categories'), api('/collections'), api('/products?featured=1&limit=12')])
+    Promise.all([apiRetry('/categories'), apiRetry('/collections'), apiRetry('/products?featured=1&limit=12')])
       .then(([categories, collections, f]) => setCatalog({ categories, collections, featured: f.items, status: 'ready' }))
       .catch(() => setCatalog(c => ({ ...c, status: 'error' })));
   }, []);
@@ -42,7 +42,7 @@ export function AppProvider({ children }) {
   // --- admin-managed store content: boutique location + hours, social links ---
   const [site, setSite] = useState({ store: null, social: null, map: null, status: 'loading' });
   const loadSite = useCallback(() => {
-    api('/store').then(d => setSite({ ...d, status: 'ready' })).catch(() => setSite(s => ({ ...s, status: 'error' })));
+    apiRetry('/store').then(d => setSite({ ...d, status: 'ready' })).catch(() => setSite(s => ({ ...s, status: 'error' })));
   }, []);
   useEffect(loadSite, [loadSite]);
 

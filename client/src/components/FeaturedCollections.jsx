@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { api } from '../lib/api';
+import { api, apiRetry } from '../lib/api';
 import { inr } from '../lib/format';
 import { waLink } from '../lib/contact';
 import { useApp } from '../context/App';
@@ -55,7 +55,7 @@ function Item({ p, i }) {
 }
 
 export default function FeaturedCollections() {
-  const { catalog } = useApp();
+  const { catalog, loadCatalog } = useApp();
   const [data, setData] = useState({});
   const [tab, setTab] = useState('all');
   const [q, setQ] = useState('');
@@ -63,7 +63,7 @@ export default function FeaturedCollections() {
 
   useEffect(() => {
     let dead = false;
-    Promise.all(TABS.map(([key, , qs]) => api(`/products?${qs}&limit=${LIMIT}`).then(d => [key, { items: d.items, total: d.total }]).catch(() => [key, { items: [], total: 0 }])))
+    Promise.all(TABS.map(([key, , qs]) => apiRetry(`/products?${qs}&limit=${LIMIT}`).then(d => [key, { items: d.items, total: d.total }]).catch(() => [key, { items: [], total: 0 }])))
       .then(r => { if (!dead) setData(Object.fromEntries(r)) });
     return () => { dead = true };
   }, []);
@@ -108,7 +108,7 @@ export default function FeaturedCollections() {
           </motion.ul>
         </AnimatePresence>
         {live && !items.length && <p className="cu-empty">No sarees match “{q.trim()}”. Try a fabric such as silk or cotton.</p>}
-        {catalog.status === 'error' && <p className="cu-empty">The collection could not be loaded right now.</p>}
+        {catalog.status === 'error' && <p className="cu-empty">The collection could not be loaded right now. <button className="btn pill" onClick={loadCatalog}>TRY AGAIN</button></p>}
         {!live && catalog.status === 'ready' && entry && !items.length && <p className="cu-empty">This collection is being prepared. Please return soon.</p>}
       </div>
     </section>

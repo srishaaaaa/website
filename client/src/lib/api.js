@@ -13,6 +13,16 @@ export async function api(path, opts = {}) {
   return d;
 }
 
+// GET with automatic retries for network failures and 5xx: a serverless database that was idle can take a few seconds to wake.
+export async function apiRetry(path, tries = 4) {
+  for (let i = 1; ; i++) {
+    try { return await api(path) } catch (e) {
+      if (i >= tries || !(e.status === 0 || e.status >= 500)) throw e;
+      await new Promise(r => setTimeout(r, 800 * i));
+    }
+  }
+}
+
 const LIMIT = 3.9 * 1024 * 1024; // the API accepts up to 4 MB per image
 
 // Shrinks large photos in the browser before upload (keeps PNG/WebP transparency), then returns a Blob.

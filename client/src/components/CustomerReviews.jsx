@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../context/App';
-import { api } from '../lib/api';
+import { api, apiRetry } from '../lib/api';
 import { useModal } from '../lib/hooks';
 import { Reveal } from './Motion';
 import { ProductMedia } from './ProductCard3D';
@@ -69,7 +69,7 @@ export default function CustomerReviews() {
   const track = useRef();
   const load = useCallback(async page => {
     try {
-      const d = await api(`/reviews?page=${page}&limit=6`);
+      const d = await apiRetry(`/reviews?page=${page}&limit=6`);
       setData(prev => (page === 1 || !prev ? d : { ...d, items: [...prev.items, ...d.items] }));
     } catch { setData(prev => prev ?? EMPTY) }
   }, []);
