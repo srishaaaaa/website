@@ -40,12 +40,9 @@ export default function BoutiqueHero() {
       if (!wrap) return;
       const cs = getComputedStyle(sec);
       const avail = sec.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-      // phones show the panel and the arched model only (the "For you" panel is cropped away), so they scale up further
-      const phone = window.innerWidth < 700;
-      const z = avail / (phone ? 835 : 1100);
-      const on = z < 1 && CSS.supports('zoom', '1');
+      const z = avail / 1100;
+      const on = z < 1 && window.innerWidth >= 700 && CSS.supports('zoom', '1'); // phones use their own layout (see CSS)
       wrap.classList.toggle('is-scaled', on);
-      wrap.classList.toggle('is-phone', on && phone);
       wrap.style.zoom = on ? String(z) : '';
     };
     fit();
@@ -93,6 +90,11 @@ export default function BoutiqueHero() {
             <figcaption>CRAFTED ELEGANCE</figcaption>
           </motion.figure>
           </div>
+          <ul className="bh-feats">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.3l-5.2 2.8 1-5.8L3.5 9.2l5.9-.9z" /></svg>Premium Quality</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true"><path d="M2.5 6.5h11v9h-11zM13.5 9.5h4.2l3 3.2v2.8h-7.2" /><circle cx="7" cy="17" r="1.8" /><circle cx="17" cy="17" r="1.8" /></svg>Trusted Worldwide</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.4 3.1 8 7.5 9.5 4.4-1.5 7.5-5.1 7.5-9.5V6z" /><path d="m9 12 2.2 2.2L15.5 10" /></svg>Timeless Designs</li>
+          </ul>
           <div className="bh-tint" aria-hidden="true" />
         </div>
 

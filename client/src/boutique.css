@@ -85,12 +85,29 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .is-scaled .bh-row { gap: 14px } .is-scaled .bh-col { flex-basis: 360px }
 .is-scaled .bh-model { left: 52%; width: 26% }
 .is-scaled .bh-discover { padding-left: calc(25% + 14px); padding-right: 22px }
-.is-phone .bh-model { left: 50.5%; width: 25% }
-/* phone: larger tap targets for the facts, button and enquiry link */
-.is-phone .bh-facts { max-width: none } .is-phone .bh-facts li { font-size: 12.5px; letter-spacing: .08em }
-.is-phone .bh-btn { font-size: 13.5px; letter-spacing: .16em; padding: 10px 10px 10px 30px; gap: 14px } .is-phone .bh-btn b { width: 46px; height: 46px; font-size: 20px }
-.is-phone .bh-link { font-size: 13.5px; letter-spacing: .16em; padding: 12px 0 }
-.is-phone .bh-discover, .is-phone .bh-tint { display: none }
+
+/* Phones get their own layout: copy on the left, a full-height arched photo on the right, quality badges underneath. */
+.bh-feats { display: none }
+@media (max-width: 699px) {
+  .bh .bh-wrap { min-height: 0 }
+  .bh .bh-panel { width: 100%; min-height: 0; padding: 20px 14px 22px; padding-right: 43%; border-radius: 24px 24px 0 0 }
+  .bh .bh-discover, .bh .bh-tint, .bh .bh-inset { display: none }
+  .bh .bh-pill { font-size: 10px; padding: 5px 14px 5px 5px } .bh .bh-pill i { width: 20px; height: 20px }
+  .bh .bh-headline { margin-top: 16px }
+  .bh .et { font-size: 13.6vw }
+  .bh .bh-spark { width: 22px }
+  .bh .bh-row { display: block; margin-top: 14px }
+  .bh .bh-col { flex: none }
+  .bh .bh-desc { max-width: none; font-size: 13px; line-height: 1.55 }
+  .bh .bh-facts { max-width: none; flex-wrap: wrap; margin: 14px 0 16px } .bh .bh-facts li { flex: none; font-size: 10.5px; letter-spacing: .1em } .bh .bh-facts li + li { padding-left: 10px }
+  .bh .bh-btn { max-width: 100%; font-size: 10px; letter-spacing: .1em; padding: 6px 6px 6px 16px; gap: 10px } .bh .bh-btn b { width: 34px; height: 34px; font-size: 15px }
+  .bh .bh-cta { gap: 6px }
+  .bh .bh-link { font-size: 11px; letter-spacing: .14em; padding: 10px 0 }
+  .bh .bh-model { left: auto; right: 12px; top: 14px; bottom: 14px; width: 38%; height: auto }
+  .bh .bh-feats { display: flex; justify-content: space-between; gap: 6px; margin: 18px 0 0 }
+  .bh .bh-feats li { flex: 1; display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 10px; line-height: 1.25; color: rgba(33, 23, 20, .85) }
+  .bh .bh-feats svg { width: 24px; height: 24px; color: var(--red) }
+}
 /* ---- ticker ---- */
 .tk { background: var(--red); color: var(--ivory); overflow: hidden; border-block: 1px solid rgba(255, 255, 255, .22); padding: 15px 0; position: relative; z-index: 5 }
 .tk-track { display: flex; width: max-content; animation: tk 42s linear infinite } .tk:hover .tk-track { animation-play-state: paused }
