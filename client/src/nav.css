@@ -58,7 +58,14 @@ img, video, canvas { max-width: 100% }
 .site-header .cart-pill:hover::after { left: 130% }
 .site-header .cart-n { background: var(--antique, #c6a052); color: #2a1a05; font-weight: 800 }
 .site-header .burger { width: 46px; height: 46px; border-radius: 50%; background: #fff; color: var(--maroon, #330533); box-shadow: inset 0 0 0 1px rgba(198, 160, 82, .4) }
-@media (max-width: 959px) { .site-header .hdr { padding: 6px 8px } .site-header .wm-logo { width: 46px; height: 46px } }
+@media (max-width: 959px) {
+  .site-header .hdr { padding: 6px 8px; grid-template-columns: 1fr auto auto; column-gap: 8px }
+  .site-header .wm-logo { width: 46px; height: 46px }
+  /* logo on the left like desktop; search/bag then the menu button on the right */
+  .site-header .hdr .hdr-logo { grid-column: 1; grid-row: 1; justify-self: start }
+  .site-header .hdr .hdr-tools { grid-column: 2; grid-row: 1 }
+  .site-header .hdr .burger { grid-column: 3; grid-row: 1; justify-self: end }
+}
 
 /* ---- mega menu ---- */
 .site-header .mega {
@@ -121,13 +128,11 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 @media (prefers-reduced-motion: reduce) { .skel { animation: none } }
 
 /* Hero "For you" panel: the two tile rows share the panel's height, so every name and price stays visible */
-@media (min-width: 1100px) {
-  .bh-discover { display: flex; flex-direction: column; padding-bottom: 20px }
-  .bh-tiles { flex: 1; min-height: 0; grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-rows: 0; overflow: hidden }
-  .bh-tile { min-height: 0; overflow: hidden }
-  .bh-tile a { height: 100%; grid-template-rows: minmax(0, 1fr) auto auto }
-  .bh-tile-img { aspect-ratio: auto; min-height: 0 }
-}
+.bh-discover { display: flex; flex-direction: column; padding-bottom: 20px }
+.bh-tiles { flex: 1; min-height: 0; grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-rows: 0; overflow: hidden }
+.bh-tile { min-height: 0; overflow: hidden }
+.bh-tile a { height: 100%; grid-template-rows: minmax(0, 1fr) auto auto }
+.bh-tile-img { aspect-ratio: auto; min-height: 0 }
 .cf-img { background: #ecdfca }
 
 /* ---- phone menu: readable on the plum background ---- */
@@ -144,9 +149,3 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .mobile-menu .mm-foot .btn { color: #e5c88f; border: 1px solid rgba(229, 200, 143, .7); border-radius: 999px; background: rgba(255, 255, 255, .04); min-height: 50px; display: grid; place-items: center; font-weight: 700; letter-spacing: .22em }
 .mobile-menu .mm-foot .btn:active { background: #e5c88f; color: #330533 }
 
-/* phone hero: the fabric card becomes a tidy full-width strip instead of a lone tile on the left */
-@media (max-width: 700px) {
-  .bh-inset { width: 100%; align-self: stretch; display: flex; align-items: center; gap: 16px; padding: 10px 18px 10px 10px; margin-top: 22px }
-  .bh-inset-img { width: 84px; flex: none; border-radius: 14px }
-  .bh-inset figcaption { padding: 0; text-align: left; font-size: 11px; letter-spacing: .24em }
-}

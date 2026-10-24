@@ -1,0 +1,82 @@
+/* Stitching Studio (admin only). Every selector starts with .stc- or sits under .dpos, and this file is imported only by the lazily
+   loaded Stitching Studio pages, so public pages never load it. It reuses the admin tokens (--d-ink, --d-acc, --d-line, --d-mut ...).
+   Print rules apply only while body.stc-printing is set (on the print page). */
+.stc-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--d-line); flex-wrap: wrap; margin-bottom: 4px }
+.stc-tabs a { padding: 12px 2px; font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #77736d; border-bottom: 3px solid transparent; margin-bottom: -1px }
+.stc-tabs a.on { color: var(--d-acc); border-color: var(--d-acc) }
+.stc-stack { display: grid; gap: 16px }
+.stc-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center }
+.stc-row.between { justify-content: space-between }
+.stc-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }
+.stc-grid.w2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) }
+.stc-split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 330px; align-items: start }
+.stc-split > aside { position: sticky; top: 100px }
+.stc-f { display: grid; gap: 5px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--d-mut) }
+.stc-f > input, .stc-f > select, .stc-f > textarea { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--d-ink) }
+.stc-h { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 17px; font-weight: 800 }
+.stc-h .n { width: 26px; height: 26px; border-radius: 50%; background: var(--d-acc); color: #fff; display: grid; place-items: center; font-size: 12px }
+.stc-sub { color: var(--d-mut); font-size: 13px; margin: -8px 0 12px }
+.stc-link { color: var(--d-acc); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-size: 13px }
+.stc-warn { background: #fff3d6; color: #6f4a00; padding: 10px 14px; border-radius: 12px; font-size: 13px }
+.stc-ok { background: #e6f4ec; color: var(--d-ok); padding: 10px 14px; border-radius: 12px; font-size: 13px }
+.stc-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; background: #eee; color: #555; white-space: nowrap }
+.stc-pill.s-received { background: #eef0f6; color: #3b4a7a } .stc-pill.s-work { background: #f3ecf6; color: #5b2a63 } .stc-pill.s-trial { background: #e8f2f8; color: #1f5d82 }
+.stc-pill.s-alter { background: #fff3d6; color: #8a5a00 } .stc-pill.s-ready { background: #e6f4ec; color: var(--d-ok) } .stc-pill.s-done { background: #dff0e6; color: #14603b }
+.stc-pill.s-cancelled, .stc-pill.late { background: #fdecea; color: var(--d-bad) } .stc-pill.pay-partial { background: #fff3d6; color: #8a5a00 } .stc-pill.pay-paid { background: #e6f4ec; color: var(--d-ok) } .stc-pill.pay-unpaid { background: #fdecea; color: var(--d-bad) }
+.stc-pill.pr-urgent { background: #fff3d6; color: #8a5a00 } .stc-pill.pr-express { background: #fdecea; color: var(--d-bad) }
+.stc-table { width: 100%; border-collapse: collapse; font-size: 14px }
+.stc-table th { text-align: left; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--d-mut); padding: 10px 8px; border-bottom: 1px solid var(--d-line); white-space: nowrap }
+.stc-table td { padding: 12px 8px; border-bottom: 1px solid #f0ece4; vertical-align: top }
+.stc-table tr.click { cursor: pointer } .stc-table tr.click:hover td { background: #faf8f4 }
+.stc-table .r { text-align: right } .stc-table .money { font-weight: 800; white-space: nowrap }
+.stc-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; font-weight: 600 }
+.stc-item { border: 1px solid var(--d-line); border-radius: 18px; padding: 16px; display: grid; gap: 14px; background: #fff }
+.stc-item > header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap }
+.stc-sec { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--d-line) }
+.stc-sec > h4 { margin: 0; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--d-mut) }
+.stc-meas { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) }
+.stc-meas label { display: grid; gap: 3px; font-size: 12px; color: var(--d-mut) } .stc-meas input { padding: 9px 10px }
+.stc-unit { display: inline-flex; border: 1px solid var(--d-line); border-radius: 999px; padding: 3px; gap: 3px; background: #fff }
+.stc-unit button { padding: 5px 14px; border-radius: 999px; font-size: 11px; font-weight: 800; text-transform: uppercase } .stc-unit button.on { background: var(--d-acc); color: #fff }
+.stc-box { background: #f6f4f0; border: 1px solid var(--d-line); border-radius: 14px; padding: 12px 14px }
+.stc-sum { display: grid; gap: 7px; font-size: 14px } .stc-sum > div { display: flex; justify-content: space-between; gap: 10px } .stc-sum .tot { font-size: 18px; font-weight: 800; border-top: 1px solid var(--d-line); padding-top: 9px }
+.stc-kv { display: grid; grid-template-columns: 130px 1fr; gap: 6px 12px; font-size: 14px; margin: 0 } .stc-kv dt { color: var(--d-mut); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; padding-top: 2px } .stc-kv dd { margin: 0 }
+.stc-pick { position: relative } .stc-pick ul { list-style: none; margin: 4px 0 0; padding: 4px; border: 1px solid var(--d-line); border-radius: 14px; background: #fff; max-height: 240px; overflow: auto; box-shadow: 0 8px 24px rgba(0, 0, 0, .08) }
+.stc-pick li button { width: 100%; text-align: left; padding: 9px 12px; border-radius: 10px; display: flex; justify-content: space-between; gap: 10px } .stc-pick li button:hover { background: #f4f2ee }
+.stc-photos { display: flex; gap: 8px; flex-wrap: wrap } .stc-photos figure { margin: 0; position: relative } .stc-photos img { width: 76px; height: 76px; object-fit: cover; border-radius: 12px; border: 1px solid var(--d-line) }
+.stc-photos figure button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--d-ink); color: #fff; font-size: 11px }
+/* progress timeline */
+.stc-line { list-style: none; margin: 0; padding: 0; display: grid; gap: 0 }
+.stc-line li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; position: relative; padding-bottom: 14px; font-size: 14px }
+.stc-line li::before { content: ''; position: absolute; left: 10px; top: 20px; bottom: 0; width: 2px; background: var(--d-line) } .stc-line li:last-child::before { display: none }
+.stc-line .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--d-line); background: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; z-index: 1 }
+.stc-line li.done .dot { background: var(--d-acc); border-color: var(--d-acc); color: #fff } .stc-line li.now .dot { border-color: var(--d-acc); box-shadow: 0 0 0 4px rgba(51, 5, 51, .12) }
+.stc-line li.skip { opacity: .45 } .stc-line li.done::before { background: var(--d-acc) } .stc-line small { color: var(--d-mut); display: block; font-size: 12px }
+.stc-bars { display: grid; gap: 8px } .stc-bar { display: grid; grid-template-columns: 170px 1fr 34px; gap: 10px; align-items: center; font-size: 13px }
+.stc-bar i { display: block; height: 10px; border-radius: 6px; background: var(--d-acc); min-width: 3px } .stc-bar .t { background: #efe9e0; border-radius: 6px }
+.stc-days { display: flex; align-items: flex-end; gap: 4px; height: 120px; overflow-x: auto; padding-bottom: 2px } .stc-days div { flex: 1 0 18px; max-width: 40px; display: grid; justify-items: center; gap: 4px; align-content: end; font-size: 10px; color: var(--d-mut) } .stc-days i { display: block; width: 100%; background: var(--d-acc); border-radius: 5px 5px 0 0; min-height: 3px }
+/* calendar */
+.stc-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--d-line); border-radius: 16px; overflow: hidden; background: #fff }
+.stc-cal .hd { padding: 8px; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--d-mut); background: #f6f4f0; text-align: center }
+.stc-cal .day { min-height: 98px; padding: 6px; border-top: 1px solid var(--d-line); border-left: 1px solid var(--d-line); display: grid; gap: 3px; align-content: start; font-size: 11px }
+.stc-cal .day:nth-child(7n + 8) { border-left: 0 } .stc-cal .day.off { background: #faf8f4; color: #b0aaa0 } .stc-cal .day.today b { background: var(--d-acc); color: #fff; border-radius: 999px; padding: 1px 7px }
+.stc-cal .day button.ev { text-align: left; padding: 3px 6px; border-radius: 8px; background: #f3ecf6; color: #4d2455; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis } .stc-cal .day button.ev.late { background: #fdecea; color: var(--d-bad) } .stc-cal .day button.ev.x { background: #eee; color: #888; text-decoration: line-through }
+.dpos-sheet:has(> .stc-xl) { width: min(980px, 100%) }
+/* print page */
+.stc-sheet { max-width: 800px; margin: 0 auto; background: #fff; color: #111; padding: 28px 32px; font-family: var(--sans); font-size: 12.5px; line-height: 1.45 }
+.stc-sheet h1 { font-size: 20px; margin: 0 } .stc-sheet h2 { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; margin: 14px 0 6px; border-bottom: 1px solid #222; padding-bottom: 3px }
+.stc-sheet table { width: 100%; border-collapse: collapse } .stc-sheet td, .stc-sheet th { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top } .stc-sheet .r { text-align: right }
+.stc-sheet .head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start } .stc-sheet .head img { height: 54px }
+.stc-sheet .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px } .stc-sheet .m { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 3px 14px }
+.stc-bar-tools { display: flex; gap: 10px; justify-content: center; padding: 16px; position: sticky; top: 0; background: #f3f1ec; z-index: 2 }
+@media (max-width: 899px) {
+  .stc-split { grid-template-columns: 1fr } .stc-split > aside { position: static }
+  .stc-bar { grid-template-columns: 110px 1fr 28px } .stc-kv { grid-template-columns: 100px 1fr }
+  .stc-cal .day { min-height: 64px; padding: 3px } .stc-cal .day button.ev { font-size: 10px; padding: 2px 4px }
+  .stc-table.cards thead { display: none } .stc-table.cards, .stc-table.cards tbody, .stc-table.cards tr, .stc-table.cards td { display: block } .stc-table.cards tr { padding: 12px 0; border-bottom: 1px solid #efeae2 } .stc-table.cards td { border: 0; padding: 2px 0 } .stc-table.cards .r { text-align: left }
+}
+@media print {
+  body.stc-printing > *:not(#root), body.stc-printing .stc-bar-tools { display: none !important }
+  body.stc-printing { background: #fff !important } body.stc-printing .stc-sheet { box-shadow: none; padding: 0; max-width: none }
+  @page { size: A4; margin: 12mm }
+}

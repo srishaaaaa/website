@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/App';
@@ -32,6 +32,26 @@ export default function BoutiqueHero() {
   const b = site.branding || {};
   const picks = catalog.featured.slice(0, 6);
   const anim = d => ({ ...rise(d), animate: show ? { opacity: 1, y: 0 } : undefined });
+
+  // Below 1100px keep the desktop composition: lay the hero out 1100px wide and zoom it down to the available width.
+  useLayoutEffect(() => {
+    const fit = () => {
+      const sec = ref.current, wrap = sec && sec.firstElementChild;
+      if (!wrap) return;
+      const cs = getComputedStyle(sec);
+      const avail = sec.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      // phones show the panel and the arched model only (the "For you" panel is cropped away), so they scale up further
+      const phone = window.innerWidth < 700;
+      const z = avail / (phone ? 880 : 1100);
+      const on = z < 1 && CSS.supports('zoom', '1');
+      wrap.classList.toggle('is-scaled', on);
+      wrap.classList.toggle('is-phone', on && phone);
+      wrap.style.zoom = on ? String(z) : '';
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
 
   return (
     <section ref={ref} className="bh" data-hero aria-label="DHANYA BOUTIQUE">
