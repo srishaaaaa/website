@@ -85,6 +85,7 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .is-scaled .bh-row { gap: 14px } .is-scaled .bh-col { flex-basis: 360px }
 .is-scaled .bh-model { left: 52%; width: 26% }
 .is-scaled .bh-discover { padding-left: calc(25% + 14px); padding-right: 22px }
+.is-phone .bh-model { left: 50.5%; width: 25% }
 .is-phone .bh-discover, .is-phone .bh-tint { display: none }
 /* ---- ticker ---- */
 .tk { background: var(--red); color: var(--ivory); overflow: hidden; border-block: 1px solid rgba(255, 255, 255, .22); padding: 15px 0; position: relative; z-index: 5 }

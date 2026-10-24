@@ -42,7 +42,7 @@ export default function BoutiqueHero() {
       const avail = sec.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
       // phones show the panel and the arched model only (the "For you" panel is cropped away), so they scale up further
       const phone = window.innerWidth < 700;
-      const z = avail / (phone ? 880 : 1100);
+      const z = avail / (phone ? 835 : 1100);
       const on = z < 1 && CSS.supports('zoom', '1');
       wrap.classList.toggle('is-scaled', on);
       wrap.classList.toggle('is-phone', on && phone);

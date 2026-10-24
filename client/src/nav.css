@@ -65,6 +65,8 @@ img, video, canvas { max-width: 100% }
   .site-header .hdr .hdr-logo { grid-column: 1; grid-row: 1; justify-self: start }
   .site-header .hdr .hdr-tools { grid-column: 2; grid-row: 1 }
   .site-header .hdr .burger { grid-column: 3; grid-row: 1; justify-self: end }
+  .site-header .tool svg, .site-header .cart-pill svg { width: 24px; height: 24px }
+  .site-header .burger svg { width: 26px; height: 26px }
 }
 
 /* ---- mega menu ---- */
