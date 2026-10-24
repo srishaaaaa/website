@@ -32,15 +32,18 @@ export default function InstagramStrip() {
   const ig = site.social?.instagram;
   const posts = (ig?.posts || []).filter(p => p.video || p.image);
   const staff = ['owner', 'admin'].includes(user?.role);
-  if (!ig?.url && !posts.length) {
-    // Only staff see the empty strip, so they know where to add reels; visitors never see an empty box.
-    if (!staff) return null;
+  if (!posts.length) {
+    // No reels yet: the section still holds its place on the page with reel-shaped frames. Staff get an Add button.
     return (
       <section className="insta ivory-sec" aria-labelledby="ig-h">
-        <div className="insta-head"><h2 id="ig-h" className="serif"><em>View more on Instagram</em></h2>
-          <p className="muted small">Staff preview: visitors do not see this section until a reel or photo is added.</p>
-          <Link className="btn solid pill" to="/admin/storefront">ADD REELS</Link></div>
-        <ul className="insta-grid">{[0, 1, 2].map(i => <li key={i}><div className="insta-tile insta-empty"><span>Reel {i + 1}</span></div></li>)}</ul>
+        <div className="insta-head">
+          {ig?.handle && <p className="insta-handle"><IgIcon /> <span>@{ig.handle}</span></p>}
+          <h2 id="ig-h" className="serif"><em>View more on Instagram</em></h2>
+          {ig?.url ? <a className="btn solid pill" href={ig.url} target="_blank" rel="noopener noreferrer" data-cursor="FOLLOW"><IgIcon size={16} /> FOLLOW ON INSTAGRAM <span aria-hidden="true">↗</span></a>
+            : staff ? <Link className="btn solid pill" to="/admin/storefront">ADD REELS</Link> : <p className="muted small">Our reels are coming soon.</p>}
+        </div>
+        <ul className="insta-grid">{[0, 1, 2].map(i => <li key={i}><div className="insta-tile insta-empty"><span>Reel coming soon</span></div></li>)}</ul>
+        {staff && <p className="muted small center" style={{ marginTop: 18 }}>Staff note: add reels in <Link className="link-u" to="/admin/storefront">Admin → Storefront images</Link>.</p>}
       </section>
     );
   }
