@@ -56,6 +56,7 @@ export default function ProductCard({ p, tall = false, className = '', index = n
             <div className="pcard-img b"><ProductMedia p={p} view={1} /></div>
           </motion.div>
           <span className="pcard-glare" aria-hidden="true" />
+          <span className="pcard-from">{inr(p.price)}</span>
           {index != null && <span className="pcard-no" aria-hidden="true">No. {String(index + 1).padStart(2, '0')}</span>}
           {out && <span className="pcard-badge">SOLD OUT</span>}
         </Link>

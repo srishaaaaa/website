@@ -77,15 +77,15 @@ export default function Home() {
   return (
     <div ref={root} className="home">
       <ImmersiveHero />
-      <CategoryCircles />
       <AboutBand />
       <FeaturedCollections />
       <CollectionsFlow />
-      <Story />
       <Details />
       <ServiceHighlights />
       <CustomerReviews />
+      <CategoryCircles />
       <InstagramStrip />
+      <Story />
       <StoreLocationMap />
     </div>
   );

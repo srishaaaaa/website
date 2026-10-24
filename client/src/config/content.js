@@ -16,6 +16,7 @@ export const brand = {
 // Drop real photography into client/public/images/ and reference it here.
 // While an entry is null the site renders deterministic generative placeholders.
 export const media = {
+  heroCenter: '/images/hero-center.jpg',      // the plain centre photograph of the hero (replace in Admin → Storefront images)
   heroCutout: '/images/hero-cutout.png',   // transparent cut-out of the hero model (soft-feathered edges)
   heroSides: [
     { src: '/images/hero-side-1.jpg', alt: 'A model in a crimson Banarasi saree with a gold border, one hand on her hip' },
@@ -23,7 +24,7 @@ export const media = {
   ],
   heroDepth: '/images/hero-depth.png',        // estimated depth map of the cut-out (drives the 3D mesh)
   heroCutoutWebp: '/images/hero-cutout.webp',
-  heroAlt: 'A woman in a peach-pink striped saree and a gold blouse, mid-turn as her pallu flies out behind her',
+  heroAlt: 'A woman in an ivory saree with a gold lace border, seen in profile with her hair in a bun',
   storyImage: '/images/story.jpg',
   storyAlt: 'A woman in a red silk saree with gold buttis, her pallu lifting behind her as she turns',
   details: [],                                  // real texture / embroidery close-ups; the "World of Details" section appears only when filled

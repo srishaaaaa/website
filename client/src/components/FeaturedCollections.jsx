@@ -39,7 +39,7 @@ export default function FeaturedCollections() {
       <div className="lb-panel">
         <Reveal className="lb-head">
           <div>
-            <p className="eyebrow">THE CURATED EDIT</p>
+            <p className="eyebrow orn"><i aria-hidden="true" />THE CURATED EDIT<i aria-hidden="true" /></p>
             <h2 id="edit-h">CURATED FOR<br />YOUR WORLD.</h2>
           </div>
           <div className="lb-side">

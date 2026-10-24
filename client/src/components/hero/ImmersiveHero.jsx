@@ -48,7 +48,6 @@ export default function ImmersiveHero() {
           </motion.figure>
 
           <div className="tri-main">
-            <div className="tri-word" aria-hidden="true" data-word-bg><span>DHANYA</span></div>
             <ParallaxSubject show={show} />
           </div>
 

@@ -154,8 +154,8 @@ export function AdminStorefront() {
         {err && <p role="alert" className="err">{err}</p>}
         {b && (
           <div className="adm-slots">
-            <Slot title="Hero model" accept="image/png,image/webp" busy={busy === 'hero'} value={b.heroCutout} fallback="/images/hero-cutout.webp" alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
-              hint="Upload a model photo with a TRANSPARENT background (PNG or WebP). She is rendered as a 3D figure automatically. Tip: tools/make-cutout.py in the project creates a soft-edged cut-out from any photo."
+            <Slot title="Hero centre photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'hero'} value={b.heroCutout} fallback="/images/hero-center.jpg" alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
+              hint="The large photograph in the middle of the hero. A tall or square portrait works best; it is shown exactly as uploaded."
               onUpload={f => run('hero', async () => { const up = await uploadImage(f); const next = { ...b, heroCutout: up.url, heroDepth: null }; await saveBranding(next); setB(next) }, 'Hero model updated.')}
               onReset={() => run('hero', async () => { const next = { ...b, heroCutout: null, heroDepth: null, heroAlt: '' }; await saveBranding(next); setB(next) }, 'Hero reset.')} />
             <Slot title="Our Story photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'story'} value={b.storyImage} fallback="/images/story.jpg" alt={b.storyAlt} onAlt={v => setB({ ...b, storyAlt: v })}
