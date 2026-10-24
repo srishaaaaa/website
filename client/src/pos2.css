@@ -78,3 +78,6 @@
 .dpos-live { color: #0a8a5c; background: #e6f4ec; border-radius: 99px; padding: 3px 10px; letter-spacing: .08em }
 .dpos-logo-prev { width: 110px; height: 110px; border-radius: 50%; background: #f1efe9; border: 1px solid var(--d-line); display: grid; place-items: center; color: var(--d-mut); font-size: 11px; text-align: center; overflow: hidden } .dpos-logo-prev img { width: 100%; height: 100%; object-fit: cover }
 .dpos-inv-logo { display: block; margin: 0 auto 6px; width: 56px; height: 56px; border-radius: 50%; object-fit: cover }
+
+/* the "sample" pill sits under the product name instead of being squeezed into the 52px photo column */
+.dpos .adm-list button .adm-sample { grid-column: 2 / -1; justify-self: start; white-space: nowrap }
