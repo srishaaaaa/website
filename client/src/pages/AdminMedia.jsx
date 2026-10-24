@@ -106,12 +106,11 @@ export function AdminProducts() {
                 <div className="adm-ph"><h2 className="serif adm-h2">{sel.name}</h2><button className="adm-del" onClick={delProduct}>Delete product</button></div>
                 <ColourPanel productId={sel.id} onChanged={refreshSel} />
                 <Drop onFiles={add} busy={busy} />
-                <p className="muted small" style={{ margin: '8px 0 0' }}>Tip: click a photo on the part that must always stay visible (a face, the zari border). The website crops around that point.</p>
+                <p className="muted small" style={{ margin: '8px 0 0' }}>Photos are always shown whole on the website. Any spare space around a photo is filled with a soft blur of the same photo, so nothing is cropped and nothing looks empty.</p>
                 <ul className="adm-gal">
                   {imgs.map((im, i) => (
                     <li key={im.id}>
-                      <div className="adm-img"><FocusImage src={im.url} alt={im.alt || sel.name} x={im.focusX} y={im.focusY} onPick={(x, y) => saveFocus(im, x, y)}><span className="adm-pos">{i + 1}</span></FocusImage></div>
-                      {im.focusX != null && <button className="link-u small" onClick={() => saveFocus(im, null, null)}>Reset focus</button>}
+                      <div className="adm-img"><img src={im.url} alt={im.alt || sel.name} /><span className="adm-pos">{i + 1}</span></div>
                       <input aria-label={`Alt text for photo ${i + 1}`} defaultValue={im.alt} onBlur={e => saveAlt(im, e.target.value.trim())} placeholder="Describe the photo" />
                       {(sel.colors || []).filter(c => c !== 'Default').length > 0 && <label className="adm-col"><span className="muted small">Shows for</span>
                         <select aria-label={`Colour for photo ${i + 1}`} value={im.color || ''} onChange={e => saveColor(im, e.target.value)}><option value="">All colours</option>{(sel.colors || []).filter(c => c !== 'Default').map(c => <option key={c} value={c}>{c}</option>)}</select></label>}
