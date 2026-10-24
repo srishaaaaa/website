@@ -5,6 +5,7 @@ const BASE_SELECT = `
          p.base_price AS price, p.material, p.currency,
          (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id OFFSET 1 LIMIT 1) AS image2, p.tax_rate AS gst_rate, p.featured, p.created_at,
          (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
+         (SELECT CASE WHEN focus_x IS NOT NULL THEN focus_x || '% ' || focus_y || '%' END FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image_pos,
          COALESCE(st.stock, 0)::int AS stock, st.single_variant,
          COALESCE(st.sizes, ARRAY[]::text[]) AS sizes, COALESCE(st.colors, ARRAY[]::text[]) AS colors
   FROM products p
@@ -76,7 +77,7 @@ export async function productBySlug(q, slug) {
   const [variants, images] = await Promise.all([
     rows(q, `SELECT v.id, v.sku, v.size, v.color, v.stock_quantity AS stock, COALESCE(v.price_override, $2) AS price
              FROM product_variants v WHERE v.product_id = $1 AND v.active ORDER BY v.id`, [p.id, p.price]),
-    rows(q, 'SELECT image_url AS url, alt_text AS alt, variant_id, color FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [p.id]),
+    rows(q, 'SELECT image_url AS url, alt_text AS alt, variant_id, color, focus_x AS "focusX", focus_y AS "focusY" FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [p.id]),
   ]);
   const related = await rows(q, `${BASE_SELECT} WHERE p.status = 'active' AND p.id <> $1 ORDER BY (p.category_id IS NOT DISTINCT FROM (SELECT category_id FROM products WHERE id = $1)) DESC, p.featured DESC, p.id DESC LIMIT 4`, [p.id]);
   return { ...p, material: extra.material, variants, images, related };

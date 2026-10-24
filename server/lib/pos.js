@@ -280,7 +280,7 @@ export async function adjustStock(db, user, { variantId, type, qty, note }) {
 }
 
 // ---- products with their variants (inventory screen) ----
-export const listProducts = (db, q = '') => {
+export const listProducts = (db, q = '', onlyId = null) => {
   const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
   return rows(db, `
     SELECT p.id, p.slug, p.name, p.status, p.base_price AS price, p.tax_rate AS "taxRate", p.description, p.is_sample AS "isSample",
@@ -290,6 +290,6 @@ export const listProducts = (db, q = '') => {
            COALESCE((SELECT json_agg(json_build_object('id', v.id, 'sku', v.sku, 'size', v.size, 'color', v.color, 'stock', v.stock_quantity, 'price', COALESCE(v.price_override, p.base_price), 'active', v.active) ORDER BY v.id)
                      FROM product_variants v WHERE v.product_id = p.id), '[]'::json) AS variants
     FROM products p LEFT JOIN categories c ON c.id = p.category_id
-    WHERE $1 = '' OR p.name ILIKE $2 OR c.name ILIKE $2 OR EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.sku ILIKE $2)
-    ORDER BY p.name, p.id LIMIT 400`, [q.trim(), like]);
+    WHERE ($3::int IS NULL OR p.id = $3) AND ($1 = '' OR p.name ILIKE $2 OR c.name ILIKE $2 OR EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.sku ILIKE $2))
+    ORDER BY p.name, p.id LIMIT 400`, [q.trim(), like, onlyId]);
 };

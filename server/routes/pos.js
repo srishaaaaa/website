@@ -188,6 +188,11 @@ export default function pos({ db, auth }) {
   // ---- inventory: products with variants, stock adjustments (new products use the existing POST /admin/products) ----
   r.get('/pos/categories', biller, wrap(async (_req, res) => res.json(await rows(db, 'SELECT id, name, slug FROM categories WHERE active ORDER BY display_order, name'))));
   r.get('/pos/products', biller, wrap(async (req, res) => res.json(await listProducts(db, z.object({ q: text(80).default('') }).parse(req.query).q))));
+  r.get('/pos/products/:id', biller, wrap(async (req, res) => {
+    const p = (await listProducts(db, '', id.parse(req.params.id)))[0];
+    if (!p) throw new HttpError(404, 'Product not found');
+    res.json(p);
+  }));
   r.patch('/pos/products/:id', manager, wrap(async (req, res) => {
     const d = productPatch.parse(req.body);
     const cat = d.categorySlug ? await one(db, 'SELECT id FROM categories WHERE slug = $1', [d.categorySlug]) : null;

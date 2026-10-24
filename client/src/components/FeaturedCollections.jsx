@@ -34,7 +34,7 @@ function Item({ p, i }) {
   return (
     <li className={`cu-item cu-${i}`}>
       <div className="cu-photo">
-        <Link to={`/product/${p.slug}`} data-cursor="VIEW" aria-label={`${p.name}, ${inr(p.price)}`}><ProductMedia p={p} /></Link>
+        <Link to={`/product/${p.slug}`} data-cursor="VIEW" aria-label={`${p.name}, ${inr(p.price)}`}><ProductMedia p={p} priority={i < 3} /></Link>
         <button className={`cu-heart ${liked ? 'on' : ''}`} onClick={() => toggleWish(p.slug, p.name)} aria-pressed={liked} aria-label={liked ? `Remove ${p.name} from wishlist` : `Save ${p.name} to wishlist`}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.6c0 5.7-7.5 10.3-7.5 10.3Z" /></svg>
         </button>
@@ -63,9 +63,11 @@ export default function FeaturedCollections() {
 
   useEffect(() => {
     let dead = false;
-    Promise.all(TABS.map(([key, , qs]) => apiRetry(`/products?${qs}&limit=${LIMIT}`).then(d => [key, { items: d.items, total: d.total }]).catch(() => [key, { items: [], total: 0 }])))
+    // Only needed to hide tabs with no results and to fill the other tabs: run after the first paint, not in the initial burst.
+    const run = () => Promise.all(TABS.map(([key, , qs]) => apiRetry(`/products?${qs}&limit=${LIMIT}`).then(d => [key, { items: d.items, total: d.total }]).catch(() => [key, { items: [], total: 0 }])))
       .then(r => { if (!dead) setData(Object.fromEntries(r)) });
-    return () => { dead = true };
+    const t = 'requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 3000 }) : setTimeout(run, 1500);
+    return () => { dead = true; 'cancelIdleCallback' in window ? cancelIdleCallback(t) : clearTimeout(t) };
   }, []);
 
   // Typed search runs against the live catalogue (name, fabric, description), within sarees.

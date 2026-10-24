@@ -3,6 +3,7 @@
   "installCommand": "npm install --include=dev --prefix client && npm install --prefix server",
   "buildCommand": "npm run build --prefix client",
   "outputDirectory": "client/dist",
+  "regions": ["sin1"],
   "functions": {
     "api/index.js": { "maxDuration": 30, "includeFiles": "server/**" }
   },

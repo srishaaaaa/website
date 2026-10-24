@@ -3,7 +3,23 @@ import { Link, Navigate, NavLink } from 'react-router-dom';
 import { api, uploadImage, uploadMedia } from '../lib/api';
 import { useApp } from '../context/App';
 import AdminShell from '../components/AdminShell';
+import ColourPanel from '../components/ColourOptions';
 import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
+
+// A photo you can click: the dot marks the part that must stay visible when the site crops the photo to fit a frame.
+function FocusImage({ src, alt, x, y, onPick, box = 0.75, children }) {
+  const [nat, setNat] = useState(null);
+  const click = e => { const r = e.currentTarget.getBoundingClientRect(); const c = v => Math.round(Math.min(100, Math.max(0, v))); onPick(c((e.clientX - r.left) / r.width * 100), c((e.clientY - r.top) / r.height * 100)) };
+  return (
+    <>
+      <span className="adm-focus" style={{ '--r': nat ? nat[0] / nat[1] : box, '--b': box }} onClick={click} title="Click the part of the photo that must always stay visible">
+        <img src={src} alt={alt} onLoad={e => setNat([e.currentTarget.naturalWidth, e.currentTarget.naturalHeight])} />
+        {x != null && <i className="adm-dot" style={{ left: `${x}%`, top: `${y}%` }} />}
+      </span>
+      {children}
+    </>
+  );
+}
 
 // Guards admin screens: signed in AND staff. (The API enforces the role too; this only avoids a dead page.)
 function useStaff() {
@@ -63,6 +79,8 @@ export function AdminProducts() {
   };
   const del = async im => { if (!confirm('Remove this photo?')) return; try { changed(await api(`/admin/images/${im.id}`, { method: 'DELETE' })) } catch (e) { setErr(e.message) } };
   const saveColor = async (im, color) => { try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { color: color || null } })); toast(color ? `That photo now shows for ${color}.` : 'That photo now shows for every colour.') } catch (e) { setErr(e.message) } };
+  const saveFocus = async (im, x, y) => { try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { focusX: x, focusY: y } })); toast(x == null ? 'Photo focus reset.' : 'Saved: the site will keep that part in view.') } catch (e) { setErr(e.message) } };
+  const refreshSel = () => { load(); api('/admin/products?q=' + encodeURIComponent(sel.slug)).then(r => { const n = r.find(z => z.id === sel.id); if (n) setSel(n) }).catch(() => {}) };
   const saveAlt = async (im, alt) => { if (alt === im.alt) return; try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { alt } })) } catch (e) { setErr(e.message) } };
 
   return (
@@ -86,11 +104,14 @@ export function AdminProducts() {
             {!sel ? <p className="muted">Choose a product on the left to manage its photos. Pieces with no photos are listed first.</p> : (
               <>
                 <div className="adm-ph"><h2 className="serif adm-h2">{sel.name}</h2><button className="adm-del" onClick={delProduct}>Delete product</button></div>
+                <ColourPanel productId={sel.id} onChanged={refreshSel} />
                 <Drop onFiles={add} busy={busy} />
+                <p className="muted small" style={{ margin: '8px 0 0' }}>Tip: click a photo on the part that must always stay visible (a face, the zari border). The website crops around that point.</p>
                 <ul className="adm-gal">
                   {imgs.map((im, i) => (
                     <li key={im.id}>
-                      <div className="adm-img"><img src={im.url} alt={im.alt || sel.name} /><span className="adm-pos">{i + 1}</span></div>
+                      <div className="adm-img"><FocusImage src={im.url} alt={im.alt || sel.name} x={im.focusX} y={im.focusY} onPick={(x, y) => saveFocus(im, x, y)}><span className="adm-pos">{i + 1}</span></FocusImage></div>
+                      {im.focusX != null && <button className="link-u small" onClick={() => saveFocus(im, null, null)}>Reset focus</button>}
                       <input aria-label={`Alt text for photo ${i + 1}`} defaultValue={im.alt} onBlur={e => saveAlt(im, e.target.value.trim())} placeholder="Describe the photo" />
                       {(sel.colors || []).filter(c => c !== 'Default').length > 0 && <label className="adm-col"><span className="muted small">Shows for</span>
                         <select aria-label={`Colour for photo ${i + 1}`} value={im.color || ''} onChange={e => saveColor(im, e.target.value)}><option value="">All colours</option>{(sel.colors || []).filter(c => c !== 'Default').map(c => <option key={c} value={c}>{c}</option>)}</select></label>}
@@ -113,12 +134,14 @@ export function AdminProducts() {
 }
 
 // One single-image slot (hero model / story photo): preview, upload, reset.
-function Slot({ title, hint, value, fallback, onUpload, onReset, alt, onAlt, accept, busy }) {
+function Slot({ title, hint, value, fallback, onUpload, onReset, alt, onAlt, accept, busy, pos, onPos }) {
+  const pt = pos ? pos.split('% ').map(v => parseInt(v, 10)) : null;
   return (
     <section className="adm-card">
       <h2 className="serif adm-h2">{title}</h2>
       <p className="muted small">{hint}</p>
-      <div className="adm-prev">{(value || fallback) ? <img src={value || fallback} alt="" /> : <span className="muted small">Blank — nothing added yet</span>}</div>
+      <div className="adm-prev">{(value || fallback) ? (onPos && value ? <FocusImage src={value} alt="" x={pt?.[0]} y={pt?.[1]} box={4 / 3} onPick={(x, y) => onPos(`${x}% ${y}%`)} /> : <img src={value || fallback} alt="" />) : <span className="muted small">Blank — nothing added yet</span>}</div>
+      {onPos && value && <p className="muted small">Click the photo on the part that must stay visible (usually her face).{pos && <> <button className="link-u small" onClick={() => onPos(null)}>Reset focus</button></>}</p>}
       <Drop onFiles={fs => fs[0] && onUpload(fs[0])} multiple={false} accept={accept} busy={busy} label={value ? 'Custom image in use' : 'Using the built-in image'} />
       <label className="field"><span>Describe the image (for screen readers)</span><input value={alt} onChange={e => onAlt(e.target.value)} /></label>
       {value && <button className="link-u small" onClick={onReset}>Reset to the built-in image</button>}
@@ -156,7 +179,7 @@ export function AdminStorefront() {
               hint="Your boutique logo, shown in the site header and menu. A square or round image works best (PNG with a transparent background is ideal). Until you add one, the DHANYA text wordmark is shown. You can replace it whenever you like."
               onUpload={f => run('logo', async () => { const up = await uploadImage(f); const next = { ...b, logo: up.url }; await saveBranding(next); setB(next) }, 'Logo updated.')}
               onReset={() => run('logo', async () => { const next = { ...b, logo: null, logoAlt: '' }; await saveBranding(next); setB(next) }, 'Logo removed. The text wordmark is back.')} />
-            <Slot title="Hero model photo" accept="image/png,image/webp,image/jpeg" busy={busy === 'hero'} value={b.heroModel} fallback="" alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
+            <Slot title="Hero model photo" accept="image/png,image/webp,image/jpeg" busy={busy === 'hero'} value={b.heroModel} fallback="" pos={b.heroModelPos} onPos={v => run('hero', async () => { const next = { ...b, heroModelPos: v }; await saveBranding(next); setB(next) }, 'Focus saved.')} alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
               hint="The full-length model in the hero. A tall photo with a TRANSPARENT background (PNG or WebP) overlaps the ivory panel best. Until you add one the frame stays blank."
               onUpload={f => run('hero', async () => { const up = await uploadImage(f); const next = { ...b, heroModel: up.url }; await saveBranding(next); setB(next) }, 'Hero model updated.')}
               onReset={() => run('hero', async () => { const next = { ...b, heroModel: null, heroAlt: '' }; await saveBranding(next); setB(next) }, 'Hero model removed.')} />

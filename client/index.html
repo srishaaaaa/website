@@ -12,7 +12,13 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500&family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500&family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500&family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet"></noscript>
+<link rel="preload" as="image" href="/images/dhanya-logo.jpg" fetchpriority="high">
+<script>
+// Start the homepage data requests now, in parallel with the JS bundle. api() picks these up instead of fetching again.
+(function(){try{var H={"Content-Type":"application/json","X-Requested-With":"dhanya"},P={};["/store","/categories","/collections","/products?featured=1&limit=12"].forEach(function(p){P[p]=fetch("/api"+p,{credentials:"include",headers:H}).catch(function(){return null})});window.__pre=P}catch(e){}})();
+</script>
 <style>
 html,body{margin:0;background:#09090D}
 .boot{position:fixed;inset:0;display:grid;place-content:center;justify-items:center;gap:18px;background:radial-gradient(60% 50% at 50% 42%,#1a1020 0,#09090D 100%);color:#F5F0E8;font-family:'Playfair Display',Georgia,serif}

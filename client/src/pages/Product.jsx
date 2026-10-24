@@ -16,7 +16,7 @@ const slidesOf = (p, color) => {
   const mine = p.images.filter(im => im.color && color && im.color.toLowerCase() === color.toLowerCase());
   const general = p.images.filter(im => !im.color);
   const list = mine.length ? [...mine, ...general] : general.length ? general : p.images;
-  return list.map(im => ({ p: { ...p, image: im.url, name: im.alt || p.name }, view: 0 }));
+  return list.map(im => ({ p: { ...p, image: im.url, image_pos: im.focusX != null ? `${im.focusX}% ${im.focusY}%` : null, name: im.alt || p.name }, view: 0 }));
 };
 
 function Lightbox({ p, color, index, setIndex, onClose }) {

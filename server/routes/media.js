@@ -81,7 +81,7 @@ export function mediaAdmin({ db, auth }) {
       FROM products p LEFT JOIN categories c ON c.id = p.category_id
       WHERE $1 = '' OR p.name ILIKE $2 OR p.slug ILIKE $2 ORDER BY (SELECT COUNT(*) FROM product_images i WHERE i.product_id = p.id), p.id DESC LIMIT 300`, [q, like]));
   }));
-  const gallery = (productId) => rows(db, 'SELECT id, image_url AS url, alt_text AS alt, color, display_order FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [productId]);
+  const gallery = (productId) => rows(db, 'SELECT id, image_url AS url, alt_text AS alt, color, focus_x AS "focusX", focus_y AS "focusY", display_order FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [productId]);
   const pid = z.coerce.number().int().positive();
 
   r.get('/products/:id/images', staff, wrap(async (req, res) => res.json(await gallery(pid.parse(req.params.id)))));
@@ -101,9 +101,13 @@ export function mediaAdmin({ db, auth }) {
     res.json(await gallery(id));
   }));
   r.patch('/images/:imageId', staff, wrap(async (req, res) => {
-    const d = z.object({ alt: z.string().trim().max(200).optional(), color: z.string().trim().max(40).nullable().optional() }).refine(b => b.alt !== undefined || b.color !== undefined, 'Nothing to change').parse(req.body);
-    const u = await db.query('UPDATE product_images SET alt_text = CASE WHEN $2::boolean THEN $3 ELSE alt_text END, color = CASE WHEN $4::boolean THEN $5 ELSE color END WHERE id = $1 RETURNING product_id',
-      [pid.parse(req.params.imageId), d.alt !== undefined, d.alt ?? null, d.color !== undefined, d.color || null]);
+    const pct = z.number().int().min(0).max(100).nullable();
+    const d = z.object({ alt: z.string().trim().max(200).optional(), color: z.string().trim().max(40).nullable().optional(), focusX: pct.optional(), focusY: pct.optional() })
+      .refine(b => b.alt !== undefined || b.color !== undefined || b.focusX !== undefined || b.focusY !== undefined, 'Nothing to change')
+      .refine(b => (b.focusX === undefined) === (b.focusY === undefined) && ((b.focusX === null) === (b.focusY === null)), 'Set both focus values, or clear both').parse(req.body);
+    const u = await db.query(`UPDATE product_images SET alt_text = CASE WHEN $2::boolean THEN $3 ELSE alt_text END, color = CASE WHEN $4::boolean THEN $5 ELSE color END,
+                              focus_x = CASE WHEN $6::boolean THEN $7::smallint ELSE focus_x END, focus_y = CASE WHEN $6::boolean THEN $8::smallint ELSE focus_y END WHERE id = $1 RETURNING product_id`,
+      [pid.parse(req.params.imageId), d.alt !== undefined, d.alt ?? null, d.color !== undefined, d.color || null, d.focusX !== undefined, d.focusX ?? null, d.focusY ?? null]);
     if (!u.rows.length) throw new HttpError(404, 'Image not found');
     res.json(await gallery(u.rows[0].product_id));
   }));

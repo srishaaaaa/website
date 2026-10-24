@@ -73,7 +73,7 @@ export default function CustomerReviews() {
       setData(prev => (page === 1 || !prev ? d : { ...d, items: [...prev.items, ...d.items] }));
     } catch { setData(prev => prev ?? EMPTY) }
   }, []);
-  useEffect(() => { load(1) }, [load]);
+  useEffect(() => { const t = 'requestIdleCallback' in window ? requestIdleCallback(() => load(1), { timeout: 3000 }) : setTimeout(() => load(1), 1500); return () => { 'cancelIdleCallback' in window ? cancelIdleCallback(t) : clearTimeout(t) } }, [load]);
 
   // Slow, continuous drift to the left (~35px/s). It never pauses on hover or swipe; tapping (or pressing Enter on) a review stops it,
   // and tapping a review again sets it moving. At the end it eases back to the start and carries on.

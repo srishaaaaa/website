@@ -5,6 +5,7 @@ import { useApp } from '../context/App';
 import { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import { Chips } from '../components/PeriodFilter';
+import { ColourModal, colourGroups } from '../components/ColourOptions';
 
 const toPaise = s => { const n = Math.round(parseFloat(String(s || '').replace(/,/g, '')) * 100); return Number.isFinite(n) && n > 0 ? n : 0 };
 const rupees = p => (p / 100).toFixed(2).replace(/\.00$/, '');
@@ -69,39 +70,6 @@ function EditModal({ product, categories, onClose, onDone }) {
         <p className="sub">Photos are managed in Products &amp; images. Stock is adjusted with the Stock button.</p>
         <Err>{err}</Err>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button></div>
-      </form>
-    </Modal>
-  );
-}
-
-// One colour option = a row of sizes with opening stock, optionally with its own price.
-const colourGroups = p => { const m = new Map(); for (const v of p.variants) { const g = m.get(v.color) || { name: v.color, stock: 0, price: v.price, sizes: [] }; g.stock += v.stock; g.sizes.push(v.size); m.set(v.color, g) } return [...m.values()] };
-function ColourModal({ product, onClose, onDone }) {
-  const sizes0 = [...new Set(product.variants.map(v => v.size))];
-  const [color, setColor] = useState(''); const [price, setPrice] = useState(''); const [rows, setRows] = useState((sizes0.length ? sizes0 : ['Free Size']).map(size => ({ size, stock: '' })));
-  const [busy, setBusy] = useState(false); const [err, setErr] = useState();
-  const submit = async e => {
-    e.preventDefault(); setBusy(true); setErr();
-    try { await api(`/admin/pos/products/${product.id}/colours`, { method: 'POST', body: { color: color.trim(), price: price.trim() ? toPaise(price) : null, sizes: rows.filter(r => r.size.trim()).map(r => ({ size: r.size.trim(), stock: parseInt(r.stock, 10) || 0 })) } }); onDone(); onClose() }
-    catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
-  };
-  return (
-    <Modal title="Add colour option" sub={product.name} onClose={onClose}>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
-        <div className="dpos-grid">
-          <label className="f">Colour name<input required autoFocus value={color} maxLength={40} onChange={e => setColor(e.target.value)} placeholder="e.g. Wine Purple" /></label>
-          <label className="f">Price for this colour ₹ (optional)<input inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} placeholder={rupees(product.price)} /></label>
-        </div>
-        <div className="dpos-box"><b>Sizes &amp; stock for this colour</b>
-          {rows.map((r, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginTop: 10 }}>
-              <input aria-label="Size" placeholder="Size" value={r.size} onChange={e => setRows(x => x.map((y, n) => n === i ? { ...y, size: e.target.value } : y))} />
-              <input aria-label="Opening stock" inputMode="numeric" placeholder="Stock" value={r.stock} onChange={e => setRows(x => x.map((y, n) => n === i ? { ...y, stock: e.target.value.replace(/\D/g, '') } : y))} />
-              <button type="button" className="dpos-btn ghost sm" aria-label="Remove size" disabled={rows.length === 1} onClick={() => setRows(x => x.filter((_, n) => n !== i))}>✕</button></div>))}
-          <button type="button" className="dpos-btn ghost sm" style={{ marginTop: 10 }} onClick={() => setRows(x => [...x, { size: '', stock: '' }])}>+ Add size</button></div>
-        <p className="sub">After adding the colour, open Products &amp; images and set each photo’s “Shows for” colour, so shoppers see that colour’s photos when they pick it.</p>
-        <Err>{err}</Err>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Adding…' : 'Add colour'}</button></div>
       </form>
     </Modal>
   );

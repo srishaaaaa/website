@@ -29,6 +29,11 @@ export function createApp({ db, cfg, payments = createRazorpayProvider(cfg) }) {
   app.use(express.json({ limit: '100kb' }), cookieParser());
   app.use('/api', csrfGuard());
 
+  // Public, non-personal catalogue reads are cached at the CDN edge: after the first visitor, everyone gets them in milliseconds,
+  // and a slightly stale copy is served instantly while a fresh one is fetched in the background. Nothing user-specific is listed here.
+  const PUBLIC_READS = /^\/(store|categories|collections(\/[a-z0-9-]+)?|products(\/[a-z0-9-]+)?|reviews)$/;
+  app.use('/api', (req, res, next) => { if (req.method === 'GET' && PUBLIC_READS.test(req.path)) res.set('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=60'); next() });
+
   // Health + a quick configuration check (no secrets): shows which schema is read and whether the boutique location is set.
   app.get('/api/health', async (_req, res) => {
     let storeConfigured = null;

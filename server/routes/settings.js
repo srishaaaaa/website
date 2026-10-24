@@ -33,7 +33,7 @@ export const brandingSchema = z.object({
   logo: z.string().max(500).nullable().default(null), logoAlt: z.string().trim().max(200).nullable().default(null),
   heroCutout: z.string().max(500).nullable().default(null), heroDepth: z.string().max(500).nullable().default(null), heroAlt: z.string().trim().max(200).nullable().default(null),
   storyImage: z.string().max(500).nullable().default(null), storyAlt: z.string().trim().max(200).nullable().default(null),
-  heroModel: z.string().max(500).nullable().default(null), textileImage: z.string().max(500).nullable().default(null), editorialImage: z.string().max(500).nullable().default(null),
+  heroModel: z.string().max(500).nullable().default(null), heroModelPos: z.string().regex(/^\d{1,3}% \d{1,3}%$/).nullable().default(null), textileImage: z.string().max(500).nullable().default(null), editorialImage: z.string().max(500).nullable().default(null),
   textileAlt: z.string().trim().max(200).nullable().default(null), editorialAlt: z.string().trim().max(200).nullable().default(null),
 });
 export const pageSchema = z.object({ title: text(120).min(1), body: text(20000) });

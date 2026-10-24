@@ -6,11 +6,18 @@ import { useApp } from '../context/App';
 import { useFinePointer, useReduced } from '../lib/hooks';
 import { inr } from '../lib/format';
 
-export function ProductMedia({ p, view = 0, className = '' }) {
+// A photo fades in once it has loaded (never a half-drawn image) and is framed on the focus point chosen in the admin.
+function Photo({ className = '', style, ...rest }) {
+  const [ok, setOk] = useState(false);
+  return <img {...rest} className={`${className} ${ok ? 'is-in' : ''}`} style={style} onLoad={() => setOk(true)} ref={el => { if (el && el.complete && el.naturalWidth && !ok) setOk(true) }} />;
+}
+
+export function ProductMedia({ p, view = 0, className = '', priority = false }) {
+  const load = priority ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: 'lazy', decoding: 'async' };
   if (p.image) {
-    if (view === 1 && p.image2) return <img className={`media ${className}`} src={p.image2} alt="" loading="lazy" />;
+    if (view === 1 && p.image2) return <Photo className={`media ${className}`} src={p.image2} alt="" {...load} />;
     // A real photo is always shown whole: the old zoomed/shifted "views" only suit the generated artwork below.
-    return <img className={`media ${className}`} src={p.image} alt={view ? '' : p.name} loading="lazy" />;
+    return <Photo className={`media ${className}`} src={p.image} alt={view ? '' : p.name} style={p.image_pos ? { objectPosition: p.image_pos } : undefined} {...load} />;
   }
   return <ProductArt seed={p.slug} view={view} className={className} />;
 }

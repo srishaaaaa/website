@@ -2,7 +2,10 @@
 // so no credential ever lives in JavaScript-accessible storage. The custom header is the CSRF guard.
 export async function api(path, opts = {}) {
   let r;
-  try { r = await fetch('/api' + path, {
+  // The page shell already started the homepage reads (see index.html); take that response once instead of asking again.
+  const pre = !opts.method && !opts.body && typeof window !== 'undefined' && window.__pre?.[path];
+  if (pre) { delete window.__pre[path]; r = await pre; if (r && !r.ok) r = null }
+  try { if (!r) r = await fetch('/api' + path, {
     ...opts,
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'dhanya' },
