@@ -208,3 +208,7 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .studio + .eq { margin-top: 0 }
 .footer-fade { background: var(--maroon) }
 .site-footer { background: linear-gradient(180deg, #5b1820 0%, #4d141b 100%); margin-top: calc(-1 * clamp(36px, 4.5vw, 64px)) }
+
+/* ---- password show/hide ---- */
+.field .pw { position: relative; display: block } .field .pw input { width: 100%; padding-right: 52px }
+.pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; color: var(--maroon); opacity: .7; transition: opacity .2s } .pw-eye:hover, .pw-eye:focus-visible { opacity: 1 }

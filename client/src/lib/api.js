@@ -1,14 +1,15 @@
 // All requests are same-origin (Vite proxy in dev). The session and guest-cart cookies are httpOnly,
 // so no credential ever lives in JavaScript-accessible storage. The custom header is the CSRF guard.
 export async function api(path, opts = {}) {
-  const r = await fetch('/api' + path, {
+  let r;
+  try { r = await fetch('/api' + path, {
     ...opts,
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'dhanya' },
     body: opts.body && JSON.stringify(opts.body),
-  });
+  }) } catch { throw Object.assign(new Error('Cannot reach the server. Check your connection and try again.'), { status: 0 }) }
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(d.error || 'Request failed'), { status: r.status, code: d.code, issues: d.issues });
+  if (!r.ok) throw Object.assign(new Error(d.error || (r.status >= 500 ? `The server had a problem (error ${r.status}). Check /api/health on this site.` : r.status === 404 ? 'The server API was not found (404). The site may not be deployed with its API.' : `Request failed (${r.status})`)), { status: r.status, code: d.code, issues: d.issues });
   return d;
 }
 
