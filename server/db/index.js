@@ -24,7 +24,10 @@ export async function createDb(cfg) {
       await admin.connect(); await admin.query(`CREATE SCHEMA IF NOT EXISTS ${cfg.DB_SCHEMA}`); await admin.end();
       opts.options = `-c search_path=${cfg.DB_SCHEMA}`;
     }
-    const pool = new pg.Pool({ connectionString: url.toString(), ...opts, max: Number(process.env.PG_POOL_MAX) || opts.max });
+    const pool = new pg.Pool({ connectionString: url.toString(), ...opts, keepAlive: true, max: Number(process.env.PG_POOL_MAX) || opts.max });
+    // Managed Postgres (e.g. Neon) closes idle connections. Without this handler an idle-client reset is an unhandled
+    // 'error' event that crashes the whole process; with it the pool simply drops the dead client and reconnects.
+    pool.on('error', err => console.error('Idle Postgres client dropped (a new one will be opened):', err.code || err.message));
     const wrap = c => ({ query: (s, p) => c.query(s, p), exec: s => c.query(s) });
     return {
       kind: 'postgres', ...wrap(pool),

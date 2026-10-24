@@ -16,7 +16,7 @@ import { Shop, Collections, CollectionPage, Search } from './pages/Browse';
 import Product from './pages/Product';
 import { Wishlist, CartPage, Checkout, Auth } from './pages/Shopping';
 import { Account, Admin } from './pages/Account';
-import { AdminProducts, AdminStorefront } from './pages/AdminMedia';
+import { AdminEnquiries, AdminProducts, AdminSample, AdminStorefront } from './pages/AdminMedia';
 import { About, Journal, NotFound, Policy } from './pages/Static';
 
 export default function App() {
@@ -48,6 +48,8 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/products" element={<AdminProducts />} />
           <Route path="/admin/storefront" element={<AdminStorefront />} />
+          <Route path="/admin/enquiries" element={<AdminEnquiries />} />
+          <Route path="/admin/sample" element={<AdminSample />} />
           <Route path="/about" element={<About />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/privacy" element={<Policy slug="privacy" title="Privacy policy" />} />

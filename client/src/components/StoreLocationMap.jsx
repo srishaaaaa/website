@@ -66,7 +66,7 @@ export default function StoreLocationMap() {
             <div className="map-card">
               <div className="map-card-top">
                 <span className="pin-badge" aria-hidden="true"><Ico><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.4" /></Ico></span>
-                <div><strong>{store.name}{lines ? ' Boutique' : ''}</strong><span className="muted small">{lines ? lines[lines.length - 1].split(',').slice(-3, -1).join(',').trim() || lines[lines.length - 1] : 'Tap for directions'}</span></div>
+                <div><strong>{store.name}</strong><span className="muted small">{lines ? lines[lines.length - 1].split(',').slice(-3, -1).join(',').trim() || lines[lines.length - 1] : 'Tap for directions'}</span></div>
                 {state && <span className={`status ${state.open ? 'open' : ''}`}><i aria-hidden="true" />{state.open ? 'OPEN' : 'CLOSED'}</span>}
               </div>
               <div className="map-card-bot"><span className="small">{state?.text || (lines ? lines[0] : '')}</span><a href={map.directionsUrl} target="_blank" rel="noopener noreferrer">DIRECTIONS →</a></div>

@@ -13,8 +13,8 @@ const gstFor = rupees => (rupees <= 2500 ? 5 : 18);
 
 async function addProduct(t, { slug, name, category, price, gst, featured, material, variants }) {
   const c = await one(t, 'SELECT id FROM categories WHERE slug = $1', [category]);
-  const p = await one(t, `INSERT INTO products (slug, name, description, category_id, base_price, tax_rate, material, status, featured)
-    VALUES ($1,$2,'Replace with your real product description.',$3,$4,$5,$6,'active',$7) ON CONFLICT (slug) DO NOTHING RETURNING id`, [slug, name, c.id, price, gst, material ?? null, featured]);
+  const p = await one(t, `INSERT INTO products (slug, name, description, category_id, base_price, tax_rate, material, status, featured, is_sample)
+    VALUES ($1,$2,'Sample product. Replace with your real product description.',$3,$4,$5,$6,'active',$7,true) ON CONFLICT (slug) DO NOTHING RETURNING id`, [slug, name, c.id, price, gst, material ?? null, featured]);
   if (!p) return false;
   const params = [], values = [];
   for (const v of variants) { params.push(p.id, v.sku, v.size, v.color, v.stock); const n = params.length; values.push(`($${n - 4},$${n - 3},$${n - 2},$${n - 1},$${n})`) }
@@ -28,20 +28,21 @@ async function addProduct(t, { slug, name, category, price, gst, featured, mater
   return true;
 }
 
-export async function seed(db, cfg, log = console.log) {
+// `sample: false` creates only the structure (categories, shipping) and the owner account: no demo products.
+export async function seed(db, cfg, log = console.log, { sample = true } = {}) {
   await db.tx(async t => {
     for (const [i, [name, slug]] of CATEGORIES.entries()) {
       await t.query('INSERT INTO categories (name, slug, display_order) VALUES ($1,$2,$3) ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, display_order = EXCLUDED.display_order', [name, slug, i]);
     }
     await t.query(`INSERT INTO shipping_methods (code, name, base_amount, free_over) VALUES ('standard','Standard shipping',9900,500000) ON CONFLICT (code) DO NOTHING`);
 
-    for (const [slug, name, category, price, gst, featured, colors, stock, material] of CORE) {
+    if (sample) for (const [slug, name, category, price, gst, featured, colors, stock, material] of CORE) {
       const variants = colors.flatMap(color => Object.entries(stock).map(([size, qty]) => ({ sku: skuOf(slug, color, size), size, color, stock: qty })));
       await addProduct(t, { slug, name, category, price, gst, featured, material, variants });
       await t.query('UPDATE products SET material = $2 WHERE slug = $1 AND material IS NULL', [slug, material]);
     }
     const flagged = { T: [], B: [] };
-    for (const [slug, name, category, rupees, material, colors, sizeSet, flags] of MORE) {
+    if (sample) for (const [slug, name, category, rupees, material, colors, sizeSet, flags] of MORE) {
       const variants = colors.flatMap(color => SIZE_SETS[sizeSet].map(size => ({ sku: skuOf(slug, color, size), size, color, stock: stockFor(slug, size + color, flags) })));
       if (!flags.includes('X') && variants.every(v => v.stock === 0)) variants[0].stock = 3;
       await addProduct(t, { slug, name, category, price: rupees * 100, gst: gstFor(rupees), featured: flags.includes('F'), material, variants });
@@ -53,10 +54,14 @@ export async function seed(db, cfg, log = console.log) {
       if (!c) return;
       for (const [i, ps] of products.entries()) await t.query('INSERT INTO collection_products (collection_id, product_id, display_order) SELECT $1, id, $2 FROM products WHERE slug = $3', [c.id, i, ps]);
     };
+    if (sample) {
     await col('curated-edit', 'The Curated Edit', 'Pieces chosen by the boutique.', 0, ['banarasi-silk-saree', 'midnight-kurta-set', 'champagne-co-ord', 'dusk-silk-dress']);
     await col('festive-edit', 'The Festive Edit', 'For celebrations.', 1, ['plum-festive-lehenga', 'banarasi-silk-saree', 'gold-thread-co-ord']);
     await col('evening-edit', 'The Evening Edit', 'After-dark silhouettes.', 2, ['rose-organza-dress', 'dusk-silk-dress', 'midnight-kurta-set']);
     for (const [slug, name, description, order, flag] of COLLECTIONS_BY_FLAG) await col(slug, name, description, order, flagged[flag]);
+    // products created by an earlier seed (before the sample flag existed) are flagged too, so they can be deleted from the admin
+    await t.query('UPDATE products SET is_sample = true WHERE slug = ANY($1)', [[...CORE.map(p => p[0]), ...MORE.map(p => p[0])]]);
+    }
 
     // Store settings start empty: no invented address, hours or social handles.
     await t.query(`INSERT INTO store_settings (key, value) VALUES ('store', $1), ('social', $2) ON CONFLICT (key) DO NOTHING`,
@@ -83,4 +88,18 @@ export async function seedDemoReviews(db, log = console.log) {
     await t.query(`INSERT INTO store_settings (key, value) VALUES ('flags', $1) ON CONFLICT (key) DO NOTHING`, [JSON.stringify({ demoReviews: true })]);
   });
   log('Sample reviews added (flagged as samples).');
+}
+
+const ENQ = [
+  ['retail', 'Priya (sample)', null, '99999 00001', 'priya.sample@example.com', 'Red Kanjivaram silk saree for a wedding', null, 'Sample enquiry. Do you have this in stock?'],
+  ['retail', 'Meena (sample)', null, '99999 00002', null, 'Cotton sarees for daily wear', null, 'Sample enquiry.'],
+  ['wholesale', 'Ravi (sample)', 'Sample Textiles', '99999 00003', 'ravi.sample@example.com', 'Silk sarees for resale', '50 sarees', 'Sample wholesale enquiry. Please share your rates.'],
+  ['wholesale', 'Kavitha (sample)', 'Sample Saree Mahal', '99999 00004', null, 'Bridal collection', '20 sarees', 'Sample wholesale enquiry.'],
+];
+// Sample enquiries so the admin inbox is not empty. Flagged so they can be deleted (individually or via Admin → Sample data).
+export async function seedDemoEnquiries(db, log = console.log) {
+  const has = await one(db, 'SELECT 1 AS x FROM enquiries WHERE is_sample LIMIT 1');
+  if (has) return;
+  for (const e of ENQ) await db.query('INSERT INTO enquiries (kind, name, business, phone, email, interest, quantity, message, is_sample) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true)', e);
+  log('Sample enquiries added (flagged as samples).');
 }

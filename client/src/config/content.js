@@ -6,9 +6,9 @@ export const brand = {
   credit: 'Cenexa Systems', // shown in the footer as "Powered by …"; change or clear to suit
   // Our Story copy: brand voice only (values, categories). Replace with the boutique's own words when ready.
   story: [
-    'At DHANYA, fashion is more than clothing. It is a quiet celebration of elegance, tradition and modern femininity: contemporary luxury with an Indian soul.',
-    "Our collection brings timeless craftsmanship together with a contemporary eye: sarees in every fabric, bridal silks, lehengas, salwar suits, kurtas, couple combos and everyday ladies' wear, for festivals, weddings and every occasion in between.",
-    'We believe every woman deserves to feel beautiful, confident and effortlessly herself. That is why we design for comfort, luxury and grace together, while honouring the authenticity of Indian ethnic fashion.',
+    'At DHANYA BOUTIQUE, fashion is more than clothing. It is a quiet celebration of elegance, tradition and modern femininity: contemporary luxury with an Indian soul.',
+    'Our collection brings timeless craftsmanship together with a contemporary eye: sarees of every kind, chosen for festivals, weddings and every occasion in between. We welcome both wholesale and retail customers.',
+    'We believe every woman deserves to feel beautiful, confident and effortlessly herself, which is why we look for sarees that balance comfort, luxury and grace while honouring the authenticity of Indian fashion.',
   ],
   personality: ['Ethereal', 'Elegant', 'Mysterious', 'Artistic', 'Confident', 'Luxurious'],
 };
@@ -30,3 +30,9 @@ export const media = {
   details: [],                                  // real texture / embroidery close-ups; the "World of Details" section appears only when filled
 };
 // Boutique location, opening hours and social links are managed in the admin (store settings), not here.
+
+// Campaign wording: edit here to change the hero pill and the ticker.
+export const campaign = {
+  label: 'NEW COLLECTION 2026',
+  ticker: ['DHANYA BOUTIQUE', 'TIMELESS SAREES', 'NEW COLLECTION 2026', 'WHOLESALE & RETAIL', 'TRADITION, REDEFINED'],
+};

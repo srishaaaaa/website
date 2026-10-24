@@ -43,6 +43,14 @@ export default function admin({ db, auth }) {
     res.json({ ok: true });
   }));
 
+  r.delete('/reviews/:id', staff, wrap(async (req, res) => {
+    const id = z.coerce.number().int().parse(req.params.id);
+    const d = await db.query('DELETE FROM product_reviews WHERE id = $1 RETURNING id', [id]);
+    if (!d.rows.length) throw new HttpError(404, 'Review not found');
+    await audit(db, req.user.id, 'review.delete', 'review', id);
+    res.json({ ok: true });
+  }));
+
   const productBody = z.object({
     slug: z.string().regex(/^[a-z0-9-]+$/), name: z.string().min(1).max(160), description: z.string().max(5000).optional(),
     category: z.string().optional(), price: z.number().int().min(0), gst_rate: z.number().int().min(0).max(28).default(5),

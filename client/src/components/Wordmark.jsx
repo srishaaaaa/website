@@ -10,16 +10,15 @@ export function Emblem({ size = 28, className = '', glow = false }) {
   );
 }
 
-// The emblem sits in a dark rounded tile beside a bold wordmark.
 export function LogoTile({ size = 38 }) {
   return <span className="logo-tile" style={{ width: size, height: size }}><Emblem size={Math.round(size * 0.62)} /></span>;
 }
 
-export default function Wordmark({ to = '/', className = '', emblem = true, onClick }) {
+// DHANYA over BOUTIQUE: a high-contrast serif name with a small, widely spaced descriptor.
+export default function Wordmark({ to = '/', className = '', onClick }) {
   return (
-    <Link to={to} onClick={onClick} className={`wordmark ${className}`} aria-label="DHANYA — home" data-cursor="HOME">
-      {emblem && <LogoTile />}
-      <span>DHANYA</span>
+    <Link to={to} onClick={onClick} className={`wordmark ${className}`} aria-label="DHANYA BOUTIQUE — home" data-cursor="HOME">
+      <span className="wm-a">DHANYA</span><span className="wm-b">BOUTIQUE</span>
     </Link>
   );
 }

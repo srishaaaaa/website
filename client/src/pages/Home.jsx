@@ -1,29 +1,26 @@
-import { useLayoutEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { Magnetic, Reveal } from '../components/Motion';
-import ImmersiveHero from '../components/hero/ImmersiveHero';
+import BoutiqueHero from '../components/hero/BoutiqueHero';
+import Ticker from '../components/Ticker';
 import FeaturedCollections from '../components/FeaturedCollections';
+import EditorialSection from '../components/EditorialSection';
 import CollectionsFlow from '../components/CollectionsFlow';
 import CategoryCircles from '../components/CategoryCircles';
-import AboutBand from '../components/AboutBand';
 import CustomerReviews from '../components/CustomerReviews';
+import EnquirySection from '../components/EnquirySection';
 import InstagramStrip from '../components/InstagramStrip';
 import StoreLocationMap from '../components/StoreLocationMap';
 import ServiceHighlights from '../components/ServiceHighlights';
 import { brand, media } from '../config/content';
-import { LogoTile } from '../components/Wordmark';
 
-gsap.registerPlugin(ScrollTrigger);
-
-// Our Story: a photograph continuing beneath a deep-wine panel with serif copy (heritage-boutique feel).
+// Shop Story: the boutique's story beside a photograph, on a deep-red panel. The wording lives in config/content.js.
 function Story() {
   const { site } = useApp();
   const b = site.branding || {};
   return (
-    <section className="story3" aria-labelledby="story-h">
+    <section className="story3" id="story" aria-labelledby="story-h">
       <Reveal className="story3-card">
         <img className="story3-img" src={b.storyImage || media.storyImage} alt={b.storyAlt || media.storyAlt} loading="lazy" width="736" height="920" />
         <svg className="story3-arch" viewBox="0 0 400 520" fill="none" stroke="currentColor" strokeWidth="1.1" aria-hidden="true">
@@ -31,8 +28,8 @@ function Story() {
           <path d="M72 520V240c0-20 10-30 26-36 6-16 18-22 34-20 8-16 22-22 38-18 6-12 18-18 30-18s24 6 30 18c16-4 30 2 38 18 16-2 28 4 34 20 16 6 26 16 26 36v280" opacity=".55" />
         </svg>
         <div className="story3-panel">
-          <span className="story3-logo"><LogoTile size={34} /><b>DHANYA</b></span>
-          <h2 id="story-h" className="story3-h">Our Story</h2>
+          <span className="story3-logo"><b>DHANYA BOUTIQUE</b></span>
+          <h2 id="story-h" className="story3-h">Shop Story</h2>
           {brand.story.map((p, i) => <p key={i} className="story3-p">{p}</p>)}
           <Magnetic><Link to="/about" className="story3-link" data-cursor="DISCOVER">Discover more <span aria-hidden="true">→</span></Link></Magnetic>
         </div>
@@ -51,38 +48,29 @@ function Details() {
   );
 }
 
+// Order: hero → ticker → curated catalogue → editorial → collections → reviews → enquiries/contact →
+// categories → Instagram reels → shop story → live map → footer.
 export default function Home() {
-  const { catalog } = useApp();
-  const root = useRef();
+  const { hash } = useLocation();
 
-  // GSAP owns the scroll-driven composition (hero depth, mask reveal, pinned gallery). Motion owns entrances
-  // and hover states. No element is animated by both.
-  useLayoutEffect(() => {
-    const mm = gsap.matchMedia(root.current);
-    mm.add({ motion: '(prefers-reduced-motion: no-preference)' }, ctx => {
-      const { motion: ok } = ctx.conditions;
-      if (!ok) return;
-      const hero = { trigger: '[data-hero]', start: 'top top', end: 'bottom top', scrub: true };
-      gsap.to('[data-word-bg]', { yPercent: -12, ease: 'none', scrollTrigger: hero });                                          // lettering drifts slowly behind
-      gsap.fromTo('[data-gridwrap]', { rotateX: 0, opacity: 1 }, { rotateX: 52, opacity: 0.3, ease: 'none', scrollTrigger: hero }); // grid gains perspective
-      gsap.to('[data-hero-copy]', { yPercent: -12, opacity: 0.1, ease: 'none', scrollTrigger: hero });                          // copy leaves; the model stays the anchor
-      // The featured collection is revealed through a soft editorial mask.
-      gsap.fromTo('[data-edit]', { clipPath: 'inset(8% 5% 0% 5% round 56px 56px 0px 0px)' }, { clipPath: 'inset(0% 0% 0% 0% round 0px 0px 0px 0px)', ease: 'none', scrollTrigger: { trigger: '[data-edit]', start: 'top 96%', end: 'top 38%', scrub: true } });
-
-    });
-    document.fonts?.ready.then(() => ScrollTrigger.refresh());
-    return () => mm.revert();
-  }, [catalog.status]);
+  // "Shop Story" and "Contact" in the menu are in-page links: scroll to them once the page has transitioned in.
+  useEffect(() => {
+    if (!hash) return;
+    const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }), 650);
+    return () => clearTimeout(t);
+  }, [hash]);
 
   return (
-    <div ref={root} className="home">
-      <ImmersiveHero />
-      <AboutBand />
+    <div className="home">
+      <BoutiqueHero />
+      <Ticker />
       <FeaturedCollections />
+      <EditorialSection />
       <CollectionsFlow />
       <Details />
       <ServiceHighlights />
       <CustomerReviews />
+      <EnquirySection />
       <CategoryCircles />
       <InstagramStrip />
       <Story />

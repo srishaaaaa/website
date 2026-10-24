@@ -74,7 +74,7 @@ export function mediaAdmin({ db, auth }) {
     const q = z.string().max(80).default('').parse(req.query.q ?? '');
     const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
     res.json(await rows(db, `
-      SELECT p.id, p.slug, p.name, p.status, c.name AS category,
+      SELECT p.id, p.slug, p.name, p.status, p.is_sample, c.name AS category,
              (SELECT COUNT(*)::int FROM product_images i WHERE i.product_id = p.id) AS image_count,
              (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image
       FROM products p LEFT JOIN categories c ON c.id = p.category_id

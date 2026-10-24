@@ -51,7 +51,7 @@ function MobileMenu() {
   const { menuOpen, setMenuOpen, catalog, setSearchOpen, wish, user } = useApp();
   const ref = useRef(); const close = () => setMenuOpen(false);
   useModal(menuOpen, close, ref);
-  const links = [['Shop', '/shop'], ['Collections', '/collections'], ['Our World', '/about'], ['Journal', '/journal']];
+  const links = [['Home', '/'], ['Collection', '/collections'], ['Sarees', '/shop?category=sarees'], ['Shop Story', '/#story'], ['Contact', '/#contact']];
   return (
     <AnimatePresence>
       {menuOpen && (
@@ -78,21 +78,26 @@ function MobileMenu() {
   );
 }
 
-const LINKS = [['HOME', '/', true], ['SHOP', '/shop'], ['COLLECTIONS', '/collections'], ['OUR STORY', '/about']];
+const LINKS = [
+  { label: 'HOME', to: '/', on: (p, h) => p === '/' && !h },
+  { label: 'COLLECTION', to: '/collections', on: p => p.startsWith('/collections') },
+  { label: 'SAREES', to: '/shop?category=sarees', mega: true, on: p => p === '/shop' || p.startsWith('/product') },
+  { label: 'SHOP STORY', to: '/#story', on: (p, h) => p === '/' && h === '#story' },
+  { label: 'CONTACT', to: '/#contact', on: (p, h) => p === '/' && (h === '#contact' || h === '#enquiry') },
+];
 
 export default function FloatingNavbar() {
   const { entered, bagCount, wish, setBagOpen, setSearchOpen, setMenuOpen, user } = useApp();
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mega, setMega] = useState(false);
   const closeT = useRef();
 
   useEffect(() => { const f = () => setScrolled(scrollY > 60); f(); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, []);
-  useEffect(() => setMega(false), [pathname]);
+  useEffect(() => setMega(false), [pathname, hash]);
   useEffect(() => { const k = e => e.key === 'Escape' && setMega(false); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, []);
   const open = () => { clearTimeout(closeT.current); setMega(true) };
   const later = () => { clearTimeout(closeT.current); closeT.current = setTimeout(() => setMega(false), 140) };
-  const isActive = (to, end) => (end ? pathname === to : pathname === to || pathname.startsWith(to + '/'));
 
   return (
     <>
@@ -101,16 +106,16 @@ export default function FloatingNavbar() {
         <div className="hdr">
           <button className="icon-btn burger" onClick={() => setMenuOpen(true)} aria-label="Open menu"><svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.4" fill="none" aria-hidden="true"><path d="M3 8h18M3 16h18" /></svg></button>
           <Wordmark className="hdr-logo" />
-          <nav className="primary" aria-label="Primary" onMouseLeave={() => {}}>
-            {LINKS.map(([label, to, end]) => {
-              const on = isActive(to, end);
+          <nav className="primary" aria-label="Primary">
+            {LINKS.map(({ label, to, mega: hasMega, on: isOn }) => {
+              const on = isOn(pathname, hash);
               const link = (
-                <Link key={to} to={to} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined} onMouseEnter={to === '/shop' ? open : later} {...(to === '/shop' ? { 'aria-haspopup': 'true', 'aria-expanded': mega } : {})}>
+                <Link key={to} to={to} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined} onMouseEnter={hasMega ? open : later} {...(hasMega ? { 'aria-haspopup': 'true', 'aria-expanded': mega } : {})}>
                   {on && <motion.i className="nav-pill" layoutId="nav-pill" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}
                   <span>{label}</span>
                 </Link>
               );
-              return to === '/shop' ? <div key={to} className="has-mega" onFocus={open} onBlur={e => !e.currentTarget.contains(e.relatedTarget) && later()}>{link}</div> : link;
+              return hasMega ? <div key={to} className="has-mega" onFocus={open} onBlur={e => !e.currentTarget.contains(e.relatedTarget) && later()}>{link}</div> : link;
             })}
           </nav>
           <div className="hdr-tools">

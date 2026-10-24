@@ -9,6 +9,8 @@ export function AdminTabs() {
       <NavLink to="/admin" end>Orders &amp; settings</NavLink>
       <NavLink to="/admin/products">Products &amp; images</NavLink>
       <NavLink to="/admin/storefront">Storefront images</NavLink>
+      <NavLink to="/admin/enquiries">Enquiries</NavLink>
+      <NavLink to="/admin/sample">Sample data</NavLink>
     </nav>
   );
 }
@@ -65,6 +67,10 @@ export function AdminProducts() {
     [ids[i], ids[j]] = [ids[j], ids[i]];
     try { changed(await api(`/admin/products/${sel.id}/images/order`, { method: 'PUT', body: { ids } })) } catch (e) { setErr(e.message) }
   };
+  const delProduct = async () => {
+    if (!confirm(`Delete "${sel.name}" permanently? Its photos, sizes and stock are removed. Past orders keep their own record.`)) return;
+    try { await api(`/admin/products/${sel.id}`, { method: 'DELETE' }); toast(`${sel.name} deleted.`); setSel(null); load(); loadCatalog() } catch (e) { setErr(e.message) }
+  };
   const del = async im => { if (!confirm('Remove this photo?')) return; try { changed(await api(`/admin/images/${im.id}`, { method: 'DELETE' })) } catch (e) { setErr(e.message) } };
   const saveAlt = async (im, alt) => { if (alt === im.alt) return; try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { alt } })) } catch (e) { setErr(e.message) } };
 
@@ -83,13 +89,13 @@ export function AdminProducts() {
               <li key={p.id}><button className={sel?.id === p.id ? 'on' : ''} onClick={() => setSel(p)}>
                 <span className="adm-th">{p.image ? <img src={p.image} alt="" /> : <i>No photo</i>}</span>
                 <span className="adm-nm"><b>{p.name}</b><em>{p.category || 'Uncategorised'}</em></span>
-                <span className={`adm-badge ${p.image_count ? '' : 'warn'}`}>{p.image_count}</span>
+                <span className={`adm-badge ${p.image_count ? '' : 'warn'}`}>{p.image_count}</span>{p.is_sample && <span className="adm-sample">sample</span>}
               </button></li>))}</ul>
           </aside>
           <section className="adm-panel">
             {!sel ? <p className="muted">Choose a product on the left to manage its photos. Pieces with no photos are listed first.</p> : (
               <>
-                <h2 className="serif adm-h2">{sel.name}</h2>
+                <div className="adm-ph"><h2 className="serif adm-h2">{sel.name}</h2><button className="adm-del" onClick={delProduct}>Delete product</button></div>
                 <Drop onFiles={add} busy={busy} />
                 <ul className="adm-gal">
                   {imgs.map((im, i) => (
@@ -119,7 +125,7 @@ function Slot({ title, hint, value, fallback, onUpload, onReset, alt, onAlt, acc
     <section className="adm-card">
       <h2 className="serif adm-h2">{title}</h2>
       <p className="muted small">{hint}</p>
-      <div className="adm-prev"><img src={value || fallback} alt="" /></div>
+      <div className="adm-prev">{(value || fallback) ? <img src={value || fallback} alt="" /> : <span className="muted small">Blank — nothing added yet</span>}</div>
       <Drop onFiles={fs => fs[0] && onUpload(fs[0])} multiple={false} accept={accept} busy={busy} label={value ? 'Custom image in use' : 'Using the built-in image'} />
       <label className="field"><span>Describe the image (for screen readers)</span><input value={alt} onChange={e => onAlt(e.target.value)} /></label>
       {value && <button className="link-u small" onClick={onReset}>Reset to the built-in image</button>}
@@ -133,12 +139,12 @@ export function AdminStorefront() {
   const [b, setB] = useState(null); const [cats, setCats] = useState([]); const [cols, setCols] = useState([]);
   const [posts, setPosts] = useState([]); const [busy, setBusy] = useState(''); const [err, setErr] = useState();
 
-  useEffect(() => { if (state === 'ok' && site.branding) { setB({ heroCutout: null, heroDepth: null, heroAlt: '', storyImage: null, storyAlt: '', ...site.branding, heroAlt: site.branding.heroAlt || '', storyAlt: site.branding.storyAlt || '' }); setPosts(site.social?.instagram?.posts || []) } }, [state, site.branding, site.social]);
+  useEffect(() => { if (state === 'ok' && site.branding) { setB({ heroCutout: null, heroDepth: null, heroAlt: '', storyImage: null, storyAlt: '', heroModel: null, textileImage: null, editorialImage: null, textileAlt: '', editorialAlt: '', ...site.branding, heroAlt: site.branding.heroAlt || '', storyAlt: site.branding.storyAlt || '', textileAlt: site.branding.textileAlt || '', editorialAlt: site.branding.editorialAlt || '' }); setPosts(site.social?.instagram?.posts || []) } }, [state, site.branding, site.social]);
   useEffect(() => { if (state !== 'ok') return; api('/admin/categories').then(setCats).catch(() => {}); api('/admin/collections').then(setCols).catch(() => {}) }, [state]);
 
   const refresh = () => { loadSite(); loadCatalog() };
   const run = async (key, fn, ok) => { setBusy(key); setErr(); try { await fn(); toast(ok); refresh() } catch (e) { setErr(e.message) } finally { setBusy('') } };
-  const saveBranding = next => api('/admin/settings/branding', { method: 'PUT', body: { ...next, heroAlt: next.heroAlt || null, storyAlt: next.storyAlt || null } });
+  const saveBranding = next => api('/admin/settings/branding', { method: 'PUT', body: { ...next, heroAlt: next.heroAlt || null, storyAlt: next.storyAlt || null, textileAlt: next.textileAlt || null, editorialAlt: next.editorialAlt || null } });
   const setCover = (kind, id) => async file => run(`${kind}${id}`, async () => { const up = await uploadImage(file); await api(`/admin/${kind}/${id}/image`, { method: 'PUT', body: { url: up.url } }); (kind === 'categories' ? setCats : setCols)(l => l.map(x => x.id === id ? { ...x, image: up.url } : x)) }, 'Cover updated.');
   const clearCover = (kind, id) => run(`${kind}${id}`, async () => { await api(`/admin/${kind}/${id}/image`, { method: 'PUT', body: { url: null } }); (kind === 'categories' ? setCats : setCols)(l => l.map(x => x.id === id ? { ...x, image: null } : x)) }, 'Cover removed.');
   const savePosts = next => run('ig', async () => {
@@ -154,10 +160,18 @@ export function AdminStorefront() {
         {err && <p role="alert" className="err">{err}</p>}
         {b && (
           <div className="adm-slots">
-            <Slot title="Hero centre photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'hero'} value={b.heroCutout} fallback="/images/hero-center.jpg" alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
-              hint="The large photograph in the middle of the hero. A tall or square portrait works best; it is shown exactly as uploaded."
-              onUpload={f => run('hero', async () => { const up = await uploadImage(f); const next = { ...b, heroCutout: up.url, heroDepth: null }; await saveBranding(next); setB(next) }, 'Hero model updated.')}
-              onReset={() => run('hero', async () => { const next = { ...b, heroCutout: null, heroDepth: null, heroAlt: '' }; await saveBranding(next); setB(next) }, 'Hero reset.')} />
+            <Slot title="Hero model photo" accept="image/png,image/webp,image/jpeg" busy={busy === 'hero'} value={b.heroModel} fallback="" alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
+              hint="The full-length model in the hero. A tall photo with a TRANSPARENT background (PNG or WebP) overlaps the ivory panel best. Until you add one the frame stays blank."
+              onUpload={f => run('hero', async () => { const up = await uploadImage(f); const next = { ...b, heroModel: up.url }; await saveBranding(next); setB(next) }, 'Hero model updated.')}
+              onReset={() => run('hero', async () => { const next = { ...b, heroModel: null, heroAlt: '' }; await saveBranding(next); setB(next) }, 'Hero model removed.')} />
+            <Slot title="Textile close-up" accept="image/jpeg,image/png,image/webp" busy={busy === 'textile'} value={b.textileImage} fallback="" alt={b.textileAlt} onAlt={v => setB({ ...b, textileAlt: v })}
+              hint="A square close-up of silk, zari or pleats shown beside the headline as CRAFTED ELEGANCE."
+              onUpload={f => run('textile', async () => { const up = await uploadImage(f); const next = { ...b, textileImage: up.url }; await saveBranding(next); setB(next) }, 'Textile photo updated.')}
+              onReset={() => run('textile', async () => { const next = { ...b, textileImage: null, textileAlt: '' }; await saveBranding(next); setB(next) }, 'Textile photo removed.')} />
+            <Slot title="Editorial photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'editorial'} value={b.editorialImage} fallback="" alt={b.editorialAlt} onAlt={v => setB({ ...b, editorialAlt: v })}
+              hint="A tall fashion photograph beside TRADITION, WOVEN INTO EVERY THREAD."
+              onUpload={f => run('editorial', async () => { const up = await uploadImage(f); const next = { ...b, editorialImage: up.url }; await saveBranding(next); setB(next) }, 'Editorial photo updated.')}
+              onReset={() => run('editorial', async () => { const next = { ...b, editorialImage: null, editorialAlt: '' }; await saveBranding(next); setB(next) }, 'Editorial photo removed.')} />
             <Slot title="Our Story photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'story'} value={b.storyImage} fallback="/images/story.jpg" alt={b.storyAlt} onAlt={v => setB({ ...b, storyAlt: v })}
               hint="A wide photograph works best (the wine-coloured text panel covers the right half)."
               onUpload={f => run('story', async () => { const up = await uploadImage(f); const next = { ...b, storyImage: up.url }; await saveBranding(next); setB(next) }, 'Story photo updated.')}
@@ -194,6 +208,72 @@ export function AdminStorefront() {
               <div className="adm-act"><span className="muted small">{p.video ? 'Video' : 'Photo'}</span><button className="danger" onClick={() => savePosts(posts.filter((_, j) => j !== i))}>Remove</button></div>
             </li>))}</ul>
         </section>
+      </div>
+    </Gate>
+  );
+}
+
+export function AdminEnquiries() {
+  const state = useStaff();
+  const [rows, setRows] = useState(null); const [err, setErr] = useState();
+  useEffect(() => { if (state === 'ok') api('/admin/enquiries').then(setRows).catch(e => setErr(e.message)) }, [state]);
+  const remove = async e => { if (!confirm(`Delete the enquiry from ${e.name}?`)) return; try { await api('/admin/enquiries/' + e.id, { method: 'DELETE' }); setRows(r => r.filter(x => x.id !== e.id)) } catch (x) { setErr(x.message) } };
+  const setStatus = async (id, status) => { try { await api('/admin/enquiries/' + id, { method: 'PATCH', body: { status } }); setRows(r => r.map(x => x.id === id ? { ...x, status } : x)) } catch (e) { setErr(e.message) } };
+  return (
+    <Gate state={state}>
+      <div className="account adm">
+        <p className="eyebrow">ADMIN</p><h1 className="serif">Enquiries</h1>
+        <AdminTabs />
+        <p className="muted adm-help">Retail and wholesale enquiries sent from the website. Call or WhatsApp the customer, then mark the enquiry as contacted or closed.</p>
+        {err && <p role="alert" className="err">{err}</p>}
+        {!rows && !err && <p className="muted">Loading…</p>}
+        {rows?.length === 0 && <p className="muted">No enquiries yet.</p>}
+        <ul className="adm-enq">{rows?.map(e => (
+          <li key={e.id} className={e.status}>
+            <div className="adm-enq-top"><b>{e.name}</b><span className={`adm-badge ${e.status === 'new' ? 'warn' : ''}`}>{e.kind}</span>{e.is_sample && <span className="adm-sample">sample</span>}<em>{new Date(e.created_at).toLocaleString('en-IN')}</em></div>
+            {e.business && <p><b>Business:</b> {e.business}</p>}
+            <p><b>Phone:</b> <a className="link-u" href={'tel:' + e.phone.replace(/[^+\d]/g, '')}>{e.phone}</a>{e.email && <> · <a className="link-u" href={'mailto:' + e.email}>{e.email}</a></>}</p>
+            {e.interest && <p><b>Interested in:</b> {e.interest}</p>}{e.quantity && <p><b>Quantity:</b> {e.quantity}</p>}{e.message && <p>{e.message}</p>}
+            <select value={e.status} aria-label={`Status for enquiry from ${e.name}`} onChange={ev => setStatus(e.id, ev.target.value)}>{['new', 'contacted', 'closed'].map(v => <option key={v}>{v}</option>)}</select>
+            <button className="adm-del" onClick={() => remove(e)}>Delete</button>
+          </li>))}</ul>
+      </div>
+    </Gate>
+  );
+}
+
+export function AdminSample() {
+  const state = useStaff();
+  const { toast, loadCatalog, loadSite } = useApp();
+  const [c, setC] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const load = () => api('/admin/sample-data').then(setC).catch(e => setErr(e.message));
+  useEffect(() => { if (state === 'ok') load() }, [state]);
+  const purge = async () => {
+    if (!confirm('Permanently delete ALL sample products, sample reviews and sample enquiries?\n\nYour own products, reviews and enquiries are not touched. This cannot be undone.')) return;
+    setBusy(true); setErr();
+    try { const r = await api('/admin/sample-data', { method: 'DELETE' }); toast(`Removed ${r.removed.products} products, ${r.removed.reviews} reviews and ${r.removed.enquiries} enquiries.`); await load(); loadCatalog(); loadSite() }
+    catch (e) { setErr(e.message) } finally { setBusy(false) }
+  };
+  const total = c ? c.products + c.reviews + c.enquiries : 0;
+  return (
+    <Gate state={state}>
+      <div className="account adm">
+        <p className="eyebrow">ADMIN</p><h1 className="serif">Sample data</h1>
+        <AdminTabs />
+        <p className="muted adm-help">The demo catalogue, reviews and enquiries are here so the site looks complete while you set it up. Delete them one at a time from <Link className="link-u" to="/admin/products">Products &amp; images</Link>, <Link className="link-u" to="/admin">Review moderation</Link> and <Link className="link-u" to="/admin/enquiries">Enquiries</Link>, or remove everything at once below. Only items marked <span className="adm-sample">sample</span> are ever removed here.</p>
+        {err && <p role="alert" className="err">{err}</p>}
+        {!c && !err && <p className="muted">Loading…</p>}
+        {c && (
+          <div className="adm-card" style={{ maxWidth: 640 }}>
+            <ul className="adm-counts">
+              <li><strong>{c.products}</strong><span>sample products</span></li>
+              <li><strong>{c.reviews}</strong><span>sample reviews</span></li>
+              <li><strong>{c.enquiries}</strong><span>sample enquiries</span></li>
+            </ul>
+            <p className="muted small">{c.allProducts - c.products} of your own products are not affected.</p>
+            <button className="adm-del big" onClick={purge} disabled={busy || total === 0}>{busy ? 'DELETING…' : total === 0 ? 'NO SAMPLE DATA LEFT' : 'DELETE ALL SAMPLE DATA'}</button>
+          </div>
+        )}
       </div>
     </Gate>
   );

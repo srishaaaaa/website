@@ -603,3 +603,40 @@ h1, h2 { text-wrap: balance }
 .tri-main .hl-stage { z-index: 1 }
 .tri-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; display: block }
 .tri-main .hl-trend, .tri-word { display: none }
+
+/* ============ beige + deep-red sections: Featured Collections and About us ============ */
+.fc, .ab4 { --beige: #f0e2cc; --beige2: #ead8bd; --red: #6e1626; --red2: #8c2234; background: var(--beige); color: #3a1a1a; --ink: #3a1a1a; --paper: #f0e2cc }
+.fc { padding: clamp(30px, 4vw, 64px) var(--pad) clamp(30px, 4vw, 56px) }
+.fc-in, .ab4-in { max-width: 1500px; margin: 0 auto }
+.fc-head { display: grid; grid-template-columns: auto 1fr; gap: 20px 56px; align-items: end; margin-bottom: clamp(20px, 2.6vw, 36px) }
+.fc-head h2 { font-family: var(--sans); font-size: clamp(20px, 2.2vw, 32px); font-weight: 700; letter-spacing: -.01em; color: var(--red); padding-bottom: 14px; border-bottom: 2px solid var(--red); text-transform: uppercase; white-space: nowrap }
+.fc-tabs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 26px; padding-bottom: 14px; border-bottom: 2px solid var(--red) }
+.fc-tabs button { font-size: 14px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: rgba(110, 22, 38, .55); padding: 2px 0; transition: color .3s var(--ease) } .fc-tabs button:hover, .fc-tabs button.on { color: var(--red) } .fc-tabs button.on { box-shadow: 0 2px 0 var(--red) }
+.fc-all { margin-left: auto; font-size: 12px; font-weight: 700; letter-spacing: .16em; color: var(--red) }
+.fc-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(10px, 1.4vw, 20px) }
+.fc-item { display: grid; gap: 14px; justify-items: center; text-align: center; align-content: start }
+.fc-photo { position: relative; width: 100%; aspect-ratio: 3 / 4.3; border-radius: 4px; overflow: hidden; background: #d9c3a3 }
+.fc-photo > a { position: absolute; inset: 0 } .fc-photo img, .fc-photo svg.art { transition: transform 1.2s var(--ease) } .fc-photo > a > * { width: 100%; height: 100%; object-fit: cover; display: block } .fc-item:hover .fc-photo > a > * { transform: scale(1.06) }
+.fc-heart { position: absolute; z-index: 2; right: 10px; top: 10px; width: 36px; height: 36px; border-radius: 4px; display: grid; place-items: center; background: rgba(255, 255, 255, .88); color: var(--red); transition: background .3s, transform .3s var(--ease) } .fc-heart:hover { transform: scale(1.08); background: #fff } .fc-heart.on { color: #c2233d }
+.fc-out { position: absolute; left: 10px; top: 10px; background: #fff; color: var(--red); font-size: 10px; letter-spacing: .2em; font-weight: 700; padding: 5px 10px; border-radius: 3px }
+.fc-name { font-size: 15px; font-weight: 600; line-height: 1.35; padding: 0 6px; color: #3a1a1a; min-height: 2.7em; display: block } .fc-name:hover { color: var(--red); text-decoration: underline; text-underline-offset: 4px }
+.fc-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; border-radius: 999px; background: #f2c9a4; color: var(--red); font-weight: 700; font-size: 14px; transition: background .35s var(--ease), color .35s, transform .35s var(--ease) } .fc-pill b { font-size: 18px; line-height: 1; font-weight: 600 } .fc-pill:hover:not(:disabled):not(.off) { background: var(--red); color: #fff; transform: translateY(-2px) } .fc-pill.off { background: #e4d3bb; color: rgba(110, 22, 38, .6) }
+@media (max-width: 1100px) { .fc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } .fc-head { grid-template-columns: 1fr } .fc-head h2 { white-space: normal } }
+@media (max-width: 640px) { .fc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } .fc-tabs { gap: 6px 16px } .fc-tabs button { font-size: 12px } .fc-all { margin-left: 0 } }
+
+.ab4 { padding: clamp(24px, 3vw, 44px) var(--pad) clamp(36px, 4vw, 64px) }
+.ab4-in { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 2.1fr); gap: 0; padding-top: clamp(22px, 2.6vw, 36px); border-top: 1px solid rgba(110, 22, 38, .22) }
+.ab4-left { padding-right: clamp(20px, 3vw, 48px); border-right: 1px solid rgba(110, 22, 38, .22) }
+.ab4-right { padding-left: clamp(20px, 3vw, 56px); text-align: center }
+.ab4-h { font-family: var(--sans); font-size: clamp(20px, 2.2vw, 32px); font-weight: 700; letter-spacing: -.01em; color: var(--red); margin-bottom: 22px; text-transform: uppercase }
+.ab4-h-c { text-align: center }
+.ab4-photo { position: relative; aspect-ratio: 1 / 1.08; background: #d9c3a3; overflow: hidden } .ab4-photo > img, .ab4-photo > svg { width: 100%; height: 100%; object-fit: cover; display: block }
+.ab4-corner { position: absolute; right: 0; top: 0; width: 52px; height: 52px; background: #fff; color: #9a5a2a; display: grid; place-items: center; border-bottom-left-radius: 4px; transition: background .3s, color .3s } .ab4-corner:hover { background: var(--red); color: #fff }
+.ab4-right > p { font-size: 15px; line-height: 1.85; color: rgba(58, 26, 26, .78); margin: 0 auto 14px; max-width: 70ch }
+.ab4-cols { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: clamp(20px, 2.6vw, 34px); position: relative }
+.ab4-cols::before { content: ''; position: absolute; left: 0; right: 0; top: 13px; height: 1px; background: rgba(110, 22, 38, .22) }
+.ab4-cols li { position: relative; display: grid; justify-items: center; gap: 12px; padding: 0 14px; border-left: 1px solid rgba(110, 22, 38, .22) } .ab4-cols li:first-child { border-left: 0 }
+.ab4-cols li svg { background: var(--beige); padding: 0 10px; width: 46px; height: 26px; position: relative }
+.ab4-cat { display: grid; gap: 4px; padding-top: 6px } .ab4-cat strong { font-size: 14px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--red) } .ab4-cat span { font-size: 13px; opacity: .65 } .ab4-cat:hover strong { text-decoration: underline; text-underline-offset: 4px }
+@media (max-width: 859px) { .ab4-in { grid-template-columns: 1fr } .ab4-left { padding: 0 0 22px; border-right: 0; border-bottom: 1px solid rgba(110, 22, 38, .22) } .ab4-photo { aspect-ratio: 4 / 3 } .ab4-right { padding: 22px 0 0 } }
+@media (max-width: 520px) { .ab4-cols { grid-template-columns: 1fr; gap: 18px } .ab4-cols li { border-left: 0 } .ab4-cols::before { display: none } }

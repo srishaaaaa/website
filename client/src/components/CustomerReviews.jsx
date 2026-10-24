@@ -7,6 +7,8 @@ import { useModal } from '../lib/hooks';
 import { Reveal } from './Motion';
 import { ProductMedia } from './ProductCard3D';
 
+const EMPTY = { count: 0, average: 0, items: [], hasMore: false, page: 1, onlySamples: false };
+
 export const Stars = ({ n, size = 14 }) => (
   <span className="stars" role="img" aria-label={`${n} out of 5 stars`}>
     {[1, 2, 3, 4, 5].map(i => <svg key={i} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.9 6.4.8-4.7 4.4 1.2 6.4-5.7-3.1-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill={i <= n ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.3" /></svg>)}
@@ -69,7 +71,7 @@ export default function CustomerReviews() {
     try {
       const d = await api(`/reviews?page=${page}&limit=6`);
       setData(prev => (page === 1 || !prev ? d : { ...d, items: [...prev.items, ...d.items] }));
-    } catch { setData(prev => prev ?? { count: 0, average: 0, items: [], hasMore: false, page: 1, onlySamples: false }) }
+    } catch { setData(prev => prev ?? EMPTY) }
   }, []);
   useEffect(() => { load(1) }, [load]);
   if (!data) return null;
@@ -91,8 +93,8 @@ export default function CustomerReviews() {
           <ul className="rv-track" ref={track} tabIndex={0} aria-label="Customer reviews">
             {data.items.map(r => (
               <li key={r.id} className="rv-card">
-                <div className="rv-bg" aria-hidden="true"><ProductMedia p={{ slug: r.product_slug, name: r.product_name, image: r.product_image }} view={r.id % 4} /></div>
-                <div className="rv-top"><span className="rv-stars"><Stars n={r.rating} size={13} /></span><Link className="rv-tag" to={`/product/${r.product_slug}`}>{r.product_name}</Link></div>
+                <div className="rv-bg" aria-hidden="true"><ProductMedia p={{ slug: r.product_slug || String(r.product_name), name: r.product_name, image: r.product_image }} view={String(r.id).length % 4} /></div>
+                <div className="rv-top"><span className="rv-stars"><Stars n={r.rating} size={13} /></span><Link className="rv-tag" to={r.product_slug ? `/product/${r.product_slug}` : '/shop'}>{r.product_name}</Link></div>
                 <div className="rv-body">
                   <blockquote className="quote">“{r.body}”</blockquote>
                   <p className="rv-by"><strong>{r.author}</strong><span>{r.demo ? 'Sample review' : 'Verified purchase'}</span></p>

@@ -257,3 +257,52 @@ test('media: short videos upload (validated), stream with Range, and can be used
   assert.equal(ok.status, 200);
   assert.equal((await api('PUT', '/admin/settings/social', { ...social, instagram: { ...social.instagram, posts: [{ alt: 'empty' }] } })).status, 400, 'a post needs an image or a video');
 });
+
+test('enquiries: validated, spam-trapped, stored, and visible only to staff', async () => {
+  const c = client();
+  const ok = await c('POST', '/enquiries', { kind: 'retail', name: 'Test Buyer', phone: '98765 43210', interest: 'Red silk saree' });
+  assert.equal(ok.status, 201); assert.ok(ok.body.id);
+  assert.equal((await c('POST', '/enquiries', { kind: 'wholesale', name: 'A', phone: '9876543210' })).status, 400, 'wholesale needs a business name');
+  assert.equal((await c('POST', '/enquiries', { kind: 'retail', name: 'A', phone: 'abc' })).status, 400, 'bad phone rejected');
+  assert.equal((await c('POST', '/enquiries', { kind: 'retail', name: 'Bot', phone: '9876543210', website: 'http://spam' })).body.id, undefined, 'honeypot stores nothing');
+  const w = await c('POST', '/enquiries', { kind: 'wholesale', name: 'Ravi', business: 'Ravi Textiles', phone: '+91 98765 43210', email: 'r@x.in', quantity: '50 sarees', message: 'Need rates' });
+  assert.equal(w.status, 201);
+  assert.equal((await c('GET', '/admin/enquiries')).status, 401);
+  const shopper = client(); await shopper('POST', '/auth/register', { email: 'enq-shopper@test.dev', password: 'Password123!' });
+  assert.equal((await shopper('GET', '/admin/enquiries')).status, 403);
+  const staff = client(); await staff('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const list = (await staff('GET', '/admin/enquiries')).body;
+  assert.equal(list.length, 2); assert.ok(list.some(e => e.kind === 'wholesale' && e.business === 'Ravi Textiles'));
+  assert.equal((await staff('PATCH', '/admin/enquiries/' + list[0].id, { status: 'contacted' })).status, 200);
+  const s = (await c('GET', '/products?q=Kanjivaram%20silk&category=sarees')).body; assert.ok(s.total >= 1, 'search matches fabric');
+  assert.equal((await staff('PUT', '/admin/settings/branding', { heroModel: '/api/media/1', textileImage: '/api/media/1', editorialImage: null })).status, 200);
+});
+
+// KEEP LAST: this test deletes the seeded sample data.
+test('sample data: flagged, deletable one by one or all at once, staff only, real data untouched', async () => {
+  const { seedDemoEnquiries, seedDemoReviews } = await import('../db/seed.js');
+  await seedDemoEnquiries(db, () => {}); await seedDemoReviews(db, () => {});
+  const anon = client(); const shopper = client(); await shopper('POST', '/auth/register', { email: 'sample-shopper@test.dev', password: 'Password123!' });
+  assert.equal((await anon('GET', '/admin/sample-data')).status, 401); assert.equal((await shopper('GET', '/admin/sample-data')).status, 403);
+  assert.equal((await shopper('DELETE', '/admin/sample-data')).status, 403, 'customers cannot purge');
+  const staff = client(); await staff('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const before = (await staff('GET', '/admin/sample-data')).body;
+  assert.ok(before.products >= 45 && before.reviews >= 10 && before.enquiries >= 4, JSON.stringify(before));
+  // a REAL (non-sample) product and enquiry must survive the purge
+  const real = await staff('POST', '/admin/products', { slug: 'real-saree', name: 'Real Saree', category: 'sarees', price: 150000, gst_rate: 5, status: 'active', variants: [{ sku: 'REAL-1', size: 'Free Size', stock: 2 }] });
+  assert.equal(real.status, 201);
+  await client()('POST', '/enquiries', { kind: 'retail', name: 'Real Customer', phone: '98765 43210' });
+  // single deletes
+  const list = (await staff('GET', '/admin/products?q=Banarasi')).body; const one = list.find(p => p.is_sample);
+  assert.equal((await staff('DELETE', `/admin/products/${one.id}`)).status, 200); assert.equal((await client()('GET', `/products/${one.slug}`)).status, 404);
+  assert.equal((await staff('DELETE', `/admin/products/${one.id}`)).status, 404);
+  const rv = (await staff('GET', '/admin/reviews')).body[0]; assert.equal((await staff('DELETE', `/admin/reviews/${rv.id}`)).status, 200);
+  const eq = (await staff('GET', '/admin/enquiries')).body.find(e => e.is_sample); assert.equal((await staff('DELETE', `/admin/enquiries/${eq.id}`)).status, 200);
+  assert.equal((await shopper('DELETE', `/admin/enquiries/${eq.id}`)).status, 403);
+  // purge everything that is sample
+  const purge = await staff('DELETE', '/admin/sample-data'); assert.equal(purge.status, 200);
+  assert.deepEqual((await staff('GET', '/admin/sample-data')).body, { products: 0, reviews: 0, enquiries: 0, allProducts: 1 });
+  assert.equal((await client()('GET', '/products?limit=48')).body.total, 1, 'only the real product remains');
+  assert.equal((await client()('GET', '/reviews')).body.count, 0);
+  const left = (await staff('GET', '/admin/enquiries')).body; assert.ok(left.every(e => !e.is_sample) && left.some(e => e.name === 'Real Customer'), 'real enquiries are kept, sample ones are gone');
+});

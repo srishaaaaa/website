@@ -5,6 +5,7 @@ import { AppProvider } from './context/App';
 import App from './App';
 import './styles.css';
 import './home.css';
+import './boutique.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

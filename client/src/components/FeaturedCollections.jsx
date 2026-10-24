@@ -2,72 +2,114 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { api } from '../lib/api';
+import { inr } from '../lib/format';
+import { waLink } from '../lib/contact';
 import { useApp } from '../context/App';
-import { Magnetic, Reveal } from './Motion';
-import ProductCard, { CardSkeletons } from './ProductCard3D';
+import { Reveal } from './Motion';
+import { ProductMedia } from './ProductCard3D';
 
-// Lookbook tabs: each is a real query against the catalogue; tabs that return nothing are hidden.
+// Each tab is a real query against the catalogue; tabs with no results are hidden automatically.
 const TABS = [
-  ['featured', 'Featured', 'featured=1', '/shop'],
-  ['trending', 'Trending sarees', 'collection=trending-sarees', '/collections/trending-sarees'],
-  ['bridal', 'Bridal silk', 'collection=bridal-silk-sarees', '/collections/bridal-silk-sarees'],
-  ['lehengas', 'Lehengas', 'category=lehengas', '/shop?category=lehengas'],
-  ['couple', 'Couple combos', 'category=couple-combos', '/shop?category=couple-combos'],
+  ['all', 'ALL SAREES', 'category=sarees'],
+  ['silk', 'SILK', 'category=sarees&q=silk'],
+  ['cotton', 'COTTON', 'category=sarees&q=cotton'],
+  ['designer', 'DESIGNER', 'category=sarees&q=designer'],
+  ['festive', 'FESTIVE', 'collection=festive-edit'],
+  ['bridal', 'BRIDAL', 'collection=bridal-silk-sarees'],
 ];
+const LIMIT = 5;
 
-// An editorial lookbook of real products: one lead look beside four supporting pieces, switchable by tab.
+function Item({ p, i }) {
+  const { addToBag, setQuick, toast, wish, toggleWish, site } = useApp();
+  const [busy, setBusy] = useState(false);
+  const out = p.stock < 1, liked = wish.includes(p.slug);
+  const enquire = waLink(site.store?.phone, `Hello DHANYA BOUTIQUE, I would like to enquire about "${p.name}" (${inr(p.price)}).`);
+  // One purchasable variant adds straight to the bag; otherwise the size picker (quick view) opens first.
+  const add = async () => {
+    if (!p.single_variant) return setQuick(p);
+    setBusy(true);
+    if (await addToBag({ variantId: p.single_variant })) toast(`${p.name} added to your bag.`);
+    setBusy(false);
+  };
+  return (
+    <li className={`cu-item cu-${i}`}>
+      <div className="cu-photo">
+        <Link to={`/product/${p.slug}`} data-cursor="VIEW" aria-label={`${p.name}, ${inr(p.price)}`}><ProductMedia p={p} /></Link>
+        <button className={`cu-heart ${liked ? 'on' : ''}`} onClick={() => toggleWish(p.slug, p.name)} aria-pressed={liked} aria-label={liked ? `Remove ${p.name} from wishlist` : `Save ${p.name} to wishlist`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.6c0 5.7-7.5 10.3-7.5 10.3Z" /></svg>
+        </button>
+        {out && <span className="cu-out">SOLD OUT</span>}
+      </div>
+      <div className="cu-meta">
+        <Link to={`/product/${p.slug}`} className="cu-name">{p.name}</Link>
+        {p.material && <span className="cu-mat">{p.material}</span>}
+        <div className="cu-row">
+          {!out
+            ? <button className="cu-pill" onClick={add} disabled={busy} aria-label={p.single_variant ? `Add ${p.name} to bag for ${inr(p.price)}` : `Choose a size for ${p.name}, ${inr(p.price)}`}><b aria-hidden="true">+</b> {inr(p.price)}</button>
+            : <span className="cu-pill off">{inr(p.price)}</span>}
+          {enquire && <a className="cu-enq" href={enquire} target="_blank" rel="noopener noreferrer" aria-label={`Enquire about ${p.name} on WhatsApp`}>ENQUIRE</a>}
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export default function FeaturedCollections() {
   const { catalog } = useApp();
-  const [data, setData] = useState({});       // tab key -> { items, total }
-  const [tab, setTab] = useState('featured');
+  const [data, setData] = useState({});
+  const [tab, setTab] = useState('all');
+  const [q, setQ] = useState('');
+  const [live, setLive] = useState(null); // { items, total } while a search is active
 
   useEffect(() => {
     let dead = false;
-    Promise.all(TABS.map(([key, , q]) => api(`/products?${q}&limit=5`).then(d => [key, { items: d.items, total: d.total }]).catch(() => [key, { items: [], total: 0 }])))
+    Promise.all(TABS.map(([key, , qs]) => api(`/products?${qs}&limit=${LIMIT}`).then(d => [key, { items: d.items, total: d.total }]).catch(() => [key, { items: [], total: 0 }])))
       .then(r => { if (!dead) setData(Object.fromEntries(r)) });
     return () => { dead = true };
   }, []);
 
+  // Typed search runs against the live catalogue (name, fabric, description), within sarees.
+  useEffect(() => {
+    const term = q.trim(); if (!term) { setLive(null); return }
+    let dead = false;
+    const t = setTimeout(() => api(`/products?category=sarees&q=${encodeURIComponent(term)}&limit=${LIMIT}`).then(d => !dead && setLive({ items: d.items, total: d.total })).catch(() => !dead && setLive({ items: [], total: 0 })), 250);
+    return () => { dead = true; clearTimeout(t) };
+  }, [q]);
+
   const tabs = TABS.filter(([key]) => !data[key] || data[key].total > 0);
   const current = tabs.find(([key]) => key === tab) || tabs[0];
-  const entry = current && data[current[0]];
-  const items = entry?.items ?? (current?.[0] === 'featured' ? catalog.featured.slice(0, 5) : []);
-  const loading = !entry && catalog.status === 'loading';
+  const entry = live ?? (current && data[current[0]]);
+  const items = entry?.items ?? (current?.[0] === 'all' ? catalog.featured.slice(0, LIMIT) : []);
+  const qs = current?.[2] || 'category=sarees';
+  const viewAll = live ? `/search?q=${encodeURIComponent(q.trim())}` : qs.includes('q=') ? `/search?q=${qs.split('q=')[1]}` : qs.startsWith('collection=') ? `/collections/${qs.split('=')[1]}` : `/shop?${qs}`;
 
   return (
-    <section className="lb-sec" data-edit aria-labelledby="edit-h">
-      <div className="lb-panel">
-        <Reveal className="lb-head">
+    <section className="cu" id="collection" aria-labelledby="edit-h">
+      <div className="cu-in">
+        <Reveal className="cu-head">
           <div>
-            <p className="eyebrow orn"><i aria-hidden="true" />THE CURATED EDIT<i aria-hidden="true" /></p>
-            <h2 id="edit-h">CURATED FOR<br />YOUR WORLD.</h2>
+            <p className="cu-label"><i aria-hidden="true" />COLLECTION</p>
+            <h2 id="edit-h">CURATED FOR YOU</h2>
+            <p className="cu-sub">Explore sarees for every expression of tradition and style.</p>
           </div>
-          <div className="lb-side">
-            <div className="lb-tabs" role="tablist" aria-label="Collections">
-              {tabs.map(([key, label]) => (
-                <button key={key} role="tab" aria-selected={current?.[0] === key} className={current?.[0] === key ? 'on' : ''} onClick={() => setTab(key)}>{label}</button>
-              ))}
-            </div>
-            {current && <Link className="lb-all" to={current[3]} data-cursor="VIEW">VIEW ALL <span aria-hidden="true">→</span></Link>}
-          </div>
+          <label className="cu-search"><span className="sr">Search sarees</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+            <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search sarees, fabrics…" aria-label="Search sarees" /></label>
         </Reveal>
 
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={current?.[0] ?? 'none'} className="lb-grid" initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
-            {loading && <CardSkeletons n={5} />}
-            {items.map((p, i) => <div key={p.id} className={`lb-item lb-${i}`}><ProductCard p={p} index={i} tall={i === 0} /></div>)}
-          </motion.div>
-        </AnimatePresence>
-
-        {catalog.status === 'error' && <p className="muted center">The edit could not be loaded right now.</p>}
-        {catalog.status === 'ready' && !items.length && entry && <p className="muted center">This edit is being prepared. Please return soon.</p>}
-
-        <div className="lb-foot">
-          <Magnetic><Link className="btn solid pill" to="/shop" data-cursor="SHOP">SHOP ALL PIECES</Link></Magnetic>
-          <ul className="lb-cats" aria-label="Browse by category">
-            {catalog.categories.slice(0, 6).map(c => <li key={c.slug}><Link to={`/shop?category=${c.slug}`}>{c.name}</Link></li>)}
-          </ul>
+        <div className="cu-tabs" role="tablist" aria-label="Saree categories">
+          {tabs.map(([key, label]) => <button key={key} role="tab" aria-selected={!live && current?.[0] === key} className={!live && current?.[0] === key ? 'on' : ''} onClick={() => { setQ(''); setTab(key) }}>{label}</button>)}
+          <Link className="cu-all" to={viewAll} data-cursor="VIEW">VIEW ALL →</Link>
         </div>
+
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.ul key={live ? 'search' : current?.[0] ?? 'none'} className="cu-grid" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+            {items.map((p, i) => <Item key={p.id} p={p} i={i} />)}
+          </motion.ul>
+        </AnimatePresence>
+        {live && !items.length && <p className="cu-empty">No sarees match “{q.trim()}”. Try a fabric such as silk or cotton.</p>}
+        {catalog.status === 'error' && <p className="cu-empty">The collection could not be loaded right now.</p>}
+        {!live && catalog.status === 'ready' && entry && !items.length && <p className="cu-empty">This collection is being prepared. Please return soon.</p>}
       </div>
     </section>
   );

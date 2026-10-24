@@ -47,6 +47,7 @@ export function Admin() {
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (e) return <div className="empty page-pad"><p className="serif big">{e}</p><Link className="btn dark" to="/login">Sign in as staff</Link></div>;
+  const removeReview = async id => { if (!confirm('Delete this review permanently?')) return; try { await api(`/admin/reviews/${id}`, { method: 'DELETE' }); setRv(l => l.filter(r => r.id !== id)) } catch (x) { setE(x.message) } };
   const moderate = async (id, status) => { try { await api(`/admin/reviews/${id}`, { method: 'PATCH', body: { status } }); setRv(l => l.map(r => r.id === id ? { ...r, status } : r)) } catch (x) { setE(x.message) } };
   return (
     <div className="account">
@@ -63,7 +64,7 @@ export function Admin() {
       {rv.length > 0 && <table className="tbl"><thead><tr><th>Product</th><th>Rating</th><th>Review</th><th>Status</th></tr></thead>
         <tbody>{rv.map(r => (
           <tr key={r.id}><td>{r.product_name}</td><td>{'★'.repeat(r.rating)}</td><td>{r.body}<br /><span className="muted small">{r.email}</span></td>
-            <td><select value={r.status} aria-label={`Status for review ${r.id}`} onChange={ev => moderate(r.id, ev.target.value)}>{['pending', 'published', 'rejected'].map(v => <option key={v}>{v}</option>)}</select></td></tr>))}</tbody></table>}
+            <td><select value={r.status} aria-label={`Status for review ${r.id}`} onChange={ev => moderate(r.id, ev.target.value)}>{['pending', 'published', 'rejected'].map(v => <option key={v}>{v}</option>)}</select> <button className="link-u small" onClick={() => removeReview(r.id)}>Delete</button>{r.is_demo && <span className="adm-badge warn" style={{ marginLeft: 8 }}>sample</span>}</td></tr>))}</tbody></table>}
     </div>
   );
 }

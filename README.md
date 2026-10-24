@@ -43,6 +43,21 @@ Portal intro, 3D hero, scroll choreography, mega-menu, live search, catalog, PDP
 - Homepage has a reel strip (up to 6 vertical MP4/WebM clips or photos; autoplay muted on screen, tap to unmute). Add them in Admin → Storefront images → Reels & photos (upload under 4 MB each, or paste a direct https .mp4 link). Videos stream with HTTP Range support.
 - Visit-us map shows the boutique pin and address (AGM Apartment, 26, Kasthooribhai Road, Srinivas Nagar, Sakkottai, Kumbakonam 612001). Phone and opening hours are not set: add them in Admin → Orders & settings → Store settings.
 
+## DHANYA BOUTIQUE redesign (latest)
+- Beige x red identity, Playfair Display serif + Archivo, layered hero (ivory panel, overlapping model photo, textile inset, "For you" panel), looping ticker, tabbed saree catalogue with search, editorial band, retail/wholesale enquiries + contact, three reel slots, Shop Story, live map, footer.
+- **Photos you add** (Admin → Storefront images): hero model (transparent PNG best), textile close-up, editorial photo, Our Story photo, category/collection covers, reels. Until added, those frames stay blank by design.
+- **Enquiries** are stored in the database (Admin → Enquiries) and can be answered by phone/WhatsApp. WhatsApp links are built from the phone number in Store settings.
+- **Sample data**: demo products, reviews and enquiries are flagged . Delete them one by one (Products & images, Review moderation, Enquiries) or all at once at Admin → Sample data. Real data is never touched.  re-creates the sample data; use > seed
+> npm run seed --prefix server --admin-only
+
+> seed
+> node --env-file=../.env db/cli.js seed
+
+Seeded (idempotent). Sample products are placeholders — replace with real inventory and images.
+Sample reviews added (flagged as samples).
+Done (postgres). for just the owner account and structure.
+- Business details used: phone 73586 70411, email Srisakthipugazhtex@gmail.com, Instagram @srisakthipugazhtex (provisional; edit in Admin → Store settings).
+
 ## Content you must supply
 - **Photography:** products have no images yet; generated plates stand in. Set product images and `client/src/config/content.js` (`media`).
 - **Boutique location, hours, social links, policies:** enter them in /admin → Store settings (policy text via the API until the Phase 5 editor).

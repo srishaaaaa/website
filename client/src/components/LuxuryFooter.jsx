@@ -75,9 +75,9 @@ export default function LuxuryFooter() {
             <Newsletter />
           </div>
         </div>
-        <div className="foot-mark" aria-hidden="true"><span className="logo-tile big"><Emblem size={58} /></span><span>DHANYA</span></div>
+        <div className="foot-mark" aria-hidden="true"><span>DHANYA</span><small>BOUTIQUE</small></div>
         <div className="foot-base">
-          <span>© {new Date().getFullYear()} DHANYA. All Rights Reserved</span>
+          <span>© {new Date().getFullYear()} DHANYA BOUTIQUE. All Rights Reserved</span>
           <span>Powered by <strong>{brand.credit}</strong> © {new Date().getFullYear()}</span>
           <span className="foot-tag">ELEGANCE <i>•</i> BEYOND <i>•</i> ORDINARY</span>
         </div>
