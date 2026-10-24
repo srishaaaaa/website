@@ -89,7 +89,7 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 /* Phones get their own layout: copy on the left, a full-height arched photo on the right, quality badges underneath. */
 .bh-feats { display: none }
 @media (max-width: 699px) {
-  .bh { padding-bottom: 26px; min-height: 100vh; min-height: 100svh; display: flex; align-items: flex-start } /* the ticker and next section appear only on scroll */
+  .bh { padding-bottom: 150px; min-height: 100vh; min-height: 100svh; display: flex; align-items: flex-start } /* the ticker and next section appear only on scroll */
   .bh .bh-wrap { min-height: 0; width: 100% }
   .bh .bh-panel { width: 100%; min-height: 0; padding: 20px 14px 22px; padding-right: 41%; border-radius: 24px }
   .bh .bh-discover, .bh .bh-tint, .bh .bh-inset { display: none }
@@ -101,9 +101,10 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
   .bh .bh-col { flex: none }
   .bh .bh-desc { max-width: none; font-size: 13px; line-height: 1.55 }
   .bh .bh-facts { max-width: none; flex-direction: column; gap: 4px; margin: 14px 0 16px } .bh .bh-facts li { flex: none; padding: 0; font-size: 10px; letter-spacing: .08em } .bh .bh-facts li + li { padding: 0; border-left: 0 }
-  .bh .bh-btn { max-width: 100%; white-space: nowrap; font-size: 9px; letter-spacing: .06em; padding: 5px 5px 5px 14px; gap: 8px } .bh .bh-btn b { width: 30px; height: 30px; font-size: 14px }
-  .bh .bh-cta { gap: 6px }
-  .bh .bh-link { font-size: 11px; letter-spacing: .14em; padding: 10px 0 }
+  /* the call-to-action sits in the open space under the panel */
+  .bh .bh-cta { position: absolute; left: 0; right: 0; top: calc(100% + 22px); flex-direction: column; align-items: center; gap: 4px }
+  .bh .bh-btn { min-width: 290px; max-width: 100%; justify-content: space-between; white-space: nowrap; font-size: 12px; letter-spacing: .16em; padding: 8px 8px 8px 28px; gap: 12px } .bh .bh-btn b { width: 40px; height: 40px; font-size: 17px }
+  .bh .bh-link { font-size: 12px; letter-spacing: .18em; padding: 10px 0 }
   .bh .bh-model { left: auto; right: 12px; top: 14px; bottom: 14px; width: 33%; height: auto }
   .bh .bh-feats { display: flex; justify-content: space-between; gap: 6px; margin: 18px 0 0 }
   .bh .bh-feats li { flex: 1; display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 10px; line-height: 1.25; color: rgba(33, 23, 20, .85) }
