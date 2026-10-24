@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { useReduced } from '../lib/hooks';
 import { Reveal } from './Motion';
@@ -27,10 +28,22 @@ function Reel({ post, label }) {
 
 // Shown once the store has posted an Instagram link or added reels/photos (Admin → Storefront images).
 export default function InstagramStrip() {
-  const { site } = useApp();
+  const { site, user } = useApp();
   const ig = site.social?.instagram;
   const posts = (ig?.posts || []).filter(p => p.video || p.image);
-  if (!ig?.url && !posts.length) return null;
+  const staff = ['owner', 'admin'].includes(user?.role);
+  if (!ig?.url && !posts.length) {
+    // Only staff see the empty strip, so they know where to add reels; visitors never see an empty box.
+    if (!staff) return null;
+    return (
+      <section className="insta ivory-sec" aria-labelledby="ig-h">
+        <div className="insta-head"><h2 id="ig-h" className="serif"><em>View more on Instagram</em></h2>
+          <p className="muted small">Staff preview: visitors do not see this section until a reel or photo is added.</p>
+          <Link className="btn solid pill" to="/admin/storefront">ADD REELS</Link></div>
+        <ul className="insta-grid">{[0, 1, 2].map(i => <li key={i}><div className="insta-tile insta-empty"><span>Reel {i + 1}</span></div></li>)}</ul>
+      </section>
+    );
+  }
   return (
     <section className="insta ivory-sec" aria-labelledby="ig-h">
       <Reveal className="insta-head">

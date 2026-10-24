@@ -504,3 +504,4 @@ h1, h2 { text-wrap: balance }
 .map-card > .map-card-top { display: flex; flex: none } .map-card > .map-card-bot { display: flex; flex: none }
 .insta-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 380px)); justify-content: center }
 @media (max-width: 767px) { .insta-grid { grid-template-columns: none; grid-auto-flow: column; justify-content: start } }
+.insta-empty { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #efe6da 0 14px, #f4ede2 14px 28px); box-shadow: none; border: 1.5px dashed rgba(9,9,13,.25) } .insta-empty span { font-size: 12px; letter-spacing: .2em; font-weight: 700; text-transform: uppercase; opacity: .5 }
