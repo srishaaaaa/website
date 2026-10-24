@@ -20,10 +20,16 @@ function openState(store) {
 // Boutique location, hours and contact from the admin-managed store settings. If nothing has been configured,
 // a tasteful placeholder is shown instead of a made-up pin.
 export default function StoreLocationMap() {
-  const { site } = useApp();
+  const { site, loadSite } = useApp();
   const { store, map } = site;
   const state = useMemo(() => openState(store), [store]);
   if (site.status === 'loading') return null;
+  if (site.status === 'error') return (
+    <section className="studio ivory-sec" aria-labelledby="st-h"><div className="studio-card"><div className="studio-info">
+      <p className="eyebrow">VISIT US</p><h2 id="st-h" className="serif">OUR<br />STUDIO</h2>
+      <p role="alert" className="muted">The boutique location could not be loaded right now.</p>
+      <button className="btn solid pill" onClick={loadSite}>TRY AGAIN</button></div><div className="studio-map"><div className="map-placeholder" aria-hidden="true"><Emblem size={120} /></div></div></div></section>
+  );
   const configured = !!map;
   const lines = store?.address?.length ? store.address : null;
   const tel = store?.phone && `tel:${store.phone.replace(/[^+\d]/g, '')}`;
