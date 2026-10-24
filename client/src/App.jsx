@@ -21,10 +21,11 @@ import { About, Journal, NotFound, Policy } from './pages/Static';
 // Dhanya POS is admin-only and code-split: public visitors never download it.
 // Each lazy element is created once at module level (never inside render).
 const lazyEl = (load, name) => { const C = lazy(() => load().then(m => ({ default: name ? m[name] : m.default }))); return <Suspense fallback={<div className="page-pad"><p className="muted">Loading…</p></div>}><C /></Suspense> };
-const store = () => import('./pages/AdminStore'), media = () => import('./pages/AdminMedia');
+const store = () => import('./pages/AdminStore'), media = () => import('./pages/AdminMedia'), more = () => import('./pages/AdminMore');
 const A = {
   pos: lazyEl(() => import('./pages/AdminPos')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
+  categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
   products: lazyEl(media, 'AdminProducts'), storefront: lazyEl(media, 'AdminStorefront'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
 };
 
@@ -57,6 +58,8 @@ export default function App() {
           <Route path="/admin" element={A.orders} />
           <Route path="/admin/reviews" element={A.reviews} />
           <Route path="/admin/users" element={A.users} />
+          <Route path="/admin/categories" element={A.categories} />
+          <Route path="/admin/reels" element={A.reels} />
           <Route path="/admin/settings" element={A.settings} />
           <Route path="/admin/products" element={A.products} />
           <Route path="/admin/storefront" element={A.storefront} />

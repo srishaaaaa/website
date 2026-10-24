@@ -3,7 +3,10 @@ import { Link, Navigate } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
-import AdminShell from '../components/AdminShell';
+import AdminShell, { Icon } from '../components/AdminShell';
+import Modal from '../components/Modal';
+import LogoCard from '../components/LogoCard';
+import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
 import { Stars } from '../components/CustomerReviews';
 
 // Online-store admin panels (orders, reviews, users, store settings) in the shared admin layout. Authorization is enforced by the API.
@@ -20,9 +23,10 @@ function useGate() {
 const Card = ({ children }) => <section className="dpos-card">{children}</section>;
 
 export function AdminOrders() {
-  const gate = useGate(); const [s, setS] = useState(); const [o, setO] = useState(null); const [e, setE] = useState();
+  const gate = useGate(); const [s, setS] = useState(); const [o, setO] = useState(null); const [e, setE] = useState(); const [per, setPer] = usePeriod('all'); const [pay, setPay] = useState('all');
   useEffect(() => { if (!gate) Promise.all([api('/admin/stats'), api('/admin/orders')]).then(([a, b]) => { setS(a); setO(b) }).catch(x => setE(x.message)) }, [gate]);
   if (gate) return gate;
+  const shownO = (o || []).filter(x => inPeriod(x.created_at, per) && (pay === 'all' || (pay === 'paid' ? x.payment_status === 'paid' : x.payment_status !== 'paid')));
   return (
     <AdminShell title="Online orders" sub="Orders placed on the website. In-store bills are under Retail billing.">
       {e && <p role="alert" className="dpos-err">{e}</p>}
@@ -31,10 +35,11 @@ export function AdminOrders() {
         <div className="dpos-kpi"><span>Gross sales</span><b>{s ? inr(s.gross) : '…'}</b></div>
         <div className="dpos-kpi"><span>Average order</span><b>{s ? inr(s.averageOrder) : '…'}</b></div>
       </div>
+      <div className="dpos-bar-tools"><Chips label="Payment" value={pay} onChange={setPay} options={[['all', 'All'], ['paid', 'Paid'], ['unpaid', 'Unpaid']]} /><PeriodFilter value={per} onChange={setPer} /></div>
       <Card>
-        {!o ? <p className="dpos-empty">Loading…</p> : !o.length ? <p className="dpos-empty">No online orders yet.</p> : (
+        {!o ? <p className="dpos-empty">Loading…</p> : !shownO.length ? <p className="dpos-empty">No online orders here.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Email</th><th className="r">Total</th><th>Payment</th><th>Status</th></tr></thead>
-            <tbody>{o.map(x => (
+            <tbody>{shownO.map(x => (
               <tr key={x.id}><td><b>{x.order_number}</b></td><td>{x.email}</td><td className="r">{inr(x.total)}</td><td><span className={`dpos-pill ${x.payment_status === 'paid' ? 'ok' : ''}`}>{x.payment_status}</span></td>
                 <td><select value={x.status} aria-label={`Status for ${x.order_number}`} onChange={async ev => { try { await api('/admin/orders/' + x.order_number, { method: 'PATCH', body: { status: ev.target.value } }); setO(list => list.map(y => y.id === x.id ? { ...y, status: ev.target.value } : y)) } catch (err) { setE(err.message) } }}>{STATUSES.map(v => <option key={v}>{v}</option>)}</select></td></tr>))}</tbody></table></div>)}
       </Card>
@@ -43,15 +48,16 @@ export function AdminOrders() {
 }
 
 export function AdminReviews() {
-  const gate = useGate(); const [rv, setRv] = useState(null); const [f, setF] = useState('pending'); const [e, setE] = useState();
+  const gate = useGate(); const [rv, setRv] = useState(null); const [f, setF] = useState('pending'); const [e, setE] = useState(); const [per, setPer] = usePeriod('all');
   useEffect(() => { if (!gate) api('/admin/reviews').then(setRv).catch(x => setE(x.message)) }, [gate]);
-  const shown = useMemo(() => (rv || []).filter(r => f === 'all' || (f === 'pending' ? r.status === 'pending' : r.status === 'published')), [rv, f]);
+  const shown = useMemo(() => (rv || []).filter(r => inPeriod(r.created_at, per) && (f === 'all' || (f === 'pending' ? r.status === 'pending' : r.status === 'published'))), [rv, f, per]);
   if (gate) return gate;
   const moderate = async (id, status) => { try { await api(`/admin/reviews/${id}`, { method: 'PATCH', body: { status } }); setRv(l => l.map(r => r.id === id ? { ...r, status } : r)) } catch (x) { setE(x.message) } };
   const remove = async id => { if (!confirm('Delete this review permanently?')) return; try { await api(`/admin/reviews/${id}`, { method: 'DELETE' }); setRv(l => l.filter(r => r.id !== id)) } catch (x) { setE(x.message) } };
   return (
     <AdminShell title="Customer Reviews" sub="Approve, hide or delete a review before it appears on the storefront."
-      actions={<div className="dpos-seg" role="radiogroup" aria-label="Filter">{[['pending', 'Pending'], ['approved', 'Approved'], ['all', 'All']].map(([v, l]) => <button key={v} role="radio" aria-checked={f === v} className={f === v ? 'on' : ''} onClick={() => setF(v)}>{l}</button>)}</div>}>
+      actions={<Chips value={f} onChange={setF} options={[['pending', 'Pending'], ['approved', 'Approved'], ['all', 'All']]} />}>
+      <PeriodFilter value={per} onChange={setPer} />
       {e && <p role="alert" className="dpos-err">{e}</p>}
       <Card>
         {!rv ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No reviews here yet.</p> : shown.map(r => (
@@ -69,17 +75,41 @@ export function AdminReviews() {
   );
 }
 
+function AddUserModal({ onClose, onDone }) {
+  const [f, setF] = useState({ name: '', email: '', password: '', role: 'cashier' }); const [busy, setBusy] = useState(false); const [err, setErr] = useState(); const [show, setShow] = useState(false);
+  const submit = async e => {
+    e.preventDefault(); setBusy(true); setErr();
+    try { await api('/admin/users', { method: 'POST', body: { name: f.name.trim(), email: f.email.trim(), password: f.password, role: f.role } }); onDone(); onClose() }
+    catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
+  };
+  return (
+    <Modal title="Add user" sub="Create a staff login. They sign in at the normal Sign in page." onClose={onClose}>
+      <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
+        <label className="f">Full name<input autoFocus value={f.name} maxLength={120} onChange={e => setF({ ...f, name: e.target.value })} /></label>
+        <label className="f">Email<input required type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} autoComplete="off" /></label>
+        <label className="f">Temporary password (8+ characters)<span style={{ display: 'flex', gap: 8 }}><input required minLength={8} type={show ? 'text' : 'password'} value={f.password} onChange={e => setF({ ...f, password: e.target.value })} autoComplete="new-password" /><button type="button" className="dpos-btn ghost sm" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button></span></label>
+        <label className="f">Role<select value={f.role} onChange={e => setF({ ...f, role: e.target.value })}>
+          <option value="cashier">Cashier — can bill, sees today’s bills</option><option value="inventory">Inventory — can adjust stock</option><option value="admin">Admin — manages the store</option><option value="customer">Customer — no admin access</option></select></label>
+        {err && <p className="dpos-err" role="alert">{err}</p>}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Creating…' : 'Create user'}</button></div>
+      </form>
+    </Modal>
+  );
+}
+
 export function AdminUsers() {
-  const gate = useGate(); const { user, toast } = useApp(); const [list, setList] = useState(null); const [q, setQ] = useState(''); const [e, setE] = useState();
-  useEffect(() => { if (!gate) api('/admin/users').then(setList).catch(x => setE(x.message)) }, [gate]);
+  const gate = useGate(); const { user, toast } = useApp(); const [list, setList] = useState(null); const [q, setQ] = useState(''); const [e, setE] = useState(); const [per, setPer] = usePeriod('all'); const [role, setRole_] = useState('all'); const [add, setAdd] = useState(false);
+  const load = () => api('/admin/users').then(setList).catch(x => setE(x.message));
+  useEffect(() => { if (!gate) load() }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
   if (gate) return gate;
   const isOwner = user.role === 'owner';
-  const shown = (list || []).filter(u => !q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase()));
-  const setRole = async (u, role) => { try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role } }); setList(l => l.map(x => x.id === u.id ? { ...x, role } : x)); toast(`${u.email} is now ${role}`) } catch (x) { setE(x.message) } };
+  const shown = (list || []).filter(u => (!q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase())) && inPeriod(u.created_at, per) && (role === 'all' || (role === 'staff' ? u.role !== 'customer' : u.role === 'customer')));
+  const setRole = async (u, r) => { try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role: r } }); setList(l => l.map(x => x.id === u.id ? { ...x, role: r } : x)); toast(`${u.email} is now ${r}`) } catch (x) { setE(x.message) } };
   return (
-    <AdminShell title="Users & Roles" sub="Staff with access to this admin. Cashiers can bill; admins manage the store; only the owner changes roles."
-      actions={<input type="search" style={{ maxWidth: 280 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" />}>
+    <AdminShell title="Users & Roles" sub="Staff with access to this admin. Cashiers can bill; admins manage the store; only the owner adds users and changes roles."
+      actions={<div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}><input type="search" style={{ maxWidth: 260 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" />{isOwner && <button className="dpos-btn" onClick={() => setAdd(true)}><Icon n="plus" size={16} />Add user</button>}</div>}>
       {e && <p role="alert" className="dpos-err">{e}</p>}
+      <div className="dpos-bar-tools"><Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
       <Card>
         {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No users found.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
@@ -88,6 +118,7 @@ export function AdminUsers() {
                 <td>{u.role === 'owner' || !isOwner || u.id === user.id ? <span className={`dpos-pill ${u.role === 'customer' ? '' : 'ok'}`}>{u.role}</span>
                   : <select aria-label={`Role for ${u.email}`} value={u.role} onChange={ev => setRole(u, ev.target.value)} style={{ maxWidth: 150 }}>{['customer', 'cashier', 'inventory', 'admin'].map(r => <option key={r}>{r}</option>)}</select>}</td><td>{when(u.created_at)}</td></tr>))}</tbody></table></div>)}
       </Card>
+      {add && <AddUserModal onClose={() => setAdd(false)} onDone={() => { toast('User created.'); load() }} />}
     </AdminShell>
   );
 }
@@ -95,7 +126,7 @@ export function AdminUsers() {
 export function AdminSettings() {
   const gate = useGate();
   if (gate) return gate;
-  return <AdminShell title="Store settings" sub="Boutique location, hours and Instagram shown on the homepage, footer and map."><Card><StoreSettingsForm /></Card></AdminShell>;
+  return <AdminShell title="Store settings" sub="Logo, boutique location, hours and Instagram shown on the homepage, footer and map."><LogoCard /><Card><StoreSettingsForm /></Card></AdminShell>;
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

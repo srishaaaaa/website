@@ -1,0 +1,90 @@
+/* =====================================================================
+   Premium floating navigation + mega menu, and scroll-performance rules.
+   Loaded after every other stylesheet. No backdrop-filter anywhere in the fixed header: blurring the page behind a fixed bar
+   forces the browser to re-blur on every scroll frame, which is the main cause of choppy scrolling on phones and laptops.
+   ===================================================================== */
+
+/* ---- smoother scrolling ---- */
+@supports (overflow: clip) { html, body { overflow-x: clip } } /* hidden creates a scroll container on <body> and hurts momentum scrolling on iOS */
+html { -webkit-tap-highlight-color: transparent }
+img, video, canvas { max-width: 100% }
+.rv-track, .cf-track, .portal-track { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch }
+@media (hover: none), (max-width: 767px) {
+  .glass, .scrim { backdrop-filter: none !important; -webkit-backdrop-filter: none !important }
+  .glass { background: rgba(22, 15, 28, .97) } .scrim { background: rgba(5, 4, 8, .72) }
+  .rv-tag, .story2-chip, .cc-plate, .reel-mute, .insta-open, .hl-trend, .pcard-wish, .pcard-quick, .cf-go { backdrop-filter: none !important; -webkit-backdrop-filter: none !important }
+  .rv-tag { background: rgba(9, 9, 13, .78) } .cc-plate, .hl-trend { background-color: rgba(255, 249, 240, .94) }
+}
+
+/* ---- header bar ---- */
+.site-header .hdr {
+  position: relative; max-width: 1280px; padding: 8px 10px 8px 12px; color: var(--ink-d, #211714);
+  background: linear-gradient(180deg, #fffbf4 0%, #faf0e0 100%);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  border: 1px solid rgba(198, 160, 82, .42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 18px 44px -14px rgba(110, 32, 39, .3), 0 2px 8px rgba(110, 32, 39, .07);
+}
+.site-header .hdr::before { content: ''; position: absolute; top: -1px; left: 14%; right: 14%; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(198, 160, 82, .95), transparent) }
+.site-header.compact .hdr { transform: scale(.96); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 12px 30px -10px rgba(110, 32, 39, .4), 0 2px 6px rgba(110, 32, 39, .1) }
+
+/* brand */
+.site-header .wordmark.has-logo { display: inline-flex; flex-direction: row; align-items: center; gap: 13px }
+.site-header .wm-logo { width: 54px; height: 54px; box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(198, 160, 82, .9), 0 8px 18px -4px rgba(60, 20, 70, .5); transition: transform .5s var(--ease) }
+.site-header .wordmark:hover .wm-logo { transform: rotate(-6deg) scale(1.05) }
+.wm-text { display: grid; line-height: 1; gap: 5px }
+.wm-text b { font-family: var(--serif); font-weight: 800; font-size: 20px; letter-spacing: .12em; text-transform: uppercase; color: currentColor }
+.wm-text i { font-style: normal; font-size: 9px; font-weight: 700; letter-spacing: .5em; text-transform: uppercase; color: var(--antique, #c6a052) }
+.site-header .wm-text b { color: var(--maroon, #6e2027) }
+@media (max-width: 1179px) { .site-header .wm-text { display: none } }
+.mm-top .wm-text b { color: #fff } .mm-top .wm-text { display: grid }
+
+/* links */
+.site-header .primary { gap: 4px }
+.site-header .primary a { font-size: 11px; letter-spacing: .26em; font-weight: 700; color: var(--ink-d, #211714); opacity: .7; padding: 13px 20px; border-radius: 999px; transition: opacity .25s, color .25s, background .25s }
+.site-header .primary a:hover { opacity: 1; color: var(--maroon, #6e2027); background: rgba(110, 32, 39, .06) }
+.site-header .primary a.active { opacity: 1; color: var(--maroon, #6e2027) }
+.site-header .primary a:focus-visible { outline: 2px solid var(--red, #a83232); outline-offset: 2px }
+.site-header .nav-pill { inset: 0; height: auto; border-radius: 999px; z-index: -1; background: linear-gradient(180deg, rgba(168, 50, 50, .1), rgba(110, 32, 39, .15)); box-shadow: inset 0 0 0 1px rgba(168, 50, 50, .24) }
+.site-header .nav-pill::after { content: ''; position: absolute; left: 50%; bottom: 5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--antique, #c6a052) }
+
+/* tools */
+.site-header .tools-pill { padding: 4px; gap: 2px; background: rgba(255, 255, 255, .78); box-shadow: inset 0 0 0 1px rgba(198, 160, 82, .32) }
+.site-header .tool { color: var(--ink-d, #211714); font-weight: 700; transition: background .25s, color .25s, transform .25s var(--ease) }
+.site-header .tool:hover { background: rgba(110, 32, 39, .08); color: var(--maroon, #6e2027); transform: translateY(-1px) }
+.site-header .sep { background: rgba(198, 160, 82, .45) }
+.site-header .cart-pill { position: relative; overflow: hidden; color: #fff; font-weight: 700; background: linear-gradient(135deg, #b43a3a 0%, #6e2027 100%); box-shadow: 0 8px 18px -6px rgba(168, 50, 50, .65), inset 0 1px 0 rgba(255, 255, 255, .28); transition: transform .25s var(--ease), box-shadow .25s }
+.site-header .cart-pill:hover { color: #fff; background: linear-gradient(135deg, #c24444 0%, #7c2530 100%); transform: translateY(-1px); box-shadow: 0 12px 22px -6px rgba(168, 50, 50, .7), inset 0 1px 0 rgba(255, 255, 255, .3) }
+.site-header .cart-pill::after { content: ''; position: absolute; top: 0; bottom: 0; left: -70%; width: 45%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .38), transparent); transform: skewX(-20deg); transition: left .8s var(--ease) }
+.site-header .cart-pill:hover::after { left: 130% }
+.site-header .cart-n { background: var(--antique, #c6a052); color: #2a1a05; font-weight: 800 }
+.site-header .burger { width: 46px; height: 46px; border-radius: 50%; background: #fff; color: var(--maroon, #6e2027); box-shadow: inset 0 0 0 1px rgba(198, 160, 82, .4) }
+@media (max-width: 959px) { .site-header .hdr { padding: 6px 8px } .site-header .wm-logo { width: 46px; height: 46px } }
+
+/* ---- mega menu ---- */
+.site-header .mega {
+  top: calc(100% + 12px); border-radius: 34px; overflow: hidden; color: var(--ink-d, #211714);
+  background: radial-gradient(70% 90% at 100% 0%, rgba(198, 160, 82, .16), transparent 60%), linear-gradient(180deg, #fffaf1, #f8eee0);
+  border: 1px solid rgba(198, 160, 82, .45); backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: 0 44px 90px -28px rgba(110, 32, 39, .4), 0 10px 26px rgba(110, 32, 39, .08);
+}
+.site-header .mega-in { grid-template-columns: minmax(300px, 1.15fr) 1.5fr; gap: clamp(28px, 4vw, 64px); padding: 34px clamp(26px, 3.4vw, 48px) 30px }
+.mega-label { margin: 0 0 14px; font-size: 10px; font-weight: 800; letter-spacing: .34em; text-transform: uppercase; color: var(--antique, #c6a052); display: flex; align-items: center; gap: 12px }
+.mega-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(198, 160, 82, .55), transparent) }
+.site-header .mega-cats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 30px; align-content: start }
+.site-header .mega-cats li { border-bottom: 1px solid rgba(110, 32, 39, .1) }
+.site-header .mega-cats a { display: flex; align-items: baseline; gap: 14px; width: 100%; padding: 13px 2px; font-family: var(--quote, var(--serif)); font-weight: 500; font-size: clamp(20px, 1.6vw, 25px); line-height: 1.25; letter-spacing: 0; text-transform: none; color: var(--ink-d, #211714); border: 0; transition: padding .35s var(--ease), color .25s }
+.site-header .mega-cats a .n { font: 800 10px/1 var(--sans); letter-spacing: .2em; color: var(--antique, #c6a052); min-width: 18px }
+.site-header .mega-cats a .ar { margin-left: auto; color: var(--red, #a83232); opacity: 0; transform: translateX(-10px); transition: opacity .3s, transform .35s var(--ease) }
+.site-header .mega-cats a:hover, .site-header .mega-cats a:focus-visible { padding-left: 12px; color: var(--maroon, #6e2027) }
+.site-header .mega-cats a:hover .ar, .site-header .mega-cats a:focus-visible .ar { opacity: 1; transform: none }
+.site-header .mega-feature { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px }
+.site-header .mega-tile { gap: 3px; padding: 10px 10px 14px; border-radius: 26px; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(198, 160, 82, .26); transition: transform .45s var(--ease), box-shadow .45s var(--ease), background .3s }
+.site-header .mega-tile:hover { transform: translateY(-4px); background: #fff; box-shadow: inset 0 0 0 1px rgba(198, 160, 82, .55), 0 22px 40px -18px rgba(110, 32, 39, .4) }
+.site-header .mega-img { position: relative; border-radius: 20px; margin-bottom: 10px; aspect-ratio: 3 / 3.4 }
+.site-header .mega-tile:hover .mega-img > span:first-child { transform-origin: 50% 50% }
+.mega-chip { position: absolute; left: 10px; top: 10px; font-style: normal; font-size: 9px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; background: rgba(255, 249, 240, .95); color: var(--maroon, #6e2027); box-shadow: 0 2px 8px rgba(0, 0, 0, .12) }
+.site-header .mega-tile .serif { padding: 0 6px; font-family: var(--sans); font-weight: 700; font-size: 15px; color: var(--ink-d, #211714) }
+.site-header .mega-tile .muted { padding: 0 6px; color: var(--maroon, #6e2027); opacity: .85; font-weight: 700 }
+.mega-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px clamp(26px, 3.4vw, 48px); border-top: 1px solid rgba(198, 160, 82, .4); background: linear-gradient(180deg, rgba(110, 32, 39, .03), rgba(110, 32, 39, .07)); font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: rgba(33, 23, 20, .7) }
+.mega-all { display: inline-flex; align-items: center; gap: 10px; padding: 11px 22px; border-radius: 999px; background: var(--maroon, #6e2027); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .2em; transition: background .25s, transform .3s var(--ease), gap .3s var(--ease) }
+.mega-all:hover { background: var(--red, #a83232); transform: translateY(-1px); gap: 16px }

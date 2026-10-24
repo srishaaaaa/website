@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
+import bcrypt from 'bcryptjs';
 import { audit } from '../lib/orders.js';
 
 // Server-side RBAC: every route sits behind a role check that reads the role fresh from the database.
@@ -85,9 +86,70 @@ export default function admin({ db, auth }) {
     });
     res.json({ ok: true, stock: left });
   }));
+  // ---- categories & collections ("taxonomy") ----
+  const slugOf = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'item';
+  const freeSlug = async (table, name) => { const base = slugOf(name); for (let i = 0; ; i++) { const slug = i ? `${base}-${i + 1}` : base; if (!(await one(db, `SELECT 1 AS x FROM ${table} WHERE slug = $1`, [slug]))) return slug } };
+  r.get('/taxonomy', staff, wrap(async (_req, res) => res.json({
+    categories: await rows(db, `SELECT c.id, c.name, c.slug, c.active, (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id) AS products FROM categories c ORDER BY c.display_order, lower(c.name)`),
+    collections: await rows(db, `SELECT c.id, c.name, c.slug, c.status, (SELECT COUNT(*)::int FROM collection_products cp WHERE cp.collection_id = c.id) AS products FROM collections c ORDER BY c.display_order, lower(c.name)`),
+  })));
+  const nameBody = z.object({ name: z.string().trim().min(1).max(80) });
+  r.post('/categories', staff, wrap(async (req, res) => {
+    const { name } = nameBody.parse(req.body);
+    if (await one(db, 'SELECT 1 AS x FROM categories WHERE lower(name) = lower($1)', [name])) throw new HttpError(409, 'A category with that name already exists');
+    const row = await one(db, 'INSERT INTO categories (name, slug, active, display_order) VALUES ($1,$2,true,(SELECT COALESCE(MAX(display_order), 0) + 1 FROM categories)) RETURNING id', [name, await freeSlug('categories', name)]);
+    await audit(db, req.user.id, 'category.create', 'category', row.id, { name });
+    res.status(201).json({ id: row.id });
+  }));
+  r.patch('/categories/:id', staff, wrap(async (req, res) => {
+    const b = z.object({ active: z.boolean().optional(), name: z.string().trim().min(1).max(80).optional() }).parse(req.body);
+    const id = z.coerce.number().int().parse(req.params.id);
+    const u = await db.query('UPDATE categories SET active = COALESCE($2, active), name = COALESCE($3, name) WHERE id = $1 RETURNING id', [id, b.active ?? null, b.name ?? null]);
+    if (!u.rows.length) throw new HttpError(404, 'Category not found');
+    await audit(db, req.user.id, 'category.update', 'category', id, b);
+    res.json({ ok: true });
+  }));
+  r.delete('/categories/:id', staff, wrap(async (req, res) => {
+    const id = z.coerce.number().int().parse(req.params.id);
+    const d = await db.query('DELETE FROM categories WHERE id = $1 RETURNING name', [id]);
+    if (!d.rows.length) throw new HttpError(404, 'Category not found');
+    await audit(db, req.user.id, 'category.delete', 'category', id, { name: d.rows[0].name });
+    res.json({ ok: true });
+  }));
+  r.post('/collections', staff, wrap(async (req, res) => {
+    const { name } = nameBody.parse(req.body);
+    if (await one(db, 'SELECT 1 AS x FROM collections WHERE lower(name) = lower($1)', [name])) throw new HttpError(409, 'A collection with that name already exists');
+    const row = await one(db, `INSERT INTO collections (name, slug, status, display_order) VALUES ($1,$2,'draft',(SELECT COALESCE(MAX(display_order), 0) + 1 FROM collections)) RETURNING id`, [name, await freeSlug('collections', name)]);
+    await audit(db, req.user.id, 'collection.create', 'collection', row.id, { name });
+    res.status(201).json({ id: row.id });
+  }));
+  r.patch('/collections/:id', staff, wrap(async (req, res) => {
+    const b = z.object({ status: z.enum(['draft', 'published']).optional(), name: z.string().trim().min(1).max(80).optional() }).parse(req.body);
+    const id = z.coerce.number().int().parse(req.params.id);
+    const u = await db.query('UPDATE collections SET status = COALESCE($2, status), name = COALESCE($3, name) WHERE id = $1 RETURNING id', [id, b.status ?? null, b.name ?? null]);
+    if (!u.rows.length) throw new HttpError(404, 'Collection not found');
+    await audit(db, req.user.id, 'collection.update', 'collection', id, b);
+    res.json({ ok: true });
+  }));
+  r.delete('/collections/:id', staff, wrap(async (req, res) => {
+    const id = z.coerce.number().int().parse(req.params.id);
+    const d = await db.query('DELETE FROM collections WHERE id = $1 RETURNING name', [id]);
+    if (!d.rows.length) throw new HttpError(404, 'Collection not found');
+    await audit(db, req.user.id, 'collection.delete', 'collection', id, { name: d.rows[0].name });
+    res.json({ ok: true });
+  }));
+
   // Users & roles. Everyone staff can see accounts; only an owner can change a role (never their own, never another owner's).
   r.get('/users', staff, wrap(async (_req, res) => res.json(await rows(db,
     `SELECT id, email, full_name AS name, role, created_at FROM profiles ORDER BY (role = 'customer'), id LIMIT 500`))));
+  r.post('/users', auth.role('owner'), wrap(async (req, res) => {
+    const d = z.object({ name: z.string().trim().max(120).default(''), email: z.string().trim().email().max(200), password: z.string().min(8).max(200),
+      role: z.enum(['customer', 'cashier', 'inventory', 'admin']) }).parse(req.body);
+    if (await one(db, 'SELECT 1 AS x FROM profiles WHERE lower(email) = lower($1)', [d.email])) throw new HttpError(409, 'That email is already registered', 'email_taken');
+    const u = await one(db, 'INSERT INTO profiles (email, password_hash, full_name, role) VALUES ($1,$2,$3,$4) RETURNING id', [d.email, await bcrypt.hash(d.password, 12), d.name, d.role]);
+    await audit(db, req.user.id, 'user.create', 'user', u.id, { role: d.role });
+    res.status(201).json({ id: u.id });
+  }));
   r.patch('/users/:id/role', auth.role('owner'), wrap(async (req, res) => {
     const { role } = z.object({ role: z.enum(['customer', 'cashier', 'inventory', 'admin']) }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);

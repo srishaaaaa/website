@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { one } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
+import { sweepMedia } from './sample.js';
 
 const text = n => z.string().trim().max(n);
 const nullableText = n => text(n).transform(v => v || null).nullable().default(null);
@@ -84,8 +85,8 @@ export default function settingsRoutes({ db, cfg, auth }) {
     await audit(db, req.user.id, 'settings.update', 'settings', key);
   };
   r.put('/admin/settings/store', staff, wrap(async (req, res) => { const v = storeSchema.parse(req.body); await save(req, 'store', v); res.json(v) }));
-  r.put('/admin/settings/social', staff, wrap(async (req, res) => { const v = socialSchema.parse(req.body); await save(req, 'social', v); res.json(v) }));
-  r.put('/admin/settings/branding', staff, wrap(async (req, res) => { const v = brandingSchema.parse(req.body); await save(req, 'branding', v); res.json(v) }));
+  r.put('/admin/settings/social', staff, wrap(async (req, res) => { const v = socialSchema.parse(req.body); await save(req, 'social', v); await sweepMedia(db, true); res.json(v) }));
+  r.put('/admin/settings/branding', staff, wrap(async (req, res) => { const v = brandingSchema.parse(req.body); await save(req, 'branding', v); await sweepMedia(db, true); res.json(v) }));
   r.put('/admin/settings/flags', staff, wrap(async (req, res) => { const v = flagsSchema.parse(req.body); await save(req, 'flags', v); res.json(v) }));
   r.put('/admin/pages/:slug', staff, wrap(async (req, res) => {
     if (!PAGE_SLUGS.includes(req.params.slug)) throw new HttpError(404, 'Unknown page');

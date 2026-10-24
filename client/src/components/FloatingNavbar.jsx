@@ -15,34 +15,43 @@ const HeartI = () => <Icon d="M12 20.5s-7.5-4.6-7.5-10.3A4.3 4.3 0 0 1 12 7.6a4.
 const BagI = () => <Icon><path d="M5.5 8.5h13l-1 11.5h-11z" /><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" /></Icon>;
 
 function MegaMenu({ onNavigate }) {
-  const { catalog } = useApp();
+  const { catalog, site } = useApp();
   const reduced = useReduced();
   const cats = catalog.categories;
   const picks = catalog.featured.slice(0, 2);
   const [shift, setShift] = useState({ x: 0, y: 0 });
+  const free = site?.shipping?.freeOver;
+  const rows = [{ name: 'All pieces', to: '/shop' }, { name: 'New arrivals', to: '/shop?sort=newest' }, ...cats.map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
   return (
-    <motion.div className="mega glass" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+    <motion.div className="mega" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       onPointerMove={e => !reduced && setShift({ x: (e.clientX / innerWidth - 0.5) * 14, y: (e.clientY / innerHeight - 0.5) * 8 })}>
       <div className="mega-in">
-        <ul className="mega-cats" aria-label="Shop categories">
-          {[{ slug: null, name: 'All pieces', to: '/shop' }, { slug: 'new-arrivals', name: 'New arrivals', to: '/shop?sort=newest' }, ...cats.map(c => ({ slug: c.slug, name: c.name, to: `/shop?category=${c.slug}` }))].map((c, i) => (
-            <motion.li key={c.name} initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 + i * 0.045, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
-              <Link to={c.to} className="serif" onClick={onNavigate}>{c.name}</Link>
-            </motion.li>
-          ))}
-        </ul>
-        <div className="mega-feature">
-          {catalog.status === 'loading' && <p className="muted">Loading the edit…</p>}
-          {picks.map((p, i) => (
-            <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 + i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
-              <Link to={`/product/${p.slug}`} className="mega-tile" onClick={onNavigate} data-cursor="VIEW">
-                <span className="mega-img"><span style={{ transform: `translate(${shift.x * (i ? -1 : 1)}px, ${shift.y}px) scale(1.12)` }}><ProductMedia p={p} /></span></span>
-                <span className="serif">{p.name}</span><span className="muted small">{inr(p.price)}</span>
-              </Link>
-            </motion.div>
-          ))}
+        <div className="mega-col">
+          <p className="mega-label">Shop by category</p>
+          <ul className="mega-cats" aria-label="Shop categories">
+            {rows.map((c, i) => (
+              <motion.li key={c.name} initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 + i * 0.04, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+                <Link to={c.to} onClick={onNavigate}><span className="n">{String(i + 1).padStart(2, '0')}</span><span className="t">{c.name}</span><span className="ar" aria-hidden="true">→</span></Link>
+              </motion.li>
+            ))}
+          </ul>
+        </div>
+        <div className="mega-col">
+          <p className="mega-label">The edit</p>
+          <div className="mega-feature">
+            {catalog.status === 'loading' && <p className="muted">Loading the edit…</p>}
+            {picks.map((p, i) => (
+              <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 + i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
+                <Link to={`/product/${p.slug}`} className="mega-tile" onClick={onNavigate} data-cursor="VIEW">
+                  <span className="mega-img"><span style={{ transform: `translate(${shift.x * (i ? -1 : 1)}px, ${shift.y}px) scale(1.12)` }}><ProductMedia p={p} /></span><em className="mega-chip">Featured</em></span>
+                  <span className="serif">{p.name}</span><span className="muted small">{inr(p.price)}</span>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
+      <div className="mega-foot"><span>Handpicked pieces{free ? ` · Free shipping over ${inr(free)}` : ''}</span><Link to="/shop" className="mega-all" onClick={onNavigate}>View all pieces <span aria-hidden="true">→</span></Link></div>
     </motion.div>
   );
 }

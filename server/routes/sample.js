@@ -5,12 +5,13 @@ import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
 
 // Removes uploaded files that nothing references any more (after products etc. are deleted).
-export const sweepMedia = db => db.query(`
+export const sweepMedia = (db, grace = false) => db.query(`
   DELETE FROM media_files m
-  WHERE NOT EXISTS (SELECT 1 FROM product_images i WHERE i.image_url = '/api/media/' || m.id)
+  WHERE (NOT $1::boolean OR m.created_at < now() - interval '5 minutes')
+    AND NOT EXISTS (SELECT 1 FROM product_images i WHERE i.image_url = '/api/media/' || m.id)
     AND NOT EXISTS (SELECT 1 FROM categories c WHERE c.image_url = '/api/media/' || m.id)
     AND NOT EXISTS (SELECT 1 FROM collections c WHERE c.hero_image = '/api/media/' || m.id)
-    AND NOT EXISTS (SELECT 1 FROM store_settings s WHERE s.value::text LIKE '%/api/media/' || m.id || '"%')`);
+    AND NOT EXISTS (SELECT 1 FROM store_settings s WHERE s.value::text LIKE '%/api/media/' || m.id || '"%')`, [grace]);
 
 // Admin tools for demo data and product removal. Every deletion is a real, audited action done by staff.
 export default function sampleAdmin({ db, auth }) {

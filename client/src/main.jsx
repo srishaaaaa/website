@@ -6,6 +6,7 @@ import App from './App';
 import './styles.css';
 import './home.css';
 import './boutique.css';
+import './nav.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

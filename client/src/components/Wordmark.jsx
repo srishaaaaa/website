@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/App';
 
+// The boutique's own logo is the default; an uploaded logo (Admin → Settings → Logo) replaces it.
+export const DEFAULT_LOGO = '/images/dhanya-logo.jpg';
+
 // Emblem: four hairline petals rotated around a point — a quiet nod to woven textile geometry.
 export function Emblem({ size = 28, className = '', glow = false }) {
   return (
@@ -18,10 +21,11 @@ export function LogoTile({ size = 38 }) {
 // DHANYA over BOUTIQUE: a high-contrast serif name with a small, widely spaced descriptor.
 export default function Wordmark({ to = '/', className = '', onClick }) {
   const { site } = useApp();
-  const logo = site.branding?.logo;
+  const logo = site.branding?.logo || DEFAULT_LOGO;
   if (logo) return (
     <Link to={to} onClick={onClick} className={`wordmark has-logo ${className}`} aria-label="Home" data-cursor="HOME">
-      <img className="wm-logo" src={logo} alt={site.branding.logoAlt || site.store?.name || 'DHANYA BOUTIQUE'} />
+      <img className="wm-logo" src={logo} alt={site.branding?.logoAlt || site.store?.name || 'DHANYA BOUTIQUE'} />
+      <span className="wm-text" aria-hidden="true"><b>{(site.store?.name || 'Dhanyas Boutique').split(' ')[0]}</b><i>{(site.store?.name || 'Dhanyas Boutique').split(' ').slice(1).join(' ') || 'BOUTIQUE'}</i></span>
     </Link>
   );
   return (

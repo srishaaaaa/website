@@ -82,12 +82,13 @@ export default function CustomerReviews() {
     const el = track.current;
     if (!ready || !el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const SPEED = 35;
-    let raf, last = 0, pos = el.scrollLeft, hold = 0, stopped = false;
+    let raf, last = 0, pos = el.scrollLeft, hold = 0, stopped = false, visible = true;
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; pos = el.scrollLeft }); io.observe(el); // no work while off screen
     const toggle = e => { if (e.type === 'keydown' && !(e.key === 'Enter' || e.key === ' ')) return; if (e.type === 'click' && !e.target.closest('.rv-card')) return; if (e.type === 'keydown') e.preventDefault(); stopped = !stopped; pos = el.scrollLeft };
     const tick = t => {
       raf = requestAnimationFrame(tick);
       const dt = Math.min(t - last, 64) / 1000; last = t;
-      if (stopped || document.hidden) return;
+      if (stopped || document.hidden || !visible) return;
       const max = el.scrollWidth - el.clientWidth;
       if (max <= 0) return;
       if (Math.abs(el.scrollLeft - pos) > 3) { pos = el.scrollLeft; hold = t + 700 } // moved by the arrows or a swipe: let that settle, then carry on from there
@@ -98,7 +99,7 @@ export default function CustomerReviews() {
     el.style.scrollSnapType = 'none'; // snapping would fight the drift
     el.addEventListener('click', toggle); el.addEventListener('keydown', toggle);
     raf = requestAnimationFrame(t => { last = t; tick(t) });
-    return () => { cancelAnimationFrame(raf); el.style.scrollSnapType = ''; el.removeEventListener('click', toggle); el.removeEventListener('keydown', toggle) };
+    return () => { cancelAnimationFrame(raf); io.disconnect(); el.style.scrollSnapType = ''; el.removeEventListener('click', toggle); el.removeEventListener('keydown', toggle) };
   }, [ready]);
   if (!data) return null;
   const slide = d => track.current?.scrollBy({ left: d * Math.min(360, innerWidth * 0.8), behavior: 'smooth' });

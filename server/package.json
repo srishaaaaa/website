@@ -6,7 +6,7 @@
     "start": "node --env-file=../.env index.js",
     "migrate": "node --env-file=../.env db/cli.js migrate",
     "seed": "node --env-file=../.env db/cli.js seed",
-    "test": "node --test test/api.test.js test/pos.test.js"
+    "test": "node --test test/api.test.js test/pos.test.js test/pos_more.test.js"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.11",

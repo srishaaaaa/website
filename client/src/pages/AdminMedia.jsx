@@ -3,6 +3,7 @@ import { Link, Navigate, NavLink } from 'react-router-dom';
 import { api, uploadImage, uploadMedia } from '../lib/api';
 import { useApp } from '../context/App';
 import AdminShell from '../components/AdminShell';
+import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
 
 // Guards admin screens: signed in AND staff. (The API enforces the role too; this only avoids a dead page.)
 function useStaff() {
@@ -208,7 +209,7 @@ export function AdminStorefront() {
 
 export function AdminEnquiries() {
   const state = useStaff();
-  const [rows, setRows] = useState(null); const [err, setErr] = useState();
+  const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [per, setPer] = usePeriod('all'); const [st, setSt] = useState('all');
   useEffect(() => { if (state === 'ok') api('/admin/enquiries').then(setRows).catch(e => setErr(e.message)) }, [state]);
   const remove = async e => { if (!confirm(`Delete the enquiry from ${e.name}?`)) return; try { await api('/admin/enquiries/' + e.id, { method: 'DELETE' }); setRows(r => r.filter(x => x.id !== e.id)) } catch (x) { setErr(x.message) } };
   const setStatus = async (id, status) => { try { await api('/admin/enquiries/' + id, { method: 'PATCH', body: { status } }); setRows(r => r.map(x => x.id === id ? { ...x, status } : x)) } catch (e) { setErr(e.message) } };
@@ -219,8 +220,9 @@ export function AdminEnquiries() {
         <p className="muted adm-help">Retail and wholesale enquiries sent from the website. Call or WhatsApp the customer, then mark the enquiry as contacted or closed.</p>
         {err && <p role="alert" className="err">{err}</p>}
         {!rows && !err && <p className="muted">Loading…</p>}
-        {rows?.length === 0 && <p className="muted">No enquiries yet.</p>}
-        <ul className="adm-enq">{rows?.map(e => (
+        <div className="dpos-bar-tools"><Chips label="Status" value={st} onChange={setSt} options={[['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['closed', 'Closed']]} /><PeriodFilter value={per} onChange={setPer} /></div>
+        {rows && !rows.some(e => inPeriod(e.created_at, per) && (st === 'all' || e.status === st)) && <p className="muted">No enquiries here.</p>}
+        <ul className="adm-enq">{rows?.filter(e => inPeriod(e.created_at, per) && (st === 'all' || e.status === st)).map(e => (
           <li key={e.id} className={e.status}>
             <div className="adm-enq-top"><b>{e.name}</b><span className={`adm-badge ${e.status === 'new' ? 'warn' : ''}`}>{e.kind}</span>{e.is_sample && <span className="adm-sample">sample</span>}<em>{new Date(e.created_at).toLocaleString('en-IN')}</em></div>
             {e.business && <p><b>Business:</b> {e.business}</p>}
