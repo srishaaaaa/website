@@ -149,6 +149,48 @@ function Slot({ title, hint, value, fallback, onUpload, onReset, alt, onAlt, acc
   );
 }
 
+// Which products are "Trending now" (up to 5, in order) and which collections appear in "Choose your world" (up to 8, in order).
+function HomePicks({ onSaved, toast }) {
+  const { site, catalog } = useApp();
+  const hp = site.homepage || { trending: [], collections: [] };
+  const [trend, setTrend] = useState(hp.trending); const [colSel, setColSel] = useState(hp.collections); const [catSel, setCatSel] = useState(hp.categories || []);
+  const [names, setNames] = useState({}); const [q, setQ] = useState(''); const [found, setFound] = useState([]);
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  useEffect(() => { setTrend(hp.trending); setColSel(hp.collections); setCatSel(hp.categories || []) }, [site.homepage]); // eslint-disable-line
+  useEffect(() => { if (!trend.length) return; api(`/products?slugs=${encodeURIComponent(trend.join(','))}&limit=48`).then(d => setNames(n => ({ ...n, ...Object.fromEntries(d.items.map(p => [p.slug, p.name])) }))).catch(() => {}) }, [trend.join(',')]); // eslint-disable-line
+  useEffect(() => { const t = q.trim(); if (!t) { setFound([]); return } const id = setTimeout(() => api(`/products?q=${encodeURIComponent(t)}&limit=8`).then(d => setFound(d.items)).catch(() => {}), 250); return () => clearTimeout(id) }, [q]);
+  const move = (list, set, i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; [n[i], n[j]] = [n[j], n[i]]; set(n) };
+  const save = async () => { setBusy(true); setErr(); try { await api('/admin/settings/homepage', { method: 'PUT', body: { trending: trend, collections: colSel, categories: catSel } }); toast('Homepage picks saved.'); onSaved() } catch (e) { setErr(e.message) } finally { setBusy(false) } };
+  const catName = s => catalog.categories.find(c => c.slug === s)?.name || s;
+  const colName = s => catalog.collections.find(c => c.slug === s)?.name || s;
+  const row = (label, i, list, set) => (
+    <li key={label + i} className="adm-pick"><b>{label}</b>
+      <span className="adm-pick-act"><button type="button" aria-label="Move up" disabled={i === 0} onClick={() => move(list, set, i, -1)}>↑</button><button type="button" aria-label="Move down" disabled={i === list.length - 1} onClick={() => move(list, set, i, 1)}>↓</button><button type="button" className="danger" onClick={() => set(list.filter((_, j) => j !== i))}>Remove</button></span></li>
+  );
+  return (
+    <section className="adm-block">
+      <h2 className="serif adm-h2">Homepage picks</h2>
+      {err && <p role="alert" className="err">{err}</p>}
+      <h3 className="adm-h3">Trending now ({trend.length} of 5)</h3>
+      <p className="muted small">The products shown in “Curated for you”, in this order. Leave empty to show your featured products.</p>
+      <ol className="adm-picks">{trend.map((s, i) => row(names[s] || s, i, trend, setTrend))}</ol>
+      {trend.length < 5 && <>
+        <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search a product to add…" aria-label="Search products to add" />
+        <ul className="adm-picks">{found.filter(p => !trend.includes(p.slug)).map(p => <li key={p.id} className="adm-pick"><b>{p.name}</b><span className="adm-pick-act"><button type="button" onClick={() => { setNames(n => ({ ...n, [p.slug]: p.name })); setTrend([...trend, p.slug]); setQ('') }}>Add</button></span></li>)}</ul>
+      </>}
+      <h3 className="adm-h3">Choose your world ({colSel.length} of 8)</h3>
+      <p className="muted small">The collections listed on the homepage, in this order. Leave empty to list every published collection.</p>
+      <ol className="adm-picks">{colSel.map((s, i) => row(colName(s), i, colSel, setColSel))}</ol>
+      <ul className="adm-picks">{catalog.collections.filter(c => !colSel.includes(c.slug)).map(c => <li key={c.slug} className="adm-pick"><b>{c.name}</b><span className="adm-pick-act"><button type="button" disabled={colSel.length >= 8} onClick={() => setColSel([...colSel, c.slug])}>Add</button></span></li>)}</ul>
+      <h3 className="adm-h3">Categories ({catSel.length} of 12)</h3>
+      <p className="muted small">The categories in the “Categories” menu and the “Featured categories” section, in this order. Leave empty to list every category.</p>
+      <ol className="adm-picks">{catSel.map((s, i) => row(catName(s), i, catSel, setCatSel))}</ol>
+      <ul className="adm-picks">{catalog.categories.filter(c => !catSel.includes(c.slug)).map(c => <li key={c.slug} className="adm-pick"><b>{c.name}</b><span className="adm-pick-act"><button type="button" disabled={catSel.length >= 12} onClick={() => setCatSel([...catSel, c.slug])}>Add</button></span></li>)}</ul>
+      <button className="btn dark" onClick={save} disabled={busy}>{busy ? 'SAVING…' : 'SAVE HOMEPAGE PICKS'}</button>
+    </section>
+  );
+}
+
 export function AdminStorefront() {
   const state = useStaff();
   const { site, loadSite, loadCatalog, toast } = useApp();
@@ -218,19 +260,28 @@ export function AdminStorefront() {
           </section>
         ))}
 
-        <section className="adm-block">
-          <h2 className="serif adm-h2">Reels &amp; photos (homepage strip)</h2>
-          <p className="muted small">Up to 6 vertical clips (MP4 or WebM, under 4 MB each, 9:16 works best) or photos, shown in the “View more on Instagram” strip. Clips autoplay silently while on screen and visitors can unmute. For bigger videos, paste a direct https link to an .mp4 below. The strip appears once you add something or set an Instagram URL in Orders &amp; settings.</p>
-          <Drop accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" onFiles={async fs => { if (!fs.length) return; setBusy('ig-up'); setErr(); try { const next = [...posts]; for (const f of fs.slice(0, 6 - posts.length)) { const up = await uploadMedia(f); next.push(up.video ? { video: up.url, alt: 'Boutique video' } : { image: up.url, alt: 'Instagram post' }) } await savePosts(next) } catch (e) { setErr(e.message) } finally { setBusy('') } }} busy={busy === 'ig-up'} label={`${posts.length} of 6 added`} />
-          <form className="adm-url" onSubmit={e => { e.preventDefault(); const u = e.currentTarget.elements.url.value.trim(); if (!/^https:\/\/\S+$/.test(u)) return setErr('Enter a full https:// link to the video file.'); if (posts.length >= 6) return setErr('You can add up to 6.'); e.currentTarget.reset(); savePosts([...posts, { video: u, alt: 'Boutique video' }]) }}>
-            <input name="url" type="url" placeholder="…or paste a link to an .mp4 video (https://…)" aria-label="Video link" /><button className="btn dark pill">ADD LINK</button>
-          </form>
-          <ul className="adm-covers">{posts.map((p, i) => (
-            <li key={(p.video || p.image) + i}>
-              <div className="adm-cover">{p.video ? <video src={p.video} muted playsInline preload="metadata" /> : <img src={p.image} alt="" />}</div>
-              <div className="adm-act"><span className="muted small">{p.video ? 'Video' : 'Photo'}</span><button className="danger" onClick={() => savePosts(posts.filter((_, j) => j !== i))}>Remove</button></div>
-            </li>))}</ul>
-        </section>
+        <HomePicks onSaved={refresh} toast={toast} />
+
+        {[['Photo gallery', 'image', 'Up to 6 photos shown as the GALLERY under “Inside DHANYA BOUTIQUE”.', 'image/jpeg,image/png,image/webp'],
+          ['Videos', 'video', 'Up to 6 vertical clips (MP4 or WebM, under 4 MB each, 9:16 works best) shown as the VIDEOS row. Clips autoplay silently while on screen and visitors can unmute. For bigger videos, paste a direct https link to an .mp4 below.', 'video/mp4,video/webm']].map(([title, key, help, accept]) => {
+          const mine = posts.filter(p => key === 'video' ? p.video : !p.video), rest = posts.filter(p => key === 'video' ? !p.video : p.video);
+          const save = list => savePosts(key === 'video' ? [...rest, ...list] : [...list, ...rest]);
+          return (
+            <section key={key} className="adm-block">
+              <h2 className="serif adm-h2">{title}</h2>
+              <p className="muted small">{help} The section appears once you add some.</p>
+              {mine.length < 6 && <Drop accept={accept} onFiles={async fs => { if (!fs.length) return; setBusy('ig-up'); setErr(); try { const next = [...mine]; for (const f of fs.slice(0, 6 - mine.length)) { const up = await uploadMedia(f); if (key === 'video' ? up.video : !up.video) next.push(key === 'video' ? { video: up.url, alt: 'Boutique video' } : { image: up.url, alt: 'Boutique photo' }) } await save(next) } catch (e) { setErr(e.message) } finally { setBusy('') } }} busy={busy === 'ig-up'} label={`${mine.length} of 6 added`} />}
+              {key === 'video' && mine.length < 6 && <form className="adm-url" onSubmit={e => { e.preventDefault(); const u = e.currentTarget.elements.url.value.trim(); if (!/^https:\/\/\S+$/.test(u)) return setErr('Enter a full https:// link to the video file.'); e.currentTarget.reset(); save([...mine, { video: u, alt: 'Boutique video' }]) }}>
+                <input name="url" type="url" placeholder="…or paste a link to an .mp4 video (https://…)" aria-label="Video link" /><button className="btn dark pill">ADD LINK</button>
+              </form>}
+              <ul className="adm-covers">{mine.map((p, i) => (
+                <li key={(p.video || p.image) + i}>
+                  <div className="adm-cover">{p.video ? <video src={p.video} muted playsInline preload="metadata" /> : <img src={p.image} alt="" />}</div>
+                  <div className="adm-act"><span className="muted small">{key === 'video' ? 'Video' : 'Photo'} {i + 1}</span><button className="danger" onClick={() => save(mine.filter((_, j) => j !== i))}>Remove</button></div>
+                </li>))}</ul>
+            </section>
+          );
+        })}
       </div>
       </AdminShell>
     </Gate>
@@ -247,7 +298,7 @@ export function AdminEnquiries() {
     <Gate state={state}>
       <AdminShell title="Enquiries">
       <div className="adm">
-        <p className="muted adm-help">Retail and wholesale enquiries sent from the website. Call or WhatsApp the customer, then mark the enquiry as contacted or closed.</p>
+        <p className="muted adm-help">Enquiries sent from the website. Call or WhatsApp the customer, then mark the enquiry as contacted or closed.</p>
         {err && <p role="alert" className="err">{err}</p>}
         {!rows && !err && <p className="muted">Loading…</p>}
         <div className="dpos-bar-tools"><Chips label="Status" value={st} onChange={setSt} options={[['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['closed', 'Closed']]} /><PeriodFilter value={per} onChange={setPer} /></div>

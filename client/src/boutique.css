@@ -69,22 +69,25 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .blank-note { font-size: 11px; line-height: 1.55; color: rgba(33, 23, 20, .7); max-width: 26ch }
 .bh-tile-img .blank { min-height: 0; padding: 4px } .bh-tile-img .blank svg { width: 26px; height: 26px }
 
-/* Below 1100px the hero keeps the exact desktop composition: it is laid out at 1100px wide and scaled down to fit
-   (BoutiqueHero sets .is-scaled and `zoom`). Viewport units are frozen to their 1100 x 800 values because zoom scales them again. */
-@media (max-width: 1099px) { .bh { padding-top: 96px } }
-.bh-wrap.is-scaled { width: 1100px; max-width: none; margin: 0; min-height: 650px }
-.is-scaled .bh-panel { min-height: 650px; padding: 33px 40px 51px }
-.is-scaled .bh-headline { margin-top: 24px }
-.is-scaled .bh .et, .bh .is-scaled .et { font-size: 68px }
-.is-scaled .bh-spark { width: 35px }
-.is-scaled .bh-desc { font-size: 14px }
-.is-scaled .bh-row { margin-top: 27px }
-.is-scaled .bh-inset { width: 140px }
-.is-scaled .bh-discover { top: 48px }
-.is-scaled .bh-for { font-size: 22px }
-.is-scaled .bh-row { gap: 14px } .is-scaled .bh-col { flex-basis: 360px }
-.is-scaled .bh-model { left: 52%; width: 26% }
-.is-scaled .bh-discover { padding-left: calc(25% + 14px); padding-right: 22px }
+/* Home hero: a white page. On tablet and desktop the details sit in a white box on the left and the half-page photo fills the right. */
+.bh { background: #fff; padding-top: 100px }
+@media (min-width: 700px) {
+  .bh .bh-wrap { display: grid; grid-template-columns: 1fr 1fr; align-items: center; max-width: 1440px; min-height: clamp(540px, calc(100svh - 124px), 780px) }
+  .bh .bh-panel { grid-column: 1; grid-row: 1; width: 92%; min-height: 0; margin: 0; padding: clamp(28px, 4vw, 64px); border-radius: 10px; background: #fff; box-shadow: 0 24px 70px rgba(33, 23, 20, .12), 0 0 0 1px rgba(33, 23, 20, .05); z-index: 3 }
+  .bh .bh-model { grid-column: 1 / -1; grid-row: 1; justify-self: end; position: relative; left: auto; bottom: auto; width: 66%; height: clamp(540px, calc(100svh - 124px), 780px); overflow: hidden; transform: none; z-index: 1 }
+  /* the photo runs behind the box and melts into the white page on its left edge */
+  .bh .bh-model .bh-arch { border-radius: 0; box-shadow: none; background: transparent; -webkit-mask-image: linear-gradient(to right, transparent 0, #000 26%); mask-image: linear-gradient(to right, transparent 0, #000 26%) }
+  .bh .bh-model .bh-arch img { object-fit: contain; object-position: 50% 100% }
+  .bh .bh-model .bh-arch.skel, .bh .bh-model .bh-arch .blank { background: #fff; border: 1.5px dashed rgba(33, 23, 20, .14); animation: none }
+  .bh .bh-discover, .bh .bh-tint, .bh .bh-inset { display: none }
+  .bh .bh-headline .et { font-size: clamp(40px, 5vw, 84px) }
+  .bh .bh-row { display: block; margin-top: 18px } .bh .bh-col { flex: none }
+  .bh .bh-desc { max-width: 42ch; font-size: clamp(14px, 1.2vw, 17px) }
+  .bh .bh-facts { max-width: 440px; margin: 20px 0 24px }
+  .bh .bh-feats { display: flex; gap: 24px; margin-top: 30px; padding-top: 22px; border-top: 1px solid rgba(33, 23, 20, .1) }
+  .bh .bh-feats li { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase }
+  .bh .bh-feats svg { width: 22px; height: 22px; color: var(--red) }
+}
 
 /* Phones get their own layout: copy on the left, a full-height arched photo on the right, quality badges underneath. */
 .bh-feats, .bh-brand { display: none }
@@ -94,7 +97,7 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
   .bh .bh-brand b { font-family: var(--serif); font-weight: 800; font-size: 30px; letter-spacing: .14em; text-transform: uppercase; color: var(--maroon) }
   .bh .bh-brand i { font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .5em; text-transform: uppercase; color: var(--antique) } /* the ticker and next section appear only on scroll */
   .bh .bh-wrap { min-height: 0; width: 100% }
-  .bh .bh-panel { width: 100%; min-height: 0; padding: 20px 14px 22px; padding-right: 41%; border-radius: 24px }
+  .bh .bh-panel { width: 100%; min-height: 0; padding: 20px 14px 22px; padding-right: 41%; border-radius: 24px; background: #fff; box-shadow: 0 14px 40px rgba(33, 23, 20, .1), 0 0 0 1px rgba(33, 23, 20, .05) }
   .bh .bh-discover, .bh .bh-tint, .bh .bh-inset { display: none }
   .bh .bh-pill { font-size: 9px; letter-spacing: .08em; white-space: nowrap; gap: 8px; padding: 5px 12px 5px 5px } .bh .bh-pill i { width: 18px; height: 18px }
   .bh .bh-headline { margin-top: 16px }

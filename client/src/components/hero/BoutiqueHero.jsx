@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/App';
@@ -32,23 +32,7 @@ export default function BoutiqueHero() {
   const b = site.branding || {};
   const picks = catalog.featured.slice(0, 6);
   const anim = d => ({ ...rise(d), animate: show ? { opacity: 1, y: 0 } : undefined });
-
-  // Below 1100px keep the desktop composition: lay the hero out 1100px wide and zoom it down to the available width.
-  useLayoutEffect(() => {
-    const fit = () => {
-      const sec = ref.current, wrap = sec && sec.querySelector('.bh-wrap');
-      if (!wrap) return;
-      const cs = getComputedStyle(sec);
-      const avail = sec.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-      const z = avail / 1100;
-      const on = z < 1 && window.innerWidth >= 700 && CSS.supports('zoom', '1'); // phones use their own layout (see CSS)
-      wrap.classList.toggle('is-scaled', on);
-      wrap.style.zoom = on ? String(z) : '';
-    };
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-  }, []);
+
 
   return (
     <section ref={ref} className="bh" data-hero aria-label="DHANYA BOUTIQUE">
@@ -79,10 +63,10 @@ export default function BoutiqueHero() {
           <div className="bh-row">
           <div className="bh-col">
           <motion.p className="bh-desc" {...anim(0.7)}>Discover timeless Indian sarees, celebrating colour, craftsmanship and contemporary elegance.</motion.p>
-          <motion.ul className="bh-facts" {...anim(0.8)}><li>ALL KINDS OF SAREES</li><li>WHOLESALE &amp; RETAIL</li></motion.ul>
+          <motion.ul className="bh-facts" {...anim(0.8)}><li>ALL KINDS OF SAREES</li><li>FOR EVERY OCCASION</li></motion.ul>
           <motion.div className="bh-cta" {...anim(0.9)}>
             <Magnetic strength={0.2}><Link className="bh-btn" to="/shop?category=sarees" data-cursor="EXPLORE"><span>EXPLORE COLLECTION</span><b aria-hidden="true"><i>→</i></b></Link></Magnetic>
-            <Link className="bh-link" to="/#enquiry" data-cursor="ENQUIRE">WHOLESALE ENQUIRY</Link>
+            <Link className="bh-link" to="/#enquiry" data-cursor="ENQUIRE">ENQUIRE NOW</Link>
           </motion.div>
           </div>
 

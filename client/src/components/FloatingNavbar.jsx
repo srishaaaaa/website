@@ -14,44 +14,27 @@ const UserI = () => <Icon><circle cx="12" cy="8.5" r="3.8" /><path d="M4.5 20c.9
 const HeartI = () => <Icon d="M12 20.5s-7.5-4.6-7.5-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.6c0 5.7-7.5 10.3-7.5 10.3Z" />;
 const BagI = () => <Icon><path d="M5.5 8.5h13l-1 11.5h-11z" /><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" /></Icon>;
 
+// A small "Categories" dropdown: a plain list, no photographs. The admin chooses which categories appear and in what order
+// (Admin → Storefront images → Homepage picks); until then every category is listed.
 function MegaMenu({ onNavigate }) {
   const { catalog, site } = useApp();
-  const reduced = useReduced();
-  const cats = catalog.categories;
-  const picks = catalog.featured.slice(0, 2);
-  const [shift, setShift] = useState({ x: 0, y: 0 });
-  const free = site?.shipping?.freeOver;
+  const chosen = site.homepage?.categories || [];
+  const cats = chosen.length ? chosen.map(s => catalog.categories.find(c => c.slug === s)).filter(Boolean) : catalog.categories;
   const rows = [{ name: 'All pieces', to: '/shop' }, { name: 'New arrivals', to: '/shop?sort=newest' }, ...cats.map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
   return (
-    <motion.div className="mega" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      onPointerMove={e => !reduced && setShift({ x: (e.clientX / innerWidth - 0.5) * 14, y: (e.clientY / innerHeight - 0.5) * 8 })}>
+    <motion.div className="mega mega-sm" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
       <div className="mega-in">
         <div className="mega-col">
-          <p className="mega-label">Shop by category</p>
+          <p className="mega-label">Categories</p>
           <ul className="mega-cats" aria-label="Shop categories">
             {rows.map((c, i) => (
-              <motion.li key={c.name} initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 + i * 0.04, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
-                <Link to={c.to} onClick={onNavigate}><span className="n">{String(i + 1).padStart(2, '0')}</span><span className="t">{c.name}</span><span className="ar" aria-hidden="true">→</span></Link>
+              <motion.li key={c.name} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.03 + i * 0.025, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+                <Link to={c.to} onClick={onNavigate}><span className="t">{c.name}</span><span className="ar" aria-hidden="true">→</span></Link>
               </motion.li>
             ))}
           </ul>
         </div>
-        <div className="mega-col">
-          <p className="mega-label">The edit</p>
-          <div className="mega-feature">
-            {catalog.status === 'loading' && <p className="muted">Loading the edit…</p>}
-            {picks.map((p, i) => (
-              <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 + i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
-                <Link to={`/product/${p.slug}`} className="mega-tile" onClick={onNavigate} data-cursor="VIEW">
-                  <span className="mega-img"><span style={{ transform: `translate(${shift.x * (i ? -1 : 1)}px, ${shift.y}px) scale(1.12)` }}><ProductMedia p={p} /></span><em className="mega-chip">Featured</em></span>
-                  <span className="serif">{p.name}</span><span className="muted small">{inr(p.price)}</span>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
       </div>
-      <div className="mega-foot"><span>Handpicked pieces{free ? ` · Free shipping over ${inr(free)}` : ''}</span><Link to="/shop" className="mega-all" onClick={onNavigate}>View all pieces <span aria-hidden="true">→</span></Link></div>
     </motion.div>
   );
 }
@@ -60,7 +43,7 @@ function MobileMenu() {
   const { menuOpen, setMenuOpen, catalog, setSearchOpen, wish, user } = useApp();
   const ref = useRef(); const close = () => setMenuOpen(false);
   useModal(menuOpen, close, ref);
-  const links = [['Home', '/'], ['Collection', '/collections'], ['Sarees', '/shop?category=sarees'], ['Shop Story', '/#story'], ['Contact', '/#contact']];
+  const links = [['Home', '/'], ['Collection', '/collections'], ['Categories', '/shop'], ['Shop Story', '/#story'], ['Contact', '/#contact']];
   return (
     <AnimatePresence>
       {menuOpen && (
@@ -90,7 +73,7 @@ function MobileMenu() {
 const LINKS = [
   { label: 'HOME', to: '/', on: (p, h) => p === '/' && !h },
   { label: 'COLLECTION', to: '/collections', on: p => p.startsWith('/collections') },
-  { label: 'SAREES', to: '/shop?category=sarees', mega: true, on: p => p === '/shop' || p.startsWith('/product') },
+  { label: 'CATEGORIES', to: '/shop', mega: true, on: p => p === '/shop' || p.startsWith('/product') },
   { label: 'SHOP STORY', to: '/#story', on: (p, h) => p === '/' && h === '#story' },
   { label: 'CONTACT', to: '/#contact', on: (p, h) => p === '/' && (h === '#contact' || h === '#enquiry') },
 ];

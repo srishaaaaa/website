@@ -1,22 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { api, apiRetry } from '../lib/api';
+import { motion } from 'framer-motion';
+import { apiRetry } from '../lib/api';
 import { inr } from '../lib/format';
 import { waLink } from '../lib/contact';
 import { useApp } from '../context/App';
 import { Reveal } from './Motion';
 import { ProductMedia } from './ProductCard3D';
 
-// Each tab is a real query against the catalogue; tabs with no results are hidden automatically.
-const TABS = [
-  ['all', 'ALL SAREES', 'category=sarees'],
-  ['silk', 'SILK', 'category=sarees&q=silk'],
-  ['cotton', 'COTTON', 'category=sarees&q=cotton'],
-  ['designer', 'DESIGNER', 'category=sarees&q=designer'],
-  ['festive', 'FESTIVE', 'collection=festive-edit'],
-  ['bridal', 'BRIDAL', 'collection=bridal-silk-sarees'],
-];
 const LIMIT = 5;
 
 function Item({ p, i }) {
@@ -54,36 +45,27 @@ function Item({ p, i }) {
   );
 }
 
+// Trending now: only the products the admin picked (Admin → Storefront images → Homepage picks), in that order.
+// Until something is picked, the products flagged as featured are shown.
 export default function FeaturedCollections() {
-  const { catalog, loadCatalog } = useApp();
-  const [data, setData] = useState({});
-  const [tab, setTab] = useState('all');
-  const [q, setQ] = useState('');
-  const [live, setLive] = useState(null); // { items, total } while a search is active
+  const { catalog, loadCatalog, site } = useApp();
+  const picks = site.homepage?.trending;
+  const key = (picks || []).join(',');
+  const [picked, setPicked] = useState(null);
 
   useEffect(() => {
+    if (!key) { setPicked(null); return }
     let dead = false;
-    // Only needed to hide tabs with no results and to fill the other tabs: run after the first paint, not in the initial burst.
-    const run = () => Promise.all(TABS.map(([key, , qs]) => apiRetry(`/products?${qs}&limit=${LIMIT}`).then(d => [key, { items: d.items, total: d.total }]).catch(() => [key, { items: [], total: 0 }])))
-      .then(r => { if (!dead) setData(Object.fromEntries(r)) });
-    const t = 'requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 3000 }) : setTimeout(run, 1500);
-    return () => { dead = true; 'cancelIdleCallback' in window ? cancelIdleCallback(t) : clearTimeout(t) };
-  }, []);
+    apiRetry(`/products?slugs=${encodeURIComponent(key)}&limit=48`).then(d => {
+      if (dead) return;
+      const by = Object.fromEntries(d.items.map(p => [p.slug, p]));
+      setPicked(key.split(',').map(s => by[s]).filter(Boolean));
+    }).catch(() => !dead && setPicked(null));
+    return () => { dead = true };
+  }, [key]);
 
-  // Typed search runs against the live catalogue (name, fabric, description), within sarees.
-  useEffect(() => {
-    const term = q.trim(); if (!term) { setLive(null); return }
-    let dead = false;
-    const t = setTimeout(() => api(`/products?category=sarees&q=${encodeURIComponent(term)}&limit=${LIMIT}`).then(d => !dead && setLive({ items: d.items, total: d.total })).catch(() => !dead && setLive({ items: [], total: 0 })), 250);
-    return () => { dead = true; clearTimeout(t) };
-  }, [q]);
-
-  const tabs = TABS.filter(([key]) => !data[key] || data[key].total > 0);
-  const current = tabs.find(([key]) => key === tab) || tabs[0];
-  const entry = live ?? (current && data[current[0]]);
-  const items = entry?.items ?? (current?.[0] === 'all' ? catalog.featured.slice(0, LIMIT) : []);
-  const qs = current?.[2] || 'category=sarees';
-  const viewAll = live ? `/search?q=${encodeURIComponent(q.trim())}` : qs.includes('q=') ? `/search?q=${qs.split('q=')[1]}` : qs.startsWith('collection=') ? `/collections/${qs.split('=')[1]}` : `/shop?${qs}`;
+  const waiting = site.status === 'loading' || (key && picked === null);
+  const items = waiting ? [] : (key ? picked : catalog.featured).slice(0, LIMIT);
 
   return (
     <section className="cu" id="collection" aria-labelledby="edit-h">
@@ -92,26 +74,18 @@ export default function FeaturedCollections() {
           <div>
             <p className="cu-label"><i aria-hidden="true" />COLLECTION</p>
             <h2 id="edit-h">CURATED FOR YOU</h2>
-            <p className="cu-sub">Explore sarees for every expression of tradition and style.</p>
+            <p className="cu-sub">Trending now: the sarees everyone is loving.</p>
           </div>
-          <label className="cu-search"><span className="sr">Search sarees</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
-            <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search sarees, fabrics…" aria-label="Search sarees" /></label>
+          <Link className="cu-all" to="/shop?category=sarees" data-cursor="VIEW">VIEW ALL →</Link>
         </Reveal>
 
-        <div className="cu-tabs" role="tablist" aria-label="Saree categories">
-          {tabs.map(([key, label]) => <button key={key} role="tab" aria-selected={!live && current?.[0] === key} className={!live && current?.[0] === key ? 'on' : ''} onClick={() => { setQ(''); setTab(key) }}>{label}</button>)}
-          <Link className="cu-all" to={viewAll} data-cursor="VIEW">VIEW ALL →</Link>
-        </div>
-
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.ul key={live ? 'search' : current?.[0] ?? 'none'} className="cu-grid" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+        {items.length > 0 && (
+          <motion.ul key={key || 'featured'} className="cu-grid" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
             {items.map((p, i) => <Item key={p.id} p={p} i={i} />)}
           </motion.ul>
-        </AnimatePresence>
-        {live && !items.length && <p className="cu-empty">No sarees match “{q.trim()}”. Try a fabric such as silk or cotton.</p>}
+        )}
         {catalog.status === 'error' && <p className="cu-empty">The collection could not be loaded right now. <button className="btn pill" onClick={loadCatalog}>TRY AGAIN</button></p>}
-        {!live && catalog.status === 'ready' && entry && !items.length && <p className="cu-empty">This collection is being prepared. Please return soon.</p>}
+        {!waiting && catalog.status === 'ready' && !items.length && <p className="cu-empty">New arrivals are being prepared. Please return soon.</p>}
       </div>
     </section>
   );

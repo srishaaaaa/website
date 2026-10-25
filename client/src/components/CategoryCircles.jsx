@@ -9,18 +9,20 @@ const SORTS = { pieces: ['Most pieces', (a, b) => b.product_count - a.product_co
 // Featured categories as tall photo cards with a label plate. Built from the real categories: the photo is the
 // category cover from Admin → Storefront images, else the lead product's photo, else a generated placeholder.
 export default function CategoryCircles() {
-  const { catalog } = useApp();
+  const { catalog, site } = useApp();
+  const chosen = site.homepage?.categories || [];
   const [sort, setSort] = useState('pieces');
   const [all, setAll] = useState(false);
-  const cats = catalog.categories.filter(c => c.product_count > 0).sort(SORTS[sort][1]);
+  const live = catalog.categories.filter(c => c.product_count > 0);
+  const cats = chosen.length ? chosen.map(s => live.find(c => c.slug === s)).filter(Boolean) : live.sort(SORTS[sort][1]);
   if (!cats.length) return null;
   const shown = all ? cats : cats.slice(0, 4);
   return (
     <section className="cc" aria-labelledby="cc-h">
       <div className="cc-bar">
         <Reveal><h2 id="cc-h" className="cc-title">FEATURED CATEGORIES</h2></Reveal>
-        <label className="cc-sort"><span className="sr">Sort categories</span>
-          <select value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort categories">{Object.entries(SORTS).map(([k, [l]]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        {!chosen.length && <label className="cc-sort"><span className="sr">Sort categories</span>
+          <select value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort categories">{Object.entries(SORTS).map(([k, [l]]) => <option key={k} value={k}>{l}</option>)}</select></label>}
       </div>
       <ul className="cc-grid">
         {shown.map((c, i) => (

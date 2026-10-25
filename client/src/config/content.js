@@ -7,7 +7,7 @@ export const brand = {
   // Our Story copy: brand voice only (values, categories). Replace with the boutique's own words when ready.
   story: [
     'At DHANYA BOUTIQUE, fashion is more than clothing. It is a quiet celebration of elegance, tradition and modern femininity: contemporary luxury with an Indian soul.',
-    'Our collection brings timeless craftsmanship together with a contemporary eye: sarees of every kind, chosen for festivals, weddings and every occasion in between. We welcome both wholesale and retail customers.',
+    'Our collection brings timeless craftsmanship together with a contemporary eye: sarees of every kind, chosen for festivals, weddings and every occasion in between.',
     'We believe every woman deserves to feel beautiful, confident and effortlessly herself, which is why we look for sarees that balance comfort, luxury and grace while honouring the authenticity of Indian fashion.',
   ],
   personality: ['Ethereal', 'Elegant', 'Mysterious', 'Artistic', 'Confident', 'Luxurious'],
@@ -34,5 +34,5 @@ export const media = {
 // Campaign wording: edit here to change the hero pill and the ticker.
 export const campaign = {
   label: 'NEW COLLECTION 2026',
-  ticker: ['DHANYA BOUTIQUE', 'TIMELESS SAREES', 'NEW COLLECTION 2026', 'WHOLESALE & RETAIL', 'TRADITION, REDEFINED'],
+  ticker: ['DHANYA BOUTIQUE', 'TIMELESS SAREES', 'NEW COLLECTION 2026', 'TRADITION, REDEFINED'],
 };

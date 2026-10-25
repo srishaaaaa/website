@@ -31,13 +31,15 @@ function Reel({ post, label, fallbackUrl }) {
   );
 }
 
-// "Inside DHANYA BOUTIQUE": three reel slots. Videos are added in Admin → Storefront images. Until then the three
-// spaces stay in place as blank frames, so the section never disappears from the page.
+// "Inside DHANYA BOUTIQUE": a photo gallery (up to 6) and a row of videos (up to 6), shown separately. Both are managed in
+// Admin → Storefront images. Until anything is added, blank frames keep the section in place.
 export default function InstagramStrip() {
   const { site } = useApp();
   const ig = site.social?.instagram;
-  const posts = (ig?.posts || []).filter(p => p.video || p.image);
-  const slots = Math.max(3, Math.min(6, posts.length));
+  const all = (ig?.posts || []).filter(p => p.video || p.image);
+  const videos = all.filter(p => p.video).slice(0, 6);
+  const photos = all.filter(p => !p.video).slice(0, 6);
+  const photoSlots = Math.max(photos.length, videos.length ? 0 : 3);
   return (
     <section className="insta ivory-sec" id="reels" aria-labelledby="ig-h">
       <Reveal className="insta-head">
@@ -46,21 +48,39 @@ export default function InstagramStrip() {
         <p className="insta-sub">Discover our boutique, explore our collections, and experience the beauty of sarees.</p>
         {ig?.url && <a className="btn solid pill" href={ig.url} target="_blank" rel="noopener noreferrer" data-cursor="FOLLOW"><IgIcon size={16} /> FOLLOW ON INSTAGRAM <span aria-hidden="true">↗</span></a>}
       </Reveal>
-      <ul className="insta-grid">
-        {Array.from({ length: slots }, (_, i) => {
-          const t = posts[i];
-          return (
-            <Reveal as="li" key={(t?.video || t?.image || 'empty') + i} delay={(i % 3) * 0.1}>
-              <div className={`insta-tile ${t ? '' : 'insta-empty'}`}>
-                {t?.video ? <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} />
-                  : t?.image ? <img src={t.image} alt={t.alt || 'Boutique photo'} loading="lazy" />
-                    : <BlankFrame label={`Reel ${i + 1}`} kind="video" />}
-                {t?.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
-              </div>
-            </Reveal>
-          );
-        })}
-      </ul>
+      {photoSlots > 0 && (
+        <>
+          <h3 className="insta-h3">GALLERY</h3>
+          <ul className="insta-grid">
+            {Array.from({ length: photoSlots }, (_, i) => {
+              const t = photos[i];
+              return (
+                <Reveal as="li" key={(t?.image || 'empty') + i} delay={(i % 3) * 0.1}>
+                  <div className={`insta-tile ${t ? '' : 'insta-empty'}`}>
+                    {t ? <img src={t.image} alt={t.alt || 'Boutique photo'} loading="lazy" /> : <BlankFrame label={`Photo ${i + 1}`} />}
+                    {t?.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
+                  </div>
+                </Reveal>
+              );
+            })}
+          </ul>
+        </>
+      )}
+      {videos.length > 0 && (
+        <>
+          <h3 className="insta-h3">VIDEOS</h3>
+          <ul className="insta-grid">
+            {videos.map((t, i) => (
+              <Reveal as="li" key={t.video + i} delay={(i % 3) * 0.1}>
+                <div className="insta-tile">
+                  <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} />
+                  {t.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
+                </div>
+              </Reveal>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

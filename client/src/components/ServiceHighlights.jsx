@@ -11,15 +11,15 @@ const User = () => <I><circle cx="12" cy="8.5" r="3.6" /><path d="M5 20c.9-3.6 3
 // Only statements that are true of how this store works. Shipping figures come from the database.
 export default function ServiceHighlights() {
   const { site } = useApp();
-  const ship = site.shipping, mins = site.checkout?.reservationMinutes;
+  const ship = site.shipping;
   const shipText = !ship ? 'Delivery across India. Shipping is shown in your bag before you pay.'
     : ship.amount === 0 ? 'Complimentary shipping across India on every order.'
       : `${inr(ship.amount)} flat shipping across India${ship.freeOver != null ? `, complimentary on orders above ${inr(ship.freeOver)}` : ''}.`;
   const items = [
-    [<Shield key="s" />, 'Secure payment', 'Payments are processed by Razorpay and verified on our server before an order is confirmed.'],
+    [<Shield key="s" />, 'Secure payment', 'Pay safely online. Your payment is confirmed before your order is placed.'],
     [<Truck key="t" />, 'Shipping across India', shipText],
-    [<Clock key="c" />, 'Held while you pay', `Pieces in checkout are reserved${mins ? ` for ${mins} minutes` : ''} so they are still there when you pay.`],
-    [<User key="u" />, 'Your bag follows you', 'Sign in and your bag and wishlist are saved to your account, on every device.'],
+    [<Clock key="c" />, 'Kept aside for you', 'Your pieces are set aside while you check out, so they are still there when you pay.'],
+    [<User key="u" />, 'Saved for you', 'Sign in to keep your bag and wishlist with you on every device.'],
   ];
   return (
     <section className="svc" aria-label="Why shop with DHANYA">

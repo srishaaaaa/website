@@ -27,7 +27,7 @@ function FilterDrawer({ open, onClose, fx, f, set, clear, count, total }) {
       {open && (
         <div className="overlay-root">
           <motion.div className="scrim" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-          <motion.aside ref={ref} className="drawer left glass" role="dialog" aria-modal="true" aria-label="Filters" initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+          <motion.aside ref={ref} className="drawer left glass refine" role="dialog" aria-modal="true" aria-label="Filters" initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
             <header className="drawer-head"><h2 className="serif">Refine</h2><button className="icon-btn" onClick={onClose} aria-label="Close filters">✕</button></header>
             <div className="drawer-body filters">
               {group('Category', fx.categories.map(c => ({ value: c.slug, label: c.name })), 'category')}

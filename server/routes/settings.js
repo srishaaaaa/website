@@ -23,7 +23,7 @@ export const storeSchema = z.object({
 export const socialSchema = z.object({
   instagram: z.object({
     handle: nullableText(60), url: z.string().trim().url().nullable().default(null),
-    posts: z.array(z.object({ image: text(300).optional(), video: text(500).optional(), href: z.string().url().optional(), alt: text(160).default('') }).refine(p => p.image || p.video, 'Add an image or a video')).max(6).default([]),
+    posts: z.array(z.object({ image: text(300).optional(), video: text(500).optional(), href: z.string().url().optional(), alt: text(160).default('') }).refine(p => p.image || p.video, 'Add an image or a video')).max(12).refine(l => l.filter(p => p.video).length <= 6 && l.filter(p => !p.video).length <= 6, 'Up to 6 photos and 6 videos').default([]),
   }).default({}),
   links: z.array(z.object({ label: text(40).min(1), url: z.string().url() })).max(6).default([]),
 });
@@ -36,9 +36,12 @@ export const brandingSchema = z.object({
   heroModel: z.string().max(500).nullable().default(null), heroModelPos: z.string().regex(/^\d{1,3}% \d{1,3}%$/).nullable().default(null), textilePos: z.string().regex(/^\d{1,3}% \d{1,3}%$/).nullable().default(null), editorialPos: z.string().regex(/^\d{1,3}% \d{1,3}%$/).nullable().default(null), storyPos: z.string().regex(/^\d{1,3}% \d{1,3}%$/).nullable().default(null), textileImage: z.string().max(500).nullable().default(null), editorialImage: z.string().max(500).nullable().default(null),
   textileAlt: z.string().trim().max(200).nullable().default(null), editorialAlt: z.string().trim().max(200).nullable().default(null),
 });
+// Homepage picks chosen in Admin → Storefront images: the trending products (in order) and which collections appear in "Choose your world".
+const slugList = max => z.array(z.string().trim().min(1).max(120)).max(max).default([]);
+export const homepageSchema = z.object({ trending: slugList(5), collections: slugList(8), categories: slugList(12) });
 export const pageSchema = z.object({ title: text(120).min(1), body: text(20000) });
 
-const DEFAULTS = { store: storeSchema.parse({}), social: socialSchema.parse({}), flags: flagsSchema.parse({}), branding: brandingSchema.parse({}) };
+const DEFAULTS = { store: storeSchema.parse({}), social: socialSchema.parse({}), flags: flagsSchema.parse({}), branding: brandingSchema.parse({}), homepage: homepageSchema.parse({}) };
 const PAGE_SLUGS = ['privacy', 'terms', 'shipping-returns'];
 
 export async function readSetting(db, key) {
@@ -68,7 +71,8 @@ export default function settingsRoutes({ db, cfg, auth }) {
     const ship = await one(db, 'SELECT base_amount, free_over FROM shipping_methods WHERE active ORDER BY id LIMIT 1');
     const flags = await readSetting(db, 'flags');
     const branding = await readSetting(db, 'branding');
-    res.json({ store, social, map, flags, branding, shipping: ship ? { amount: ship.base_amount, freeOver: ship.free_over } : null, checkout: { reservationMinutes: cfg.RESERVATION_MINUTES } });
+    const homepage = homepageSchema.parse(await readSetting(db, 'homepage'));
+    res.json({ store, social, map, flags, branding, homepage, shipping: ship ? { amount: ship.base_amount, freeOver: ship.free_over } : null, checkout: { reservationMinutes: cfg.RESERVATION_MINUTES } });
   }));
 
   r.get('/pages/:slug', wrap(async (req, res) => {
@@ -87,6 +91,7 @@ export default function settingsRoutes({ db, cfg, auth }) {
   r.put('/admin/settings/store', staff, wrap(async (req, res) => { const v = storeSchema.parse(req.body); await save(req, 'store', v); res.json(v) }));
   r.put('/admin/settings/social', staff, wrap(async (req, res) => { const v = socialSchema.parse(req.body); await save(req, 'social', v); await sweepMedia(db, true); res.json(v) }));
   r.put('/admin/settings/branding', staff, wrap(async (req, res) => { const v = brandingSchema.parse(req.body); await save(req, 'branding', v); await sweepMedia(db, true); res.json(v) }));
+  r.put('/admin/settings/homepage', staff, wrap(async (req, res) => { const v = homepageSchema.parse(req.body); await save(req, 'homepage', v); res.json(v) }));
   r.put('/admin/settings/flags', staff, wrap(async (req, res) => { const v = flagsSchema.parse(req.body); await save(req, 'flags', v); res.json(v) }));
   r.put('/admin/pages/:slug', staff, wrap(async (req, res) => {
     if (!PAGE_SLUGS.includes(req.params.slug)) throw new HttpError(404, 'Unknown page');
