@@ -60,6 +60,15 @@ export function Checkout() {
   const [f, setF] = useState({ email: user?.email || '', name: user?.name || '', phone: '', line1: '', city: '', state: '', pin: '' });
   const [err, setErr] = useState(); const [busy, setBusy] = useState(false); const [done, setDone] = useState(); const [test, setTest] = useState(false);
   const set = k => e => setF({ ...f, [k]: e.target.value });
+  // Signed-in customers get their saved details filled in (only into fields they have not typed in yet).
+  useEffect(() => {
+    if (!user) return;
+    api('/auth/profile').then(({ profile, addresses }) => {
+      const a = addresses[0];
+      setF(cur => ({ ...cur, name: cur.name || a?.name || profile.name || '', phone: cur.phone || a?.phone || profile.phone || '',
+        line1: cur.line1 || a?.line1 || '', city: cur.city || a?.city || '', state: cur.state || a?.state || '', pin: cur.pin || a?.pin || '' }));
+    }).catch(() => {});
+  }, [user?.id]); // eslint-disable-line
 
   async function pay(e) {
     e.preventDefault(); setErr(); setBusy(true);
