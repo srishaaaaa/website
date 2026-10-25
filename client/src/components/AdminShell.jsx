@@ -48,7 +48,6 @@ export const NAV = [
     ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/advance', 'Advance Orders', 'clock'], ['/admin/billing/orders', 'Order History', 'orders'],
     ['/admin/billing/inventory', 'Inventory', 'box', true], ['/admin/billing/customers', 'Customers', 'user'], ['/admin/billing/coupons', 'Coupons', 'tag', true],
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true], ['/admin/billing/settings', 'Delivery & GST', 'truck', true]] },
-  { group: 'Wholesale', items: [['/admin/billing/ws-billing', 'WS Billing', 'doc'], ['/admin/billing/ws-inventory', 'WS Inventory', 'shop'], ['/admin/billing/ws-analytics', 'WS Analytics', 'trend', true]] },
   { group: 'Stitching Studio', roles: ['owner', 'admin', 'cashier'], items: [
     ['/admin/stitching', 'Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/stitching/measurements', 'Measurements', 'ruler', false],
     ['/admin/stitching/appointments', 'Trials & Appointments', 'calendar', false], ['/admin/stitching/designs', 'Design Library', 'image', false], ['/admin/stitching/tailors', 'Tailors', 'users', false],

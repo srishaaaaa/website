@@ -22,7 +22,7 @@ const k = p => p >= 10000000 ? `₹${(p / 10000000).toFixed(1).replace(/\.0$/, '
 const MODES = [['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']];
 const MODE_LABEL = { cash: 'Cash', upi: 'GPay / UPI', card: 'Card', split: 'Split' };
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `k-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-const TABS = { billing: false, analytics: true, advance: false, orders: false, inventory: true, customers: false, coupons: true, birthdays: true, expenses: true, settings: true, 'ws-billing': false, 'ws-inventory': false, 'ws-analytics': true };
+const TABS = { billing: false, analytics: true, advance: false, orders: false, inventory: true, customers: false, coupons: true, birthdays: true, expenses: true, settings: true };
 
 // ---- live preview of the bill (the server recomputes everything on checkout) ----
 function preview(lines, { isGst, gstRate, discountType, discountValue, deliveryFee }) {
@@ -506,13 +506,12 @@ function Settings({ onSaved }) {
           <label className="f">Business GST number (GSTIN)<input value={s.gstin} onChange={e => setS({ ...s, gstin: e.target.value })} maxLength={15} placeholder="15 characters, leave blank until you have one" style={{ fontFamily: 'monospace' }} /></label>
           <div className="dpos-grid" style={{ marginTop: 12 }}>
             <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}><input type="checkbox" checked={s.showGstRetail} onChange={e => setS({ ...s, showGstRetail: e.target.checked })} /><span><b>Show on retail invoices</b><br /><span className="muted small">POS bills</span></span></label>
-            <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}><input type="checkbox" checked={s.showGstWholesale} onChange={e => setS({ ...s, showGstWholesale: e.target.checked })} /><span><b>Show on wholesale invoices</b><br /><span className="muted small">Wholesale billing bills</span></span></label>
           </div>
           <div className="dpos-grid" style={{ marginTop: 14 }}>
             <label className="f">State · place of supply (printed on invoices)<select value={s.state || 'Tamil Nadu (33)'} onChange={e => setS({ ...s, state: e.target.value })}>{STATES.map(x => <option key={x}>{x}</option>)}</select></label>
           </div>
           <label className="f" style={{ marginTop: 14 }}>Terms &amp; notes printed on the invoice (one point per line)<textarea rows={3} maxLength={600} value={s.terms || ''} onChange={e => setS({ ...s, terms: e.target.value })} placeholder="e.g. Custom-stitched and altered garments are made to order and are non-returnable." /></label>
-          <p className="sub" style={{ marginTop: 12 }}>Invoice numbers run automatically: DP-YEAR-000001 for retail and DW-YEAR-000001 for wholesale.</p>
+          <p className="sub" style={{ marginTop: 12 }}>Invoice numbers run automatically: DP-YEAR-000001.</p>
         </section>
         <section className="dpos-card"><h2><Icon n="truck" />Delivery &amp; packing quick picks</h2>
           {s.deliveryPresets.map((p, i) => (
@@ -527,42 +526,6 @@ function Settings({ onSaved }) {
         <div><button className="dpos-btn" disabled={busy} type="submit">{busy ? 'Saving…' : 'Save settings'}</button></div>
       </form>
     </div>
-  );
-}
-
-// ============================ wholesale inventory ============================
-function WsRow({ it, manager, onDelete, setErr }) {
-  const [v, setV] = useState(it); const saved = useRef(it);
-  const commit = async () => {
-    if (!manager || (v.code === saved.current.code && v.company === saved.current.company && v.colour === saved.current.colour)) return;
-    if (!v.code.trim()) { setV(saved.current); return }
-    try { const out = await api(`/admin/pos/ws/items/${it.id}`, { method: 'PATCH', body: { code: v.code, company: v.company, colour: v.colour } }); saved.current = out; setV(out); setErr() }
-    catch (e) { setErr(e.message); setV(saved.current) }
-  };
-  const f = kk => ({ value: v[kk], readOnly: !manager, onChange: e => setV({ ...v, [kk]: e.target.value }), onBlur: commit });
-  return <tr><td><input aria-label="Code" {...f('code')} /></td><td><input aria-label="Company" {...f('company')} /></td><td><input aria-label="Colour" {...f('colour')} /></td>
-    <td className="r">{manager && <button className="dpos-btn danger sm" onClick={() => onDelete(it)}>Delete</button>}</td></tr>;
-}
-function WsInventory({ manager }) {
-  const [q, setQ] = useState(''); const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [nw, setNw] = useState({ code: '', company: '', colour: '' });
-  const load = useCallback(() => api('/admin/pos/ws/items?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), [q]);
-  useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t) }, [load]);
-  const add = async e => { e.preventDefault(); try { await api('/admin/pos/ws/items', { method: 'POST', body: nw }); setNw({ code: '', company: '', colour: '' }); load() } catch (x) { setErr(x.issues?.[0]?.message || x.message) } };
-  const del = async it => { if (!confirm(`Delete ${it.code}?`)) return; try { await api(`/admin/pos/ws/items/${it.id}`, { method: 'DELETE' }); load() } catch (x) { setErr(x.message) } };
-  return (
-    <section className="dpos-card">
-      <div className="dpos-head" style={{ marginBottom: 12 }}><p className="sub">Simple items — code, company / manufacturer and colour. Prices and quantities are entered on each wholesale bill.</p>
-        <input type="search" style={{ maxWidth: 280 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Search items…" aria-label="Search wholesale items" /></div>
-      <Err>{err}</Err>
-      <div className="dpos-tw"><table><thead><tr><th>Code</th><th>Company / name</th><th>Colour</th><th className="r">Action</th></tr></thead>
-        <tbody>
-          {manager && <tr><td colSpan="4"><form onSubmit={add} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8 }}>
-            <input aria-label="New code" required placeholder="e.g. SK-102" value={nw.code} onChange={e => setNw({ ...nw, code: e.target.value })} /><input aria-label="New company" placeholder="e.g. Ravi Textiles" value={nw.company} onChange={e => setNw({ ...nw, company: e.target.value })} />
-            <input aria-label="New colour" placeholder="e.g. Navy" value={nw.colour} onChange={e => setNw({ ...nw, colour: e.target.value })} /><button className="dpos-btn" type="submit">+ Add</button></form></td></tr>}
-          {!rows ? <tr><td colSpan="4"><Empty>Loading…</Empty></td></tr> : !rows.length ? <tr><td colSpan="4"><Empty>No items yet.</Empty></td></tr> : rows.map(it => <WsRow key={it.id + it.code + it.company + it.colour} it={it} manager={manager} onDelete={del} setErr={setErr} />)}
-        </tbody></table></div>
-      {manager && <p className="sub" style={{ marginTop: 10 }}>Edits save automatically when you click away from a field.</p>}
-    </section>
   );
 }
 
@@ -596,18 +559,13 @@ export default function AdminPos() {
     orders: <OrderHistory manager={manager} tick={tick} openInvoice={openInvoice} onChanged={() => setTick(t => t + 1)} />,
     inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <Coupons />, birthdays: <Birthdays shop={shop} />,
     expenses: <Expenses />, settings: <Settings onSaved={loadShop} />,
-    'ws-billing': <Billing channel="wholesale" shop={shop} onSale={onSale} />,
-    'ws-inventory': <WsInventory manager={manager} />,
-    'ws-analytics': <Analytics channel="wholesale" openInvoice={openInvoice} tick={tick} goExpenses={goExpenses} />,
   }[tab];
   const sub = {
     billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'All bills — full store & channel insights', advance: 'Orders booked with a deposit, billed when the customer collects', orders: 'Manage and track past invoices',
     inventory: 'Manage products and stock — add, edit and adjust', customers: 'Customer details with date of birth', coupons: 'Discount codes for the till', birthdays: 'Customers to wish and reward',
     expenses: 'Money out, subtracted from net earnings', settings: 'Logo, GST number on invoices and delivery quick picks',
-    'ws-billing': 'Wholesale invoice generator with GST', 'ws-inventory': 'Simple items — code, company/manufacturer, colour', 'ws-analytics': 'Performance of the wholesale billing centre',
   }[tab];
-  const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings',
-    'ws-billing': 'WS Billing', 'ws-inventory': 'Wholesale Inventory', 'ws-analytics': 'Wholesale Analytics' }[tab];
+  const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
   return (
     <AdminShell title={title} sub={sub}>
       <Err>{err}</Err>
