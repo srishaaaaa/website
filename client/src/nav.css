@@ -151,3 +151,8 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .mobile-menu .mm-foot .btn { color: #e5c88f; border: 1px solid rgba(229, 200, 143, .7); border-radius: 999px; background: rgba(255, 255, 255, .04); min-height: 50px; display: grid; place-items: center; font-weight: 700; letter-spacing: .22em }
 .mobile-menu .mm-foot .btn:active { background: #e5c88f; color: #330533 }
 
+
+/* ---- Sign in with Google ---- */
+.g-signin { margin: 6px 0 10px }
+.g-or { position: relative; margin: 10px 0 14px } .g-or::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(33, 23, 20, .15) } .g-or span { position: relative; padding: 0 12px; background: var(--cream, #f4e9d8) }
+.g-btn { display: flex; justify-content: center; min-height: 44px }

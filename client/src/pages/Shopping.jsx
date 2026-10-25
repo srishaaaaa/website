@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { inr } from '../lib/format';
 import ProductCard from '../components/ProductCard3D';
 import { BagLines, ShippingNote } from '../components/CartDrawer';
+import GoogleSignIn from '../components/GoogleSignIn';
 
 export function Wishlist() {
   const { wish } = useApp();
@@ -119,6 +120,7 @@ export function Auth({ mode }) {
         <label className="field"><span>Password</span><span className="pw"><input type={show ? 'text' : 'password'} required minLength={8} autoComplete={reg ? 'new-password' : 'current-password'} value={f.password} onChange={e => setF({ ...f, password: e.target.value })} /><button type="button" className="pw-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(v => !v)}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" />{show && <path d="M3 3l18 18" />}</svg></button></span></label>
         {err && <p role="alert" className="err">{err}</p>}
         <button className="btn solid wide" disabled={busy}>{busy ? 'ONE MOMENT…' : reg ? 'CREATE ACCOUNT' : 'SIGN IN'}</button>
+        <GoogleSignIn onError={setErr} onDone={u => { signIn(u); toast('Welcome to DHANYA.'); nav(u.role === 'customer' ? '/account' : '/admin') }} />
         <p className="muted small center">{reg ? <>Already have an account? <Link className="link-u" to="/login">Sign in</Link></> : <>New to DHANYA? <Link className="link-u" to="/register">Create an account</Link></>}</p>
       </form>
     </div>
