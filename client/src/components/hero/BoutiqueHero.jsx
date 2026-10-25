@@ -14,6 +14,13 @@ import EditorialTypography from './EditorialTypography';
 const rise = d => ({ initial: { opacity: 0, y: 24 }, transition: { duration: 0.9, delay: d, ease: [0.22, 1, 0.36, 1] } });
 const CHIPS = [['ALL', '/shop?category=sarees'], ['SILK', '/search?q=silk'], ['COTTON', '/search?q=cotton'], ['FESTIVE', '/collections/festive-edit'], ['BRIDAL', '/collections/bridal-silk-sarees']];
 
+// A lotus drawn with a few petals; used as an ornament (divider, corners, caption).
+const Lotus = ({ className = '' }) => (
+  <svg className={className} viewBox="0 0 200 120" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" aria-hidden="true">
+    {[-62, -32, 0, 32, 62].map(r => <path key={r} d="M100 112C74 92 68 52 100 8c32 44 26 84 0 104Z" transform={`rotate(${r} 100 112)`} fill="currentColor" fillOpacity=".09" />)}
+  </svg>
+);
+
 // Editorial hero: a large ivory panel with an oversized serif headline, a model photograph that overlaps the panel,
 // a textile inset, and a "For you" discovery panel layered behind. Photographs are managed in
 // Admin → Storefront images; until they are added the frames stay blank. Discovery items are real products.
@@ -36,6 +43,10 @@ export default function BoutiqueHero() {
 
   return (
     <section ref={ref} className="bh" data-hero aria-label="DHANYA BOUTIQUE">
+      <span className="bh-petals" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} />)}</span>
+      <Lotus className="bh-lotus l" /><Lotus className="bh-lotus r" />
+      <span className="bh-side-l" aria-hidden="true">SAREES · ANARKALIS · LEHENGAS · KURTAS</span>
+      <span className="bh-side-r" aria-hidden="true"><Lotus className="bh-mini" />TIMELESS<br />SAREES<br />FOR MODERN<br />WOMEN</span>
       <p className="bh-brand" aria-hidden="true"><b>{(site.store?.name || 'Dhanyas Boutique').split(' ')[0]}</b><i>{(site.store?.name || 'Dhanyas Boutique').split(' ').slice(1).join(' ') || 'BOUTIQUE'}</i></p>
       <div className="bh-wrap">
         <aside className="bh-discover" aria-labelledby="bh-for">
@@ -60,6 +71,7 @@ export default function BoutiqueHero() {
             <EditorialTypography lines={['Tradition,', 'redefined.']} show={show} className="bh-h" label="Tradition, redefined." />
             <i className="bh-spark s1" aria-hidden="true" /><i className="bh-spark s2" aria-hidden="true" />
           </div>
+          <div className="bh-orn" aria-hidden="true"><Lotus /></div>
           <div className="bh-row">
           <div className="bh-col">
           <motion.p className="bh-desc" {...anim(0.7)}>Discover timeless Indian sarees, celebrating colour, craftsmanship and contemporary elegance.</motion.p>
