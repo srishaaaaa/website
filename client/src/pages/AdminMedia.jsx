@@ -172,8 +172,8 @@ function HomePicks({ onSaved, toast }) {
     <section className="adm-block">
       <h2 className="serif adm-h2">Homepage picks</h2>
       {err && <p role="alert" className="err">{err}</p>}
-      <h3 className="adm-h3">Trending now ({trend.length} of 5)</h3>
-      <p className="muted small">The products shown in “Curated for you”, in this order. Leave empty to show your featured products.</p>
+      <h3 className="adm-h3">Trending collections ({trend.length} of 5)</h3>
+      <p className="muted small">The pieces shown in “Trending collections” on the homepage, in this order. Leave empty to show your featured products.</p>
       <ol className="adm-picks">{trend.map((s, i) => row(names[s] || s, i, trend, setTrend))}</ol>
       {trend.length < 5 && <>
         <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search a product to add…" aria-label="Search products to add" />

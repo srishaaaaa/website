@@ -45,7 +45,7 @@ function Item({ p, i }) {
   );
 }
 
-// Trending now: only the products the admin picked (Admin → Storefront images → Homepage picks), in that order.
+// Trending collections: only the products the admin picked (Admin → Storefront images → Homepage picks → Trending collections), in that order.
 // Until something is picked, the products flagged as featured are shown.
 export default function FeaturedCollections() {
   const { catalog, loadCatalog, site } = useApp();
@@ -72,9 +72,9 @@ export default function FeaturedCollections() {
       <div className="cu-in">
         <Reveal className="cu-head">
           <div>
-            <p className="cu-label"><i aria-hidden="true" />COLLECTION</p>
-            <h2 id="edit-h">CURATED FOR YOU</h2>
-            <p className="cu-sub">Trending now: the sarees everyone is loving.</p>
+            <p className="cu-label"><i aria-hidden="true" />TRENDING NOW</p>
+            <h2 id="edit-h">TRENDING COLLECTIONS</h2>
+            <p className="cu-sub">Handpicked pieces everyone is loving right now.</p>
           </div>
           <Link className="cu-all" to="/shop?category=sarees" data-cursor="VIEW">VIEW ALL →</Link>
         </Reveal>

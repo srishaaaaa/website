@@ -70,9 +70,9 @@ export default function Home() {
       <CollectionsFlow />
       <Details />
       <ServiceHighlights />
+      <Story />
       <CustomerReviews />
       <InstagramStrip />
-      <Story />
       <StoreLocationMap />
       <EnquirySection />
     </div>

@@ -81,16 +81,16 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
   .bh .bh-model .bh-arch { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0; box-shadow: none; background: #e6d6bf }
   .bh .bh-model .bh-arch img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30% }
   .bh .bh-model .bh-arch.skel, .bh .bh-model .bh-arch .blank { background: #e6d6bf; border: 0; animation: none }
-  .bh .bh-discover, .bh .bh-tint, .bh .bh-inset, .bh .bh-spark, .bh .bh-facts, .bh .bh-feats, .bh .bh-link { display: none }
-  .bh .bh-pill { border: 0; padding: 0; gap: 0; background: none; font-size: 12px; font-weight: 500; letter-spacing: .26em; color: rgba(33, 23, 20, .72) } .bh .bh-pill i { display: none }
+  .bh .bh-discover, .bh .bh-tint, .bh .bh-inset, .bh .bh-spark { display: none }
   .bh .bh-headline { margin-top: 22px }
   .bh .bh-headline .et { font-weight: 400; text-transform: none; letter-spacing: -.01em; line-height: 1.06; font-size: clamp(46px, 5.6vw, 92px) }
   .bh .bh-row { display: block; margin-top: 26px } .bh .bh-col { flex: none }
   .bh .bh-desc { max-width: 34ch; font-size: clamp(16px, 1.3vw, 20px); line-height: 1.7; color: rgba(33, 23, 20, .82) }
   .bh .bh-cta { margin-top: 34px }
-  .bh .bh-btn { background: transparent; color: var(--ink-d, #211714); border: 1px solid var(--ink-d, #211714); border-radius: 2px; box-shadow: none; padding: 17px 34px; gap: 0; font-weight: 500; letter-spacing: .18em }
-  .bh .bh-btn b { display: none } .bh .bh-btn::before { display: none }
-  .bh .bh-btn:hover { background: var(--ink-d, #211714); color: #fff }
+  .bh .bh-facts { margin: 22px 0 26px }
+  .bh .bh-feats { display: flex; flex-wrap: wrap; gap: 14px 26px; margin-top: 30px; padding-top: 22px; border-top: 1px solid rgba(33, 23, 20, .12) }
+  .bh .bh-feats li { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase }
+  .bh .bh-feats svg { width: 22px; height: 22px; color: var(--red) }
 }
 
 /* Phones get their own layout: copy on the left, a full-height arched photo on the right, quality badges underneath. */

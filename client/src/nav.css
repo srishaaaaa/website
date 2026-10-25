@@ -220,3 +220,7 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 
 /* the Collection dropdown sits under its own link, a little left of the Categories one */
 .site-header .mega.mega-collections { left: min(22%, calc(100vw - 480px)) }
+
+/* collections carousel: cards ease to their new tilt instead of jumping between scroll frames */
+.cf-card { transition: transform .32s cubic-bezier(.22, 1, .36, 1), opacity .32s ease; will-change: transform, opacity }
+@media (prefers-reduced-motion: reduce) { .cf-card { transition: none } }
