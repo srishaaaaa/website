@@ -260,6 +260,8 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .bh::before { content: ''; position: absolute; inset: -10% -5%; z-index: -1; pointer-events: none;
   background: linear-gradient(112deg, transparent 18%, rgba(255, 225, 255, .10) 30%, transparent 42%), linear-gradient(112deg, transparent 50%, rgba(255, 215, 255, .07) 61%, transparent 72%);
   animation: bh-rays 15s ease-in-out infinite alternate }
+/* the bottom of the hero fades into the ticker's purple so the two read as one colour */
+.bh::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: clamp(140px, 22vh, 260px); z-index: -1; pointer-events: none; background: linear-gradient(to top, var(--red, #5a1560) 0%, rgba(90, 21, 96, .55) 38%, transparent 100%) }
 @keyframes bh-rays { from { transform: translateX(-5%) } to { transform: translateX(6%) } }
 
 .bh-orn, .bh-side-l, .bh-side-r, .bh-lotus { display: none }
