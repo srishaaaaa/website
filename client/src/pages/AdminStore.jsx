@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import LogoCard from '../components/LogoCard';
 import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
 import { Stars } from '../components/CustomerReviews';
+import StaffOnly from '../components/StaffOnly';
 
 // Online-store admin panels (orders, reviews, users, store settings) in the shared admin layout. Authorization is enforced by the API.
 const STATUSES = ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'];
@@ -17,7 +18,7 @@ function useGate() {
   const { user, authReady } = useApp();
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!['owner', 'admin'].includes(user.role)) return <div className="empty page-pad"><p className="serif big">Staff access only.</p><Link className="btn dark" to="/">RETURN HOME</Link></div>;
+  if (!['owner', 'admin'].includes(user.role)) return <StaffOnly />;
   return null;
 }
 const Card = ({ children }) => <section className="dpos-card">{children}</section>;

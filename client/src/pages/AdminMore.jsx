@@ -4,13 +4,14 @@ import { useApp } from '../context/App';
 import { api, uploadMedia } from '../lib/api';
 import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
+import StaffOnly from '../components/StaffOnly';
 
 // Categories ("Taxonomy") and Instagram Reels panels, in the shared admin layout. Authorization is enforced by the API.
 function useGate() {
   const { user, authReady } = useApp();
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!['owner', 'admin'].includes(user.role)) return <div className="empty page-pad"><p className="serif big">Staff access only.</p><Link className="btn dark" to="/">RETURN HOME</Link></div>;
+  if (!['owner', 'admin'].includes(user.role)) return <StaffOnly />;
   return null;
 }
 const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{children}</p> : null;

@@ -5,6 +5,7 @@ import { useApp } from '../context/App';
 import AdminShell from '../components/AdminShell';
 import ColourPanel from '../components/ColourOptions';
 import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
+import StaffOnly from '../components/StaffOnly';
 
 // A photo you can click: the dot marks the part that must stay visible when the site crops the photo to fit a frame.
 function FocusImage({ src, alt, x, y, onPick, box = 0.75, children }) {
@@ -31,7 +32,7 @@ function useStaff() {
 function Gate({ state, children }) {
   if (state === 'loading') return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (state === 'login') return <Navigate to="/login" replace />;
-  if (state === 'denied') return <div className="empty page-pad"><p className="serif big">Staff access only.</p><Link className="btn dark" to="/">RETURN HOME</Link></div>;
+  if (state === 'denied') return <StaffOnly />;
   return children;
 }
 

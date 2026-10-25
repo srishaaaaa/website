@@ -10,6 +10,7 @@ import PosInventory from './PosInventory';
 import { AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
+import StaffOnly from '../components/StaffOnly';
 
 // Dhanya POS: the in-store billing module of the admin. Everything the screen shows comes from the API; prices, stock,
 // totals and invoice numbers are decided on the server (the totals here are only a live preview).
@@ -581,7 +582,7 @@ export default function AdminPos() {
 
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!allowed) return <div className="empty page-pad"><p className="serif big">Staff access only.</p><Link className="btn dark" to="/">RETURN HOME</Link></div>;
+  if (!allowed) return <StaffOnly />;
   if (!(tab in TABS) || (TABS[tab] && !manager)) return <Navigate to="/admin/billing" replace />;
 
   const onSale = sale => { setDone(sale); setTick(t => t + 1) };
