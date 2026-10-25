@@ -13,6 +13,7 @@ import { enquiryAdmin, enquiryRoutes } from './routes/enquiries.js';
 import sampleAdmin from './routes/sample.js';
 import posRoutes from './routes/pos.js';
 import invoicePublic from './routes/invoice.js';
+import stitchingRoutes from './routes/stitching.js';
 import { mediaAdmin, mediaPublic } from './routes/media.js';
 import { cartRoutes, wishlistRoutes, newsletterRoutes, reviewRoutes } from './routes/shopper.js';
 import { commerceRoutes, webhookRoute } from './routes/commerce.js';
@@ -59,6 +60,7 @@ export function createApp({ db, cfg, payments = createRazorpayProvider(cfg) }) {
   app.use('/api/admin', enquiryAdmin(ctx));
   app.use('/api/admin', sampleAdmin(ctx));
   app.use('/api/admin', posRoutes(ctx));
+  app.use('/api/admin', stitchingRoutes(ctx)); // Stitching Studio: staff only
   app.use('/api', invoicePublic(ctx));
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Not found')));
   app.use(errorHandler());

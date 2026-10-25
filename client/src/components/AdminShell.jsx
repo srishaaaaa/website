@@ -36,6 +36,9 @@ const ICONS = {
   swap: <path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   flask: <><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3" /></>,
+  scissors: <><circle cx="6" cy="6" r="2.6" /><circle cx="6" cy="18" r="2.6" /><path d="M8 7.6 20 18M8 16.4 20 6" /></>,
+  ruler: <><path d="m3 17 14-14 4 4L7 21z" /><path d="M7 13l2 2M10 10l2 2M13 7l2 2" /></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
 };
 export const Icon = ({ n, size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICONS[n]}</svg>;
 
@@ -46,6 +49,10 @@ export const NAV = [
     ['/admin/billing/inventory', 'Inventory', 'box', true], ['/admin/billing/customers', 'Customers', 'user'], ['/admin/billing/coupons', 'Coupons', 'tag', true],
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true], ['/admin/billing/settings', 'Delivery & GST', 'truck', true]] },
   { group: 'Wholesale', items: [['/admin/billing/ws-billing', 'WS Billing', 'doc'], ['/admin/billing/ws-inventory', 'WS Inventory', 'shop'], ['/admin/billing/ws-analytics', 'WS Analytics', 'trend', true]] },
+  { group: 'Stitching Studio', roles: ['owner', 'admin', 'cashier'], items: [
+    ['/admin/stitching', 'Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/stitching/measurements', 'Measurements', 'ruler', false],
+    ['/admin/stitching/appointments', 'Trials & Appointments', 'calendar', false], ['/admin/stitching/designs', 'Design Library', 'image', false], ['/admin/stitching/tailors', 'Tailors', 'users', false],
+    ['/admin/stitching/reports', 'Stitching Reports', 'chart', true], ['/admin/stitching/garments', 'Garment Types', 'tag', true]] },
   { group: 'Online store', items: [
     ['/admin', 'Online orders', 'orders', true], ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/products', 'Products & images', 'box', true],
     ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Instagram Reels', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
@@ -61,7 +68,7 @@ export default function AdminShell({ title, sub, actions, children }) {
       <nav className="dpos-side" aria-label="Admin sections">
         <div className="dpos-brand"><div><b>Dhanya</b><br /><i>{manager ? 'ADMIN' : 'CASHIER'}</i></div></div>
         {NAV.map(g => {
-          const items = g.items.filter(i => !i[3] || manager);
+          const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => !i[3] || manager);
           return items.length ? (
             <div key={g.group} style={{ display: 'contents' }}>
               <p className="dpos-grp">{g.group.toUpperCase()}</p>

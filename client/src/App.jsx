@@ -23,6 +23,7 @@ import { About, Journal, NotFound, Policy } from './pages/Static';
 const lazyEl = (load, name) => { const C = lazy(() => load().then(m => ({ default: name ? m[name] : m.default }))); return <Suspense fallback={<div className="page-pad"><p className="muted">Loading…</p></div>}><C /></Suspense> };
 const store = () => import('./pages/AdminStore'), media = () => import('./pages/AdminMedia'), more = () => import('./pages/AdminMore');
 const A = {
+  stitch: lazyEl(() => import('./pages/AdminStitching')), stitchNew: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="new" /> }))), stitchDetail: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="detail" /> }))), stitchPrint: lazyEl(() => import('./pages/stitching/Print')),
   pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
   categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
@@ -32,7 +33,7 @@ const A = {
 export default function App() {
   const { entered, enter, setBagOpen, setSearchOpen, setMenuOpen, setQuick } = useApp();
   const location = useLocation();
-  const bare = location.pathname.startsWith('/invoice/'); // the invoice page is a clean document: no site header, footer, intro or overlays
+  const bare = location.pathname.startsWith('/invoice/') || location.pathname.startsWith('/admin/stitching/print/'); // invoice / job card pages are clean documents: no site header, footer, intro or overlays
 
   // Overlays never outlive a navigation.
   useEffect(() => { setBagOpen(false); setSearchOpen(false); setMenuOpen(false); setQuick(null) }, [location.pathname]); // eslint-disable-line
@@ -67,6 +68,11 @@ export default function App() {
           <Route path="/admin/enquiries" element={A.enquiries} />
           <Route path="/admin/sample" element={A.sample} />
           <Route path="/invoice/:token" element={A.invoice} />
+          <Route path="/admin/stitching" element={A.stitch} />
+          <Route path="/admin/stitching/print/:id" element={A.stitchPrint} />
+          <Route path="/admin/stitching/orders/new" element={A.stitchNew} />
+          <Route path="/admin/stitching/orders/:id" element={A.stitchDetail} />
+          <Route path="/admin/stitching/:tab" element={A.stitch} />
           <Route path="/admin/billing" element={A.pos} />
           <Route path="/admin/billing/:tab" element={A.pos} />
           <Route path="/about" element={<About />} />
