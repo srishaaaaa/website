@@ -300,7 +300,7 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
   .bh .bh-panel { background: transparent; color: #f3e3c8; padding: 150px 20px 100px clamp(64px, 7.5vw, 140px) }
   .bh .bh-model { margin-left: -14%; width: calc(100% + 14%) } /* reaches the right edge of the screen */
   .bh .bh-model::before { content: ''; position: absolute; inset: 4% -8% 0 -4%; z-index: 0; pointer-events: none; background: radial-gradient(48% 52% at 56% 44%, rgba(226, 150, 226, .38), transparent 72%); animation: bh-glow 6s ease-in-out infinite alternate }
-  .bh .bh-model .bh-arch { z-index: 1; background: transparent; -webkit-mask-image: linear-gradient(to right, transparent 0, #000 26%, #000 91%, transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 26%, #000 91%, transparent 100%) }
+  .bh .bh-model .bh-arch { z-index: 1; background: transparent; -webkit-mask-image: linear-gradient(to right, transparent 0, #000 26%, #000 91%, transparent 100%), linear-gradient(to bottom, #000 0, #000 80%, transparent 100%); -webkit-mask-composite: source-in; mask-image: linear-gradient(to right, transparent 0, #000 26%, #000 91%, transparent 100%), linear-gradient(to bottom, #000 0, #000 80%, transparent 100%); mask-composite: intersect }
   .bh .bh-model .bh-arch.skel, .bh .bh-model .bh-arch .blank { background: rgba(255, 255, 255, .05); border: 0 }
   .bh .bh-headline .et { font-size: clamp(46px, 5.3vw, 96px); line-height: 1.04 }
   .bh .et-mask:nth-child(2) { padding-left: 1.2em }
@@ -342,3 +342,10 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 }
 @media (max-width: 699px) { .bh-petals i:nth-child(n+7) { display: none } }
 @media (min-width: 1800px) { .bh .bh-headline .et { font-size: 104px } .bh .bh-desc { font-size: 21px } }
+
+/* phones: the lotus ornaments sit in the bottom corners too */
+@media (max-width: 699px) {
+  .bh .bh-lotus { display: block; position: absolute; z-index: 1; pointer-events: none; opacity: .75; color: #d9b676; animation: bh-breathe 5s ease-in-out infinite alternate }
+  .bh .bh-lotus.l { left: -28px; bottom: -8px; width: 170px; color: #c88ac4 }
+  .bh .bh-lotus.r { right: -34px; bottom: -4px; width: 200px }
+}
