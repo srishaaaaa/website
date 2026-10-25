@@ -57,7 +57,7 @@ export default function BoutiqueHero() {
         <div className="bh-panel">
           <motion.p className="bh-pill" {...anim(0.1)}><i aria-hidden="true" />{campaign.label}</motion.p>
           <div className="bh-headline">
-            <EditorialTypography lines={['TRADITION,', 'REDEFINED.']} show={show} className="bh-h" label="Tradition, redefined." />
+            <EditorialTypography lines={['Tradition,', 'redefined.']} show={show} className="bh-h" label="Tradition, redefined." />
             <i className="bh-spark s1" aria-hidden="true" /><i className="bh-spark s2" aria-hidden="true" />
           </div>
           <div className="bh-row">

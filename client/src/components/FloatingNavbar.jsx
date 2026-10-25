@@ -14,21 +14,24 @@ const UserI = () => <Icon><circle cx="12" cy="8.5" r="3.8" /><path d="M4.5 20c.9
 const HeartI = () => <Icon d="M12 20.5s-7.5-4.6-7.5-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.6c0 5.7-7.5 10.3-7.5 10.3Z" />;
 const BagI = () => <Icon><path d="M5.5 8.5h13l-1 11.5h-11z" /><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" /></Icon>;
 
-// A small "Categories" dropdown: a plain list, no photographs. The admin chooses which categories appear and in what order
-// (Admin → Storefront images → Homepage picks); until then every category is listed.
-function MegaMenu({ onNavigate }) {
+// Small dropdowns for "Collection" and "Categories": plain lists, no photographs. The admin chooses which items appear and in
+// what order (Admin → Storefront images → Homepage picks); until then everything is listed.
+function MegaMenu({ kind, x, onNavigate }) {
   const { catalog, site } = useApp();
-  const chosen = site.homepage?.categories || [];
-  const cats = chosen.length ? chosen.map(s => catalog.categories.find(c => c.slug === s)).filter(Boolean) : catalog.categories;
-  const rows = [{ name: 'All pieces', to: '/shop' }, { name: 'New arrivals', to: '/shop?sort=newest' }, ...cats.map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
+  const hp = site.homepage || {};
+  const ordered = (list, slugs) => slugs?.length ? slugs.map(s => list.find(x => x.slug === s)).filter(Boolean) : list;
+  const rows = kind === 'collections'
+    ? [{ name: 'All collections', to: '/collections' }, ...ordered(catalog.collections, hp.collections).map(c => ({ name: c.name, to: `/collections/${c.slug}` }))]
+    : [{ name: 'All pieces', to: '/shop' }, { name: 'New arrivals', to: '/shop?sort=newest' }, ...ordered(catalog.categories, hp.categories).map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
+  const label = kind === 'collections' ? 'Collections' : 'Categories';
   return (
-    <motion.div className="mega mega-sm" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+    <motion.div className={`mega mega-sm mega-${kind}`} style={x != null ? { left: `clamp(12px, ${Math.round(x - 220)}px, calc(100vw - 452px))` } : undefined} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
       <div className="mega-in">
         <div className="mega-col">
-          <p className="mega-label">Categories</p>
-          <ul className="mega-cats" aria-label="Shop categories">
+          <p className="mega-label">{label}</p>
+          <ul className="mega-cats" aria-label={label}>
             {rows.map((c, i) => (
-              <motion.li key={c.name} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.03 + i * 0.025, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+              <motion.li key={c.to} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.03 + i * 0.025, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
                 <Link to={c.to} onClick={onNavigate}><span className="t">{c.name}</span><span className="ar" aria-hidden="true">→</span></Link>
               </motion.li>
             ))}
@@ -72,8 +75,8 @@ function MobileMenu() {
 
 const LINKS = [
   { label: 'HOME', to: '/', on: (p, h) => p === '/' && !h },
-  { label: 'COLLECTION', to: '/collections', on: p => p.startsWith('/collections') },
-  { label: 'CATEGORIES', to: '/shop', mega: true, on: p => p === '/shop' || p.startsWith('/product') },
+  { label: 'COLLECTION', to: '/collections', mega: 'collections', on: p => p.startsWith('/collections') },
+  { label: 'CATEGORIES', to: '/shop', mega: 'categories', on: p => p === '/shop' || p.startsWith('/product') },
   { label: 'SHOP STORY', to: '/#story', on: (p, h) => p === '/' && h === '#story' },
   { label: 'CONTACT', to: '/#contact', on: (p, h) => p === '/' && (h === '#contact' || h === '#enquiry') },
 ];
@@ -82,19 +85,20 @@ export default function FloatingNavbar() {
   const { entered, bagCount, wish, setBagOpen, setSearchOpen, setMenuOpen, user } = useApp();
   const { pathname, hash } = useLocation();
   const [scrolled, setScrolled] = useState(false);
-  const [mega, setMega] = useState(false);
+  const [anchor, setAnchor] = useState(null); // x of the link the open dropdown hangs from
+  const [mega, setMega] = useState(null); // which dropdown is open: 'collections' | 'categories' | null
   const closeT = useRef();
 
   useEffect(() => { const f = () => setScrolled(scrollY > 60); f(); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, []);
-  useEffect(() => setMega(false), [pathname, hash]);
-  useEffect(() => { const k = e => e.key === 'Escape' && setMega(false); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, []);
-  const open = () => { clearTimeout(closeT.current); setMega(true) };
-  const later = () => { clearTimeout(closeT.current); closeT.current = setTimeout(() => setMega(false), 140) };
+  useEffect(() => setMega(null), [pathname, hash]);
+  useEffect(() => { const k = e => e.key === 'Escape' && setMega(null); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, []);
+  const open = (which, el) => { clearTimeout(closeT.current); setMega(which); if (el) { const r = el.getBoundingClientRect(); setAnchor(r.left + r.width / 2) } };
+  const later = () => { clearTimeout(closeT.current); closeT.current = setTimeout(() => setMega(null), 140) };
 
   return (
     <>
       <motion.header className={`site-header ${scrolled ? 'compact' : ''}`} initial={{ opacity: 0, y: -24 }} animate={entered ? { opacity: 1, y: 0 } : { opacity: 0, y: -24 }} transition={{ duration: 0.9, delay: entered ? 0.2 : 0, ease: [0.22, 1, 0.36, 1] }}
-        onMouseLeave={later} onMouseEnter={() => mega && open()}>
+        onMouseLeave={later} onMouseEnter={() => mega && open(mega)}>
         <div className="hdr">
           <button className="icon-btn burger" onClick={() => setMenuOpen(true)} aria-label="Open menu"><svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.4" fill="none" aria-hidden="true"><path d="M3 8h18M3 16h18" /></svg></button>
           <Wordmark className="hdr-logo" />
@@ -102,12 +106,12 @@ export default function FloatingNavbar() {
             {LINKS.map(({ label, to, mega: hasMega, on: isOn }) => {
               const on = isOn(pathname, hash);
               const link = (
-                <Link key={to} to={to} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined} onMouseEnter={hasMega ? open : later} {...(hasMega ? { 'aria-haspopup': 'true', 'aria-expanded': mega } : {})}>
+                <Link key={to} to={to} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined} onMouseEnter={hasMega ? e => open(hasMega, e.currentTarget) : later} {...(hasMega ? { 'aria-haspopup': 'true', 'aria-expanded': mega === hasMega } : {})}>
                   {on && <motion.i className="nav-pill" layoutId="nav-pill" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}
                   <span>{label}</span>
                 </Link>
               );
-              return hasMega ? <div key={to} className="has-mega" onFocus={open} onBlur={e => !e.currentTarget.contains(e.relatedTarget) && later()}>{link}</div> : link;
+              return hasMega ? <div key={to} className="has-mega" onFocus={e => open(hasMega, e.currentTarget.querySelector('a'))} onBlur={e => !e.currentTarget.contains(e.relatedTarget) && later()}>{link}</div> : link;
             })}
           </nav>
           <div className="hdr-tools">
@@ -122,7 +126,7 @@ export default function FloatingNavbar() {
             </div>
           </div>
         </div>
-        <AnimatePresence>{mega && <div onMouseEnter={open} onMouseLeave={later}><MegaMenu onNavigate={() => setMega(false)} /></div>}</AnimatePresence>
+        <AnimatePresence>{mega && <div key={mega} onMouseEnter={() => open(mega)} onMouseLeave={later}><MegaMenu kind={mega} x={anchor} onNavigate={() => setMega(null)} /></div>}</AnimatePresence>
       </motion.header>
       <MobileMenu />
     </>

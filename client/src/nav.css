@@ -217,3 +217,6 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .refine .btn { border-color: var(--red, #5a1560); color: var(--red, #5a1560) }
 .refine .icon-btn, .refine .link-u, .refine h2, .refine h3, .refine label, .refine legend, .refine p { color: #211714 }
 .refine .icon-btn:hover { background: rgba(33, 23, 20, .06) }
+
+/* the Collection dropdown sits under its own link, a little left of the Categories one */
+.site-header .mega.mega-collections { left: min(22%, calc(100vw - 480px)) }
