@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
+import { hasCostColumns } from '../lib/cost.js';
 import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
@@ -59,7 +60,7 @@ const couponBody = z.object({
 const wsItem = z.object({ code: text(60).min(1), company: text(120).default(''), colour: text(60).default('') });
 const customerBody = z.object({ name: text(120).default(''), phone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits'), dob: date.nullable().default(null), notes: text(300).nullable().default(null) });
 const expenseBody = z.object({ title: text(120).min(1), category: text(60).default('General'), amount: z.number().int().min(1).max(100_000_000), paymentMode: z.enum(['cash', 'upi', 'card']).default('cash'), notes: text(300).nullable().default(null), date: date.optional() });
-const productPatch = z.object({ name: text(160).min(1), price: paise, taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']) });
+const productPatch = z.object({ name: text(160).min(1), price: paise, costPrice: paise.optional(), taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']) });
 const variantBody = z.object({ size: text(40).min(1), color: text(40).default('Default'), sku: text(80).min(1), stock: z.number().int().min(0).max(1_000_000).default(0) });
 const colourBody = z.object({ color: text(40).min(1), price: paise.nullable().default(null),
   sizes: z.array(z.object({ size: text(40).min(1), stock: z.number().int().min(0).max(1_000_000).default(0), sku: text(80).optional() })).min(1).max(30) });
@@ -235,6 +236,10 @@ export default function pos({ db, auth }) {
     if (d.categorySlug && !cat) throw new HttpError(400, 'Unknown category');
     const u = await db.query('UPDATE products SET name = $2, base_price = $3, tax_rate = $4, category_id = $5, status = $6, updated_at = now() WHERE id = $1 RETURNING id', [id.parse(req.params.id), d.name, d.price, d.taxRate, cat?.id ?? null, d.status]);
     if (!u.rows.length) throw new HttpError(404, 'Product not found');
+    if (d.costPrice !== undefined) {
+      if (await hasCostColumns(db)) await db.query('UPDATE products SET cost_price = $2 WHERE id = $1', [id.parse(req.params.id), d.costPrice]);
+      else if (d.costPrice > 0) throw new HttpError(409, 'Cost prices need a one-time database update first (migration 019).', 'cost_not_ready');
+    }
     await audit(db, req.user.id, 'pos.product.edit', 'product', req.params.id, { name: d.name });
     res.json({ ok: true });
   }));

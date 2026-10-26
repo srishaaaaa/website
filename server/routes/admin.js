@@ -4,6 +4,7 @@ import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import bcrypt from 'bcryptjs';
 import { audit } from '../lib/orders.js';
+import { hasCostColumns } from '../lib/cost.js';
 
 // Server-side RBAC: every route sits behind a role check that reads the role fresh from the database.
 export default function admin({ db, auth }) {
@@ -55,7 +56,7 @@ export default function admin({ db, auth }) {
   const productBody = z.object({
     slug: z.string().regex(/^[a-z0-9-]+$/), name: z.string().min(1).max(160), description: z.string().max(5000).optional(),
     category: z.string().optional(), price: z.number().int().min(0), gst_rate: z.number().int().min(0).max(28).default(5),
-    status: z.enum(['draft', 'active', 'archived']).default('draft'), featured: z.boolean().default(false),
+    status: z.enum(['draft', 'active', 'archived']).default('draft'), featured: z.boolean().default(false), cost_price: z.number().int().min(0).optional(),
     variants: z.array(z.object({ sku: z.string().min(1), size: z.string().min(1), color: z.string().default('Default'), stock: z.number().int().min(0).default(0) })).default([]),
   });
   r.post('/products', staff, wrap(async (req, res) => {
@@ -68,6 +69,7 @@ export default function admin({ db, auth }) {
         const row = await one(t, 'INSERT INTO product_variants (product_id, sku, size, color, stock_quantity) VALUES ($1,$2,$3,$4,$5) RETURNING id', [p.id, v.sku, v.size, v.color, v.stock]);
         if (v.stock) await t.query('INSERT INTO inventory_movements (variant_id, quantity_change, reason) VALUES ($1,$2,$3)', [row.id, v.stock, 'initial_stock']);
       }
+      if (d.cost_price && await hasCostColumns(t)) await t.query('UPDATE products SET cost_price = $2 WHERE id = $1', [p.id, d.cost_price]);
       await audit(t, req.user.id, 'product.create', 'product', d.slug);
       return p.id;
     }).catch(e => { if (e.code === '23505') throw new HttpError(409, 'Slug or SKU already exists'); throw e });

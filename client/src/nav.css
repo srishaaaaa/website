@@ -299,7 +299,7 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .an-share { display: flex; align-items: center; gap: 12px; min-width: 150px } .an-share i { flex: 1 } .an-share span { font-size: 12px; font-weight: 800; min-width: 48px; text-align: right }
 
 /* ---- POS settings page ---- */
-.dpos { --d-acc: var(--pos-accent, #330533); --d-bill: var(--pos-accent, #b91c1c) }
+.dpos { --d-acc: var(--pos-accent, #330533); --d-bill: var(--pos-accent, #5a1560) }
 .pset { display: grid; gap: 18px } .pset-top { display: flex; align-items: center; gap: 16px } .pset-top .sub { margin: 4px 0 0 }
 .pset-ico { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; background: var(--d-acc); color: #fff }
 .pset-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: start } .pset-col, .pset-wide { display: grid; gap: 18px } .pset-wide { grid-column: 1 / -1 }
@@ -470,3 +470,40 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 /* Reels & Photo Gallery admin page: six slots per section */
 .dpos-reels.six { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px } @media (max-width: 900px) { .dpos-reels.six { grid-template-columns: repeat(2, minmax(0, 1fr)) } } @media (max-width: 520px) { .dpos-reels.six { grid-template-columns: 1fr } }
 .dpos-reels.six .media { max-height: 340px; overflow: hidden } .dpos-reels.six .media img, .dpos-reels.six .media video { width: 100%; height: 100%; object-fit: cover }
+
+/* =====================================================================
+   POS theme pass: decorative red becomes the theme purple (or the accent chosen in Settings).
+   Red is kept only where it carries meaning: errors, delete, negative amounts, shortfalls, balance due and out-of-stock.
+   ===================================================================== */
+.dpos { --d-bill: var(--pos-accent, #5a1560); --d-tint: color-mix(in srgb, var(--d-bill) 10%, #fff); --d-tint2: color-mix(in srgb, var(--d-bill) 18%, #fff) }
+.dpos-cta:not(.amber) { box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--d-bill) 70%, transparent) }
+.dpos-splitpick button.on { background: var(--d-tint); border-color: var(--d-bill); color: var(--d-bill) }
+.dpos-recv b.short { color: #b91c1c }
+
+/* advance orders */
+.adv-k span { color: var(--d-bill) } .adv-k i.rose { background: var(--d-tint2); color: var(--d-bill) }
+.adv-search { color: var(--d-bill) } .adv-search input:focus { border-color: var(--d-bill) }
+.adv-chips button.on, .adv-modes button.on { background: var(--d-bill); border-color: var(--d-bill) }
+.adv-done .oid { color: var(--d-bill) } .adv-tag { background: var(--d-tint); color: var(--d-bill) }
+
+/* inventory, movements, analytics */
+.sm-btn.red { background: var(--d-bill) } .sm-k i.r { background: var(--d-tint2); color: var(--d-bill) } .sm-tag.out { background: var(--d-tint); color: var(--d-bill); border-color: var(--d-tint2) }
+.an-red, .an-top em { color: var(--d-bill) } .an-bar u, .an-top u, .an-share u { background: var(--d-bill) } .adm-act .danger:not(:hover) { }
+.dpos-card2 .s.more { color: var(--d-bill) } .dpos-card2.net .s.more { color: #fff }
+
+/* birthdays, coupons, expenses already follow the theme; their small accents too */
+.bd-days u, .bd-leg u { background: var(--d-bill, #5a1560) }
+.cp-d { background: var(--d-tint); color: var(--d-bill) }
+.ex { --ex: var(--d-bill, #5a1560) }
+.ex-title svg { color: var(--d-bill, #5a1560) }
+.money-sum .neg { color: #b91c1c }
+
+.ra.doc { background: var(--d-tint, #f3e8f4); color: var(--d-bill, #5a1560) }
+/* cost price boxes in analytics */
+.cost-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px } @media (max-width: 760px) { .cost-row { grid-template-columns: 1fr } }
+.cost-card { display: grid; gap: 14px; padding: 22px 24px; border: 1px solid; border-radius: 22px; background: #fff } .cost-card.teal { border-color: #b8d8d2; background: linear-gradient(180deg, #f3fbf9, #fff) } .cost-card.amber { border-color: #f1d3bd; background: linear-gradient(180deg, #fff7f0, #fff) }
+.cc-t { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px } .cc-t span { font-size: 12px; font-weight: 800; letter-spacing: .1em } .cc-t i { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center } .teal .cc-t i { background: #dcefec; color: #0f766e } .amber .cc-t i { background: #fbe3d3; color: #c2410c }
+.cost-card b { font-size: 36px; font-weight: 800; letter-spacing: -.01em } .teal b { color: #0f766e } .amber b { color: #b45309 } .cost-card small { font-size: 12px; font-weight: 600 } .cost-card small em { font-style: normal; font-weight: 800; color: #0a8a5c } .cost-card small em.neg { color: #b91c1c }
+/* search boxes: keep the icon clear of the text (the global POS input padding was winning) */
+.dpos .adv-search input, .dpos .sm-search input, .dpos .an-search input { padding-left: 44px !important }
+.dpos .adv-search svg, .dpos .sm-search svg, .dpos .an-search svg { pointer-events: none }

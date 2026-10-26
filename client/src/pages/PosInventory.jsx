@@ -51,11 +51,11 @@ function StockModal({ product, variantId, onClose, onDone }) {
 }
 
 function EditModal({ product, categories, onClose, onDone }) {
-  const [f, setF] = useState({ name: product.name, price: rupees(product.price), tax: product.taxRate, cat: product.categorySlug || '', status: product.status });
+  const [f, setF] = useState({ name: product.name, price: rupees(product.price), cost: product.costPrice ? rupees(product.costPrice) : '', tax: product.taxRate, cat: product.categorySlug || '', status: product.status });
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const submit = async e => {
     e.preventDefault(); setBusy(true); setErr();
-    try { await api(`/admin/pos/products/${product.id}`, { method: 'PATCH', body: { name: f.name.trim(), price: toPaise(f.price), taxRate: +f.tax, categorySlug: f.cat || null, status: f.status } }); onDone(); onClose() }
+    try { await api(`/admin/pos/products/${product.id}`, { method: 'PATCH', body: { name: f.name.trim(), price: toPaise(f.price), costPrice: toPaise(f.cost), taxRate: +f.tax, categorySlug: f.cat || null, status: f.status } }); onDone(); onClose() }
     catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
   };
   return (
@@ -64,6 +64,7 @@ function EditModal({ product, categories, onClose, onDone }) {
         <label className="f">Name<input required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} maxLength={160} /></label>
         <div className="dpos-grid">
           <label className="f">Selling price ₹<input required inputMode="decimal" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} /></label>
+          <label className="f">Cost price ₹ <span className="muted small">(what you paid)</span><input inputMode="decimal" value={f.cost} onChange={e => setF({ ...f, cost: e.target.value })} placeholder="0" /></label>
           <label className="f">GST %<select value={f.tax} onChange={e => setF({ ...f, tax: e.target.value })}>{[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}</select></label>
           <label className="f">Category<select value={f.cat} onChange={e => setF({ ...f, cat: e.target.value })}><option value="">— None —</option>{categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select></label>
           <label className="f">Status<select value={f.status} onChange={e => setF({ ...f, status: e.target.value })}><option value="active">Active (on sale)</option><option value="draft">Draft (hidden)</option><option value="archived">Archived</option></select></label>
@@ -78,12 +79,12 @@ function EditModal({ product, categories, onClose, onDone }) {
 
 const blankVar = () => ({ size: 'Free Size', color: 'Default', sku: '', stock: '' });
 function AddModal({ categories, onClose, onDone }) {
-  const [f, setF] = useState({ name: '', price: '', tax: 5, cat: '', status: 'active' }); const [vars, setVars] = useState([blankVar()]); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const [f, setF] = useState({ name: '', price: '', cost: '', tax: 5, cat: '', status: 'active' }); const [vars, setVars] = useState([blankVar()]); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const setV = (i, p) => setVars(v => v.map((x, n) => n === i ? { ...x, ...p } : x));
   const submit = async e => {
     e.preventDefault(); setErr(); setBusy(true);
     const base = slugify(f.name) || 'product';
-    const payload = slug => ({ slug, name: f.name.trim(), description: '', category: f.cat || undefined, price: toPaise(f.price), gst_rate: +f.tax, status: f.status, featured: false,
+    const payload = slug => ({ slug, name: f.name.trim(), description: '', category: f.cat || undefined, price: toPaise(f.price), ...(toPaise(f.cost) ? { cost_price: toPaise(f.cost) } : {}), gst_rate: +f.tax, status: f.status, featured: false,
       variants: vars.map(v => ({ size: v.size.trim() || 'Free Size', color: v.color.trim() || 'Default', sku: (v.sku.trim() || `${slug}-${slugify(v.size) || 'free'}-${slugify(v.color) || 'default'}`).toUpperCase(), stock: Math.max(0, parseInt(v.stock, 10) || 0) })) });
     try {
       try { await api('/admin/products', { method: 'POST', body: payload(base) }) }
@@ -97,6 +98,7 @@ function AddModal({ categories, onClose, onDone }) {
         <label className="f">Product name<input required autoFocus value={f.name} onChange={e => setF({ ...f, name: e.target.value })} maxLength={160} placeholder="e.g. Kanjivaram Silk Saree · Maroon" /></label>
         <div className="dpos-grid">
           <label className="f">Selling price ₹<input required inputMode="decimal" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} /></label>
+          <label className="f">Cost price ₹ <span className="muted small">(what you paid)</span><input inputMode="decimal" value={f.cost} onChange={e => setF({ ...f, cost: e.target.value })} placeholder="0" /></label>
           <label className="f">GST %<select value={f.tax} onChange={e => setF({ ...f, tax: e.target.value })}>{[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}</select></label>
           <label className="f">Category<select value={f.cat} onChange={e => setF({ ...f, cat: e.target.value })}><option value="">— None —</option>{categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select></label>
           <label className="f">Status<select value={f.status} onChange={e => setF({ ...f, status: e.target.value })}><option value="active">Active (on sale)</option><option value="draft">Draft (hidden)</option></select></label>

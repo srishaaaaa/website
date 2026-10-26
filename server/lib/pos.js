@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { rows, one } from '../db/index.js';
 import { HttpError } from './http.js';
+import { hasCostColumns } from './cost.js';
 import { audit } from './orders.js';
 
 const TZ = 'Asia/Kolkata';
@@ -168,6 +169,7 @@ export async function createSale(db, user, d) {
           [sale.id, l.product_id, l.variantId, l.name, l.sku, JSON.stringify(l.variantId ? { size: l.size, color: l.color } : {}), l.price, l.qty, l.lineTotal, l.alloc, l.taxRate, l.tax]);
         if (l.variantId) await t.query('INSERT INTO inventory_movements (variant_id, quantity_change, reason, reference_id) VALUES ($1,$2,$3,$4)', [l.variantId, -l.qty, 'pos_sale', number]);
       }
+      if (await hasCostColumns(t)) await t.query('UPDATE pos_sale_items i SET cost_snapshot = p.cost_price FROM products p WHERE i.sale_id = $1 AND i.product_id = p.id', [sale.id]);
       const ph = normPhone(d.customerPhone);
       if (ph) await t.query(`INSERT INTO pos_customers (name, phone, dob) VALUES ($1,$2,$3)
         ON CONFLICT (phone) DO UPDATE SET name = COALESCE(NULLIF(EXCLUDED.name, ''), pos_customers.name), dob = COALESCE(EXCLUDED.dob, pos_customers.dob), updated_at = now()`, [d.customerName, ph, d.customerDob ?? null]);
@@ -239,6 +241,14 @@ export async function report(db, from, to, channel = 'retail', gst = 'all') {
     FROM pos_sales s WHERE ${range}`, p);
   const units = (await one(db, `SELECT COALESCE(SUM(i.quantity), 0)::int AS n FROM pos_sale_items i JOIN pos_sales s ON s.id = i.sale_id WHERE ${done} AND ${range}`, p)).n;
   const expenses = channel === 'retail' ? (await one(db, 'SELECT COALESCE(SUM(amount), 0)::int AS n FROM pos_expenses WHERE expense_date BETWEEN $1::date AND $2::date', [from, to])).n : 0;
+  let costs = { enabled: false, stockCost: 0, stockProducts: 0, soldCost: 0, soldUnits: units, margin: 0 };
+  if (await hasCostColumns(db)) {
+    const st = await one(db, `SELECT COALESCE(SUM(v.stock_quantity::bigint * p.cost_price), 0)::text AS cost, COUNT(DISTINCT p.id) FILTER (WHERE v.stock_quantity > 0)::int AS n
+      FROM product_variants v JOIN products p ON p.id = v.product_id WHERE v.active AND p.status <> 'archived'`);
+    const sold = await one(db, `SELECT COALESCE(SUM(i.quantity::bigint * i.cost_snapshot), 0)::text AS cost, COALESCE(SUM((i.line_total - i.discount_alloc)::bigint), 0)::text AS rev
+      FROM pos_sale_items i JOIN pos_sales s ON s.id = i.sale_id WHERE ${done} AND ${range}`, p);
+    costs = { enabled: true, stockCost: Number(st.cost), stockProducts: st.n, soldCost: Number(sold.cost), soldUnits: units, margin: Number(sold.rev) - Number(sold.cost) };
+  }
   const expenseByCategory = channel === 'retail' ? await rows(db, 'SELECT category, SUM(amount)::int AS amount, COUNT(*)::int AS entries FROM pos_expenses WHERE expense_date BETWEEN $1::date AND $2::date GROUP BY category ORDER BY amount DESC', [from, to]) : [];
   const daily = await rows(db, `SELECT ${dayExpr}::text AS day, COUNT(*)::int AS bills, SUM(s.total_amount)::int AS revenue FROM pos_sales s WHERE ${done} AND ${range} GROUP BY 1 ORDER BY 1`, p);
   const products = await rows(db, `
@@ -262,7 +272,7 @@ export async function report(db, from, to, channel = 'retail', gst = 'all') {
   const wk = await rows(db, `SELECT ${dayExpr}::text AS day, SUM(s.total_amount)::int AS revenue FROM pos_sales s WHERE ${done} AND s.channel = $1 AND ${dayExpr} BETWEEN $2::date AND $3::date${g} GROUP BY 1`, [channel, iso(mon), iso(sun)]);
   const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setUTCDate(mon.getUTCDate() + i); return wk.find(r => r.day === iso(d))?.revenue ?? 0 });
   const jan1 = new Date(Date.UTC(year, 0, 1)), weekNo = Math.ceil(((t - jan1) / 86400000 + ((jan1.getUTCDay() + 6) % 7) + 1) / 7);
-  return { from, to, channel, gst, ...totals, units, expenses, expenseByCategory, net: totals.revenue - expenses, average: totals.bills ? Math.round(totals.revenue / totals.bills) : 0,
+  return { from, to, channel, gst, ...totals, units, expenses, expenseByCategory, costs, cogs: costs.soldCost, gross: totals.revenue - costs.soldCost, net: totals.revenue - costs.soldCost - expenses, average: totals.bills ? Math.round(totals.revenue / totals.bills) : 0,
     topProduct: products[0]?.name ?? null, daily, products, coupons, discountedList, year, monthly, week, weekNo };
 }
 
@@ -344,10 +354,11 @@ export async function stockMovements(db, { from, to, q = '', type = 'all', limit
 }
 
 // ---- products with their variants (inventory screen) ----
-export const listProducts = (db, q = '', onlyId = null) => {
+export const listProducts = async (db, q = '', onlyId = null) => {
+  const costSql = (await hasCostColumns(db)) ? 'p.cost_price' : '0';
   const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
   return rows(db, `
-    SELECT p.id, p.slug, p.name, p.status, p.base_price AS price, p.tax_rate AS "taxRate", p.description, p.is_sample AS "isSample",
+    SELECT p.id, p.slug, p.name, p.status, p.base_price AS price, ${costSql}::int AS "costPrice", p.tax_rate AS "taxRate", p.description, p.is_sample AS "isSample",
            c.name AS category, c.slug AS "categorySlug",
            (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
            COALESCE((SELECT SUM(v.stock_quantity) FROM product_variants v WHERE v.product_id = p.id), 0)::int AS stock,

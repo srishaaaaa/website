@@ -409,6 +409,7 @@ function MoneyDetail({ kind, rep, from, to, onClose, goExpenses }) {
     <Modal wide className="money" title={kind === 'net' ? 'Net profit, step by step' : 'Where the money went'} sub={`${dmy(from)} to ${dmy(to)}`} onClose={onClose}>
       <div className="money-sum">
         <div><span>Sales (revenue)</span><b>{inr(rep.revenue)}</b></div>
+        {rep.costs?.enabled && <div><span>− Cost of goods sold</span><b className="neg">{inr(rep.cogs)}</b></div>}
         <div><span>− Expenses</span><b className="neg">{inr(rep.expenses)}</b></div>
         <div className="tot"><span>= Net profit</span><b className={rep.net < 0 ? 'neg' : 'pos'}>{inr(rep.net)}</b></div>
       </div>
@@ -443,12 +444,19 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
 
       {(tab === 'revenue' || tab === 'today') && <>
         <div className="dpos-k4">
-          <Stat cls="net" icon="wallet" label="Net profit" value={v(r => inr(r.net))} sub={ws ? 'Wholesale sales' : 'Sales − Expenses'} onOpen={!ws && rep ? () => setDetail('net') : undefined} />
+          <Stat cls="net" icon="wallet" label="Net profit" value={v(r => r.net < 0 ? `− ${inr(-r.net)}` : inr(r.net))} sub={ws ? 'Wholesale sales' : 'Sales − Expenses'} onOpen={!ws && rep ? () => setDetail('net') : undefined} />
           <Stat cls="gstc" icon="doc" label="GST sales" value={v(r => inr(r.gstSales))} sub={v(r => `${r.gstBills} GST invoices`, ' ')} />
           <Stat cls="nong" icon="trend" label="Non-GST sales" value={v(r => `+ ${inr(r.nonGstSales)}`)} sub={v(r => `${r.nonGstBills} ${ws ? 'wholesale' : 'retail'} bills`, ' ')} />
-          {!ws && <Stat cls="exp" icon="wallet" label="Total expenses" value={v(r => `− ${inr(r.expenses)}`)} sub={v(r => r.expenseByCategory?.length ? `${r.expenseByCategory.length} categories · top: ${r.expenseByCategory[0].category}` : 'No expenses yet', ' ')} onOpen={rep ? () => setDetail('expenses') : undefined} />}
+          {!ws && <Stat cls="exp" icon="wallet" label="Total expenses" value={v(r => `− ${inr(r.expenses)}`)} sub={v(r => r.expenseByCategory?.length ? `${r.expenseByCategory.length} categor${r.expenseByCategory.length === 1 ? 'y' : 'ies'} · top: ${r.expenseByCategory[0].category}` : 'No expenses yet', ' ')} onOpen={rep ? () => setDetail('expenses') : undefined} />}
         </div>
-        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;GST ({inr(rep.gstSales)}) + Non-GST ({inr(rep.nonGstSales)}) − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{inr(rep.net)}</span></span></div>}
+        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;Sales ({inr(rep.revenue)}){rep.costs?.enabled ? ` − Cost of goods (${inr(rep.cogs)})` : ''} − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{rep.net < 0 ? `− ${inr(-rep.net)}` : inr(rep.net)}</span></span></div>}
+        {!ws && rep && (
+          <div className="cost-row">
+            <div className="cost-card teal"><div className="cc-t"><span>TOTAL COST PRICE (STOCK IN HAND)</span><i><Icon n="box" size={22} /></i></div>
+              <b>{inr(rep.costs.stockCost)}</b><small>{rep.costs.enabled ? `Cost price × current stock · ${rep.costs.stockProducts} product${rep.costs.stockProducts === 1 ? '' : 's'} in stock` : 'Add each product’s cost price in Inventory → Edit'}</small></div>
+            <div className="cost-card amber"><div className="cc-t"><span>COST PRICE OF PRODUCTS SOLD</span><i><Icon n="swap" size={22} /></i></div>
+              <b>{inr(rep.costs.soldCost)}</b><small>{rep.costs.enabled ? <>Cost price × qty sold · {rep.costs.soldUnits} unit{rep.costs.soldUnits === 1 ? '' : 's'} · Margin <em className={rep.costs.margin < 0 ? 'neg' : ''}>{inr(rep.costs.margin)}</em></> : 'Cost prices are not set up yet'}</small></div>
+          </div>)}
         <div className="dpos-k4">
           <Stat icon="wallet" label="Total revenue" value={v(r => inr(r.revenue))} sub={v(r => `GST (${inr(r.gstSales)}) + Non-GST (${inr(r.nonGstSales)})`, ' ')} />
           <Stat icon="doc" label="Completed bills" value={v(r => r.bills)} sub="POS + manual bills" />
