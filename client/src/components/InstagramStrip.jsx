@@ -48,9 +48,24 @@ export default function InstagramStrip() {
         <p className="insta-sub">Discover our boutique, explore our collections, and experience the beauty of sarees.</p>
         {ig?.url && <a className="btn solid pill" href={ig.url} target="_blank" rel="noopener noreferrer" data-cursor="FOLLOW"><IgIcon size={16} /> FOLLOW ON INSTAGRAM <span aria-hidden="true">↗</span></a>}
       </Reveal>
+      {videos.length > 0 && (
+        <>
+          <h3 className="insta-h3">REELS</h3>
+          <ul className="insta-grid">
+            {videos.map((t, i) => (
+              <Reveal as="li" key={t.video + i} delay={(i % 3) * 0.1}>
+                <div className="insta-tile">
+                  <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} />
+                  {t.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
+                </div>
+              </Reveal>
+            ))}
+          </ul>
+        </>
+      )}
       {photoSlots > 0 && (
         <>
-          <h3 className="insta-h3">GALLERY</h3>
+          <h3 className="insta-h3">PHOTO GALLERY</h3>
           <ul className="insta-grid">
             {Array.from({ length: photoSlots }, (_, i) => {
               const t = photos[i];
@@ -63,21 +78,6 @@ export default function InstagramStrip() {
                 </Reveal>
               );
             })}
-          </ul>
-        </>
-      )}
-      {videos.length > 0 && (
-        <>
-          <h3 className="insta-h3">VIDEOS</h3>
-          <ul className="insta-grid">
-            {videos.map((t, i) => (
-              <Reveal as="li" key={t.video + i} delay={(i % 3) * 0.1}>
-                <div className="insta-tile">
-                  <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} />
-                  {t.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
-                </div>
-              </Reveal>
-            ))}
           </ul>
         </>
       )}

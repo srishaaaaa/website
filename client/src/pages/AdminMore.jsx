@@ -79,47 +79,64 @@ export function AdminCategories() {
 }
 
 // Three reel slots = the first three Instagram posts, which the homepage "Inside the boutique" section plays.
+const REEL_MAX = 6, PHOTO_MAX = 6;
+
+// Reels & Photo Gallery: up to 6 videos (shown first on the home page) and up to 6 photos (shown after them), each in its own slots.
 export function AdminReels() {
   const gate = useGate(); const { toast, loadSite } = useApp();
-  const [s, setS] = useState(null); const [busy, setBusy] = useState(null); const [err, setErr] = useState(); const input = useRef(); const target = useRef(0);
+  const [s, setS] = useState(null); const [busy, setBusy] = useState(null); const [err, setErr] = useState(); const input = useRef(); const target = useRef({ kind: 'video', i: 0 });
   useEffect(() => { if (!gate) api('/store').then(setS).catch(e => setErr(e.message)) }, [gate]);
   if (gate) return gate;
   const posts = s?.social?.instagram?.posts || [];
+  const lists = { video: posts.filter(p => p.video), photo: posts.filter(p => !p.video && p.image) };
   const save = async next => {
     const ig = s.social.instagram;
-    const out = await api('/admin/settings/social', { method: 'PUT', body: { ...s.social, instagram: { ...ig, posts: next } } });
+    const out = await api('/admin/settings/social', { method: 'PUT', body: { ...s.social, instagram: { ...ig, posts: [...next.video, ...next.photo] } } });
     setS(x => ({ ...x, social: out })); loadSite?.();
   };
-  const upload = async (i, file) => {
-    setBusy(i); setErr();
+  const upload = async (kind, i, file) => {
+    const isVideo = file.type.startsWith('video/');
+    if (kind === 'video' && !isVideo) return setErr('Reels are videos (MP4 or WebM). Add photos in the Photo gallery below.');
+    if (kind === 'photo' && isVideo) return setErr('The gallery is for photos (JPEG, PNG or WebP). Add videos in the Reels section above.');
+    setBusy(kind + i); setErr();
     try {
       const up = await uploadMedia(file);
-      const post = up.video ? { video: up.url, alt: posts[i]?.alt || '' } : { image: up.url, alt: posts[i]?.alt || '' };
-      await save(i < posts.length ? posts.map((p, n) => n === i ? { ...p, image: undefined, video: undefined, ...post } : p) : [...posts, post]);
-      toast(i < posts.length ? 'Reel replaced.' : 'Reel added.');
+      const item = kind === 'video' ? { video: up.url, alt: lists.video[i]?.alt || 'Boutique video' } : { image: up.url, alt: lists.photo[i]?.alt || 'Boutique photo' };
+      const cur = lists[kind]; const next = i < cur.length ? cur.map((p, n) => n === i ? item : p) : [...cur, item];
+      await save({ ...lists, [kind]: next }); toast(i < cur.length ? 'Replaced.' : 'Added.');
     } catch (e) { setErr(e.message) } finally { setBusy(null) }
   };
-  const remove = async i => { if (!confirm('Remove this reel from the home page?')) return; setBusy(i); setErr(); try { await save(posts.filter((_, n) => n !== i)); toast('Reel removed.') } catch (e) { setErr(e.message) } finally { setBusy(null) } };
-  return (
-    <AdminShell title="Instagram Reels" sub="Three slots feed the reels on the home page. Replacing a reel deletes the old video from storage. Max 4 MB each (compress to 720p first).">
-      <Err>{err}</Err>
-      <input ref={input} type="file" hidden accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) upload(target.current, f) }} />
-      <div className="dpos-reels">
-        {[0, 1, 2].map(i => {
-          const p = posts[i]; const live = !!(p?.video || p?.image); const canAdd = i <= posts.length;
+  const remove = async (kind, i) => { if (!confirm('Remove this from the home page?')) return; setBusy(kind + i); setErr(); try { await save({ ...lists, [kind]: lists[kind].filter((_, n) => n !== i) }); toast('Removed.') } catch (e) { setErr(e.message) } finally { setBusy(null) } };
+  const pick = (kind, i) => { target.current = { kind, i }; input.current.accept = kind === 'video' ? 'video/mp4,video/webm' : 'image/jpeg,image/png,image/webp'; input.current.click() };
+  const grid = (kind, max, noun) => {
+    const cur = lists[kind];
+    return (
+      <div className="dpos-reels six">
+        {Array.from({ length: max }, (_, i) => {
+          const p = cur[i]; const live = !!p; const canAdd = i <= cur.length; const key = kind + i;
           return (
-            <section className="dpos-reel" key={i}>
-              <header><span>SLOT {i + 1}</span>{live && <span className="dpos-live">LIVE</span>}</header>
-              <div className="media">{!s ? 'Loading…' : p?.video ? <video src={p.video} muted loop playsInline controls preload="metadata" /> : p?.image ? <img src={p.image} alt={p.alt || `Reel ${i + 1}`} /> : <span>{canAdd ? 'Empty — upload a short reel' : `Fill slot ${posts.length + 1} first`}</span>}</div>
+            <section className="dpos-reel" key={key}>
+              <header><span>{noun.toUpperCase()} {i + 1}</span>{live && <span className="dpos-live">LIVE</span>}</header>
+              <div className="media">{!s ? 'Loading…' : p?.video ? <video src={p.video} muted loop playsInline controls preload="metadata" /> : p?.image ? <img src={p.image} alt={p.alt || `${noun} ${i + 1}`} /> : <span>{canAdd ? `Empty — add a ${noun.toLowerCase()}` : `Fill ${noun.toLowerCase()} ${cur.length + 1} first`}</span>}</div>
               <footer>
-                <button className="dpos-btn ghost sm" disabled={busy !== null || !canAdd || !s} onClick={() => { target.current = i; input.current.click() }}>{busy === i ? 'Uploading…' : live ? '↻ Replace' : '+ Upload'}</button>
+                <button className="dpos-btn ghost sm" disabled={busy !== null || !canAdd || !s} onClick={() => pick(kind, i)}>{busy === key ? 'Uploading…' : live ? '↻ Replace' : '+ Upload'}</button>
                 {live && <a className="dpos-btn ghost sm" href={p.video || p.image} target="_blank" rel="noopener noreferrer" aria-label="Preview"><Icon n="eye" size={14} /></a>}
-                {live && <button className="dpos-trash" aria-label="Remove reel" disabled={busy !== null} onClick={() => remove(i)}><Icon n="trash" size={18} /></button>}
+                {live && <button className="dpos-trash" aria-label={`Remove ${noun.toLowerCase()}`} disabled={busy !== null} onClick={() => remove(kind, i)}><Icon n="trash" size={18} /></button>}
               </footer>
             </section>);
         })}
       </div>
-      <p className="sub">Only uploaded reels appear on the home page. Until you add your own, the empty frames stay in place. Old videos are cleaned from storage a few minutes after they are replaced.</p>
+    );
+  };
+  return (
+    <AdminShell title="Reels & Photo Gallery" sub="Add up to 6 reels (videos) and up to 6 photos. On the home page the reels come first, then the photo gallery.">
+      <Err>{err}</Err>
+      <input ref={input} type="file" hidden onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) upload(target.current.kind, target.current.i, f) }} />
+      <h2 className="serif adm-h2">Reels <span className="muted small">({lists.video.length} of {REEL_MAX} · MP4 or WebM, max 4 MB each; compress to 720p first)</span></h2>
+      {grid('video', REEL_MAX, 'Reel')}
+      <h2 className="serif adm-h2" style={{ marginTop: 28 }}>Photo gallery <span className="muted small">({lists.photo.length} of {PHOTO_MAX} · JPEG, PNG or WebP)</span></h2>
+      {grid('photo', PHOTO_MAX, 'Photo')}
+      <p className="sub">Only what you upload appears on the home page. Old files are cleaned from storage a few minutes after they are replaced.</p>
     </AdminShell>
   );
 }

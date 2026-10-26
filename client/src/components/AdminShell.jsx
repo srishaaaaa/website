@@ -61,7 +61,7 @@ export const NAV = [
     ['/admin/stitching/reports', 'Stitching Reports', 'chart', true], ['/admin/stitching/garments', 'Garment Types', 'tag', true]] },
   { group: 'Online store', items: [
     ['/admin', 'Online orders', 'orders', true], ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/products', 'Products & images', 'box', true],
-    ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Instagram Reels', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
+    ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
     ['/admin/users', 'Users', 'users', true], ['/admin/settings', 'Store settings', 'gear', true], ['/admin/sample', 'Sample data', 'flask', true]] },
 ];
 

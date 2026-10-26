@@ -263,26 +263,8 @@ export function AdminStorefront() {
 
         <HomePicks onSaved={refresh} toast={toast} />
 
-        {[['Photo gallery', 'image', 'Up to 6 photos shown as the GALLERY under “Inside DHANYA BOUTIQUE”.', 'image/jpeg,image/png,image/webp'],
-          ['Videos', 'video', 'Up to 6 vertical clips (MP4 or WebM, under 4 MB each, 9:16 works best) shown as the VIDEOS row. Clips autoplay silently while on screen and visitors can unmute. For bigger videos, paste a direct https link to an .mp4 below.', 'video/mp4,video/webm']].map(([title, key, help, accept]) => {
-          const mine = posts.filter(p => key === 'video' ? p.video : !p.video), rest = posts.filter(p => key === 'video' ? !p.video : p.video);
-          const save = list => savePosts(key === 'video' ? [...rest, ...list] : [...list, ...rest]);
-          return (
-            <section key={key} className="adm-block">
-              <h2 className="serif adm-h2">{title}</h2>
-              <p className="muted small">{help} The section appears once you add some.</p>
-              {mine.length < 6 && <Drop accept={accept} onFiles={async fs => { if (!fs.length) return; setBusy('ig-up'); setErr(); try { const next = [...mine]; for (const f of fs.slice(0, 6 - mine.length)) { const up = await uploadMedia(f); if (key === 'video' ? up.video : !up.video) next.push(key === 'video' ? { video: up.url, alt: 'Boutique video' } : { image: up.url, alt: 'Boutique photo' }) } await save(next) } catch (e) { setErr(e.message) } finally { setBusy('') } }} busy={busy === 'ig-up'} label={`${mine.length} of 6 added`} />}
-              {key === 'video' && mine.length < 6 && <form className="adm-url" onSubmit={e => { e.preventDefault(); const u = e.currentTarget.elements.url.value.trim(); if (!/^https:\/\/\S+$/.test(u)) return setErr('Enter a full https:// link to the video file.'); e.currentTarget.reset(); save([...mine, { video: u, alt: 'Boutique video' }]) }}>
-                <input name="url" type="url" placeholder="…or paste a link to an .mp4 video (https://…)" aria-label="Video link" /><button className="btn dark pill">ADD LINK</button>
-              </form>}
-              <ul className="adm-covers">{mine.map((p, i) => (
-                <li key={(p.video || p.image) + i}>
-                  <div className="adm-cover">{p.video ? <video src={p.video} muted playsInline preload="metadata" /> : <img src={p.image} alt="" />}</div>
-                  <div className="adm-act"><span className="muted small">{key === 'video' ? 'Video' : 'Photo'} {i + 1}</span><button className="danger" onClick={() => save(mine.filter((_, j) => j !== i))}>Remove</button></div>
-                </li>))}</ul>
-            </section>
-          );
-        })}
+        <section className="adm-block"><h2 className="serif adm-h2">Reels &amp; photo gallery</h2>
+          <p className="muted small">Up to 6 reels (videos) and 6 photos for “Inside DHANYA BOUTIQUE” now have their own page. <Link className="link-u" to="/admin/reels">Open Reels &amp; Gallery →</Link></p></section>
       </div>
       </AdminShell>
     </Gate>
