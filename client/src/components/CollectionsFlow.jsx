@@ -26,7 +26,9 @@ export default function CollectionsFlow() {
       if (ad < bd) { bd = ad; best = i }
       if (reduced) return;
       const k = Math.min(ad, 2);
-      el.style.transform = `rotateY(${-d * 24}deg) translateZ(${-k * 120}px) scale(${1 - k * 0.07})`;
+      // sliding door: side cards slide in toward the centre (tucking behind it) while swinging on their outer edge
+      el.style.transformOrigin = d < 0 ? '0% 50%' : '100% 50%';
+      el.style.transform = `translate3d(${-d * r.width * 0.36}px, 0, 0) rotateY(${-Math.sign(d) * Math.min(ad, 1) * 30}deg) scale(${1 - k * 0.08})`;
       el.style.opacity = String(1 - k * 0.22);
       el.style.zIndex = String(100 - Math.round(ad * 10));
     });
