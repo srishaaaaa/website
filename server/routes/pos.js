@@ -46,6 +46,10 @@ const settingsBody = z.object({
   deliveryPresets: z.array(z.object({ name: text(60).min(1), fee: paise })).max(20).default([]),
   state: text(60).default('Tamil Nadu (33)'),
   terms: text(600).default('Custom-stitched and altered garments are made to order and are non-returnable.'),
+  // Shop details printed on POS bills. Blank means "use the website's store details".
+  shopName: text(80).default(''), shopAddress: text(400).default(''), shopPhone: text(30).default(''), shopEmail: text(120).default(''),
+  ownerName: text(80).default(''), ownerPhone: text(30).default(''), whatsapp: text(30).default(''), city: text(80).default(''), hours: text(120).default(''), shopNameTamil: text(80).default(''), instagram: text(60).default(''),
+  accent: z.string().regex(/^(#[0-9a-fA-F]{6})?$/, 'Pick a colour').default(''), // one accent colour for the POS; blank = the default
 });
 const couponBody = z.object({
   code: text(40).regex(/^[A-Za-z0-9_-]{3,40}$/, 'Use 3-40 letters, digits, - or _'),

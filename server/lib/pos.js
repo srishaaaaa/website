@@ -330,13 +330,16 @@ export const listProducts = (db, q = '', onlyId = null) => {
 
 // ---- shop details printed on invoices (also used by the public invoice page) ----
 const INVOICE_DEFAULTS = { gstin: '', showGstRetail: false, showGstWholesale: false, deliveryPresets: [], state: 'Tamil Nadu (33)',
-  terms: 'Custom-stitched and altered garments are made to order and are non-returnable.' };
+  terms: 'Custom-stitched and altered garments are made to order and are non-returnable.',
+  shopName: '', shopAddress: '', shopPhone: '', shopEmail: '', ownerName: '', ownerPhone: '', whatsapp: '', city: '', hours: '', shopNameTamil: '', instagram: '', accent: '' };
 export const invoiceDefaults = INVOICE_DEFAULTS;
 export async function shopInfo(db) {
   const st = (await one(db, "SELECT value FROM store_settings WHERE key = 'store'"))?.value ?? {};
   const logo = (await one(db, "SELECT value FROM store_settings WHERE key = 'branding'"))?.value?.logo ?? null;
   const cfg = { ...INVOICE_DEFAULTS, ...(await getSetting(db, 'invoice', {})) };
-  return { name: st.name || 'DHANYA', address: st.address ?? [], phone: st.phone ?? null, email: st.email ?? null, logo,
+  const lines = String(cfg.shopAddress || '').split('\n').map(s => s.trim()).filter(Boolean);
+  return { name: cfg.shopName || st.name || 'DHANYA', address: lines.length ? lines : (st.address ?? []), phone: cfg.shopPhone || st.phone || null, email: cfg.shopEmail || st.email || null, logo,
+    accent: cfg.accent || '', ownerName: cfg.ownerName || '', city: cfg.city || '', hours: cfg.hours || '', whatsapp: cfg.whatsapp || '', instagram: cfg.instagram || '', shopNameTamil: cfg.shopNameTamil || '',
     gstin: cfg.gstin || '', showGst: { retail: !!cfg.showGstRetail, wholesale: !!cfg.showGstWholesale }, deliveryPresets: cfg.deliveryPresets ?? [], state: cfg.state, terms: cfg.terms };
 }
 

@@ -297,3 +297,24 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .an-bar i, .an-top i, .an-share i { display: block; height: 9px; border-radius: 999px; background: #eceaee; overflow: hidden } .an-bar u, .an-top u, .an-share u { display: block; height: 100%; border-radius: 999px; background: #b91c1c; text-decoration: none; min-width: 3px }
 .an-top { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 12px; margin-top: 14px; font-size: 13px } .an-top .an-toprow { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-weight: 700 } .an-top em { font-style: normal; color: #b91c1c; font-weight: 800 } .an-top > span { font-size: 11px; opacity: .65 }
 .an-share { display: flex; align-items: center; gap: 12px; min-width: 150px } .an-share i { flex: 1 } .an-share span { font-size: 12px; font-weight: 800; min-width: 48px; text-align: right }
+
+/* ---- POS settings page ---- */
+.dpos { --d-acc: var(--pos-accent, #330533); --d-bill: var(--pos-accent, #b91c1c) }
+.pset { display: grid; gap: 18px } .pset-top { display: flex; align-items: center; gap: 16px } .pset-top .sub { margin: 4px 0 0 }
+.pset-ico { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; background: var(--d-acc); color: #fff }
+.pset-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: start } .pset-col, .pset-wide { display: grid; gap: 18px } .pset-wide { grid-column: 1 / -1 }
+@media (max-width: 1000px) { .pset-grid { grid-template-columns: 1fr } }
+.pset-l { margin: 14px 0 8px; font-size: 10px; font-weight: 800; letter-spacing: .16em; color: #6b6670 }
+.pset-sws { display: flex; flex-wrap: wrap; gap: 10px }
+.pset-sw { width: 38px; height: 38px; border-radius: 12px; border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15); transition: transform .15s } .pset-sw:hover { transform: scale(1.08) }
+.pset-sw.on { outline: 2px solid #fff; outline-offset: -5px; box-shadow: 0 0 0 2px #1c1917 }
+.pset-hex { display: flex; align-items: center; gap: 12px; margin-top: 16px } .pset-hex i { width: 46px; height: 46px; border-radius: 12px } .pset-hex input { width: 150px; padding: 12px 14px; border: 1px solid #e5e2dd; border-radius: 12px; font-weight: 800 }
+.pset-prev { margin-top: 16px; border: 1px solid #e5e2dd; border-radius: 16px; overflow: hidden }
+.pset-prev-h { padding: 14px 16px; background: var(--c); color: #fff; text-align: center; display: grid; gap: 2px } .pset-prev-h span { font-size: 12px; opacity: .85 }
+.pset-prev-b { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #fff } .pset-prev-btn { padding: 8px 14px; border-radius: 10px; background: var(--c); color: #fff; font-size: 11px; font-weight: 800 } .pset-prev-b em { margin-left: auto; font-style: normal; font-weight: 800; padding: 6px 10px; background: #eceaee; border-radius: 8px }
+.pset-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid #e5e2dd; border-radius: 14px } .pset-row .sub { margin: 2px 0 0 } .pset-row.off { opacity: .55 }
+.pset-show { margin-left: auto; font-size: 11px } .pset-low { list-style: none; padding: 0; display: grid; gap: 8px; max-height: 50vh; overflow: auto } .pset-low li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid #ece8e1; border-radius: 12px } .pset-low em { font-style: normal; opacity: .6; font-size: 12px } .pset-low .out { color: #b91c1c }
+.pset-staff { list-style: none; padding: 0; display: grid; gap: 8px } .pset-staff li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid #ece8e1; border-radius: 12px } .pset-staff em { display: block; font-style: normal; font-size: 12px; opacity: .6 }
+.pset-add { margin-top: 16px; display: grid; gap: 10px } .pset-add input, .pset-add select, .pset-staff select { padding: 11px 14px; border: 1px solid #e5e2dd; border-radius: 12px; background: #fff; font: inherit }
+.dpos-card .f input, .dpos-card .f textarea, .dpos-card .f select { border-radius: 12px }
+.pset .dpos-card .dpos-card { margin-top: 16px; box-shadow: none; border-radius: 14px }

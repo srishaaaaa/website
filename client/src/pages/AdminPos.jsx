@@ -7,6 +7,7 @@ import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
+import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
 import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
@@ -606,6 +607,7 @@ function Birthdays({ shop }) {
 function Settings({ onSaved }) {
   const [s, setS] = useState(null); const [err, setErr] = useState(); const [ok, setOk] = useState(false); const [busy, setBusy] = useState(false);
   useEffect(() => { api('/admin/pos/settings').then(setS).catch(e => setErr(e.message)) }, []);
+  useEffect(() => { if (s) document.documentElement.style.setProperty('--pos-accent', s.accent || '') }, [s?.accent]); // eslint-disable-line
   if (!s) return err ? <Err>{err}</Err> : <Empty>Loading…</Empty>;
   const preset = (i, p) => setS({ ...s, deliveryPresets: s.deliveryPresets.map((x, n) => n === i ? { ...x, ...p } : x) });
   const save = async e => {
@@ -613,13 +615,31 @@ function Settings({ onSaved }) {
     try { const out = await api('/admin/pos/settings', { method: 'PUT', body: { ...s, gstin: s.gstin.trim().toUpperCase(), deliveryPresets: s.deliveryPresets.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), fee: p.fee })) } }); setS(out); setOk(true); onSaved() }
     catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
   };
+  const f = (k, label, extra = {}) => <label className="f">{label}<input value={s[k] || ''} maxLength={extra.max || 80} inputMode={extra.mode} type={extra.type} placeholder={extra.ph} onChange={e => setS({ ...s, [k]: e.target.value })} /></label>;
   return (
-    <div style={{ display: 'grid', gap: 18 }}>
-      <LogoCard />
-      <form onSubmit={save} style={{ display: 'grid', gap: 18 }}>
+    <div className="pset">
+      <section className="dpos-card pset-top"><span className="pset-ico"><Icon n="gear" /></span><div><h2 style={{ margin: 0 }}>Shop settings</h2><p className="sub">Update the shop profile, logo, colour and stock alerts used across the POS and invoices.</p></div></section>
+      <form onSubmit={save} className="pset-grid">
+        <div className="pset-col">
+          <AccentPicker value={s.accent || ''} onChange={v => setS({ ...s, accent: v })} />
+          <StockAlertsCard />
+        </div>
+        <div className="pset-col">
+          <section className="dpos-card"><h2><Icon n="shop" />Shop profile</h2>
+            <p className="sub" style={{ marginBottom: 10 }}>Printed on POS bills. Leave a box empty to use your website’s store details.</p>
+            <div className="dpos-grid">{f('ownerName', 'Shop owner name')}{f('shopName', 'Shop name')}</div>
+            <div className="dpos-grid">{f('shopPhone', 'Contact number', { max: 30, mode: 'tel', ph: '98765 43210' })}{f('shopEmail', 'Email ID', { max: 120, type: 'email', ph: 'shop@example.com' })}</div>
+            <div className="dpos-grid">{f('ownerPhone', 'Owner phone number', { max: 30, mode: 'tel' })}{f('whatsapp', 'WhatsApp number', { max: 30, mode: 'tel', ph: 'Same as contact number' })}</div>
+            <label className="f">Shop address (one line per row)<textarea rows={3} maxLength={400} value={s.shopAddress || ''} onChange={e => setS({ ...s, shopAddress: e.target.value })} placeholder={'Street, area\nCity - PIN'} /></label>
+            <div className="dpos-grid">{f('city', 'City / location', { max: 80 })}{f('hours', 'Business hours', { max: 120, ph: 'e.g. Open daily, 10 AM – 9 PM' })}</div>
+            <div className="dpos-grid">{f('shopNameTamil', 'Shop name (Tamil)')}{f('instagram', 'Instagram ID', { max: 60, ph: 'yourshop.official' })}</div>
+            <label className="f">GSTIN (on GST invoices)<input value={s.gstin} onChange={e => setS({ ...s, gstin: e.target.value })} maxLength={15} placeholder="Optional · 15 characters" style={{ fontFamily: 'monospace' }} /></label>
+            <LogoCard />
+          </section>
+        </div>
+        <div className="pset-wide">
         <section className="dpos-card"><h2><Icon n="doc" />GST &amp; invoice number</h2>
-          <p className="sub" style={{ marginBottom: 12 }}>Print your GST number on invoices. Turn it on per bill type. Amounts are unchanged.</p>
-          <label className="f">Business GST number (GSTIN)<input value={s.gstin} onChange={e => setS({ ...s, gstin: e.target.value })} maxLength={15} placeholder="15 characters, leave blank until you have one" style={{ fontFamily: 'monospace' }} /></label>
+          <p className="sub" style={{ marginBottom: 12 }}>Your GSTIN is in Shop profile above. Turn it on per bill type here. Amounts are unchanged.</p>
           <div className="dpos-grid" style={{ marginTop: 12 }}>
             <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}><input type="checkbox" checked={s.showGstRetail} onChange={e => setS({ ...s, showGstRetail: e.target.checked })} /><span><b>Show on retail invoices</b><br /><span className="muted small">POS bills</span></span></label>
           </div>
@@ -640,7 +660,10 @@ function Settings({ onSaved }) {
         </section>
         <Err>{err}</Err>{ok && <p className="dpos-ok" role="status">Saved.</p>}
         <div><button className="dpos-btn" disabled={busy} type="submit">{busy ? 'Saving…' : 'Save settings'}</button></div>
+        </div>
       </form>
+      <LoginPasswordCard />
+      <StaffAccessCard />
     </div>
   );
 }
@@ -656,6 +679,7 @@ export default function AdminPos() {
   const stocker = !!user && ['owner', 'admin', 'inventory'].includes(user.role);
   const loadShop = useCallback(() => api('/admin/pos/shop').then(setShop).catch(e => setErr(e.message)), []);
   useEffect(() => { if (allowed) loadShop() }, [allowed, loadShop]);
+  useEffect(() => { document.documentElement.style.setProperty('--pos-accent', shop?.accent || ''); return () => document.documentElement.style.removeProperty('--pos-accent') }, [shop?.accent]);
   // The invoice is a page of its own (/invoice/<token>): print it, share it, copy its link.
   const openInvoice = useCallback((no, row) => row?.shareToken ? nav('/invoice/' + row.shareToken) : api('/admin/pos/sales/' + encodeURIComponent(no)).then(x => nav('/invoice/' + x.shareToken)).catch(e => setErr(e.message)), [nav]);
 
@@ -679,13 +703,14 @@ export default function AdminPos() {
   const sub = {
     billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'All bills — full store & channel insights', advance: 'Orders booked with a deposit, billed when the customer collects', orders: 'Manage and track past invoices',
     inventory: 'Manage products and stock — add, edit and adjust', customers: 'Customer details with date of birth', coupons: 'Discount codes for the till', birthdays: 'Customers to wish and reward',
-    expenses: 'Money out, subtracted from net earnings', settings: 'Logo, GST number on invoices and delivery quick picks',
+    expenses: 'Money out, subtracted from net earnings', settings: 'POS logo, shop details on bills, GST number and delivery quick picks',
   }[tab];
   const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
   return (
     <AdminShell title={title} sub={sub}>
       <Err>{err}</Err>
       {body}
+      {allowed && <LowStockAlert />}
       {done && <BillDone sale={done} shop={shop} onClose={() => setDone(null)} />}
       {advDone && <AdvanceDone adv={advDone} shop={shop} onClose={() => setAdvDone(null)} onView={() => { setAdvDone(null); nav('/admin/billing/advance') }} />}
     </AdminShell>
