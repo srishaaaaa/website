@@ -5,6 +5,7 @@ import { inr } from '../../lib/format';
 import { clock, longDate } from '../../lib/invoiceFormat';
 import { istDay, todayStr } from '../../components/PeriodFilter';
 import '../../stitching.css';
+import { NeckField } from './NeckPicker';
 
 export { inr, todayStr };
 export const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{children}</p> : null;
@@ -186,7 +187,7 @@ export function ItemForm({ meta, item, onChange, customerId, designs, lockType }
 
       <div className="stc-sec"><h4>Design and stitching specifications</h4>
         <div className="stc-grid">{(type?.specFields ?? []).map(k => { const f = meta.specLibrary[k]; return (
-          <Field key={k} label={f.label}>{f.type === 'select'
+          <Field key={k} label={f.label}>{k === 'neck_design' ? <NeckField value={item.specs[k] ?? ''} onChange={v => set({ specs: { ...item.specs, [k]: v } })} /> : f.type === 'select'
             ? <select value={item.specs[k] ?? ''} onChange={e => set({ specs: { ...item.specs, [k]: e.target.value } })}><option value="">—</option>{f.options.map(o => <option key={o}>{o}</option>)}</select>
             : <input value={item.specs[k] ?? ''} maxLength={300} onChange={e => set({ specs: { ...item.specs, [k]: e.target.value } })} />}</Field>) })}</div>
         {item.custom.map((c, i) => <div key={i} className="stc-row"><input style={{ flex: '1 1 160px' }} placeholder="Specification" aria-label="Custom specification name" value={c.label} onChange={e => set({ custom: item.custom.map((x, j) => j === i ? { ...x, label: e.target.value } : x) })} />
