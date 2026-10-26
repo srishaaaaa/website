@@ -318,3 +318,12 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .pset-add { margin-top: 16px; display: grid; gap: 10px } .pset-add input, .pset-add select, .pset-staff select { padding: 11px 14px; border: 1px solid #e5e2dd; border-radius: 12px; background: #fff; font: inherit }
 .dpos-card .f input, .dpos-card .f textarea, .dpos-card .f select { border-radius: 12px }
 .pset .dpos-card .dpos-card { margin-top: 16px; box-shadow: none; border-radius: 14px }
+
+/* ---- Advance Orders: summary boxes, search and status chips ---- */
+.adv-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px } @media (max-width: 760px) { .adv-kpis { grid-template-columns: 1fr } }
+.adv-k { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 20px; border: 1px solid #e8e4dd; border-radius: 16px; background: #fff }
+.adv-k span { display: block; font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #991b1b } .adv-k b { display: block; margin-top: 6px; font-size: 28px; font-weight: 800; color: #0f0f10 }
+.adv-k i { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-style: normal } .adv-k i.rose { background: #fee2e2; color: #b91c1c } .adv-k i.blue { background: #dbeafe; color: #2563eb } .adv-k i.green { background: #dcfce7; color: #16a34a }
+.adv-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px; margin-bottom: 14px; border: 1px solid #e8e4dd; border-radius: 16px; background: #fff }
+.adv-search { flex: 1 1 280px; position: relative; display: flex; align-items: center; color: #991b1b } .adv-search svg { position: absolute; left: 14px } .adv-search input { width: 100%; padding: 13px 16px 13px 42px; border: 1px solid #e5e2dd; border-radius: 12px; font: inherit; font-size: 14px; color: #1c1917 } .adv-search input:focus { outline: none; border-color: #b91c1c }
+.adv-chips { display: flex; gap: 8px; flex-wrap: wrap } .adv-chips button { padding: 11px 16px; border-radius: 12px; background: #f3f3f4; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #0f0f10; transition: background .2s } .adv-chips button.on { background: #b91c1c; color: #fff }

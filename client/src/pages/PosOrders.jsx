@@ -188,25 +188,24 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
 }
 
 export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
-  const [st, setSt] = useState('open'); const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all');
+  const [st, setSt] = useState('all'); const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all');
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [sel, setSel] = useState(initialCode || null); const [n, setN] = useState(0);
   useEffect(() => { const t = setTimeout(() => api('/admin/pos/advances?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), 200); return () => clearTimeout(t) }, [q, tick, n]);
   const today = todayStr();
-  const shown = useMemo(() => (rows || []).filter(r => inPeriod(r.createdAt, per) && (st === 'all' || (st === 'open' ? ['pending', 'ready'].includes(r.status) : r.status === st))), [rows, per, st]);
+  const shown = useMemo(() => (rows || []).filter(r => inPeriod(r.createdAt, per) && (st === 'all' || r.status === st)), [rows, per, st]);
   const open = (rows || []).filter(r => ['pending', 'ready'].includes(r.status));
   return (
     <>
-      <div className="dpos-kpis">
-        <div className="dpos-kpi"><span>Open orders</span><b>{rows ? open.length : '…'}</b></div>
-        <div className="dpos-kpi"><span>Advance held</span><b>{rows ? inr(open.reduce((s, r) => s + r.deposit, 0)) : '…'}</b></div>
-        <div className="dpos-kpi"><span>Balance to collect</span><b>{rows ? inr(open.reduce((s, r) => s + r.balance, 0)) : '…'}</b></div>
-        <div className="dpos-kpi"><span>Due today or late</span><b>{rows ? open.filter(r => r.deliveryDate && r.deliveryDate <= today).length : '…'}</b></div>
+      <div className="adv-kpis">
+        <div className="adv-k"><div><span>OUTSTANDING BALANCE</span><b>{rows ? inr(open.reduce((s, r) => s + r.balance, 0)) : '…'}</b></div><i className="rose"><Ico size={22}><path d="M7 5h10M7 9h10M9 5c4 0 6 2 6 4s-2 4-6 4H7l7 6" /></Ico></i></div>
+        <div className="adv-k"><div><span>READY FOR COLLECTION</span><b>{rows ? rows.filter(r => r.status === 'ready').length : '…'}</b></div><i className="blue"><Ico size={22}><path d="M12 3 4 7v10l8 4 8-4V7z" /><path d="M4 7l8 4 8-4M12 11v10" /></Ico></i></div>
+        <div className="adv-k"><div><span>COMPLETED DEPOSITS</span><b>{rows ? rows.filter(r => r.status === 'completed').length : '…'}</b></div><i className="green"><Ico size={22}><path d="m5 12.5 4.5 4.5L19 7.5" /></Ico></i></div>
       </div>
-      <div className="dpos-bar-tools">
-        <input type="search" style={{ maxWidth: 320 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Order no., name or mobile" aria-label="Search advance orders" />
-        <Chips label="Status" value={st} onChange={setSt} options={[['open', 'Open'], ['completed', 'Billed'], ['cancelled', 'Cancelled'], ['all', 'All']]} />
-        <PeriodFilter value={per} onChange={setPer} />
+      <div className="adv-bar">
+        <label className="adv-search"><Ico size={17}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Ico><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search by ID, customer, phone, product or status" aria-label="Search advance orders" /></label>
+        <div className="adv-chips" role="group" aria-label="Status">{[['all', 'ALL'], ['pending', 'PENDING'], ['ready', 'READY'], ['completed', 'COMPLETED'], ['cancelled', 'CANCELLED']].map(([v, l]) => <button key={v} type="button" className={st === v ? 'on' : ''} aria-pressed={st === v} onClick={() => setSt(v)}>{l}</button>)}</div>
       </div>
+      <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /></div>
       <Err>{err}</Err>
       <section className="dpos-card">
         {!rows ? <Empty>Loading…</Empty> : !shown.length ? <Empty>No advance orders here. Add items in Billing and press “Save as advance order”.</Empty> : (
