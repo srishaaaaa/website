@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
 import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
+import PosExpenses from './PosExpenses';
 import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
@@ -333,8 +334,9 @@ const GST_CHIPS = [['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'No
 
 // ============================ analytics ============================
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'], DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-function Stat({ cls = '', icon, label, value, sub, txt, children }) {
-  return <div className={`dpos-card2 ${cls}`}><div className="t"><span>{label}</span><span className="ic"><Icon n={icon} size={16} /></span></div><div className={`v ${txt ? 'txt' : ''}`}>{value}</div>{sub && <div className="s">{sub}</div>}{children}</div>;
+function Stat({ cls = '', icon, label, value, sub, txt, children, onOpen }) {
+  const open = onOpen ? { role: 'button', tabIndex: 0, onClick: onOpen, onKeyDown: e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen()), 'aria-label': `${label}: open details` } : {};
+  return <div className={`dpos-card2 ${cls} ${onOpen ? 'openable' : ''}`} {...open}><div className="t"><span>{label}</span><span className="ic"><Icon n={icon} size={16} /></span></div><div className={`v ${txt ? 'txt' : ''}`}>{value}</div>{sub && <div className="s">{sub}</div>}{onOpen && <div className="s more">View details →</div>}{children}</div>;
 }
 function Chart({ values, labels, cap }) {
   const max = Math.max(1, ...values);
@@ -396,10 +398,33 @@ function ProductsBoard({ rep }) {
   );
 }
 
+// Opens from the Net profit and Total expenses boxes: where the money went, by category and entry.
+function MoneyDetail({ kind, rep, from, to, onClose, goExpenses }) {
+  const [rows, setRows] = useState(null);
+  useEffect(() => { api(`/admin/pos/expenses?from=${from}&to=${to}`).then(setRows).catch(() => setRows([])) }, [from, to]);
+  const cats = rep.expenseByCategory || [];
+  return (
+    <Modal wide className="money" title={kind === 'net' ? 'Net profit, step by step' : 'Where the money went'} sub={`${dmy(from)} to ${dmy(to)}`} onClose={onClose}>
+      <div className="money-sum">
+        <div><span>Sales (revenue)</span><b>{inr(rep.revenue)}</b></div>
+        <div><span>− Expenses</span><b className="neg">{inr(rep.expenses)}</b></div>
+        <div className="tot"><span>= Net profit</span><b className={rep.net < 0 ? 'neg' : 'pos'}>{inr(rep.net)}</b></div>
+      </div>
+      <h4 className="money-h">Spend by category</h4>
+      {!cats.length ? <p className="dpos-empty">No expenses in this period.</p> : <ul className="ex-bars">{cats.map(c => <li key={c.category}><span>{c.category}</span><i><u style={{ width: `${c.amount / cats[0].amount * 100}%` }} /></i><b>{inr(c.amount)}</b></li>)}</ul>}
+      <h4 className="money-h">Every expense</h4>
+      {!rows ? <p className="dpos-empty">Loading…</p> : !rows.length ? <p className="dpos-empty">Nothing recorded.</p> : (
+        <div className="dpos-tw" style={{ maxHeight: 260, overflow: 'auto' }}><table><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th className="r">Amount</th></tr></thead>
+          <tbody>{rows.map(x => <tr key={x.id}><td>{dmy(x.date)}</td><td><b>{x.title}</b></td><td>{x.category}</td><td className="r"><b>{inr(x.amount)}</b></td></tr>)}</tbody></table></div>)}
+      <div style={{ marginTop: 14 }}><button type="button" className="dpos-btn" onClick={() => { onClose(); goExpenses() }}>Open Expense Tracker</button></div>
+    </Modal>
+  );
+}
+
 function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const ws = channel === 'wholesale';
   const [tab, setTab] = useState('revenue'); const [gst, setGst] = useState('all'); const [per, setPer] = usePeriod('all');
-  const [rep, setRep] = useState(null); const [bills, setBills] = useState(null); const [err, setErr] = useState();
+  const [rep, setRep] = useState(null); const [bills, setBills] = useState(null); const [err, setErr] = useState(); const [detail, setDetail] = useState(null);
   const today = todayStr();
   const [from, to] = tab === 'today' ? [today, today] : periodRange(per);
   useEffect(() => {
@@ -416,12 +441,12 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
 
       {(tab === 'revenue' || tab === 'today') && <>
         <div className="dpos-k4">
-          <Stat cls="net" icon="wallet" label="Net earnings" value={v(r => inr(r.net))} sub={ws ? 'Wholesale sales' : 'GST + Non-GST − Expenses'} />
+          <Stat cls="net" icon="wallet" label="Net profit" value={v(r => inr(r.net))} sub={ws ? 'Wholesale sales' : 'Sales − Expenses'} onOpen={!ws && rep ? () => setDetail('net') : undefined} />
           <Stat cls="gstc" icon="doc" label="GST sales" value={v(r => inr(r.gstSales))} sub={v(r => `${r.gstBills} GST invoices`, ' ')} />
           <Stat cls="nong" icon="trend" label="Non-GST sales" value={v(r => `+ ${inr(r.nonGstSales)}`)} sub={v(r => `${r.nonGstBills} ${ws ? 'wholesale' : 'retail'} bills`, ' ')} />
-          {!ws && <Stat cls="exp" icon="wallet" label="Total expenses" value={v(r => `− ${inr(r.expenses)}`)}><button className="s" style={{ textAlign: 'left', color: '#b3261e', textDecoration: 'underline' }} onClick={goExpenses}>Money out — Expense Tracker</button></Stat>}
+          {!ws && <Stat cls="exp" icon="wallet" label="Total expenses" value={v(r => `− ${inr(r.expenses)}`)} sub={v(r => r.expenseByCategory?.length ? `${r.expenseByCategory.length} categories · top: ${r.expenseByCategory[0].category}` : 'No expenses yet', ' ')} onOpen={rep ? () => setDetail('expenses') : undefined} />}
         </div>
-        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;GST ({inr(rep.gstSales)}) + Non-GST ({inr(rep.nonGstSales)}) − Expenses ({inr(rep.expenses)})</span><span>= Net Profit: <span className="np">{inr(rep.net)}</span></span></div>}
+        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;GST ({inr(rep.gstSales)}) + Non-GST ({inr(rep.nonGstSales)}) − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{inr(rep.net)}</span></span></div>}
         <div className="dpos-k4">
           <Stat icon="wallet" label="Total revenue" value={v(r => inr(r.revenue))} sub={v(r => `GST (${inr(r.gstSales)}) + Non-GST (${inr(r.nonGstSales)})`, ' ')} />
           <Stat icon="doc" label="Completed bills" value={v(r => r.bills)} sub="POS + manual bills" />
@@ -457,6 +482,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
       {tab === 'products' && <ProductsBoard rep={rep} />}
 
       {tab === 'coupons' && <CouponPanel rep={rep} openInvoice={openInvoice} />}
+      {detail && rep && <MoneyDetail kind={detail} rep={rep} from={from} to={to} onClose={() => setDetail(null)} goExpenses={goExpenses} />}
     </>
   );
 }
@@ -506,42 +532,6 @@ function Customers({ manager }) {
 }
 
 // ============================ expenses ============================
-function Expenses() {
-  const { toast } = useApp();
-  const [per, setPer] = usePeriod('month'); const [rows, setRows] = useState(null); const [err, setErr] = useState();
-  const [f, setF] = useState({ title: '', category: 'General', amount: '', mode: 'cash', date: todayStr() });
-  const [from, to] = periodRange(per);
-  const load = useCallback(() => api(`/admin/pos/expenses?from=${from}&to=${to}`).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), [from, to]);
-  useEffect(() => { load() }, [load]);
-  const add = async e => {
-    e.preventDefault(); setErr();
-    try { await api('/admin/pos/expenses', { method: 'POST', body: { title: f.title.trim(), category: f.category.trim() || 'General', amount: toPaise(f.amount), paymentMode: f.mode, date: f.date } }); setF({ ...f, title: '', amount: '' }); toast('Expense added.'); load() }
-    catch (x) { setErr(x.issues?.[0]?.message || x.message) }
-  };
-  const del = async x => { if (!confirm(`Delete expense “${x.title}”?`)) return; try { await api('/admin/pos/expenses/' + x.id, { method: 'DELETE' }); load() } catch (e) { setErr(e.message) } };
-  const total = (rows || []).reduce((s, x) => s + x.amount, 0);
-  return (
-    <>
-      <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><div className="dpos-card2 exp" style={{ minHeight: 0, padding: '10px 18px' }}><span className="s">Total expenses</span><b style={{ fontSize: 22, color: '#b3261e' }}>− {inr(total)}</b></div></div>
-      <form className="dpos-card" onSubmit={add}><h2>Add expense</h2>
-        <div className="dpos-grid">
-          <label className="f">What was it for<input required value={f.title} onChange={e => setF({ ...f, title: e.target.value })} placeholder="e.g. Shop rent, packing material" maxLength={120} /></label>
-          <label className="f">Category<input value={f.category} onChange={e => setF({ ...f, category: e.target.value })} maxLength={60} list="dpos-exp-cats" /></label>
-          <label className="f">Amount ₹<input required inputMode="decimal" value={f.amount} onChange={e => setF({ ...f, amount: e.target.value })} /></label>
-          <label className="f">Paid by<select value={f.mode} onChange={e => setF({ ...f, mode: e.target.value })}><option value="cash">Cash</option><option value="upi">GPay / UPI</option><option value="card">Card</option></select></label>
-          <label className="f">Date<input type="date" max={todayStr()} value={f.date} onChange={e => setF({ ...f, date: e.target.value || todayStr() })} /></label>
-        </div>
-        <datalist id="dpos-exp-cats">{['Rent', 'Salary', 'Electricity', 'Packing', 'Transport', 'Marketing', 'Repairs', 'Tea & snacks'].map(c => <option key={c} value={c} />)}</datalist>
-        <div style={{ marginTop: 14 }}><button className="dpos-btn">Add expense</button></div>
-      </form>
-      <Err>{err}</Err>
-      <section className="dpos-card"><h2>Money out</h2>
-        {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No expenses in this period.</Empty> : <div className="dpos-tw"><table><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Paid by</th><th className="r">Amount</th><th /></tr></thead>
-          <tbody>{rows.map(x => <tr key={x.id}><td>{dmy(x.date)}</td><td><b>{x.title}</b></td><td>{x.category}</td><td>{MODE_LABEL[x.paymentMode]}</td><td className="r"><b>{inr(x.amount)}</b></td><td className="r"><button className="dpos-btn danger sm" onClick={() => del(x)}>Delete</button></td></tr>)}</tbody></table></div>}</section>
-    </>
-  );
-}
-
 // ============================ coupons ============================
 function Coupons() {
   const [list, setList] = useState(null); const [err, setErr] = useState(); const [st, setSt] = useState('all');
@@ -698,12 +688,12 @@ export default function AdminPos() {
     advance: <AdvanceOrders manager={manager} tick={tick} onBilled={onBilled} />,
     orders: <OrderHistory manager={manager} tick={tick} openInvoice={openInvoice} onChanged={() => setTick(t => t + 1)} />,
     inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <Coupons />, birthdays: <Birthdays shop={shop} />,
-    expenses: <Expenses />, settings: <Settings onSaved={loadShop} />,
+    expenses: <PosExpenses />, settings: <Settings onSaved={loadShop} />,
   }[tab];
   const sub = {
     billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'All bills — full store & channel insights', advance: 'Orders booked with a deposit, billed when the customer collects', orders: 'Manage and track past invoices',
     inventory: 'Manage products and stock — add, edit and adjust', customers: 'Customer details with date of birth', coupons: 'Discount codes for the till', birthdays: 'Customers to wish and reward',
-    expenses: 'Money out, subtracted from net earnings', settings: 'POS logo, shop details on bills, GST number and delivery quick picks',
+    expenses: 'Record spending by category and see your real net profit', settings: 'POS logo, shop details on bills, GST number and delivery quick picks',
   }[tab];
   const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
   return (

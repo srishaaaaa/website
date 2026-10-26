@@ -31,3 +31,21 @@ test('POS settings: shop profile and accent colour are saved and used on bills',
   const cashier = client();
   assert.ok([401, 403].includes((await cashier('PUT', '/admin/pos/settings', cur)).status), 'visitors cannot change settings');
 });
+
+test('expense categories: managed in settings, added and removed, and reports break expenses down by category', async () => {
+  const o = client(); await o('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const start = (await o('GET', '/admin/pos/expense-categories')).body;
+  assert.ok(start.includes('Rent') && start.includes('Salaries'));
+  const added = await o('POST', '/admin/pos/expense-categories', { name: 'Fabric Samples' });
+  assert.equal(added.status, 201); assert.ok(added.body.includes('Fabric Samples'));
+  assert.equal((await o('POST', '/admin/pos/expense-categories', { name: 'fabric samples' })).status, 409, 'duplicates (any case) are refused');
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  await o('POST', '/admin/pos/expenses', { title: 'Swatches', category: 'Fabric Samples', amount: 12000, date: day });
+  await o('POST', '/admin/pos/expenses', { title: 'Shop rent', category: 'Rent', amount: 500000, date: day });
+  const rep = (await o('GET', `/admin/pos/reports?from=${day}&to=${day}`)).body;
+  assert.deepEqual(rep.expenseByCategory.map(c => [c.category, c.amount]), [['Rent', 500000], ['Fabric Samples', 12000]]);
+  assert.equal(rep.net, rep.revenue - 512000, 'net profit is revenue minus all expenses');
+  assert.equal((await o('DELETE', '/admin/pos/expense-categories?name=Fabric%20Samples')).status, 200);
+  assert.ok(![...(await o('GET', '/admin/pos/expense-categories')).body].includes('Fabric Samples'));
+  assert.ok([401, 403].includes((await client()('GET', '/admin/pos/expense-categories')).status));
+});

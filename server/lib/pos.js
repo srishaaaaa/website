@@ -239,6 +239,7 @@ export async function report(db, from, to, channel = 'retail', gst = 'all') {
     FROM pos_sales s WHERE ${range}`, p);
   const units = (await one(db, `SELECT COALESCE(SUM(i.quantity), 0)::int AS n FROM pos_sale_items i JOIN pos_sales s ON s.id = i.sale_id WHERE ${done} AND ${range}`, p)).n;
   const expenses = channel === 'retail' ? (await one(db, 'SELECT COALESCE(SUM(amount), 0)::int AS n FROM pos_expenses WHERE expense_date BETWEEN $1::date AND $2::date', [from, to])).n : 0;
+  const expenseByCategory = channel === 'retail' ? await rows(db, 'SELECT category, SUM(amount)::int AS amount, COUNT(*)::int AS entries FROM pos_expenses WHERE expense_date BETWEEN $1::date AND $2::date GROUP BY category ORDER BY amount DESC', [from, to]) : [];
   const daily = await rows(db, `SELECT ${dayExpr}::text AS day, COUNT(*)::int AS bills, SUM(s.total_amount)::int AS revenue FROM pos_sales s WHERE ${done} AND ${range} GROUP BY 1 ORDER BY 1`, p);
   const products = await rows(db, `
     SELECT i.name_snapshot AS name, SUM(i.quantity)::int AS qty, SUM(i.line_total - i.discount_alloc)::int AS revenue
@@ -261,7 +262,7 @@ export async function report(db, from, to, channel = 'retail', gst = 'all') {
   const wk = await rows(db, `SELECT ${dayExpr}::text AS day, SUM(s.total_amount)::int AS revenue FROM pos_sales s WHERE ${done} AND s.channel = $1 AND ${dayExpr} BETWEEN $2::date AND $3::date${g} GROUP BY 1`, [channel, iso(mon), iso(sun)]);
   const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setUTCDate(mon.getUTCDate() + i); return wk.find(r => r.day === iso(d))?.revenue ?? 0 });
   const jan1 = new Date(Date.UTC(year, 0, 1)), weekNo = Math.ceil(((t - jan1) / 86400000 + ((jan1.getUTCDay() + 6) % 7) + 1) / 7);
-  return { from, to, channel, gst, ...totals, units, expenses, net: totals.revenue - expenses, average: totals.bills ? Math.round(totals.revenue / totals.bills) : 0,
+  return { from, to, channel, gst, ...totals, units, expenses, expenseByCategory, net: totals.revenue - expenses, average: totals.bills ? Math.round(totals.revenue / totals.bills) : 0,
     topProduct: products[0]?.name ?? null, daily, products, coupons, discountedList, year, monthly, week, weekNo };
 }
 

@@ -76,6 +76,7 @@ const advanceBody = z.object({
 const id = z.coerce.number().int().positive();
 
 const SETTINGS_DEFAULT = settingsBody.parse({});
+const DEFAULT_EXPENSE_CATEGORIES = ['Electricity', 'Marketing', 'Miscellaneous', 'Packing', 'Rent', 'Repairs & Maintenance', 'Salaries', 'Stationery', 'Tea & Snacks', 'Transport'];
 
 // Dhanya POS API. Roles are enforced here on the server (and re-read from the database on every request by auth.role):
 // owner/admin/cashier may bill and look things up; only owner/admin may void bills, view reports and manage coupons, settings,
@@ -285,6 +286,23 @@ export default function pos({ db, auth }) {
       [e.title, e.category, e.amount, e.paymentMode, e.notes, e.date ?? null, req.user.id]);
     await audit(db, req.user.id, 'pos.expense.create', 'pos_expense', row.id, { amount: e.amount });
     res.status(201).json({ id: row.id });
+  }));
+  // expense categories live in the POS settings (no database change needed). Existing expenses keep the name they were saved with.
+  const catName = z.object({ name: text(60).min(1) });
+  const loadCats = async () => { const c = await getSetting(db, 'expense_categories', null); return Array.isArray(c) ? c : DEFAULT_EXPENSE_CATEGORIES };
+  r.get('/pos/expense-categories', manager, wrap(async (_req, res) => res.json(await loadCats())));
+  r.post('/pos/expense-categories', manager, wrap(async (req, res) => {
+    const { name } = catName.parse(req.body); const cats = await loadCats();
+    if (cats.some(c => c.toLowerCase() === name.toLowerCase())) throw new HttpError(409, 'That category already exists');
+    if (cats.length >= 60) throw new HttpError(400, 'You can keep up to 60 categories');
+    const next = [...cats, name].sort((a, b) => a.localeCompare(b)); await putSetting(db, 'expense_categories', next);
+    await audit(db, req.user.id, 'pos.expense_category.add', 'pos_settings', name); res.status(201).json(next);
+  }));
+  r.delete('/pos/expense-categories', manager, wrap(async (req, res) => {
+    const { name } = catName.parse(req.query); const cats = await loadCats();
+    if (!cats.includes(name)) throw new HttpError(404, 'Category not found');
+    const next = cats.filter(c => c !== name); await putSetting(db, 'expense_categories', next);
+    await audit(db, req.user.id, 'pos.expense_category.remove', 'pos_settings', name); res.json(next);
   }));
   r.delete('/pos/expenses/:id', manager, wrap(async (req, res) => {
     const d = await db.query('DELETE FROM pos_expenses WHERE id = $1 RETURNING id', [id.parse(req.params.id)]);

@@ -53,7 +53,7 @@ export default function CartDrawer() {
       {bagOpen && (
         <div className="overlay-root">
           <motion.div className="scrim" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-          <motion.aside ref={ref} className="drawer glass" role="dialog" aria-modal="true" aria-label="Shopping bag"
+          <motion.aside ref={ref} className="drawer glass refine" role="dialog" aria-modal="true" aria-label="Shopping bag"
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
             <header className="drawer-head">
               <h2 className="serif">Your Bag <span className="muted">({bagCount})</span></h2>
