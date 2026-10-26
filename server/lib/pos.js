@@ -50,10 +50,20 @@ export function couponProblem(c, subtotal) {
   return null;
 }
 
+// Short, easy-to-read references: INV-2026-G3AKL for bills, DEP-20261026-8207 for advance orders. Look-alike characters (0/O, 1/I) are left out.
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const randCode = n => Array.from(crypto.randomBytes(n), b => CODE_CHARS[b % CODE_CHARS.length]).join('');
 const invoiceNo = async (t, channel) => {
   const y = istYear();
-  const { last } = await one(t, 'INSERT INTO pos_counters (year, channel, last) VALUES ($1, $2, 1) ON CONFLICT (year, channel) DO UPDATE SET last = pos_counters.last + 1 RETURNING last', [y, channel]);
-  return `${PREFIX[channel]}-${y}-${String(last).padStart(6, '0')}`;
+  if (channel === 'wholesale') { // older wholesale bills keep their numbered series
+    const { last } = await one(t, 'INSERT INTO pos_counters (year, channel, last) VALUES ($1, $2, 1) ON CONFLICT (year, channel) DO UPDATE SET last = pos_counters.last + 1 RETURNING last', [y, channel]);
+    return `${PREFIX[channel]}-${y}-${String(last).padStart(6, '0')}`;
+  }
+  for (let i = 0; i < 12; i++) {
+    const no = `INV-${y}-${randCode(5)}`;
+    if (!await one(t, 'SELECT 1 AS x FROM pos_sales WHERE invoice_no = $1', [no])) return no;
+  }
+  throw new HttpError(500, 'Could not create an invoice number. Please try again.');
 };
 
 // Variants for the retail billing screen and inventory panel: price and stock come straight from the shared catalogue tables.
@@ -341,9 +351,12 @@ export async function createAdvance(db, user, d) {
     const lines = await resolveLines(t, d.items, { checkStock: true });
     const bill = computeBill(lines, { isGst: d.isGst, gstRate: d.gstRate ?? null, discountType: d.discountType, discountValue: d.discountValue, deliveryFee: d.deliveryFee });
     if (d.deposit > bill.total) throw new HttpError(400, 'The advance cannot be more than the bill total', 'bad_deposit');
-    const y = istYear();
-    const { last } = await one(t, "INSERT INTO pos_counters (year, channel, last) VALUES ($1, 'advance', 1) ON CONFLICT (year, channel) DO UPDATE SET last = pos_counters.last + 1 RETURNING last", [y]);
-    const number = `AO-${y}-${String(last).padStart(4, '0')}`;
+    let number = '';
+    for (let i = 0; i < 12 && !number; i++) {
+      const c = `DEP-${istDate().replace(/-/g, '')}-${String(crypto.randomInt(0, 10000)).padStart(4, '0')}`;
+      if (!await one(t, 'SELECT 1 AS x FROM pos_advances WHERE code = $1', [c])) number = c;
+    }
+    if (!number) throw new HttpError(500, 'Could not create an advance order number. Please try again.');
     const items = lines.map(l => ({ variantId: l.variantId, name: l.name, sku: l.sku, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate }));
     await t.query(`INSERT INTO pos_advances (code, customer_name, customer_phone, customer_address, is_gst, gst_rate, discount_type, discount_value, delivery_fee, items,
         subtotal, discount_amount, tax_amount, total_amount, deposit, deposit_mode, delivery_date, notes, created_by)

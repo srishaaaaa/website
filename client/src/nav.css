@@ -230,3 +230,70 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .btn.pill { border-radius: 999px }
 .qty { overflow: hidden }
 .field input, .field select, .field textarea, .news input, .search input, .price-row input, .sel select, .tbl select, .review-modal select, .review-modal textarea { border-radius: 14px }
+
+/* ---- POS billing: browse by category, then product, then size ---- */
+.dpos-browse { margin-top: 12px }
+.dpos-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; font-size: 13px }
+.dpos-crumb button:not(.dpos-btn), .dpos-crumb span { padding: 4px 10px; border-radius: 999px; opacity: .65 } .dpos-crumb .on { opacity: 1; font-weight: 700; background: rgba(90, 21, 96, .08) }
+.dpos-crumb i { font-style: normal; opacity: .4 }
+.dpos-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px }
+.dpos-cats button { display: grid; gap: 2px; text-align: left; padding: 14px 16px; border: 1px solid rgba(33, 23, 20, .14); border-radius: 14px; background: #fff; transition: border-color .2s, transform .2s, box-shadow .2s }
+.dpos-cats button:hover, .dpos-cats button:focus-visible { border-color: var(--red, #5a1560); transform: translateY(-2px); box-shadow: 0 8px 18px -10px rgba(51, 5, 51, .4) }
+.dpos-cats b { font-size: 14px } .dpos-cats em { font-style: normal; font-size: 12px; opacity: .6 }
+.dpos-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px }
+.dpos-sizes button { display: grid; gap: 3px; justify-items: start; text-align: left; padding: 12px 14px; border: 1px solid rgba(33, 23, 20, .16); border-radius: 14px; background: #fff; transition: border-color .2s, background .2s }
+.dpos-sizes button:hover:not(:disabled), .dpos-sizes button:focus-visible { border-color: var(--red, #5a1560); background: rgba(90, 21, 96, .05) }
+.dpos-sizes button:disabled { opacity: .45; cursor: not-allowed }
+.dpos-sizes b { font-size: 15px } .dpos-sizes span { font-weight: 700; font-size: 13px } .dpos-sizes em { font-style: normal; font-size: 11px; opacity: .6 }
+
+/* ---- POS bill: payment options, grand total and the split card ---- */
+.dpos { --d-bill: #b91c1c }
+.dpos-pills button { border-radius: 12px; padding: 14px 8px }
+.dpos-pills button.on { background: var(--d-bill); border-color: var(--d-bill); color: #fff }
+.dpos-grand b { color: var(--d-bill); font-size: 26px }
+.dpos-paybox { border-radius: 20px; padding: 18px 20px; background: #fff }
+.dpos-splitpick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px }
+.dpos-splitpick button { padding: 11px 6px; border: 1px solid rgba(33, 23, 20, .16); border-radius: 12px; background: #fff; font-size: 12px; font-weight: 800; letter-spacing: .06em; color: #8a8490; transition: background .2s, border-color .2s, color .2s }
+.dpos-splitpick button.on { background: #fde8e8; border-color: var(--d-bill); color: var(--d-bill) }
+.dpos-paybox .dpos-grid { gap: 12px; margin-bottom: 4px }
+.dpos-paybox input.bigin { border-radius: 14px }
+.dpos-recv { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0 0; font-size: 13px; font-weight: 800; letter-spacing: .04em }
+.dpos-recv:first-of-type { border-top: 1px solid rgba(33, 23, 20, .1); margin-top: 12px }
+.dpos-recv b { font-size: 17px } .dpos-recv b.short { color: var(--d-bill) } .dpos-recv b.ok { color: #0a8a4a }
+.dpos-cta:not(.amber) { background: var(--d-bill); border-color: var(--d-bill); box-shadow: 0 10px 24px -10px rgba(185, 28, 28, .6) }
+
+/* ---- Advance order popup and saved receipt ---- */
+.dpos-sheet.adv { max-width: 480px; padding: 0; border-radius: 24px; overflow: hidden }
+.dpos-sheet.adv .dpos-mhead { background: #fff; color: #0f0f10; padding: 24px 28px 14px; border-bottom: 1px solid #ececec; align-items: flex-start }
+.dpos-sheet.adv .dpos-mhead b { font-size: 22px !important; font-weight: 800 } .dpos-sheet.adv .dpos-mhead small { display: block; margin-top: 4px; color: #b45309; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: 1 }
+.dpos-sheet.adv .dpos-mhead button { color: #0f0f10; background: none; border: 0; font-size: 18px }
+.adv-form { display: grid; gap: 14px; padding: 18px 28px 28px }
+.adv-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: 12px; background: #fef3c7; border: 1px solid #fcd34d; color: #7c2d12; font-size: 12px; font-weight: 800; letter-spacing: .08em } .adv-total b { font-size: 14px }
+.adv-l { display: grid; gap: 8px; margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #1c1917; text-transform: uppercase }
+.adv-form input, .adv-form textarea { width: 100%; padding: 14px 16px; border: 1px solid #e5e2dd; border-radius: 12px; font: inherit; font-size: 15px; text-transform: none; letter-spacing: 0; background: #fff }
+.adv-form input:focus, .adv-form textarea:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, .18) }
+.adv-form input:first-of-type { font-weight: 800 }
+.adv-due { margin: -6px 0 0; color: #991b1b; font-size: 12px; font-weight: 800 }
+.adv-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+.adv-modes button { padding: 12px 6px; border: 1px solid #e5e2dd; border-radius: 12px; background: #fff; font-size: 12px; font-weight: 800; letter-spacing: .05em; color: #1c1917 }
+.adv-modes button.on { background: #b91c1c; border-color: #b91c1c; color: #fff }
+.adv-go { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border-radius: 14px; background: #f59e0b; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .1em; box-shadow: 0 10px 22px -12px rgba(245, 158, 11, .9) } .adv-go:disabled { opacity: .5 }
+.adv-done .dpos-done-head h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.adv-tag { padding: 4px 9px; border-radius: 8px; background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; letter-spacing: .1em }
+.adv-done .oid { color: #b91c1c; font-family: ui-monospace, Menlo, monospace; font-weight: 700 }
+.adv-paid { color: #0a7a3d }
+.adv-bal { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding: 18px 20px; border-radius: 14px; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; font-weight: 800 } .adv-bal b { font-size: 24px }
+.adv-view { margin: 12px 0 0; text-align: center; font-size: 13px }
+
+/* ---- POS analytics: today's panels and the product leaderboard ---- */
+.an-today { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 18px; align-items: start } .an-side { display: grid; gap: 18px }
+@media (max-width: 1000px) { .an-today { grid-template-columns: 1fr } }
+.an-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px } .an-head h2 { margin: 0 }
+.an-search { position: relative; display: flex; align-items: center; min-width: 240px; max-width: 100%; border: 1px solid #e5e2dd; border-radius: 12px; background: #fff; color: #6b6670 }
+.an-search svg { position: absolute; left: 12px } .an-search input { width: 100%; padding: 11px 14px 11px 36px; border: 0; background: transparent; font: inherit; font-size: 13px; color: #1c1917 } .an-search input:focus { outline: none } .an-search:focus-within { border-color: #b91c1c }
+.an-red { color: #b91c1c; font-weight: 800 }
+.an-src { display: inline-block; padding: 3px 9px; border: 1px solid #b9b4bd; border-radius: 6px; background: #f1eff3; font-size: 10px; font-weight: 800; letter-spacing: .12em }
+.an-bar { display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 12px; margin-top: 14px; font-size: 11px; font-weight: 800; letter-spacing: .08em } .an-bar b { font-size: 12px; letter-spacing: 0 }
+.an-bar i, .an-top i, .an-share i { display: block; height: 9px; border-radius: 999px; background: #eceaee; overflow: hidden } .an-bar u, .an-top u, .an-share u { display: block; height: 100%; border-radius: 999px; background: #b91c1c; text-decoration: none; min-width: 3px }
+.an-top { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 12px; margin-top: 14px; font-size: 13px } .an-top .an-toprow { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-weight: 700 } .an-top em { font-style: normal; color: #b91c1c; font-weight: 800 } .an-top > span { font-size: 11px; opacity: .65 }
+.an-share { display: flex; align-items: center; gap: 12px; min-width: 150px } .an-share i { flex: 1 } .an-share span { font-size: 12px; font-weight: 800; min-width: 48px; text-align: right }

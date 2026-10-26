@@ -80,28 +80,66 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
 }
 
 // ============================ advance order: booking window (opened from Billing) ============================
+const ClockIcon = () => <Ico size={16}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></Ico>;
+
 export function AdvanceModal({ total, onClose, onSave }) {
   const [dep, setDep] = useState(''); const [mode, setMode] = useState('cash'); const [date, setDate] = useState(''); const [notes, setNotes] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const deposit = toPaise(dep);
   const submit = async e => {
     e.preventDefault(); setErr();
-    if (deposit > total) return setErr('The advance cannot be more than the bill total.');
+    if (!(deposit > 0)) return setErr('Enter the deposit amount received.');
+    if (deposit > total) return setErr('The deposit cannot be more than the order total.');
     setBusy(true);
     try { await onSave({ deposit, depositMode: mode, deliveryDate: date || null, notes: notes.trim() || undefined }) } catch (x) { setErr(x.issues?.[0]?.message || x.message); setBusy(false) }
   };
   return (
-    <Modal title="Save as advance order" sub="The customer pays a deposit now. You bill it, and stock is taken, when they collect." onClose={onClose}>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
-        <div className="dpos-box dpos-sum"><div><span>Bill total</span><b>{inr(total)}</b></div><div><span>Advance received</span><b>{inr(deposit)}</b></div><div className="tot"><span>Balance due on collection</span><span>{inr(Math.max(0, total - deposit))}</span></div></div>
-        <label className="f">Advance received ₹<input autoFocus inputMode="decimal" value={dep} onChange={e => setDep(e.target.value)} placeholder="0.00" /></label>
-        <div><p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: '0 0 6px' }}>ADVANCE PAID BY</p>
-          <div className="dpos-pills" role="radiogroup" aria-label="Advance paid by">{[['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card']].map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l}</button>)}</div></div>
-        <label className="f">Delivery / collection date<input type="date" min={todayStr()} value={date} onChange={e => setDate(e.target.value)} /></label>
-        <label className="f">Note (optional)<input value={notes} maxLength={500} onChange={e => setNotes(e.target.value)} placeholder="e.g. blouse stitching, wedding on 12th" /></label>
+    <Modal className="adv" title="Save as Advance Order" sub="Not counted as revenue until fully paid" onClose={onClose}>
+      <form onSubmit={submit} className="adv-form">
+        <div className="adv-total"><span>ORDER TOTAL</span><b>{inr(total)}</b></div>
+        <label className="adv-l">DEPOSIT AMOUNT (₹) *<input autoFocus inputMode="decimal" value={dep} onChange={e => setDep(e.target.value)} placeholder="0.00" /></label>
+        {deposit > 0 && deposit <= total && <p className="adv-due">Balance due: {inr(total - deposit)}</p>}
+        <div><p className="adv-l">DEPOSIT PAYMENT MODE</p>
+          <div className="adv-modes" role="radiogroup" aria-label="Deposit payment mode">{[['cash', 'CASH'], ['upi', 'QR / GPAY'], ['card', 'CARD']].map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l}</button>)}</div></div>
+        <label className="adv-l">EXPECTED DELIVERY DATE<input type="date" min={todayStr()} value={date} onChange={e => setDate(e.target.value)} /></label>
+        <label className="adv-l">NOTES (OPTIONAL)<textarea rows={3} maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Colour preference, follow-up needed…" /></label>
         <Err>{err}</Err>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save advance order'}</button></div>
+        <button className="adv-go" disabled={busy}><ClockIcon /> {busy ? 'SAVING…' : 'CONFIRM ADVANCE ORDER'}</button>
       </form>
     </Modal>
+  );
+}
+
+// Shown right after an advance order is saved: the receipt for the deposit, then the order lives in Advance Orders (and in Order History once billed).
+export function AdvanceDone({ adv, shop, onClose, onView }) {
+  const who = adv.customerName?.trim() || 'Guest';
+  const text = `Hello${adv.customerName ? ' ' + adv.customerName : ''}, your advance order ${adv.code} with ${shop?.name || 'us'} is booked. Order total ${money(adv.total)}, deposit paid ${money(adv.deposit)}, balance due ${money(adv.balance)}${adv.deliveryDate ? ', expected on ' + adv.deliveryDate : ''}. Thank you!`;
+  const print = () => {
+    const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return;
+    const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    w.document.write(`<!doctype html><title>Advance receipt ${esc(adv.code)}</title><body style="font-family:Arial,sans-serif;max-width:300px;margin:16px auto;color:#111"><h3 style="margin:0 0 4px;text-align:center">${esc(shop?.name || '')}</h3><p style="text-align:center;margin:0 0 12px;font-size:12px">ADVANCE RECEIPT · ${esc(adv.code)}</p><p style="margin:0 0 8px;font-size:13px">Customer: ${esc(who)}${adv.customerPhone ? ' · ' + esc(adv.customerPhone) : ''}</p><hr><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Order total</span><b>${money(adv.total)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Deposit paid</span><b>${money(adv.deposit)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0;font-size:16px"><b>Balance due</b><b>${money(adv.balance)}</b></p>${adv.deliveryDate ? '<p style="font-size:12px">Expected: ' + esc(adv.deliveryDate) + '</p>' : ''}<hr><p style="font-size:11px;text-align:center">Not a tax invoice. The bill is issued when the order is collected.</p><script>onload=()=>{print()}<\/script>`);
+    w.document.close();
+  };
+  return (
+    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Advance order saved" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div className="dpos-sheet dpos-done adv-done">
+        <div className="dpos-done-head">
+          <div><h2>Advance Order Saved <span className="adv-tag">DEPOSIT</span></h2><p className="oid">#{adv.code}</p></div>
+          <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
+        </div>
+        <section className="dpos-done-card">
+          <div className="dpos-done-top"><span>ADVANCE RECEIPT — {who.toUpperCase()}</span></div>
+          <div className="dpos-done-row"><span>Order Total</span><b className="big">{money(adv.total)}</b></div>
+          <div className="dpos-done-row"><span>Deposit Paid</span><b className="adv-paid">{money(adv.deposit)}</b></div>
+          <div className="adv-bal"><span>Balance Due</span><b>{money(adv.balance)}</b></div>
+        </section>
+        <div className="dpos-done-act">
+          <button className="dpos-btn outline" onClick={print}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
+          <a className="dpos-btn wa" href={waLink(adv.customerPhone, text)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp</a>
+          <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
+        </div>
+        <p className="adv-view"><button type="button" className="link-u" onClick={onView}>View in Advance Orders →</button></p>
+      </div>
+    </div>
   );
 }
 

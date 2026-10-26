@@ -81,7 +81,7 @@ test('checkout: real catalogue search, server-side pricing, stock decrement, inv
   });
   assert.equal(res.status, 201, JSON.stringify(res.body));
   const s = res.body;
-  assert.match(s.invoiceNo, /^DP-\d{4}-\d{6}$/);
+  assert.match(s.invoiceNo, /^INV-\d{4}-[A-Z2-9]{5}$/);
   assert.equal(s.items[0].unitPrice, v.price);
   assert.equal(s.subtotal, v.price * 2);
   assert.equal(s.total, s.subtotal - 1000 + s.tax);
@@ -145,10 +145,11 @@ test('void: restocks once, owner/admin only, voided bills leave revenue', async 
   assert.equal((await owner('GET', `/admin/pos/reports?from=${today}&to=${today}`)).body.revenue, rev0);
 });
 
-test('invoice numbers are sequential and unique', async () => {
-  const owner = client(); await owner('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
-  const nums = (await db.query("SELECT invoice_no FROM pos_sales WHERE channel = 'retail' ORDER BY id")).rows.map(r => Number(r.invoice_no.slice(-6)));
-  nums.forEach((n, i) => assert.equal(n, i + 1));
+test('invoice numbers are short, readable and unique', async () => {
+  const nums = (await db.query("SELECT invoice_no FROM pos_sales WHERE channel = 'retail' ORDER BY id")).rows.map(r => r.invoice_no);
+  assert.ok(nums.length > 1);
+  nums.forEach(n => assert.match(n, /^INV-\d{4}-[A-Z2-9]{5}$/));
+  assert.equal(new Set(nums).size, nums.length, 'no two bills share a number');
 });
 
 test('wholesale channel: separate DW series, free-text lines, no stock effect, separate analytics', async () => {
@@ -170,7 +171,7 @@ test('wholesale channel: separate DW series, free-text lines, no stock effect, s
   const ws = (await owner('GET', `/admin/pos/reports?from=${today}&to=${today}&channel=wholesale`)).body;
   assert.equal(ws.bills, 1); assert.equal(ws.units, 40); assert.equal(ws.customers, 1); assert.equal(ws.revenue, w.body.total);
   assert.ok((await owner('GET', '/admin/pos/sales?channel=wholesale')).body.every(s => s.invoiceNo.startsWith('DW-')));
-  assert.ok((await owner('GET', '/admin/pos/sales')).body.every(s => s.invoiceNo.startsWith('DP-')));
+  assert.ok((await owner('GET', '/admin/pos/sales')).body.every(s => s.invoiceNo.startsWith('INV-')));
 });
 
 test('coupons: validated server-side, usage counted, restored on void; free-text retail line; birthdays; settings', async () => {

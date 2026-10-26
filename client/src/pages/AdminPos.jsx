@@ -7,7 +7,7 @@ import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
-import { AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
+import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
 import StaffOnly from '../components/StaffOnly';
@@ -43,6 +43,56 @@ const ClockI = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
 const blankCustom = (service = false) => ({ key: uuid(), custom: true, service, name: '', priceStr: '', qty: 1, taxRate: 5 });
 const GST_RATES = [0, 5, 12, 18, 28];
 
+// Browse by category first, then the product, then pick the size to add. (Typing in the search box above still gives the quick flat list.)
+function Browse({ onAdd }) {
+  const [cats, setCats] = useState(null); const [cat, setCat] = useState(null);
+  const [vars, setVars] = useState(null); const [prod, setProd] = useState(null); const [err, setErr] = useState();
+  useEffect(() => { api('/categories').then(c => setCats(c.filter(x => x.product_count > 0))).catch(e => setErr(e.message)) }, []);
+  useEffect(() => {
+    if (!cat) { setVars(null); return }
+    let dead = false; setVars(null);
+    api('/admin/pos/catalog?limit=300&q=' + encodeURIComponent(cat.name)).then(r => !dead && setVars(r.filter(v => v.category === cat.name))).catch(e => !dead && setErr(e.message));
+    return () => { dead = true };
+  }, [cat]);
+  const products = useMemo(() => {
+    const m = new Map();
+    for (const v of vars || []) {
+      const x = m.get(v.productId) || { id: v.productId, name: v.name, image: v.image, min: v.price, max: v.price, stock: 0, vars: [] };
+      x.min = Math.min(x.min, v.price); x.max = Math.max(x.max, v.price); x.stock += v.stock; x.vars.push(v); m.set(v.productId, x);
+    }
+    return [...m.values()];
+  }, [vars]);
+  const sel = prod != null ? products.find(x => x.id === prod) : null;
+  const back = () => { setErr(); prod != null ? setProd(null) : setCat(null) };
+  return (
+    <div className="dpos-browse">
+      {err && <p className="dpos-err" role="alert">{err}</p>}
+      <nav className="dpos-crumb" aria-label="Browse path">
+        <button type="button" className={!cat ? 'on' : ''} onClick={() => { setCat(null); setProd(null) }}>Categories</button>
+        {cat && <><i aria-hidden="true">›</i><button type="button" className={!sel ? 'on' : ''} onClick={() => setProd(null)}>{cat.name}</button></>}
+        {sel && <><i aria-hidden="true">›</i><span className="on">{sel.name}</span></>}
+        {cat && <button type="button" className="dpos-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={back}>← Back</button>}
+      </nav>
+      {!cat && (!cats ? <Empty>Loading categories…</Empty> : !cats.length ? <Empty>No categories yet.</Empty> : (
+        <div className="dpos-cats">{cats.map(c => <button key={c.slug} type="button" onClick={() => setCat(c)}><b>{c.name}</b><em>{c.product_count} {c.product_count === 1 ? 'piece' : 'pieces'}</em></button>)}</div>))}
+      {cat && !sel && (vars === null ? <Empty>Loading…</Empty> : !products.length ? <Empty>No products in {cat.name}.</Empty> : (
+        <div className="dpos-results">{products.map(x => (
+          <button key={x.id} type="button" className="dpos-res" disabled={x.stock < 1} onClick={() => setProd(x.id)}>
+            {x.image ? <img src={x.image} alt="" loading="lazy" /> : <img alt="" />}
+            <span><b>{x.name}</b><em>{x.vars.length} {x.vars.length === 1 ? 'size' : 'sizes'}</em></span>
+            <span style={{ textAlign: 'right', flex: 'none' }}><b>{x.min === x.max ? inr(x.min) : `${inr(x.min)} – ${inr(x.max)}`}</b><em>{x.stock < 1 ? 'Out of stock' : `${x.stock} in stock`}</em></span>
+          </button>))}</div>))}
+      {sel && (
+        <div className="dpos-sizes" role="group" aria-label={`Sizes for ${sel.name}`}>
+          {sel.vars.map(v => (
+            <button key={v.variantId} type="button" disabled={v.stock < 1} onClick={() => onAdd(v)}>
+              <b>{v.size}{v.color !== 'Default' ? ` · ${v.color}` : ''}</b><span>{inr(v.price)}</span><em>{v.stock < 1 ? 'Out of stock' : `${v.stock} in stock`}</em>
+            </button>))}
+        </div>)}
+    </div>
+  );
+}
+
 function Billing({ channel, shop, onSale, onAdvance }) {
   const ws = channel === 'wholesale';
   const [q, setQ] = useState(''); const [results, setResults] = useState(null); const [searching, setSearching] = useState(false);
@@ -54,7 +104,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const [coupon, setCoupon] = useState(null); const [couponIn, setCouponIn] = useState(''); const [couponMsg, setCouponMsg] = useState();
   const [delivery, setDelivery] = useState('');
   const [mode, setMode] = useState('cash'); const [tendered, setTendered] = useState('');
-  const [split, setSplit] = useState({ cash: '', upi: '', card: '' }); const [ref, setRef] = useState(''); const [notes, setNotes] = useState('');
+  const [split, setSplit] = useState({ cash: '', upi: '', card: '' }); const [splitOn, setSplitOn] = useState({ cash: true, upi: true, card: false }); const [ref, setRef] = useState(''); const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const key = useRef(null); const [advOpen, setAdvOpen] = useState(false);
 
@@ -73,7 +123,13 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const flat = isGst && gstRate !== 'item' ? +gstRate : null;
   const bill = useMemo(() => preview(priced, { isGst, gstRate: flat, discountType, discountValue, deliveryFee }), [priced, isGst, flat, discountType, discountValue, deliveryFee]);
   const tenderedP = tendered === '' ? bill.total : toPaise(tendered);
-  const splitSum = toPaise(split.cash) + toPaise(split.upi) + toPaise(split.card);
+  const splitAmt = { cash: splitOn.cash ? toPaise(split.cash) : 0, upi: splitOn.upi ? toPaise(split.upi) : 0, card: splitOn.card ? toPaise(split.card) : 0 };
+  const splitSum = splitAmt.cash + splitAmt.upi + splitAmt.card;
+  const splitOver = Math.max(0, splitSum - bill.total); // change to hand back; it can only come out of the cash taken
+  const splitNet = { ...splitAmt, cash: Math.max(0, splitAmt.cash - splitOver) };
+  const splitOk = splitSum >= bill.total && (splitOver === 0 || splitAmt.cash >= splitOver);
+  const pickedN = Object.values(splitOn).filter(Boolean).length;
+  const toggleSplit = m => { if (splitOn[m] && pickedN <= 2) return; if (splitOn[m]) setSplit(s => ({ ...s, [m]: '' })); setSplitOn(o => ({ ...o, [m]: !o[m] })) };
 
   const body = useMemo(() => ({
     channel, source: ws ? 'offline' : source, billDate,
@@ -81,10 +137,10 @@ function Billing({ channel, shop, onSale, onAdvance }) {
     customerName: cust.name.trim(), customerPhone: cust.phone.trim(), customerAddress: cust.address.trim(), ...(cust.dob && !ws ? { customerDob: cust.dob } : {}),
     isGst, ...(flat != null ? { gstRate: flat } : {}), ...(coupon ? { couponCode: coupon.code } : { discountType: disc.type, discountValue }), deliveryFee,
     paymentMode: mode, ...(mode === 'cash' ? { cashTendered: tenderedP } : {}),
-    ...(mode === 'split' ? { payments: { cash: toPaise(split.cash), upi: toPaise(split.upi), card: toPaise(split.card) } } : {}),
+    ...(mode === 'split' ? { payments: splitNet } : {}),
     ...(ref.trim() ? { paymentRef: ref.trim() } : {}), ...(notes.trim() ? { notes: notes.trim() } : {}),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [channel, ws, source, billDate, priced, cust, isGst, flat, coupon, disc.type, discountValue, deliveryFee, mode, tenderedP, split, ref, notes]);
+  }), [channel, ws, source, billDate, priced, cust, isGst, flat, coupon, disc.type, discountValue, deliveryFee, mode, tenderedP, splitNet.cash, splitNet.upi, splitNet.card, ref, notes]);
   // A new idempotency key is used whenever the bill changes; an unchanged retry (e.g. after a network drop) reuses it, so it can never double-bill.
   useEffect(() => { key.current = null }, [body]);
 
@@ -115,7 +171,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
     setDelivery(''); setTendered(''); setSplit({ cash: '', upi: '', card: '' }); setRef(''); setNotes(''); key.current = null; setErr();
   };
 
-  const problem = !priced.length ? 'Add at least one item.' : mode === 'split' && splitSum !== bill.total ? `Split payments add up to ${inr(splitSum)}; the bill is ${inr(bill.total)}.`
+  const problem = !priced.length ? 'Add at least one item.' : mode === 'split' && !splitOk ? (splitSum < bill.total ? `Received ${inr(splitSum)}; the bill is ${inr(bill.total)}.` : 'The extra can only be returned out of the cash amount.')
     : mode === 'cash' && tenderedP < bill.total ? 'Cash received is less than the total.' : lines.some(l => l.custom && (l.name.trim() || l.priceStr) && !(l.name.trim() && toPaise(l.priceStr) > 0)) ? 'Finish or remove the incomplete item.' : null;
 
   const submit = async () => {
@@ -170,14 +226,16 @@ function Billing({ channel, shop, onSale, onAdvance }) {
         {!ws && (
           <section className="dpos-card"><h2><Icon n="box" />Find a product</h2>
             <input autoFocus type="search" value={q} onChange={e => setQ(e.target.value)} onKeyDown={onSearchEnter} placeholder="Search name, SKU, size, colour or category — or scan a barcode" aria-label="Search products" />
-            <div className="dpos-results" aria-live="polite">
-              {results === null || (searching && !results.length) ? <Empty>Loading…</Empty> : !results.length ? <Empty>No products match “{q}”.</Empty> : results.map(v => (
-                <button key={v.variantId} className="dpos-res" disabled={v.stock < 1} onClick={() => add(v)}>
-                  {v.image ? <img src={v.image} alt="" loading="lazy" /> : <img alt="" />}
-                  <span><b>{v.name}</b><em>{[v.size, v.color !== 'Default' ? v.color : null].filter(Boolean).join(' · ')} · {v.sku}{v.category ? ` · ${v.category}` : ''}</em></span>
-                  <span style={{ textAlign: 'right', flex: 'none' }}><b>{inr(v.price)}</b><em>{v.stock < 1 ? 'Out of stock' : `${v.stock} in stock`}</em></span>
-                </button>))}
-            </div>
+            {q.trim() ? (
+              <div className="dpos-results" aria-live="polite">
+                {results === null || (searching && !results.length) ? <Empty>Loading…</Empty> : !results.length ? <Empty>No products match “{q}”.</Empty> : results.map(v => (
+                  <button key={v.variantId} className="dpos-res" disabled={v.stock < 1} onClick={() => add(v)}>
+                    {v.image ? <img src={v.image} alt="" loading="lazy" /> : <img alt="" />}
+                    <span><b>{v.name}</b><em>{[v.size, v.color !== 'Default' ? v.color : null].filter(Boolean).join(' · ')} · {v.sku}{v.category ? ` · ${v.category}` : ''}</em></span>
+                    <span style={{ textAlign: 'right', flex: 'none' }}><b>{inr(v.price)}</b><em>{v.stock < 1 ? 'Out of stock' : `${v.stock} in stock`}</em></span>
+                  </button>))}
+              </div>
+            ) : <Browse onAdd={add} />}
           </section>)}
 
         <section className="dpos-card">
@@ -227,15 +285,19 @@ function Billing({ channel, shop, onSale, onAdvance }) {
               <b className="acc">{inr(bill.tax)}</b></div>
             <p className="sub" style={{ margin: '6px 0 0' }}>{gstRate === 'item' ? 'Each item uses its own GST rate. Type a % to charge one rate on the whole bill.' : `${gstRate}% GST on the whole bill. Clear the box to use each item’s own rate.`}{shop?.gstin ? '' : ' Add your GSTIN in Delivery & GST to print it on invoices.'}</p></>}
           <p className="dpos-flabel">FINANCIAL OPTION</p>
-          <div className="dpos-pills" role="radiogroup" aria-label="Payment method">{MODES.map(([v, l]) => <button key={v} role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l.replace('GPay / UPI', 'GPay')}</button>)}</div>
+          <div className="dpos-pills" role="radiogroup" aria-label="Payment method">{MODES.map(([v, l]) => <button key={v} role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l.replace('GPay / UPI', 'QR / GPay')}</button>)}</div>
           <hr className="dpos-hr" />
           <div className="dpos-grand"><span>GRAND TOTAL</span><b>{inr(bill.total)}</b></div>
           <div className="dpos-paybox" id="dpos-pay">
             <p className="dpos-pl">{mode === 'upi' ? 'GPAY' : mode.toUpperCase()} PAYMENT</p>
             {mode === 'cash' && <><label className="f">Amount Received (₹)<input className="bigin" inputMode="decimal" value={tendered} onChange={e => setTendered(e.target.value)} placeholder={bill.total ? rupees(bill.total) : '0.00'} /></label>
               <p className="sub" style={{ marginTop: 8 }}>{tenderedP >= bill.total ? `Change to return: ${inr(tenderedP - bill.total)}` : `Short by ${inr(bill.total - tenderedP)}`}</p></>}
-            {mode === 'split' && <><div className="dpos-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>{['cash', 'upi', 'card'].map(m => <label className="f" key={m}>{m === 'upi' ? 'GPay' : MODE_LABEL[m]} ₹<input inputMode="decimal" value={split[m]} onChange={e => setSplit({ ...split, [m]: e.target.value })} placeholder="0" /></label>)}</div>
-              <p className="sub" style={{ marginTop: 8 }}>{splitSum === bill.total ? 'Split matches the total ✓' : `${splitSum > bill.total ? 'Over' : 'Short'} by ${inr(Math.abs(bill.total - splitSum))}`}</p></>}
+            {mode === 'split' && <>
+              <p className="dpos-flabel" style={{ marginTop: 0 }}>SPLIT BETWEEN (PICK 2 OR 3)</p>
+              <div className="dpos-splitpick" role="group" aria-label="Split between">{['cash', 'upi', 'card'].map(m => <button key={m} type="button" aria-pressed={splitOn[m]} className={splitOn[m] ? 'on' : ''} onClick={() => toggleSplit(m)}>{splitOn[m] ? '✓ ' : ''}{m === 'upi' ? 'QR / GPAY' : MODE_LABEL[m].toUpperCase()}</button>)}</div>
+              <div className="dpos-grid" style={{ gridTemplateColumns: `repeat(${pickedN}, 1fr)` }}>{['cash', 'upi', 'card'].filter(m => splitOn[m]).map(m => <label className="f" key={m}>{m === 'upi' ? 'QR / GPay' : MODE_LABEL[m]} (₹)<input className="bigin" inputMode="decimal" value={split[m]} onChange={e => setSplit({ ...split, [m]: e.target.value })} placeholder="0.00" /></label>)}</div>
+              <div className="dpos-recv"><span>TOTAL RECEIVED</span><b className={splitSum >= bill.total && bill.total > 0 ? 'ok' : 'short'}>{inr(splitSum)}</b></div>
+              <div className="dpos-recv"><span>CHANGE TO RETURN</span><b className="ok">{inr(splitOver)}</b></div></>}
             {mode !== 'cash' && <label className="f" style={{ marginTop: mode === 'split' ? 12 : 0 }}>{mode === 'card' ? 'Slip / approval no.' : 'Transaction ID'} (optional)<input value={ref} onChange={e => setRef(e.target.value)} maxLength={80} /></label>}
           </div>
           <p className="sub" style={{ margin: '8px 2px 14px' }}>GPay / UPI and card are confirmed by the cashier at the counter; no payment gateway is attached.</p>
@@ -276,6 +338,61 @@ function Stat({ cls = '', icon, label, value, sub, txt, children }) {
 function Chart({ values, labels, cap }) {
   const max = Math.max(1, ...values);
   return <div className={`dpos-ch ${cap ? 'cap' : ''}`} role="img" aria-label="Revenue chart">{values.map((v, i) => <div className="c" key={i}><div className="col">{v > 0 && <em>{k(v)}</em>}<i style={{ height: `${Math.max(v ? 4 : 0, v / max * 100)}%` }} /></div><span>{labels[i]}</span></div>)}</div>;
+}
+
+const SearchGlyph = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>;
+
+// "Today's sales" tab: the day's transactions with a search, the channel split and the top items.
+function TodayPanels({ rep, bills, openInvoice }) {
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const rows = bills && bills.filter(b => !needle || `${b.invoiceNo} ${b.customerPhone || ''} ${b.customerName || ''}`.toLowerCase().includes(needle));
+  const off = rep?.offlineSales || 0, on = rep?.onlineSales || 0, mx = Math.max(off, on, 1);
+  const top = (rep?.products || []).slice(0, 5), topMax = Math.max(1, ...top.map(p => p.revenue));
+  return (
+    <div className="an-today">
+      <section className="dpos-card">
+        <div className="an-head"><h2>Today’s Transactions</h2>
+          <label className="an-search"><SearchGlyph /><span className="sr">Search transactions</span><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search contact/invoice…" /></label></div>
+        {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>{needle ? 'No transactions match.' : 'No bills today yet.'}</Empty> : (
+          <div className="dpos-tw"><table><thead><tr><th>Invoice ID</th><th>Customer No</th><th>Source</th><th className="r">Items</th><th className="r">Grand total</th></tr></thead>
+            <tbody>{rows.map(r => (
+              <tr key={r.invoiceNo} className={`click ${r.status === 'voided' ? 'voided' : ''}`} tabIndex={0} onClick={() => openInvoice(r.invoiceNo, r)} onKeyDown={e => e.key === 'Enter' && openInvoice(r.invoiceNo, r)}>
+                <td><b>{r.invoiceNo}</b></td><td>{r.customerPhone || <span className="muted">—</span>}</td>
+                <td><span className="an-src">{r.source === 'online' ? 'ONLINE' : 'OFFLINE'}</span></td>
+                <td className="r">{r.itemCount} pcs</td><td className="r an-red">{inr(r.total)}</td></tr>))}</tbody></table></div>)}
+      </section>
+      <div className="an-side">
+        <section className="dpos-card"><h2>Today’s Channel Split</h2>
+          {[['Offline', off, '#1c1c1f'], ['Online', on, '#0a8a5c']].map(([l, n, c]) => (
+            <div className="an-bar" key={l}><span style={{ color: c }}>{l.toUpperCase()}</span><i><u style={{ width: `${n / mx * 100}%`, background: c }} /></i><b>{inr(n)}</b></div>))}
+        </section>
+        <section className="dpos-card"><h2>Today’s Top Items</h2>
+          {!top.length ? <Empty>No sales today yet.</Empty> : top.map((p, i) => (
+            <div className="an-top" key={p.name}><b>{i + 1}</b><div><div className="an-toprow"><span>{p.name}</span><em>{inr(p.revenue)}</em></div><i><u style={{ width: `${p.revenue / topMax * 100}%` }} /></i></div><span>{p.qty} pcs</span></div>))}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// "Products" tab: every product ranked by revenue, with its share of all product revenue.
+function ProductsBoard({ rep }) {
+  const [q, setQ] = useState('');
+  const all = rep?.products || []; const total = all.reduce((s, p) => s + p.revenue, 0) || 1;
+  const needle = q.trim().toLowerCase();
+  const rows = all.map((p, i) => ({ ...p, rank: i + 1 })).filter(p => !needle || p.name.toLowerCase().includes(needle));
+  return (
+    <section className="dpos-card">
+      <div className="an-head"><h2>Product Sales Leaderboard</h2>
+        <label className="an-search"><SearchGlyph /><span className="sr">Search product</span><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search product…" /></label></div>
+      {!rep ? <Empty>Loading…</Empty> : !all.length ? <Empty>No sales in this period.</Empty> : !rows.length ? <Empty>No product matches.</Empty> : (
+        <div className="dpos-tw"><table><thead><tr><th>Rank</th><th>Product name</th><th className="r">Qty sold</th><th className="r">Revenue</th><th>Market share</th></tr></thead>
+          <tbody>{rows.map(p => { const pct = p.revenue / total * 100; return (
+            <tr key={p.name}><td><b>{p.rank}</b></td><td><b>{p.name}</b></td><td className="r"><b>{p.qty} pcs</b></td><td className="r an-red">{inr(p.revenue)}</td>
+              <td><div className="an-share"><i><u style={{ width: `${pct}%` }} /></i><span>{pct.toFixed(1)}%</span></div></td></tr>) })}</tbody></table></div>)}
+    </section>
+  );
 }
 
 function Analytics({ channel, openInvoice, tick, goExpenses }) {
@@ -334,10 +451,9 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
         </div>
       </>}
 
-      {tab === 'today' && <section className="dpos-card"><h2>Today’s bills</h2><BillsTable rows={bills} onOpen={openInvoice} empty="No bills today yet." /></section>}
+      {tab === 'today' && <TodayPanels rep={rep} bills={bills} openInvoice={openInvoice} />}
 
-      {tab === 'products' && <section className="dpos-card"><h2>Product-wise sales</h2>
-        {!rep ? <Empty>Loading…</Empty> : !rep.products.length ? <Empty>No sales in this period.</Empty> : <div className="dpos-tw"><table><thead><tr><th>#</th><th>Item</th><th className="r">Units</th><th className="r">Revenue</th></tr></thead><tbody>{rep.products.map((p, i) => <tr key={p.name}><td>{i + 1}</td><td>{p.name}</td><td className="r">{p.qty}</td><td className="r"><b>{inr(p.revenue)}</b></td></tr>)}</tbody></table></div>}</section>}
+      {tab === 'products' && <ProductsBoard rep={rep} />}
 
       {tab === 'coupons' && <CouponPanel rep={rep} openInvoice={openInvoice} />}
     </>
@@ -511,7 +627,7 @@ function Settings({ onSaved }) {
             <label className="f">State · place of supply (printed on invoices)<select value={s.state || 'Tamil Nadu (33)'} onChange={e => setS({ ...s, state: e.target.value })}>{STATES.map(x => <option key={x}>{x}</option>)}</select></label>
           </div>
           <label className="f" style={{ marginTop: 14 }}>Terms &amp; notes printed on the invoice (one point per line)<textarea rows={3} maxLength={600} value={s.terms || ''} onChange={e => setS({ ...s, terms: e.target.value })} placeholder="e.g. Custom-stitched and altered garments are made to order and are non-returnable." /></label>
-          <p className="sub" style={{ marginTop: 12 }}>Invoice numbers run automatically: DP-YEAR-000001.</p>
+          <p className="sub" style={{ marginTop: 12 }}>Invoice numbers are created automatically, like INV-2026-G3AKL.</p>
         </section>
         <section className="dpos-card"><h2><Icon n="truck" />Delivery &amp; packing quick picks</h2>
           {s.deliveryPresets.map((p, i) => (
@@ -534,7 +650,7 @@ export default function AdminPos() {
   const { user, authReady } = useApp();
   const { tab = 'billing' } = useParams();
   const nav = useNavigate();
-  const [shop, setShop] = useState(null); const [done, setDone] = useState(null); const [tick, setTick] = useState(0); const [err, setErr] = useState();
+  const [shop, setShop] = useState(null); const [done, setDone] = useState(null); const [advDone, setAdvDone] = useState(null); const [tick, setTick] = useState(0); const [err, setErr] = useState();
   const allowed = user && ['owner', 'admin', 'cashier'].includes(user.role);
   const manager = !!user && ['owner', 'admin'].includes(user.role);
   const stocker = !!user && ['owner', 'admin', 'inventory'].includes(user.role);
@@ -549,7 +665,7 @@ export default function AdminPos() {
   if (!(tab in TABS) || (TABS[tab] && !manager)) return <Navigate to="/admin/billing" replace />;
 
   const onSale = sale => { setDone(sale); setTick(t => t + 1) };
-  const onAdvance = () => { setTick(t => t + 1); nav('/admin/billing/advance') };
+  const onAdvance = adv => { setTick(t => t + 1); setAdvDone(adv) }; // the saved advance order is kept in Advance Orders; its receipt shows first
   const onBilled = (sale, invoiceNo) => { setTick(t => t + 1); if (sale) setDone(sale); else if (invoiceNo) openInvoice(invoiceNo) };
   const goExpenses = () => { window.location.assign('/admin/billing/expenses') };
   const body = {
@@ -571,6 +687,7 @@ export default function AdminPos() {
       <Err>{err}</Err>
       {body}
       {done && <BillDone sale={done} shop={shop} onClose={() => setDone(null)} />}
+      {advDone && <AdvanceDone adv={advDone} shop={shop} onClose={() => setAdvDone(null)} onView={() => { setAdvDone(null); nav('/admin/billing/advance') }} />}
     </AdminShell>
   );
 }

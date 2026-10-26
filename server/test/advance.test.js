@@ -27,7 +27,7 @@ test('advance orders: book with a deposit (no stock taken), then collect the bal
   assert.equal((await o('POST', '/admin/pos/advances', { ...body, items: [{ variantId: v.variantId, qty: before + 5 }] })).status, 409, 'not enough stock at booking');
   const adv = await o('POST', '/admin/pos/advances', body);
   assert.equal(adv.status, 201, JSON.stringify(adv.body)); const a = adv.body;
-  assert.match(a.code, /^AO-\d{4}-\d{4}$/); assert.equal(a.status, 'pending'); assert.equal(a.balance, a.total - 100000); assert.equal(a.items.length, 2);
+  assert.match(a.code, /^DEP-\d{8}-\d{4}$/); assert.equal(a.status, 'pending'); assert.equal(a.balance, a.total - 100000); assert.equal(a.items.length, 2);
   assert.equal(await stockOf(v.variantId), before, 'booking does not take stock');
   assert.ok((await o('GET', '/admin/pos/advances?status=pending')).body.some(x => x.code === a.code));
   assert.equal((await o('GET', '/admin/pos/sales')).body.length, (await o('GET', '/admin/pos/sales')).body.length);
@@ -41,7 +41,7 @@ test('advance orders: book with a deposit (no stock taken), then collect the bal
   assert.equal(fin.body.sale.paymentMode, 'split'); assert.equal(fin.body.sale.payUpi, 100000); assert.equal(fin.body.sale.payCash, a.total - 100000);
   assert.equal(fin.body.advance.status, 'completed'); assert.equal(fin.body.advance.invoiceNo, fin.body.sale.invoiceNo);
   assert.equal(await stockOf(v.variantId), before - 2, 'stock is taken when billed');
-  assert.match(fin.body.sale.notes, /Advance order AO-/);
+  assert.match(fin.body.sale.notes, /Advance order DEP-/);
   const again = await o('POST', `/admin/pos/advances/${a.code}/finalize`, { balanceMode: 'cash' });
   assert.equal(again.body.sale.invoiceNo, fin.body.sale.invoiceNo, 'a retry returns the same invoice'); assert.equal(await stockOf(v.variantId), before - 2, 'and does not take stock twice');
   assert.equal((await o('PATCH', `/admin/pos/advances/${a.code}/status`, { status: 'cancelled' })).status, 409, 'a billed order cannot be cancelled');
@@ -58,7 +58,7 @@ test('advance orders: cancel is owner/admin only; cashiers can book, mark ready 
   assert.equal((await cashier('PATCH', `/admin/pos/advances/${a.code}/status`, { status: 'cancelled' })).status, 403);
   assert.equal((await o('PATCH', `/admin/pos/advances/${a.code}/status`, { status: 'cancelled' })).body.status, 'cancelled');
   assert.equal((await cashier('POST', `/admin/pos/advances/${a.code}/finalize`, { balanceMode: 'cash' })).status, 409, 'a cancelled order cannot be billed');
-  assert.equal((await o('GET', '/admin/pos/advances/AO-2000-0001')).status, 404);
+  assert.equal((await o('GET', '/admin/pos/advances/DEP-20000101-0001')).status, 404);
   const b = (await cashier('POST', '/admin/pos/advances', { ...body, deposit: 200000, depositMode: 'card' })).body;
   const fin = await cashier('POST', `/admin/pos/advances/${b.code}/finalize`, { balanceMode: 'cash' });
   assert.equal(fin.status, 200); assert.equal(fin.body.sale.paymentMode, 'card', 'fully paid in advance: billed under the deposit mode');
