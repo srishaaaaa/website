@@ -57,19 +57,25 @@ function Sheet({ title, options, value, onCancel, onNext, last }) {
   );
 }
 
-// "Neck design": pick the front neck, then the back neck, from picture cards (or type your own). Stored as "Front: … · Back: …".
+// "Neck design": a Front neck card and a Back neck card. Front opens the front picker and then the back one (Skip / Next);
+// Back opens just the back picker. Stored as "Front: … · Back: …".
 export function NeckField({ value, onChange }) {
   const cur = parse(value);
   const [step, setStep] = useState(0); const [front, setFront] = useState('');
   const icon = (list, label) => list.find(([l]) => l === label)?.[1];
+  const card = (title, val, list, open) => (
+    <button type="button" className={`neck-card ${val ? 'set' : ''}`} onClick={open}>
+      <span className="neck-k">{title}</span>
+      <span className="neck-ic">{val ? icon(list, val) : <svg viewBox="0 0 60 44" width="38" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="3 4" aria-hidden="true"><path d="M6 6C14 40 46 40 54 6" /></svg>}</span>
+      <b>{val || 'Not chosen'}</b><em>{val ? 'Change' : 'Choose'}</em></button>);
   return (
     <div className="neck-field">
-      <button type="button" className="neck-btn" onClick={() => { setFront(cur.front); setStep(1) }}>
-        {cur.front || cur.back ? <><span className="neck-ic">{icon(FRONT_NECKS, cur.front)}</span><span className="neck-ic">{icon(BACK_NECKS, cur.back)}</span></> : null}
-        <span className="neck-tx">{cur.free || joinNeck(cur.front, cur.back) || 'Choose front & back neck'}</span><em>{value ? 'Change' : 'Choose'}</em></button>
-      {value && <button type="button" className="link-u small" onClick={() => onChange('')}>Clear</button>}
+      {cur.free && <p className="muted small" style={{ flex: '1 1 100%', margin: 0 }}>Current: {cur.free}</p>}
+      {card('FRONT NECK', cur.front, FRONT_NECKS, () => { setFront(cur.front); setStep(1) })}
+      {card('BACK NECK', cur.back, BACK_NECKS, () => { setFront(cur.front); setStep(3) })}
+      {value && <button type="button" className="link-u small" onClick={() => onChange('')}>Clear both</button>}
       {step === 1 && <Sheet title="Select Front Neck Type" options={FRONT_NECKS} value={cur.front} onCancel={() => setStep(0)} onNext={f => { setFront(f); setStep(2) }} />}
-      {step === 2 && <Sheet title="Select Back Neck Type" options={BACK_NECKS} value={cur.back} last onCancel={() => setStep(0)} onNext={b => { onChange(joinNeck(front, b)); setStep(0) }} />}
+      {(step === 2 || step === 3) && <Sheet title="Select Back Neck Type" options={BACK_NECKS} value={cur.back} last onCancel={() => setStep(0)} onNext={b => { onChange(joinNeck(step === 2 ? front : cur.front, b)); setStep(0) }} />}
     </div>
   );
 }

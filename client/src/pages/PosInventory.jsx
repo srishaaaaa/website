@@ -6,6 +6,7 @@ import { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import { Chips } from '../components/PeriodFilter';
 import { ColourModal, colourGroups } from '../components/ColourOptions';
+import StockMovements, { downloadCsv } from '../components/StockMovements';
 
 const toPaise = s => { const n = Math.round(parseFloat(String(s || '').replace(/,/g, '')) * 100); return Number.isFinite(n) && n > 0 ? n : 0 };
 const rupees = p => (p / 100).toFixed(2).replace(/\.00$/, '');
@@ -114,7 +115,7 @@ function AddModal({ categories, onClose, onDone }) {
   );
 }
 
-export default function PosInventory({ manager, stocker }) {
+function ProductsStock({ manager, stocker }) {
   const { toast } = useApp();
   const [q, setQ] = useState(''); const [stock, setStock] = useState('all'); const [list, setList] = useState(null); const [cats, setCats] = useState([]);
   const [open, setOpen] = useState(null); const [modal, setModal] = useState(null); const [err, setErr] = useState(); const [nv, setNv] = useState({ size: '', color: '', sku: '', stock: '' });
@@ -184,6 +185,24 @@ export default function PosInventory({ manager, stocker }) {
       {modal?.t === 'edit' && <EditModal product={modal.p} categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product saved.'); load() }} />}
       {modal?.t === 'colour' && <ColourModal product={modal.p} onClose={() => setModal(null)} onDone={() => { toast('Colour added.'); load() }} />}
       {modal?.t === 'add' && <AddModal categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product added.'); load() }} />}
+    </>
+  );
+}
+
+// Inventory: "Products & Stock" and "Stock Movements" tabs.
+export default function PosInventory({ manager, stocker }) {
+  const [tab, setTab] = useState('products');
+  const snapshot = async () => {
+    const list = await api('/admin/pos/products?q=');
+    downloadCsv('stock-snapshot.csv', ['Product', 'Category', 'Size', 'Colour', 'SKU', 'Stock', 'Price (₹)'], list.flatMap(p => p.variants.map(v => [p.name, p.category || '', v.size, v.color, v.sku, v.stock, (p.price / 100).toFixed(2)])));
+  };
+  return (
+    <>
+      <div className="inv-tabs" role="tablist" aria-label="Inventory sections">
+        <button role="tab" aria-selected={tab === 'products'} className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}><Icon n="box" size={16} /> Products &amp; Stock</button>
+        <button role="tab" aria-selected={tab === 'moves'} className={tab === 'moves' ? 'on' : ''} onClick={() => setTab('moves')}><Icon n="clock" size={16} /> Stock Movements</button>
+      </div>
+      {tab === 'products' ? <ProductsStock manager={manager} stocker={stocker} /> : <StockMovements onSnapshot={snapshot} />}
     </>
   );
 }

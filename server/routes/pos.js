@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
-import { adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
+import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const paise = z.number().int().min(0).max(100_000_000);
@@ -205,6 +205,11 @@ export default function pos({ db, auth }) {
   r.get('/pos/birthdays', manager, wrap(async (req, res) => {
     const { days } = z.object({ days: z.coerce.number().int().min(1).max(366).default(30) }).parse(req.query);
     res.json(await birthdays(db, days));
+  }));
+
+  r.get('/pos/stock/movements', stockers, wrap(async (req, res) => {
+    const f = z.object({ from: date.default(() => today()), to: date.default(() => today()), q: text(80).default(''), type: z.enum(['all', 'opening', 'sale', 'online', 'restock', 'loss', 'count', 'manual']).default('all') }).parse(req.query);
+    res.json(await stockMovements(db, f));
   }));
 
   // ---- inventory: products with variants, stock adjustments (new products use the existing POST /admin/products) ----

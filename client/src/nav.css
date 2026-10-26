@@ -342,3 +342,25 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .pick-foot { display: flex; gap: 12px; padding: 14px 22px 20px; border-top: 1px solid #eee }
 .pick-cancel { padding: 0 22px; border: 1px solid #e5e2dd; border-radius: 14px; font-weight: 800; background: #fff } .pick-go { flex: 1; padding: 17px; border-radius: 14px; background: #f5009b; color: #fff; font-weight: 800; letter-spacing: .06em }
 @media (max-width: 480px) { .pick-grid { gap: 10px; padding-inline: 14px } .pick-card { min-height: 92px } }
+
+/* ---- Inventory tabs and the stock movements ledger ---- */
+.inv-tabs { display: inline-flex; gap: 6px; padding: 6px; margin-bottom: 18px; border: 1px solid #e8e4dd; border-radius: 16px; background: #fff }
+.inv-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 12px; font-size: 13px; font-weight: 800; color: #1c1917 } .inv-tabs button.on { background: var(--d-bill, #b91c1c); color: #fff }
+.sm-h { margin: 0; font-size: 30px; font-weight: 800 } .sm-sub { margin: 4px 0 18px }
+.sm-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 16px; margin-bottom: 18px; border: 1px solid #e8e4dd; border-radius: 16px; background: #fff } .sm-sp { flex: 1 }
+.sm-ic { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #e5e2dd; border-radius: 12px; background: #fff }
+.sm-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 12px; font-size: 11px; font-weight: 800; letter-spacing: .06em } .sm-btn.green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0 } .sm-btn.red { background: var(--d-bill, #b91c1c); color: #fff } .sm-btn:disabled { opacity: .5 }
+.sm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px } @media (max-width: 1100px) { .sm-kpis { grid-template-columns: 1fr 1fr } } @media (max-width: 560px) { .sm-kpis { grid-template-columns: 1fr } }
+.sm-k { display: flex; align-items: center; gap: 14px; padding: 18px; border: 1px solid #e8e4dd; border-radius: 16px; background: #fff } .sm-k span { display: block; font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #44403c } .sm-k b { display: block; margin-top: 4px; font-size: 26px; font-weight: 800 } .sm-k small { font-size: 16px; font-weight: 800 }
+.sm-k i { width: 52px; height: 52px; flex: none; border-radius: 14px; display: grid; place-items: center } .sm-k i.g { background: #dcfce7; color: #15803d } .sm-k i.r { background: #fee2e2; color: #b91c1c } .sm-k i.a { background: #ffedd5; color: #c2410c } .sm-k i.solid { background: var(--d-bill, #b91c1c); color: #fff } .sm-k b.g { color: #15803d }
+.sm-ledger { border: 1px solid #e8e4dd; border-radius: 16px; background: #fff; overflow: hidden }
+.sm-lh { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 20px; background: #faf8f5; border-bottom: 1px solid #ece8e1 } .sm-lh b { flex: 1 1 200px; font-size: 13px; letter-spacing: .08em }
+.sm-search { position: relative; display: flex; align-items: center; color: #6b6670 } .sm-search svg { position: absolute; left: 12px; width: 18px; height: 18px } .sm-search input, .sm-lh select { padding: 11px 14px 11px 38px; min-width: 260px; border: 1px solid #e5e2dd; border-radius: 12px; background: #fff; font: inherit; font-size: 13px } .sm-lh select { padding-left: 14px; min-width: 150px; font-weight: 700 }
+.sm-ledger table { width: 100% } .sm-ledger th, .sm-ledger td { padding: 14px 20px } .sm-ch { font-weight: 800 } .sm-ch.g { color: #15803d } .sm-ch.r { color: #b91c1c }
+.sm-tag { display: inline-block; padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; letter-spacing: .1em; background: #f1eff3 } .sm-tag.in { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0 } .sm-tag.out { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca } .sm-tag.warn { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa }
+
+.neck-card { flex: 1 1 150px; display: grid; justify-items: center; gap: 4px; padding: 10px 12px; border: 2px dashed #e5e2dd; border-radius: 14px; background: #fff; color: #0f0f10; text-align: center }
+.neck-card.set { border-style: solid; border-color: #f9a8d4; background: #fff5fa } .neck-card:hover { border-color: #f5009b }
+.neck-k { font-size: 10px; font-weight: 800; letter-spacing: .12em; color: #6b6670 } .neck-card b { font-size: 13px } .neck-card em { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: .08em; color: #f5009b }
+.stc-grid > *:has(> .neck-field), .stc-grid > *:has(.neck-field) { grid-column: 1 / -1 }
+.neck-card { max-width: 230px }

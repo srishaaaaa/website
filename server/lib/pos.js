@@ -313,6 +313,35 @@ export async function adjustStock(db, user, { variantId, type, qty, note }) {
   });
 }
 
+// ---- stock movements: every change to stock, with the level before and after ----
+const KNOWN_REASONS = ['initial_stock', 'pos_sale', 'pos_void', 'pos_restock', 'pos_return', 'pos_loss', 'pos_reconcile', 'order_reserved', 'order_released'];
+const MOVE_TYPES = { opening: ['initial_stock'], sale: ['pos_sale'], online: ['order_reserved', 'order_released'], restock: ['pos_restock', 'pos_return', 'pos_void'], loss: ['pos_loss'], count: ['pos_reconcile'] };
+export async function stockMovements(db, { from, to, q = '', type = 'all', limit = 500 }) {
+  const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
+  const reasons = MOVE_TYPES[type] ?? null;
+  const base = `
+    WITH m AS (
+      SELECT im.id, im.created_at, im.variant_id, im.quantity_change, im.reason, im.reference_id, v.stock_quantity AS stock_now,
+             SUM(im.quantity_change) OVER (PARTITION BY im.variant_id ORDER BY im.id) AS cum, SUM(im.quantity_change) OVER (PARTITION BY im.variant_id) AS total
+      FROM inventory_movements im JOIN product_variants v ON v.id = im.variant_id),
+    r AS (
+      SELECT m.id, m.created_at AS "at", p.name, v.size, v.color, v.sku, m.reason, m.quantity_change AS change, m.reference_id AS ref,
+             (m.stock_now - (m.total - m.cum))::int AS after, (m.stock_now - (m.total - m.cum) - m.quantity_change)::int AS before
+      FROM m JOIN product_variants v ON v.id = m.variant_id JOIN products p ON p.id = v.product_id
+      WHERE (m.created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN $1::date AND $2::date
+        AND ($3 = '' OR p.name ILIKE $4 OR v.sku ILIKE $4 OR COALESCE(m.reference_id, '') ILIKE $4)
+        AND ($5::text[] IS NULL OR m.reason = ANY($5))
+        AND ($6::boolean IS NOT TRUE OR m.reason <> ALL($7)))`;
+  const args = [from, to, q.trim(), like, reasons, type === 'manual', KNOWN_REASONS];
+  const list = await rows(db, base + ` SELECT * FROM r ORDER BY id DESC LIMIT ${Math.min(limit, 2000)}`, args);
+  const s = await one(db, base + `
+    SELECT COALESCE(SUM(change) FILTER (WHERE change > 0 AND reason NOT IN ('pos_void', 'order_released')), 0)::int AS incoming,
+           COALESCE(-SUM(change) FILTER (WHERE reason IN ('pos_sale', 'pos_void')), 0)::int AS sold,
+           COALESCE(-SUM(change) FILTER (WHERE reason = 'pos_loss'), 0)::int AS lost,
+           COALESCE(SUM(change), 0)::int AS net, COUNT(*)::int AS count FROM r`, args);
+  return { summary: s, rows: list };
+}
+
 // ---- products with their variants (inventory screen) ----
 export const listProducts = (db, q = '', onlyId = null) => {
   const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
