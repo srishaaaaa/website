@@ -49,3 +49,15 @@ test('expense categories: managed in settings, added and removed, and reports br
   assert.ok(![...(await o('GET', '/admin/pos/expense-categories')).body].includes('Fabric Samples'));
   assert.ok([401, 403].includes((await client()('GET', '/admin/pos/expense-categories')).status));
 });
+
+test('birthday offer: default message, saved for everyone, manager only', async () => {
+  const o = client(); await o('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const d = (await o('GET', '/admin/pos/birthday-offer')).body;
+  assert.ok(d.message.includes('{name}') && d.message.includes('{offer}') && d.offers.length >= 1);
+  const next = { offers: [...d.offers, { id: 'o2', text: '40% off on sarees' }], selected: 'o2', message: 'Hi {name}! {offer} – {shop}' };
+  assert.equal((await o('PUT', '/admin/pos/birthday-offer', next)).status, 200);
+  assert.deepEqual((await o('GET', '/admin/pos/birthday-offer')).body, next);
+  assert.equal((await o('PUT', '/admin/pos/birthday-offer', { ...next, selected: 'gone' })).body.selected, 'o1' === next.offers[0].id ? next.offers[0].id : 'o1', 'an unknown selection falls back to the first offer');
+  assert.equal((await o('PUT', '/admin/pos/birthday-offer', { ...next, message: '' })).status, 400);
+  assert.ok([401, 403].includes((await client()('GET', '/admin/pos/birthday-offer')).status));
+});

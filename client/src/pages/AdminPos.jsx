@@ -9,6 +9,8 @@ import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
 import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
 import PosExpenses from './PosExpenses';
+import PosCoupons from './PosCoupons';
+import PosBirthdays from './PosBirthdays';
 import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
@@ -533,65 +535,8 @@ function Customers({ manager }) {
 
 // ============================ expenses ============================
 // ============================ coupons ============================
-function Coupons() {
-  const [list, setList] = useState(null); const [err, setErr] = useState(); const [st, setSt] = useState('all');
-  const [f, setF] = useState({ code: '', type: 'percent', value: '', min: '', expires: '', limit: '' });
-  const load = useCallback(() => api('/admin/pos/coupons').then(setList).catch(e => setErr(e.message)), []);
-  useEffect(() => { load() }, [load]);
-  const create = async e => {
-    e.preventDefault(); setErr();
-    try {
-      await api('/admin/pos/coupons', { method: 'POST', body: { code: f.code.trim(), discountType: f.type, discountValue: f.type === 'percent' ? Math.round(+f.value) : toPaise(f.value),
-        minOrder: toPaise(f.min), expiresOn: f.expires || null, usageLimit: f.limit ? Math.round(+f.limit) : null } });
-      setF({ code: '', type: 'percent', value: '', min: '', expires: '', limit: '' }); load();
-    } catch (x) { setErr(x.issues?.[0]?.message || x.message) }
-  };
-  const toggle = async c => { try { await api(`/admin/pos/coupons/${c.id}`, { method: 'PATCH', body: { active: !c.active } }); load() } catch (x) { setErr(x.message) } };
-  const del = async c => { if (!confirm(`Delete coupon ${c.code}?`)) return; try { await api(`/admin/pos/coupons/${c.id}`, { method: 'DELETE' }); load() } catch (x) { setErr(x.message) } };
-  const shown = (list || []).filter(c => st === 'all' || (st === 'active' ? c.active : !c.active));
-  return (
-    <>
-      <form className="dpos-card" onSubmit={create}><h2>New coupon</h2>
-        <div className="dpos-grid">
-          <label className="f">Code<input required value={f.code} onChange={e => setF({ ...f, code: e.target.value.toUpperCase() })} placeholder="e.g. BIRTHDAY10" maxLength={40} /></label>
-          <label className="f">Type<select value={f.type} onChange={e => setF({ ...f, type: e.target.value })}><option value="percent">Percent off</option><option value="fixed">Fixed ₹ off</option></select></label>
-          <label className="f">{f.type === 'percent' ? 'Percent' : 'Amount ₹'}<input required inputMode="decimal" value={f.value} onChange={e => setF({ ...f, value: e.target.value })} /></label>
-          <label className="f">Minimum bill ₹<input inputMode="decimal" value={f.min} onChange={e => setF({ ...f, min: e.target.value })} placeholder="0" /></label>
-          <label className="f">Expires on<input type="date" value={f.expires} onChange={e => setF({ ...f, expires: e.target.value })} /></label>
-          <label className="f">Usage limit<input inputMode="numeric" value={f.limit} onChange={e => setF({ ...f, limit: e.target.value })} placeholder="Unlimited" /></label>
-        </div>
-        <div style={{ marginTop: 14 }}><button className="dpos-btn" type="submit">Create coupon</button></div>
-      </form>
-      <Err>{err}</Err>
-      <section className="dpos-card"><div className="dpos-bar-tools" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}>Coupons</h2><Chips label="Status" value={st} onChange={setSt} options={[['all', 'All'], ['active', 'Active'], ['off', 'Off']]} /></div>
-        {!list ? <Empty>Loading…</Empty> : !shown.length ? <Empty>No coupons here.</Empty> : (
-          <div className="dpos-tw"><table><thead><tr><th>Code</th><th>Discount</th><th className="r">Min bill</th><th>Expires</th><th className="r">Used</th><th>Status</th><th /></tr></thead>
-            <tbody>{shown.map(c => (
-              <tr key={c.id}><td><b>{c.code}</b></td><td>{c.discountType === 'percent' ? `${c.discountValue}%` : inr(c.discountValue)}</td><td className="r">{c.minOrder ? inr(c.minOrder) : '—'}</td><td>{c.expiresOn ? dmy(c.expiresOn) : '—'}</td>
-                <td className="r">{c.usedCount}{c.usageLimit ? ` / ${c.usageLimit}` : ''}</td><td><span className={`dpos-pill ${c.active ? 'ok' : ''}`}>{c.active ? 'Active' : 'Off'}</span></td>
-                <td style={{ whiteSpace: 'nowrap' }}><button className="dpos-btn ghost sm" onClick={() => toggle(c)}>{c.active ? 'Turn off' : 'Turn on'}</button> <button className="dpos-btn danger sm" onClick={() => del(c)}>Delete</button></td></tr>))}</tbody></table></div>)}
-      </section>
-    </>
-  );
-}
 
 // ============================ birthdays ============================
-function Birthdays({ shop }) {
-  const [days, setDays] = useState(30); const [rows, setRows] = useState(null); const [err, setErr] = useState();
-  useEffect(() => { setRows(null); api('/admin/pos/birthdays?days=' + days).then(setRows).catch(e => setErr(e.message)) }, [days]);
-  const wa = b => { const d = b.phone.replace(/\D/g, ''); return `https://wa.me/${d.length === 10 ? '91' + d : d}?text=${encodeURIComponent(`Happy birthday ${b.name || ''}! A little gift from ${shop?.name || 'DHANYA'} awaits you in store.`)}` };
-  return (
-    <section className="dpos-card">
-      <p className="sub" style={{ marginBottom: 12 }}>Customers whose date of birth is saved in Customers. Pair this with a birthday coupon from the Coupons tab.</p>
-      <div style={{ marginBottom: 12 }}><Chips label="Range" value={days} onChange={setDays} options={[[7, 'Next 7 days'], [30, 'Next 30 days'], [90, 'Next 90 days'], [366, 'This year']]} /></div>
-      <Err>{err}</Err>
-      {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No upcoming birthdays. Add a date of birth while billing, or in Customers.</Empty> : (
-        <div className="dpos-tw"><table><thead><tr><th>Customer</th><th>Mobile</th><th>Date of birth</th><th>Next birthday</th><th /></tr></thead>
-          <tbody>{rows.map(b => <tr key={b.phone}><td><b>{b.name || '—'}</b></td><td>{b.phone}</td><td>{dmy(b.dob)}</td><td>{dmy(b.nextBirthday)} <span className={`dpos-pill ${b.daysAway === 0 ? 'ok' : ''}`}>{b.daysAway === 0 ? 'Today' : `in ${b.daysAway}d`}</span></td>
-            <td><a className="dpos-btn ghost sm" href={wa(b)} target="_blank" rel="noopener noreferrer">Message</a></td></tr>)}</tbody></table></div>)}
-    </section>
-  );
-}
 
 // ============================ delivery & GST settings ============================
 function Settings({ onSaved }) {
@@ -687,7 +632,7 @@ export default function AdminPos() {
     analytics: <Analytics channel="retail" openInvoice={openInvoice} tick={tick} goExpenses={goExpenses} />,
     advance: <AdvanceOrders manager={manager} tick={tick} onBilled={onBilled} />,
     orders: <OrderHistory manager={manager} tick={tick} openInvoice={openInvoice} onChanged={() => setTick(t => t + 1)} />,
-    inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <Coupons />, birthdays: <Birthdays shop={shop} />,
+    inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <PosCoupons />, birthdays: <PosBirthdays shop={shop} CustomerModal={CustomerModal} />,
     expenses: <PosExpenses />, settings: <Settings onSaved={loadShop} />,
   }[tab];
   const sub = {
