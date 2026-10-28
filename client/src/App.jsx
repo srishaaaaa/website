@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from './context/App';
 import FloatingNavbar from './components/FloatingNavbar';
@@ -27,7 +27,7 @@ const A = {
   pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
   categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
-  products: lazyEl(media, 'AdminProducts'), storefront: lazyEl(media, 'AdminStorefront'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
+  storefront: lazyEl(media, 'AdminStorefront'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
 };
 
 export default function App() {
@@ -35,14 +35,17 @@ export default function App() {
   const location = useLocation();
   const bare = location.pathname.startsWith('/invoice/') || location.pathname.startsWith('/admin/stitching/print/'); // invoice / job card pages are clean documents: no site header, footer, intro or overlays
 
+  const admin = location.pathname === '/admin' || location.pathname.startsWith('/admin/'); // the admin panel has its own sidebar: no website menu, footer or intro
+  const site = !bare && !admin;
+
   // Overlays never outlive a navigation.
   useEffect(() => { setBagOpen(false); setSearchOpen(false); setMenuOpen(false); setQuick(null) }, [location.pathname]); // eslint-disable-line
 
   return (
     <>
       <a className="skip-link" href="#main">Skip to content</a>
-      <AnimatePresence>{!entered && !bare && <Intro key="intro" onDone={enter} />}</AnimatePresence>
-      {!bare && <FloatingNavbar />}
+      <AnimatePresence>{!entered && site && <Intro key="intro" onDone={enter} />}</AnimatePresence>
+      {site && <FloatingNavbar />}
       <PageTransition>
         <Routes location={location}>
           <Route path="/" element={<Home />} />
@@ -63,7 +66,7 @@ export default function App() {
           <Route path="/admin/categories" element={A.categories} />
           <Route path="/admin/reels" element={A.reels} />
           <Route path="/admin/settings" element={A.settings} />
-          <Route path="/admin/products" element={A.products} />
+          <Route path="/admin/products" element={<Navigate to="/admin/billing/inventory" replace />} />
           <Route path="/admin/storefront" element={A.storefront} />
           <Route path="/admin/enquiries" element={A.enquiries} />
           <Route path="/admin/sample" element={A.sample} />
@@ -83,8 +86,9 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </PageTransition>
-      {!bare && <><LuxuryFooter />
-      <CartDrawer /><SearchOverlay /><QuickView /><Toasts /><Cursor /></>}
+      {site && <><LuxuryFooter />
+      <CartDrawer /><SearchOverlay /><QuickView /><Cursor /></>}
+      {!bare && <Toasts />}
     </>
   );
 }

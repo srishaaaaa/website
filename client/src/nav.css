@@ -222,8 +222,8 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .site-header .mega.mega-collections { left: min(22%, calc(100vw - 480px)) }
 
 /* collections carousel: cards ease to their new tilt instead of jumping between scroll frames */
-.cf-card { transition: transform .5s cubic-bezier(.22, 1, .36, 1), opacity .5s ease; will-change: transform, opacity }
-@media (prefers-reduced-motion: reduce) { .cf-card { transition: none } }
+.cf-card { will-change: transform; backface-visibility: hidden }
+.cf-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: rgb(25 10 18 / calc(var(--dim, 0) * 100%)); pointer-events: none }
 
 /* ---- soft corners everywhere: buttons, filter chips and form fields never have sharp edges ---- */
 .btn, .chip, .qty, .thumbs button { border-radius: 14px }
@@ -507,3 +507,48 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 /* search boxes: keep the icon clear of the text (the global POS input padding was winning) */
 .dpos .adv-search input, .dpos .sm-search input, .dpos .an-search input { padding-left: 44px !important }
 .dpos .adv-search svg, .dpos .sm-search svg, .dpos .an-search svg { pointer-events: none }
+
+/* ---- phone menu and bag: tidy, thumb-friendly layout ---- */
+.mobile-menu { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-inline: 22px; padding-bottom: calc(24px + env(safe-area-inset-bottom)) }
+.mobile-menu .mm-top .wm-logo { width: 52px; height: 52px } .mobile-menu .mm-top .wm-text b { font-size: 19px }
+.mobile-menu nav { margin: 20px 0 18px; border-top: 1px solid rgba(229, 200, 143, .18) }
+.mobile-menu .mm-link { display: flex; align-items: center; justify-content: space-between; font-size: clamp(26px, 8vw, 34px); font-weight: 700; line-height: 1.1; padding: 14px 2px; border-bottom: 1px solid rgba(229, 200, 143, .18) }
+.mobile-menu .mm-link:hover, .mobile-menu .mm-link:active { padding-left: 2px; padding-right: 8px }
+.mm-ar { font-style: normal; font-size: 18px; color: #e5c88f; opacity: .65; transition: transform .25s, opacity .25s } .mm-link:active .mm-ar { transform: translateX(4px); opacity: 1 }
+.mm-label { margin: 6px 0 12px; font-size: 10px; font-weight: 700; letter-spacing: .3em; color: #e5c88f; opacity: .85 }
+.mobile-menu .mm-cats { gap: 8px }
+.mobile-menu .chip { min-height: 34px; padding: 7px 14px; font-size: 10px; letter-spacing: .12em }
+.mobile-menu .mm-foot { grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 26px }
+.mobile-menu .mm-foot .btn { min-height: 48px; font-size: 11px; letter-spacing: .2em }
+.mobile-menu .mm-foot .btn:last-child { grid-column: 1 / -1; background: linear-gradient(135deg, #f8e6bf, #c39653); color: #330533; border-color: transparent; font-weight: 800 }
+.mobile-menu .mm-foot .btn:last-child:active { filter: brightness(.95) }
+@media (max-width: 380px) { .mobile-menu .mm-link { font-size: 25px; padding: 12px 2px } .mobile-menu nav { margin: 14px 0 14px } }
+
+/* the bag on a phone: full-width sheet with a roomy empty state */
+@media (max-width: 560px) {
+  .drawer.refine { width: 100% } .drawer.refine .drawer-head { padding: 18px 20px } .drawer.refine .drawer-body { padding: 14px 20px } .drawer.refine .drawer-foot { padding: 16px 20px calc(18px + env(safe-area-inset-bottom)) }
+  .drawer.refine .empty { padding: 56px 8px; display: grid; justify-items: center; gap: 10px; text-align: center } .drawer.refine .empty .big { font-size: 28px }
+  .drawer.refine .empty .btn { margin-top: 10px; border-radius: 999px; padding: 15px 26px; background: var(--red, #5a1560); color: #fff; border-color: var(--red, #5a1560) }
+}
+.overlay-root > .drawer { position: absolute; z-index: 2 } .overlay-root > .scrim { z-index: 1 }
+
+/* Inside DHANYA BOUTIQUE: separate Reel Gallery and Photo Gallery blocks */
+.insta-block { max-width: 1300px; margin: clamp(36px, 5vw, 72px) auto 0; padding-inline: var(--pad, 24px) }
+.insta-bh { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: clamp(18px, 2vw, 28px); padding-bottom: 14px; border-bottom: 1px solid rgba(33, 23, 20, .12) }
+.insta-bh h3 { font-family: var(--serif); font-size: clamp(24px, 2.6vw, 38px); font-weight: 700; letter-spacing: -.01em; margin: 0 }
+.insta-bh span { font-size: 11px; font-weight: 700; letter-spacing: .24em; opacity: .55 }
+.insta-block .insta-grid { padding: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); justify-content: stretch; gap: clamp(14px, 2vw, 32px) }
+.insta-photos .insta-tile { aspect-ratio: 4 / 5; border-radius: 22px }
+.insta-photos .insta-tile .blank { border-radius: 22px }
+.insta-photos .insta-tile img { transition: transform 1s var(--ease, ease) } .insta-photos .insta-tile:hover img { transform: scale(1.05) }
+@media (max-width: 767px) {
+  .insta-block .insta-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 68vw; justify-content: start; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 16px }
+  .insta-block .insta-grid > li { scroll-snap-align: start }
+}
+
+/* Admin panel has no website header above it, so it starts at the top of the page */
+.dpos { padding-top: 24px }
+.dpos-side { top: 24px; max-height: calc(100vh - 48px) }
+@media (max-width: 900px) { .dpos { padding-top: 14px } }
+/* Photos inside the product Edit window */
+.pphotos .adm-gal { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }

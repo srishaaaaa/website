@@ -39,7 +39,6 @@ export default function InstagramStrip() {
   const all = (ig?.posts || []).filter(p => p.video || p.image);
   const videos = all.filter(p => p.video).slice(0, 6);
   const photos = all.filter(p => !p.video).slice(0, 6);
-  const photoSlots = Math.max(photos.length, videos.length ? 0 : 3);
   return (
     <section className="insta ivory-sec" id="reels" aria-labelledby="ig-h">
       <Reveal className="insta-head">
@@ -48,39 +47,39 @@ export default function InstagramStrip() {
         <p className="insta-sub">Discover our boutique, explore our collections, and experience the beauty of sarees.</p>
         {ig?.url && <a className="btn solid pill" href={ig.url} target="_blank" rel="noopener noreferrer" data-cursor="FOLLOW"><IgIcon size={16} /> FOLLOW ON INSTAGRAM <span aria-hidden="true">↗</span></a>}
       </Reveal>
-      {videos.length > 0 && (
-        <>
-          <h3 className="insta-h3">REELS</h3>
-          <ul className="insta-grid">
-            {videos.map((t, i) => (
-              <Reveal as="li" key={t.video + i} delay={(i % 3) * 0.1}>
-                <div className="insta-tile">
-                  <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} />
-                  {t.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
+      {/* Two separate galleries: reels (tall videos) and photos (4:5 photo grid). Empty slots keep each in place until media is added. */}
+      <div className="insta-block insta-reels">
+        <div className="insta-bh"><h3>Reel Gallery</h3><span>{videos.length ? `${videos.length} ${videos.length === 1 ? 'REEL' : 'REELS'}` : 'COMING SOON'}</span></div>
+        <ul className="insta-grid">
+          {Array.from({ length: Math.max(videos.length, 3) }, (_, i) => {
+            const t = videos[i];
+            return (
+              <Reveal as="li" key={(t?.video || 'empty') + i} delay={(i % 3) * 0.1}>
+                <div className={`insta-tile ${t ? '' : 'insta-empty'}`}>
+                  {t ? <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} /> : <BlankFrame label={`Reel ${i + 1}`} />}
+                  {t?.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
                 </div>
               </Reveal>
-            ))}
-          </ul>
-        </>
-      )}
-      {photoSlots > 0 && (
-        <>
-          <h3 className="insta-h3">PHOTO GALLERY</h3>
-          <ul className="insta-grid">
-            {Array.from({ length: photoSlots }, (_, i) => {
-              const t = photos[i];
-              return (
-                <Reveal as="li" key={(t?.image || 'empty') + i} delay={(i % 3) * 0.1}>
-                  <div className={`insta-tile ${t ? '' : 'insta-empty'}`}>
-                    {t ? <img src={t.image} alt={t.alt || 'Boutique photo'} loading="lazy" /> : <BlankFrame label={`Photo ${i + 1}`} />}
-                    {t?.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
-                  </div>
-                </Reveal>
-              );
-            })}
-          </ul>
-        </>
-      )}
+            );
+          })}
+        </ul>
+      </div>
+      <div className="insta-block insta-photos">
+        <div className="insta-bh"><h3>Photo Gallery</h3><span>{photos.length ? `${photos.length} ${photos.length === 1 ? 'PHOTO' : 'PHOTOS'}` : 'COMING SOON'}</span></div>
+        <ul className="insta-grid">
+          {Array.from({ length: Math.max(photos.length, 3) }, (_, i) => {
+            const t = photos[i];
+            return (
+              <Reveal as="li" key={(t?.image || 'empty') + i} delay={(i % 3) * 0.1}>
+                <div className={`insta-tile ${t ? '' : 'insta-empty'}`}>
+                  {t ? <img src={t.image} alt={t.alt || 'Boutique photo'} loading="lazy" /> : <BlankFrame label={`Photo ${i + 1}`} />}
+                  {t?.href && <a className="insta-open" href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
+                </div>
+              </Reveal>
+            );
+          })}
+        </ul>
+      </div>
     </section>
   );
 }

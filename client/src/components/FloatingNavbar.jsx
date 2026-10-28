@@ -22,7 +22,7 @@ function MegaMenu({ kind, x, onNavigate }) {
   const ordered = (list, slugs) => slugs?.length ? slugs.map(s => list.find(x => x.slug === s)).filter(Boolean) : list;
   const rows = kind === 'collections'
     ? [{ name: 'All collections', to: '/collections' }, ...ordered(catalog.collections, hp.collections).map(c => ({ name: c.name, to: `/collections/${c.slug}` }))]
-    : [{ name: 'All pieces', to: '/shop' }, { name: 'New arrivals', to: '/shop?sort=newest' }, ...ordered(catalog.categories, hp.categories).map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
+    : [{ name: 'All pieces', to: '/shop' }, { name: 'New arrivals', to: catalog.collections.some(c => c.slug === 'new-arrivals') ? '/collections/new-arrivals' : '/shop?sort=newest' }, ...ordered(catalog.categories, hp.categories).map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
   const label = kind === 'collections' ? 'Collections' : 'Categories';
   return (
     <motion.div className={`mega mega-sm mega-${kind}`} style={x != null ? { left: `clamp(12px, ${Math.round(x - 220)}px, calc(100vw - 452px))` } : undefined} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
@@ -55,12 +55,12 @@ function MobileMenu() {
           <nav aria-label="Mobile">
             {links.map(([n, to], i) => (
               <motion.div key={to} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.07, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}>
-                <Link to={to} className="mm-link serif" onClick={close}>{n}</Link>
+                <Link to={to} className="mm-link serif" onClick={close}><span>{n}</span><i className="mm-ar" aria-hidden="true">→</i></Link>
               </motion.div>
             ))}
           </nav>
           {catalog.categories.length > 0 && (
-            <div className="mm-cats">{catalog.categories.map(c => <Link key={c.slug} to={`/shop?category=${c.slug}`} onClick={close} className="chip">{c.name}</Link>)}</div>
+            <><p className="mm-label">SHOP BY CATEGORY</p><div className="mm-cats">{catalog.categories.map(c => <Link key={c.slug} to={`/shop?category=${c.slug}`} onClick={close} className="chip">{c.name}</Link>)}</div></>
           )}
           <div className="mm-foot">
             <button className="btn" onClick={() => { close(); setSearchOpen(true) }}>SEARCH</button>

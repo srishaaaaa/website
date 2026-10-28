@@ -92,8 +92,8 @@ export default function admin({ db, auth }) {
   const slugOf = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'item';
   const freeSlug = async (table, name) => { const base = slugOf(name); for (let i = 0; ; i++) { const slug = i ? `${base}-${i + 1}` : base; if (!(await one(db, `SELECT 1 AS x FROM ${table} WHERE slug = $1`, [slug]))) return slug } };
   r.get('/taxonomy', staff, wrap(async (_req, res) => res.json({
-    categories: await rows(db, `SELECT c.id, c.name, c.slug, c.active, (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id) AS products FROM categories c ORDER BY c.display_order, lower(c.name)`),
-    collections: await rows(db, `SELECT c.id, c.name, c.slug, c.status, (SELECT COUNT(*)::int FROM collection_products cp WHERE cp.collection_id = c.id) AS products FROM collections c ORDER BY c.display_order, lower(c.name)`),
+    categories: await rows(db, `SELECT c.id, c.name, c.slug, c.description, c.active, (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id) AS products FROM categories c ORDER BY c.display_order, lower(c.name)`),
+    collections: await rows(db, `SELECT c.id, c.name, c.slug, c.description, c.status, (SELECT COUNT(*)::int FROM collection_products cp WHERE cp.collection_id = c.id) AS products FROM collections c ORDER BY c.display_order, lower(c.name)`),
   })));
   const nameBody = z.object({ name: z.string().trim().min(1).max(80) });
   r.post('/categories', staff, wrap(async (req, res) => {
@@ -104,9 +104,9 @@ export default function admin({ db, auth }) {
     res.status(201).json({ id: row.id });
   }));
   r.patch('/categories/:id', staff, wrap(async (req, res) => {
-    const b = z.object({ active: z.boolean().optional(), name: z.string().trim().min(1).max(80).optional() }).parse(req.body);
+    const b = z.object({ active: z.boolean().optional(), name: z.string().trim().min(1).max(80).optional(), description: z.string().trim().max(300).optional() }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
-    const u = await db.query('UPDATE categories SET active = COALESCE($2, active), name = COALESCE($3, name) WHERE id = $1 RETURNING id', [id, b.active ?? null, b.name ?? null]);
+    const u = await db.query('UPDATE categories SET active = COALESCE($2, active), name = COALESCE($3, name), description = COALESCE($4, description) WHERE id = $1 RETURNING id', [id, b.active ?? null, b.name ?? null, b.description ?? null]);
     if (!u.rows.length) throw new HttpError(404, 'Category not found');
     await audit(db, req.user.id, 'category.update', 'category', id, b);
     res.json({ ok: true });
@@ -126,9 +126,9 @@ export default function admin({ db, auth }) {
     res.status(201).json({ id: row.id });
   }));
   r.patch('/collections/:id', staff, wrap(async (req, res) => {
-    const b = z.object({ status: z.enum(['draft', 'published']).optional(), name: z.string().trim().min(1).max(80).optional() }).parse(req.body);
+    const b = z.object({ status: z.enum(['draft', 'published']).optional(), name: z.string().trim().min(1).max(80).optional(), description: z.string().trim().max(300).optional() }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
-    const u = await db.query('UPDATE collections SET status = COALESCE($2, status), name = COALESCE($3, name) WHERE id = $1 RETURNING id', [id, b.status ?? null, b.name ?? null]);
+    const u = await db.query('UPDATE collections SET status = COALESCE($2, status), name = COALESCE($3, name), description = COALESCE($4, description) WHERE id = $1 RETURNING id', [id, b.status ?? null, b.name ?? null, b.description ?? null]);
     if (!u.rows.length) throw new HttpError(404, 'Collection not found');
     await audit(db, req.user.id, 'collection.update', 'collection', id, b);
     res.json({ ok: true });
@@ -138,6 +138,43 @@ export default function admin({ db, auth }) {
     const d = await db.query('DELETE FROM collections WHERE id = $1 RETURNING name', [id]);
     if (!d.rows.length) throw new HttpError(404, 'Collection not found');
     await audit(db, req.user.id, 'collection.delete', 'collection', id, { name: d.rows[0].name });
+    res.json({ ok: true });
+  }));
+
+  // Which pieces sit in a collection (in order) or a category. The admin edits these in Taxonomy → Edit pieces.
+  const piece = `p.id, p.slug, p.name, p.status, (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image`;
+  const slugsBody = z.object({ slugs: z.array(z.string().trim().min(1).max(160)).max(200) });
+  r.get('/collections/:id/products', staff, wrap(async (req, res) => {
+    const id = z.coerce.number().int().parse(req.params.id);
+    if (!await one(db, 'SELECT 1 AS x FROM collections WHERE id = $1', [id])) throw new HttpError(404, 'Collection not found');
+    res.json(await rows(db, `SELECT ${piece} FROM collection_products cp JOIN products p ON p.id = cp.product_id WHERE cp.collection_id = $1 ORDER BY cp.display_order, p.id`, [id]));
+  }));
+  r.put('/collections/:id/products', staff, wrap(async (req, res) => {
+    const id = z.coerce.number().int().parse(req.params.id);
+    const slugs = [...new Set(slugsBody.parse(req.body).slugs)];
+    if (!await one(db, 'SELECT 1 AS x FROM collections WHERE id = $1', [id])) throw new HttpError(404, 'Collection not found');
+    await db.tx(async t => {
+      await t.query('DELETE FROM collection_products WHERE collection_id = $1', [id]);
+      for (const [i, slug] of slugs.entries()) await t.query('INSERT INTO collection_products (collection_id, product_id, display_order) SELECT $1, id, $2 FROM products WHERE slug = $3', [id, i, slug]);
+    });
+    await audit(db, req.user.id, 'collection.products', 'collection', id, { count: slugs.length });
+    res.json({ ok: true });
+  }));
+  r.get('/categories/:id/products', staff, wrap(async (req, res) => {
+    const id = z.coerce.number().int().parse(req.params.id);
+    if (!await one(db, 'SELECT 1 AS x FROM categories WHERE id = $1', [id])) throw new HttpError(404, 'Category not found');
+    res.json(await rows(db, `SELECT ${piece} FROM products p WHERE p.category_id = $1 ORDER BY lower(p.name)`, [id]));
+  }));
+  // A product has one category: adding a piece here moves it out of its old category; removing one leaves it uncategorised.
+  r.put('/categories/:id/products', staff, wrap(async (req, res) => {
+    const id = z.coerce.number().int().parse(req.params.id);
+    const slugs = [...new Set(slugsBody.parse(req.body).slugs)];
+    if (!await one(db, 'SELECT 1 AS x FROM categories WHERE id = $1', [id])) throw new HttpError(404, 'Category not found');
+    await db.tx(async t => {
+      await t.query('UPDATE products SET category_id = NULL WHERE category_id = $1', [id]);
+      for (const slug of slugs) await t.query('UPDATE products SET category_id = $1 WHERE slug = $2', [id, slug]);
+    });
+    await audit(db, req.user.id, 'category.products', 'category', id, { count: slugs.length });
     res.json({ ok: true });
   }));
 

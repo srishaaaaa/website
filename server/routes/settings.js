@@ -38,7 +38,7 @@ export const brandingSchema = z.object({
 });
 // Homepage picks chosen in Admin → Storefront images: the trending products (in order) and which collections appear in "Choose your world".
 const slugList = max => z.array(z.string().trim().min(1).max(120)).max(max).default([]);
-export const homepageSchema = z.object({ trending: slugList(5), collections: slugList(8), categories: slugList(12) });
+export const homepageSchema = z.object({ trending: slugList(4), collections: slugList(8), categories: slugList(12) });
 export const pageSchema = z.object({ title: text(120).min(1), body: text(20000) });
 
 const DEFAULTS = { store: storeSchema.parse({}), social: socialSchema.parse({}), flags: flagsSchema.parse({}), branding: brandingSchema.parse({}), homepage: homepageSchema.parse({}) };

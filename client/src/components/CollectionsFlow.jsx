@@ -25,11 +25,11 @@ export default function CollectionsFlow() {
       const r = el.getBoundingClientRect(), d = (r.left + r.width / 2 - mid) / r.width, ad = Math.abs(d);
       if (ad < bd) { bd = ad; best = i }
       if (reduced) return;
-      const k = Math.min(ad, 2);
-      // sliding door: side cards slide in toward the centre (tucking behind it) while swinging on their outer edge
-      el.style.transformOrigin = d < 0 ? '0% 50%' : '100% 50%';
-      el.style.transform = `translate3d(${-d * r.width * 0.36}px, 0, 0) rotateY(${-Math.sign(d) * Math.min(ad, 1) * 30}deg) scale(${1 - k * 0.08})`;
-      el.style.opacity = String(1 - k * 0.22);
+      const k = Math.min(ad, 2), n = Math.min(ad, 1);
+      // Side cards tilt toward the centre and sink back a little. They stay opaque (no see-through overlaps);
+      // depth comes from a soft darkening (--dim) instead. Updated every frame with no CSS transition, so it tracks the scroll exactly.
+      el.style.transform = `translate3d(${-d * r.width * 0.14}px, 0, ${-k * 60}px) rotateY(${-Math.sign(d) * n * 24}deg) scale(${1 - k * 0.06})`;
+      el.style.setProperty('--dim', (k * 0.22).toFixed(3));
       el.style.zIndex = String(100 - Math.round(ad * 10));
     });
     setActive(best);

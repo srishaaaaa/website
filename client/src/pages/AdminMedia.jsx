@@ -1,26 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, Navigate, NavLink } from 'react-router-dom';
-import { api, uploadImage, uploadMedia } from '../lib/api';
+import { useEffect, useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { api, uploadImage } from '../lib/api';
 import { useApp } from '../context/App';
 import AdminShell from '../components/AdminShell';
-import ColourPanel from '../components/ColourOptions';
+import { Drop, FocusImage } from '../components/ProductPhotos';
 import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
 import StaffOnly from '../components/StaffOnly';
-
-// A photo you can click: the dot marks the part that must stay visible when the site crops the photo to fit a frame.
-function FocusImage({ src, alt, x, y, onPick, box = 0.75, children }) {
-  const [nat, setNat] = useState(null);
-  const click = e => { const r = e.currentTarget.getBoundingClientRect(); const c = v => Math.round(Math.min(100, Math.max(0, v))); onPick(c((e.clientX - r.left) / r.width * 100), c((e.clientY - r.top) / r.height * 100)) };
-  return (
-    <>
-      <span className="adm-focus" style={{ '--r': nat ? nat[0] / nat[1] : box, '--b': box }} onClick={click} title="Click the part of the photo that must always stay visible">
-        <img src={src} alt={alt} onLoad={e => setNat([e.currentTarget.naturalWidth, e.currentTarget.naturalHeight])} />
-        {x != null && <i className="adm-dot" style={{ left: `${x}%`, top: `${y}%` }} />}
-      </span>
-      {children}
-    </>
-  );
-}
 
 // Guards admin screens: signed in AND staff. (The API enforces the role too; this only avoids a dead page.)
 function useStaff() {
@@ -34,104 +19,6 @@ function Gate({ state, children }) {
   if (state === 'login') return <Navigate to="/login" replace />;
   if (state === 'denied') return <StaffOnly />;
   return children;
-}
-
-// A small drop zone + file picker. Calls onFiles(File[]).
-function Drop({ onFiles, multiple = true, accept = 'image/jpeg,image/png,image/webp', label = 'Drop photos here or click to choose', busy }) {
-  const [over, setOver] = useState(false); const input = useRef();
-  return (
-    <div className={`adm-drop ${over ? 'over' : ''}`} onDragOver={e => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)}
-      onDrop={e => { e.preventDefault(); setOver(false); onFiles([...e.dataTransfer.files]) }}>
-      <button type="button" className="btn dark pill" onClick={() => input.current.click()} disabled={busy}>{busy ? 'UPLOADING…' : 'CHOOSE PHOTOS'}</button>
-      <span className="muted small">{label}</span>
-      <input ref={input} type="file" hidden multiple={multiple} accept={accept} onChange={e => { onFiles([...e.target.files]); e.target.value = '' }} />
-    </div>
-  );
-}
-
-export function AdminProducts() {
-  const state = useStaff();
-  const { toast, loadCatalog } = useApp();
-  const [q, setQ] = useState(''); const [list, setList] = useState(null);
-  const [sel, setSel] = useState(null); const [imgs, setImgs] = useState([]);
-  const [busy, setBusy] = useState(false); const [err, setErr] = useState();
-
-  const load = useCallback(() => api('/admin/products?q=' + encodeURIComponent(q)).then(setList).catch(e => setErr(e.message)), [q]);
-  useEffect(() => { if (state !== 'ok') return; const t = setTimeout(load, 200); return () => clearTimeout(t) }, [state, load]);
-  useEffect(() => { if (sel) api(`/admin/products/${sel.id}/images`).then(setImgs).catch(e => setErr(e.message)); else setImgs([]) }, [sel]);
-
-  const changed = rows => { setImgs(rows); load(); loadCatalog() };
-  const add = async files => {
-    if (!sel || !files.length) return; setBusy(true); setErr();
-    try {
-      let rows = imgs;
-      for (const f of files) { const up = await uploadImage(f); rows = await api(`/admin/products/${sel.id}/images`, { method: 'POST', body: { url: up.url, alt: sel.name } }) }
-      changed(rows); toast(`${files.length} photo${files.length > 1 ? 's' : ''} added to ${sel.name}.`);
-    } catch (e) { setErr(e.message) } finally { setBusy(false) }
-  };
-  const move = async (i, d) => {
-    const ids = imgs.map(x => x.id), j = i + d; if (j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    try { changed(await api(`/admin/products/${sel.id}/images/order`, { method: 'PUT', body: { ids } })) } catch (e) { setErr(e.message) }
-  };
-  const delProduct = async () => {
-    if (!confirm(`Delete "${sel.name}" permanently? Its photos, sizes and stock are removed. Past orders keep their own record.`)) return;
-    try { await api(`/admin/products/${sel.id}`, { method: 'DELETE' }); toast(`${sel.name} deleted.`); setSel(null); load(); loadCatalog() } catch (e) { setErr(e.message) }
-  };
-  const del = async im => { if (!confirm('Remove this photo?')) return; try { changed(await api(`/admin/images/${im.id}`, { method: 'DELETE' })) } catch (e) { setErr(e.message) } };
-  const saveColor = async (im, color) => { try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { color: color || null } })); toast(color ? `That photo now shows for ${color}.` : 'That photo now shows for every colour.') } catch (e) { setErr(e.message) } };
-  const saveFocus = async (im, x, y) => { try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { focusX: x, focusY: y } })); toast(x == null ? 'Photo focus reset.' : 'Saved: the site will keep that part in view.') } catch (e) { setErr(e.message) } };
-  const refreshSel = () => { load(); api('/admin/products?q=' + encodeURIComponent(sel.slug)).then(r => { const n = r.find(z => z.id === sel.id); if (n) setSel(n) }).catch(() => {}) };
-  const saveAlt = async (im, alt) => { if (alt === im.alt) return; try { setImgs(await api(`/admin/images/${im.id}`, { method: 'PATCH', body: { alt } })) } catch (e) { setErr(e.message) } };
-
-  return (
-    <Gate state={state}>
-      <AdminShell title="Products &amp; images">
-      <div className="adm">
-        <p className="muted adm-help">Recommended: 3 photos per piece (full view, detail, back or styled), portrait 3:4, at least 1200×1600. The <b>first</b> photo is the card image and the <b>second</b> appears when a card is hovered. Big photos are shrunk automatically before upload.</p>
-        {err && <p role="alert" className="err">{err}</p>}
-        <div className="adm-split">
-          <aside className="adm-list">
-            <input type="search" placeholder="Search products…" aria-label="Search products" value={q} onChange={e => setQ(e.target.value)} />
-            {!list && <p className="muted">Loading…</p>}
-            <ul>{list?.map(p => (
-              <li key={p.id}><button className={sel?.id === p.id ? 'on' : ''} onClick={() => setSel(p)}>
-                <span className="adm-th">{p.image ? <img src={p.image} alt="" /> : <i>No photo</i>}</span>
-                <span className="adm-nm"><b>{p.name}</b><em>{p.category || 'Uncategorised'}</em></span>
-                <span className={`adm-badge ${p.image_count ? '' : 'warn'}`}>{p.image_count}</span>{p.is_sample && <span className="adm-sample">sample</span>}
-              </button></li>))}</ul>
-          </aside>
-          <section className="adm-panel">
-            {!sel ? <p className="muted">Choose a product on the left to manage its photos. Pieces with no photos are listed first.</p> : (
-              <>
-                <div className="adm-ph"><h2 className="serif adm-h2">{sel.name}</h2><button className="adm-del" onClick={delProduct}>Delete product</button></div>
-                <ColourPanel productId={sel.id} onChanged={refreshSel} />
-                <Drop onFiles={add} busy={busy} />
-                <p className="muted small" style={{ margin: '8px 0 0' }}>Tip: click a photo on the part that must always stay visible (a face, the zari border). The website crops around that point.</p>
-                <ul className="adm-gal">
-                  {imgs.map((im, i) => (
-                    <li key={im.id}>
-                      <div className="adm-img"><FocusImage src={im.url} alt={im.alt || sel.name} x={im.focusX} y={im.focusY} onPick={(x, y) => saveFocus(im, x, y)}><span className="adm-pos">{i + 1}</span></FocusImage></div>
-                      {im.focusX != null && <button className="link-u small" onClick={() => saveFocus(im, null, null)}>Reset focus</button>}
-                      <input aria-label={`Alt text for photo ${i + 1}`} defaultValue={im.alt} onBlur={e => saveAlt(im, e.target.value.trim())} placeholder="Describe the photo" />
-                      {(sel.colors || []).filter(c => c !== 'Default').length > 0 && <label className="adm-col"><span className="muted small">Shows for</span>
-                        <select aria-label={`Colour for photo ${i + 1}`} value={im.color || ''} onChange={e => saveColor(im, e.target.value)}><option value="">All colours</option>{(sel.colors || []).filter(c => c !== 'Default').map(c => <option key={c} value={c}>{c}</option>)}</select></label>}
-                      <div className="adm-act">
-                        <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move earlier">←</button>
-                        <button onClick={() => move(i, 1)} disabled={i === imgs.length - 1} aria-label="Move later">→</button>
-                        <button onClick={() => del(im)} className="danger">Remove</button>
-                      </div>
-                    </li>))}
-                </ul>
-                {!imgs.length && <p className="muted">No photos yet.</p>}
-              </>
-            )}
-          </section>
-        </div>
-      </div>
-      </AdminShell>
-    </Gate>
-  );
 }
 
 // One single-image slot (hero model / story photo): preview, upload, reset.
@@ -150,14 +37,14 @@ function Slot({ title, hint, value, fallback, onUpload, onReset, alt, onAlt, acc
   );
 }
 
-// Which products are "Trending now" (up to 5, in order) and which collections appear in "Choose your world" (up to 8, in order).
+// Which products are "Trending now" (up to 4, in order) and which collections appear in "Choose your world" (up to 8, in order).
 function HomePicks({ onSaved, toast }) {
   const { site, catalog } = useApp();
   const hp = site.homepage || { trending: [], collections: [] };
-  const [trend, setTrend] = useState(hp.trending); const [colSel, setColSel] = useState(hp.collections); const [catSel, setCatSel] = useState(hp.categories || []);
+  const [trend, setTrend] = useState((hp.trending || []).slice(0, 4)); const [colSel, setColSel] = useState(hp.collections); const [catSel, setCatSel] = useState(hp.categories || []);
   const [names, setNames] = useState({}); const [q, setQ] = useState(''); const [found, setFound] = useState([]);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
-  useEffect(() => { setTrend(hp.trending); setColSel(hp.collections); setCatSel(hp.categories || []) }, [site.homepage]); // eslint-disable-line
+  useEffect(() => { setTrend((hp.trending || []).slice(0, 4)); setColSel(hp.collections); setCatSel(hp.categories || []) }, [site.homepage]); // eslint-disable-line
   useEffect(() => { if (!trend.length) return; api(`/products?slugs=${encodeURIComponent(trend.join(','))}&limit=48`).then(d => setNames(n => ({ ...n, ...Object.fromEntries(d.items.map(p => [p.slug, p.name])) }))).catch(() => {}) }, [trend.join(',')]); // eslint-disable-line
   useEffect(() => { const t = q.trim(); if (!t) { setFound([]); return } const id = setTimeout(() => api(`/products?q=${encodeURIComponent(t)}&limit=8`).then(d => setFound(d.items)).catch(() => {}), 250); return () => clearTimeout(id) }, [q]);
   const move = (list, set, i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; [n[i], n[j]] = [n[j], n[i]]; set(n) };
@@ -172,10 +59,10 @@ function HomePicks({ onSaved, toast }) {
     <section className="adm-block">
       <h2 className="serif adm-h2">Homepage picks</h2>
       {err && <p role="alert" className="err">{err}</p>}
-      <h3 className="adm-h3">Trending collections ({trend.length} of 5)</h3>
+      <h3 className="adm-h3">Trending collections ({trend.length} of 4)</h3>
       <p className="muted small">The pieces shown in “Trending collections” on the homepage, in this order. Leave empty to show your featured products.</p>
       <ol className="adm-picks">{trend.map((s, i) => row(names[s] || s, i, trend, setTrend))}</ol>
-      {trend.length < 5 && <>
+      {trend.length < 4 && <>
         <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search a product to add…" aria-label="Search products to add" />
         <ul className="adm-picks">{found.filter(p => !trend.includes(p.slug)).map(p => <li key={p.id} className="adm-pick"><b>{p.name}</b><span className="adm-pick-act"><button type="button" onClick={() => { setNames(n => ({ ...n, [p.slug]: p.name })); setTrend([...trend, p.slug]); setQ('') }}>Add</button></span></li>)}</ul>
       </>}
@@ -318,7 +205,7 @@ export function AdminSample() {
     <Gate state={state}>
       <AdminShell title="Sample data">
       <div className="adm">
-        <p className="muted adm-help">The demo catalogue, reviews and enquiries are here so the site looks complete while you set it up. Delete them one at a time from <Link className="link-u" to="/admin/products">Products &amp; images</Link>, <Link className="link-u" to="/admin/reviews">Reviews</Link> and <Link className="link-u" to="/admin/enquiries">Enquiries</Link>, or remove everything at once below. Only items marked <span className="adm-sample">sample</span> are ever removed here.</p>
+        <p className="muted adm-help">The demo catalogue, reviews and enquiries are here so the site looks complete while you set it up. Delete them one at a time from <Link className="link-u" to="/admin/billing/inventory">Products &amp; images</Link>, <Link className="link-u" to="/admin/reviews">Reviews</Link> and <Link className="link-u" to="/admin/enquiries">Enquiries</Link>, or remove everything at once below. Only items marked <span className="adm-sample">sample</span> are ever removed here.</p>
         {err && <p role="alert" className="err">{err}</p>}
         {!c && !err && <p className="muted">Loading…</p>}
         {c && (

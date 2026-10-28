@@ -35,9 +35,56 @@ function AddModal({ kind, onClose, onDone }) {
   );
 }
 
+// Edit a collection or category: its name, description and which pieces are in it (collections also keep an order).
+function PiecesModal({ kind, item, onClose, onDone }) {
+  const base = kind === 'collection' ? `/admin/collections/${item.id}` : `/admin/categories/${item.id}`;
+  const [name, setName] = useState(item.name); const [desc, setDesc] = useState(item.description || '');
+  const [list, setList] = useState(null); const [q, setQ] = useState(''); const [found, setFound] = useState([]);
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  useEffect(() => { api(`${base}/products`).then(setList).catch(e => setErr(e.message)) }, [base]);
+  useEffect(() => { const t = q.trim(); if (!t) { setFound([]); return } const id = setTimeout(() => api(`/admin/products?q=${encodeURIComponent(t)}`).then(d => setFound((Array.isArray(d) ? d : d.items || []).slice(0, 10))).catch(() => api(`/products?q=${encodeURIComponent(t)}&limit=10`).then(d => setFound(d.items)).catch(() => {})), 250); return () => clearTimeout(id) }, [q]);
+  const move = (i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; [n[i], n[j]] = [n[j], n[i]]; setList(n) };
+  const save = async () => {
+    setBusy(true); setErr();
+    try {
+      await api(base, { method: 'PATCH', body: { name: name.trim(), description: desc.trim() } });
+      await api(`${base}/products`, { method: 'PUT', body: { slugs: list.map(p => p.slug) } });
+      onDone(); onClose();
+    } catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
+  };
+  const img = p => p.image || p.images?.[0]?.url || p.images?.[0];
+  return (
+    <Modal wide title={`Edit ${item.name}`} sub={kind === 'collection' ? 'Choose the pieces in this collection and their order' : 'Choose the pieces in this category. A piece has one category: adding it here moves it out of its old one.'} onClose={onClose}
+      footer={<><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" onClick={save} disabled={busy || !list || !name.trim()}>{busy ? 'Saving…' : 'Save'}</button></>}>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <label className="f">Name<input value={name} maxLength={80} onChange={e => setName(e.target.value)} /></label>
+        <label className="f">Description<input value={desc} maxLength={300} onChange={e => setDesc(e.target.value)} placeholder="Shown under the title on the website" /></label>
+        <Err>{err}</Err>
+        <b>Pieces ({list ? list.length : '…'})</b>
+        {!list ? <p className="dpos-empty">Loading…</p> : !list.length ? <p className="dpos-empty">No pieces yet. Search below to add some.</p> : (
+          <ol className="adm-picks" style={{ maxHeight: 320, overflow: 'auto' }}>
+            {list.map((p, i) => (
+              <li key={p.slug} className="adm-pick">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>{img(p) && <img src={img(p)} alt="" width="36" height="44" style={{ objectFit: 'cover', borderRadius: 6 }} />}<b>{p.name}</b>{p.status && p.status !== 'active' && <small className="muted">({p.status})</small>}</span>
+                <span className="adm-pick-act">
+                  {kind === 'collection' && <><button type="button" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>↑</button><button type="button" aria-label="Move down" disabled={i === list.length - 1} onClick={() => move(i, 1)}>↓</button></>}
+                  <button type="button" className="danger" onClick={() => setList(list.filter((_, j) => j !== i))}>Remove</button>
+                </span>
+              </li>))}
+          </ol>)}
+        <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search a product to add…" aria-label="Search products to add" />
+        <ul className="adm-picks">
+          {list && found.filter(p => !list.some(x => x.slug === p.slug)).map(p => (
+            <li key={p.slug} className="adm-pick"><b>{p.name}</b><span className="adm-pick-act"><button type="button" onClick={() => { setList([...list, { slug: p.slug, name: p.name, status: p.status, image: img(p) }]); setQ('') }}>Add</button></span></li>))}
+        </ul>
+      </div>
+    </Modal>
+  );
+}
+
 export function AdminCategories() {
   const gate = useGate(); const { toast, loadCatalog, loadSite } = useApp();
-  const [d, setD] = useState(null); const [q, setQ] = useState(''); const [err, setErr] = useState(); const [modal, setModal] = useState(null);
+  const [d, setD] = useState(null); const [q, setQ] = useState(''); const [err, setErr] = useState(); const [modal, setModal] = useState(null); const [edit, setEdit] = useState(null);
   const load = () => api('/admin/taxonomy').then(x => { setD(x); setErr() }).catch(e => setErr(e.message));
   useEffect(() => { if (!gate) load() }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
   const match = n => !q.trim() || n.toLowerCase().includes(q.trim().toLowerCase());
@@ -56,6 +103,7 @@ export function AdminCategories() {
             <div className="dpos-txc" key={c.id}>
               <div><b>{c.name}</b><small>{c.products} products · {c.status === 'published' ? 'Live on the site' : 'Hidden'}</small></div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button className="dpos-btn ghost sm" onClick={() => setEdit({ kind: 'collection', item: c })}>Edit pieces</button>
                 <Switch on={c.status === 'published'} label={`Show ${c.name} on the storefront`} onChange={on => act(() => api(`/admin/collections/${c.id}`, { method: 'PATCH', body: { status: on ? 'published' : 'draft' } }))} />
                 <button className="dpos-trash" aria-label={`Delete ${c.name}`} onClick={() => confirm(`Delete the collection “${c.name}”? Its products are not deleted.`) && act(() => api(`/admin/collections/${c.id}`, { method: 'DELETE' }), 'Collection deleted.')}><Icon n="trash" size={18} /></button>
               </div>
@@ -67,12 +115,14 @@ export function AdminCategories() {
             <div className="dpos-txc" key={c.id}>
               <div><b>{c.name}</b><small>Product category · {c.products} products</small></div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button className="dpos-btn ghost sm" onClick={() => setEdit({ kind: 'category', item: c })}>Edit pieces</button>
                 <Switch on={c.active} label={`${c.name} active`} onChange={on => act(() => api(`/admin/categories/${c.id}`, { method: 'PATCH', body: { active: on } }))} />
                 <button className="dpos-trash" aria-label={`Delete ${c.name}`} onClick={() => confirm(`Delete the category “${c.name}”? ${c.products ? `${c.products} product(s) will become uncategorised (they are not deleted).` : ''}`) && act(() => api(`/admin/categories/${c.id}`, { method: 'DELETE' }), 'Category deleted.')}><Icon n="trash" size={18} /></button>
               </div>
             </div>))}
         </div>
       </div>
+      {edit && <PiecesModal kind={edit.kind} item={edit.item} onClose={() => setEdit(null)} onDone={() => { toast('Saved.'); load(); loadCatalog?.() }} />}
       {modal && <AddModal kind={modal} onClose={() => setModal(null)} onDone={() => { toast(modal === 'category' ? 'Category added.' : 'Collection added.'); load(); loadCatalog?.() }} />}
     </AdminShell>
   );

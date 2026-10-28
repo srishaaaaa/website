@@ -59,6 +59,11 @@ export async function seed(db, cfg, log = console.log, { sample = true } = {}) {
     await col('festive-edit', 'The Festive Edit', 'For celebrations.', 1, ['plum-festive-lehenga', 'banarasi-silk-saree', 'gold-thread-co-ord']);
     await col('evening-edit', 'The Evening Edit', 'After-dark silhouettes.', 2, ['rose-organza-dress', 'dusk-silk-dress', 'midnight-kurta-set']);
     for (const [slug, name, description, order, flag] of COLLECTIONS_BY_FLAG) await col(slug, name, description, order, flagged[flag]);
+    // "New Arrivals" (made by migration 020) starts with the 12 newest pieces when it is still empty; the admin edits it afterwards.
+    await t.query(`INSERT INTO collection_products (collection_id, product_id, display_order)
+      SELECT c.id, p.id, ROW_NUMBER() OVER (ORDER BY p.created_at DESC, p.id DESC) - 1
+      FROM collections c, (SELECT id, created_at FROM products WHERE status = 'active' ORDER BY created_at DESC, id DESC LIMIT 12) p
+      WHERE c.slug = 'new-arrivals' AND NOT EXISTS (SELECT 1 FROM collection_products x WHERE x.collection_id = c.id)`);
     // products created by an earlier seed (before the sample flag existed) are flagged too, so they can be deleted from the admin
     await t.query('UPDATE products SET is_sample = true WHERE slug = ANY($1)', [[...CORE.map(p => p[0]), ...MORE.map(p => p[0])]]);
     }

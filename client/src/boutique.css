@@ -144,21 +144,18 @@ h1, h2, h3, .serif { font-family: var(--serif); font-weight: 700; letter-spacing
 .cu-all { margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: .2em; color: var(--maroon); border-bottom: 1px solid currentColor; padding-bottom: 3px }
 .cu-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px) }
 .cu-item { display: flex; flex-direction: column; gap: 14px }
-.cu-0 { grid-column: 1 / 3; grid-row: 1 / 3 }
 .cu-photo { position: relative; aspect-ratio: 3 / 4; border-radius: 22px; overflow: hidden; background: var(--sand) }
-.cu-0 .cu-photo { aspect-ratio: auto; flex: 1; min-height: 460px }
 .cu-photo > a { position: absolute; inset: 0 } .cu-photo > a > * { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 1.2s var(--ease) } .cu-item:hover .cu-photo > a > * { transform: scale(1.06) }
 .cu-heart { position: absolute; z-index: 2; right: 12px; top: 12px; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 249, 240, .92); color: var(--red); transition: transform .3s var(--ease) } .cu-heart:hover { transform: scale(1.1) } .cu-heart.on { color: #740b71 }
 .cu-out { position: absolute; left: 12px; top: 12px; background: var(--ivory); color: var(--red); font-size: 10px; font-weight: 700; letter-spacing: .2em; padding: 5px 10px; border-radius: 4px }
 .cu-meta { display: grid; gap: 4px }
 .cu-name { font-family: var(--serif); font-weight: 600; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.25 } .cu-name:hover { color: var(--red) }
-.cu-0 .cu-name { font-size: clamp(20px, 1.8vw, 26px) }
 .cu-mat { font-size: 12px; letter-spacing: .08em; color: rgba(33, 23, 20, .55); text-transform: uppercase }
 .cu-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px }
 .cu-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--red); color: var(--red); font-weight: 700; font-size: 14px; transition: background .35s var(--ease), color .35s } .cu-pill b { font-size: 17px; line-height: 1; font-weight: 600 } .cu-pill:hover:not(:disabled):not(.off) { background: var(--red); color: #fff } .cu-pill.off { border-color: var(--sand); color: rgba(33, 23, 20, .5) }
 .cu-enq { font-size: 11px; font-weight: 700; letter-spacing: .18em; color: var(--terra); border-bottom: 1px solid currentColor } .cu-enq:hover { color: var(--maroon) }
 .cu-empty { text-align: center; color: rgba(33, 23, 20, .65); padding: 30px 0 }
-@media (max-width: 1000px) { .cu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } .cu-0 { grid-column: 1 / 3; grid-row: auto } .cu-0 .cu-photo { min-height: 0; aspect-ratio: 4 / 4.4; flex: none } }
+@media (max-width: 1000px) { .cu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 @media (max-width: 560px) { .cu-search { width: 100% } .cu-all { margin-left: 0 } .cu-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--pad)); padding-inline: var(--pad) } .cu-tabs > * { flex: none } }
 
 /* ---- editorial ---- */

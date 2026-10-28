@@ -6,6 +6,7 @@ import { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import { Chips } from '../components/PeriodFilter';
 import { ColourModal, colourGroups } from '../components/ColourOptions';
+import ProductPhotos from '../components/ProductPhotos';
 import StockMovements, { downloadCsv } from '../components/StockMovements';
 
 const toPaise = s => { const n = Math.round(parseFloat(String(s || '').replace(/,/g, '')) * 100); return Number.isFinite(n) && n > 0 ? n : 0 };
@@ -50,7 +51,7 @@ function StockModal({ product, variantId, onClose, onDone }) {
   );
 }
 
-function EditModal({ product, categories, onClose, onDone }) {
+function EditModal({ product, categories, onClose, onDone, onPhotos }) {
   const [f, setF] = useState({ name: product.name, price: rupees(product.price), cost: product.costPrice ? rupees(product.costPrice) : '', tax: product.taxRate, cat: product.categorySlug || '', status: product.status });
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const submit = async e => {
@@ -59,7 +60,7 @@ function EditModal({ product, categories, onClose, onDone }) {
     catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
   };
   return (
-    <Modal title="Edit product" sub={product.name} onClose={onClose}>
+    <Modal title="Edit product" sub={product.name} wide onClose={onClose}>
       <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
         <label className="f">Name<input required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} maxLength={160} /></label>
         <div className="dpos-grid">
@@ -69,10 +70,11 @@ function EditModal({ product, categories, onClose, onDone }) {
           <label className="f">Category<select value={f.cat} onChange={e => setF({ ...f, cat: e.target.value })}><option value="">— None —</option>{categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select></label>
           <label className="f">Status<select value={f.status} onChange={e => setF({ ...f, status: e.target.value })}><option value="active">Active (on sale)</option><option value="draft">Draft (hidden)</option><option value="archived">Archived</option></select></label>
         </div>
-        <p className="sub">Photos are managed in Products &amp; images. Stock is adjusted with the Stock button.</p>
+        <p className="sub">Stock is adjusted with the Stock button.</p>
         <Err>{err}</Err>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button></div>
       </form>
+      <div style={{ marginTop: 18 }}><ProductPhotos product={product} onChanged={onPhotos} /></div>
     </Modal>
   );
 }
@@ -87,9 +89,10 @@ function AddModal({ categories, onClose, onDone }) {
     const payload = slug => ({ slug, name: f.name.trim(), description: '', category: f.cat || undefined, price: toPaise(f.price), ...(toPaise(f.cost) ? { cost_price: toPaise(f.cost) } : {}), gst_rate: +f.tax, status: f.status, featured: false,
       variants: vars.map(v => ({ size: v.size.trim() || 'Free Size', color: v.color.trim() || 'Default', sku: (v.sku.trim() || `${slug}-${slugify(v.size) || 'free'}-${slugify(v.color) || 'default'}`).toUpperCase(), stock: Math.max(0, parseInt(v.stock, 10) || 0) })) });
     try {
-      try { await api('/admin/products', { method: 'POST', body: payload(base) }) }
-      catch (x) { if (x.status !== 409) throw x; await api('/admin/products', { method: 'POST', body: payload(`${base}-${Math.random().toString(36).slice(2, 6)}`) }) }
-      onDone(); onClose();
+      let made;
+      try { made = await api('/admin/products', { method: 'POST', body: payload(base) }) }
+      catch (x) { if (x.status !== 409) throw x; made = await api('/admin/products', { method: 'POST', body: payload(`${base}-${Math.random().toString(36).slice(2, 6)}`) }) }
+      onClose(); onDone(made?.id, f.name.trim());
     } catch (x) { setErr(x.issues?.[0] ? `${x.issues[0].path}: ${x.issues[0].message}` : x.message) } finally { setBusy(false) }
   };
   return (
@@ -184,9 +187,13 @@ function ProductsStock({ manager, stocker }) {
           </div>))}
       </section>
       {modal?.t === 'stock' && <StockModal product={list.find(x => x.id === modal.p.id) || modal.p} variantId={modal.vid} onClose={() => setModal(null)} onDone={stockDone} />}
-      {modal?.t === 'edit' && <EditModal product={modal.p} categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product saved.'); load() }} />}
+      {modal?.t === 'edit' && <EditModal product={modal.p} categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product saved.'); load() }} onPhotos={load} />}
       {modal?.t === 'colour' && <ColourModal product={modal.p} onClose={() => setModal(null)} onDone={() => { toast('Colour added.'); load() }} />}
-      {modal?.t === 'add' && <AddModal categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product added.'); load() }} />}
+      {modal?.t === 'add' && <AddModal categories={cats} onClose={() => setModal(null)} onDone={(id, name) => {
+        toast('Product added. Now add its photos.'); load();
+        // open the new product's Edit window so its photos can be added straight away
+        if (id) api('/admin/pos/products?q=' + encodeURIComponent(name)).then(r => { const p = r.find(x => x.id === id); if (p) setModal({ t: 'edit', p }) }).catch(() => {});
+      }} />}
     </>
   );
 }

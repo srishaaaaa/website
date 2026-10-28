@@ -8,7 +8,7 @@ import { useApp } from '../context/App';
 import { Reveal } from './Motion';
 import { ProductMedia } from './ProductCard3D';
 
-const LIMIT = 5;
+const LIMIT = 4;
 
 function Item({ p, i }) {
   const { addToBag, setQuick, toast, wish, toggleWish, site } = useApp();
