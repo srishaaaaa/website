@@ -545,10 +545,5 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
   .insta-block .insta-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 68vw; justify-content: start; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 16px }
   .insta-block .insta-grid > li { scroll-snap-align: start }
 }
-
-/* Admin panel has no website header above it, so it starts at the top of the page */
-.dpos { padding-top: 24px }
-.dpos-side { top: 24px; max-height: calc(100vh - 48px) }
-@media (max-width: 900px) { .dpos { padding-top: 14px } }
 /* Photos inside the product Edit window */
 .pphotos .adm-gal { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }

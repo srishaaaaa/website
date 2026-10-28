@@ -1,7 +1,7 @@
 /* Dhanya POS (admin only). Every selector is scoped to .dpos; this file is imported only by the lazily loaded POS page,
    so public pages never load it. Print rules apply only while body.dpos-printing is set (during an invoice print). */
 .dpos { --ink: #121214; --paper: #f3f1ec; --d-ink: #121214; --d-mut: #6f6b66; --d-line: #e7e1d6; --d-bg: #f3f1ec; --d-card: #fff; --d-ok: #1c7a4b; --d-bad: #b3261e;
-  min-height: 100vh; padding: 110px clamp(12px, 2.5vw, 32px) 60px; background: var(--d-bg); color: var(--d-ink); font-family: var(--sans); display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start }
+  min-height: 100vh; padding: 24px clamp(12px, 2.5vw, 32px) 60px; background: var(--d-bg); color: var(--d-ink); font-family: var(--sans); display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start }
 .dpos *, .dpos *::before, .dpos *::after { box-sizing: border-box }
 .dpos h1, .dpos h2, .dpos h3 { font-family: var(--sans); font-weight: 800; letter-spacing: -.01em; margin: 0 }
 .dpos h1, .dpos h2, .dpos h3 { text-transform: none }
@@ -10,7 +10,7 @@
 .dpos .muted { color: var(--d-mut) } .dpos .small { font-size: 12px }
 
 /* sidebar */
-.dpos-side { position: sticky; top: 96px; background: var(--d-card); border-radius: 22px; padding: 14px; display: grid; gap: 4px; max-height: calc(100vh - 116px); overflow: auto }
+.dpos-side { position: sticky; top: 24px; background: var(--d-card); border-radius: 22px; padding: 14px; display: grid; gap: 4px; max-height: calc(100vh - 48px); overflow: auto }
 .dpos-brand { display: flex; align-items: center; gap: 10px; padding: 8px 10px 14px; border-bottom: 1px solid var(--d-line); margin-bottom: 6px }
 .dpos-brand b { font-size: 15px; letter-spacing: .16em; text-transform: uppercase } .dpos-brand i { font-style: normal; font-size: 10px; letter-spacing: .2em; color: var(--d-mut) }
 .dpos-grp { font-size: 10px; letter-spacing: .24em; color: #aaa59d; font-weight: 800; padding: 14px 12px 4px }
@@ -112,7 +112,7 @@
 
 @media (max-width: 1099px) { .dpos-bill { grid-template-columns: 1fr } .dpos-sticky { position: static } }
 @media (max-width: 899px) {
-  .dpos { grid-template-columns: 1fr; padding-top: 96px }
+  .dpos { grid-template-columns: 1fr; padding-top: 14px }
   .dpos-side { position: static; max-height: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px } .dpos-brand, .dpos-grp { width: 100%; padding: 6px 8px }
   .dpos-nav { width: auto; padding: 9px 12px; font-size: 13px }
 }
