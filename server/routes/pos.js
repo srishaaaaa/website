@@ -13,10 +13,17 @@ const channel = z.enum(['retail', 'wholesale']).default('retail');
 const gstFilter = z.enum(['all', 'gst', 'nongst']).default('all');
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
+// Stitching measurements on a service line (Billing → Add service → Measurements). Sizes are in cm.
+const cm = z.number().min(0).max(500);
+const measure = z.object({
+  frontNeck: text(60).optional(), backNeck: text(60).optional(), sleeveType: text(40).optional(), sleeveLength: text(40).optional(), dueDate: date.optional(),
+  cm: z.object({ front_neck: cm, back_neck: cm, shoulder: cm, sleeve_length: cm, arm_hole_curve: cm, shoulder_to_waist: cm, chest: cm, waist: cm, blouse_length: cm, side_cut: cm, front_cut: cm, back_cut: cm }).partial().default({}),
+  remarks: z.array(text(200).min(1)).max(20).default([]),
+});
 const item = z.union([
   z.object({ variantId: z.number().int().positive(), qty: z.number().int().min(1).max(999) }),
   // free-text line (retail "Item name / description", services, and every wholesale line): cashier-entered price, no stock
-  z.object({ name: text(160).min(1), sku: text(60).optional(), price: paise, qty: z.number().int().min(1).max(99999), taxRate: z.number().int().min(0).max(28).default(0) }),
+  z.object({ name: text(160).min(1), sku: text(60).optional(), price: paise, qty: z.number().int().min(1).max(99999), taxRate: z.number().int().min(0).max(28).default(0), measure: measure.optional() }),
 ]);
 const saleBody = z.object({
   idempotencyKey: z.string().min(8).max(80),
@@ -60,7 +67,9 @@ const couponBody = z.object({
 const wsItem = z.object({ code: text(60).min(1), company: text(120).default(''), colour: text(60).default('') });
 const customerBody = z.object({ name: text(120).default(''), phone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits'), dob: date.nullable().default(null), notes: text(300).nullable().default(null) });
 const expenseBody = z.object({ title: text(120).min(1), category: text(60).default('General'), amount: z.number().int().min(1).max(100_000_000), paymentMode: z.enum(['cash', 'upi', 'card']).default('cash'), notes: text(300).nullable().default(null), date: date.optional() });
-const productPatch = z.object({ name: text(160).min(1), price: paise, costPrice: paise.optional(), taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']) });
+const productPatch = z.object({ name: text(160).min(1), price: paise, costPrice: paise.optional(), taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']),
+  description: text(4000).optional(), material: text(80).optional(), featured: z.boolean().optional(), collections: z.array(text(120).min(1)).max(50).optional() });
+const variantPatch = z.object({ size: text(40).min(1), color: text(40).min(1), sku: text(80).min(1), price: paise.nullable(), active: z.boolean() }).partial();
 const variantBody = z.object({ size: text(40).min(1), color: text(40).default('Default'), sku: text(80).min(1), stock: z.number().int().min(0).max(1_000_000).default(0) });
 const colourBody = z.object({ color: text(40).min(1), price: paise.nullable().default(null),
   sizes: z.array(z.object({ size: text(40).min(1), stock: z.number().int().min(0).max(1_000_000).default(0), sku: text(80).optional() })).min(1).max(30) });
@@ -240,7 +249,38 @@ export default function pos({ db, auth }) {
       if (await hasCostColumns(db)) await db.query('UPDATE products SET cost_price = $2 WHERE id = $1', [id.parse(req.params.id), d.costPrice]);
       else if (d.costPrice > 0) throw new HttpError(409, 'Cost prices need a one-time database update first (migration 019).', 'cost_not_ready');
     }
+    const pid = id.parse(req.params.id);
+    if (d.description !== undefined || d.material !== undefined || d.featured !== undefined)
+      await db.query(`UPDATE products SET description = COALESCE($2, description), material = CASE WHEN $3::text IS NULL THEN material ELSE NULLIF($3, '') END, featured = COALESCE($4, featured) WHERE id = $1`,
+        [pid, d.description ?? null, d.material ?? null, d.featured ?? null]);
+    // Collections this piece belongs to: added at the end of a new collection, kept in place in ones it was already in.
+    if (d.collections) await db.tx(async t => {
+      const ids = (await rows(t, 'SELECT id FROM collections WHERE slug = ANY($1)', [d.collections])).map(r => r.id);
+      await t.query('DELETE FROM collection_products WHERE product_id = $1 AND NOT (collection_id = ANY($2::int[]))', [pid, ids]);
+      for (const c of ids) await t.query(`INSERT INTO collection_products (collection_id, product_id, display_order)
+        SELECT $1, $2, COALESCE(MAX(display_order), -1) + 1 FROM collection_products WHERE collection_id = $1 ON CONFLICT (collection_id, product_id) DO NOTHING`, [c, pid]);
+    });
     await audit(db, req.user.id, 'pos.product.edit', 'product', req.params.id, { name: d.name });
+    res.json({ ok: true });
+  }));
+  // One size / colour row: rename it, change its SKU or its own price (null = the product price), hide or show it.
+  r.patch('/pos/products/:id/variants/:vid', manager, wrap(async (req, res) => {
+    const d = variantPatch.parse(req.body); const pid = id.parse(req.params.id), vid = id.parse(req.params.vid);
+    const u = await db.query(`UPDATE product_variants SET size = COALESCE($3, size), color = COALESCE($4, color), sku = COALESCE($5, sku),
+        price_override = CASE WHEN $6 THEN $7::int ELSE price_override END, active = COALESCE($8, active) WHERE id = $2 AND product_id = $1 RETURNING id`,
+      [pid, vid, d.size ?? null, d.color ?? null, d.sku ?? null, d.price !== undefined, d.price ?? null, d.active ?? null])
+      .catch(e => { if (e.code === '23505') throw new HttpError(409, 'That SKU or size/colour already exists for this product'); throw e });
+    if (!u.rows.length) throw new HttpError(404, 'Size not found');
+    await audit(db, req.user.id, 'pos.variant.edit', 'product', pid, { variant: vid, ...d });
+    res.json({ ok: true });
+  }));
+  r.delete('/pos/products/:id/variants/:vid', manager, wrap(async (req, res) => {
+    const pid = id.parse(req.params.id), vid = id.parse(req.params.vid);
+    const n = await one(db, 'SELECT COUNT(*)::int AS n FROM product_variants WHERE product_id = $1', [pid]);
+    if (n.n <= 1) throw new HttpError(400, 'A product needs at least one size. Add another before removing this one.', 'last_variant');
+    const d = await db.query('DELETE FROM product_variants WHERE id = $2 AND product_id = $1 RETURNING sku', [pid, vid]);
+    if (!d.rows.length) throw new HttpError(404, 'Size not found');
+    await audit(db, req.user.id, 'pos.variant.delete', 'product', pid, { sku: d.rows[0].sku });
     res.json({ ok: true });
   }));
   r.post('/pos/products/:id/variants', manager, wrap(async (req, res) => {

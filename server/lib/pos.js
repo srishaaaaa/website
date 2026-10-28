@@ -110,7 +110,7 @@ async function resolveLines(t, items, { trusted = false, checkStock = false } = 
   const want = new Map(), prices = new Map(), custom = [];
   for (const it of items) {
     if (it.variantId) { want.set(it.variantId, (want.get(it.variantId) ?? 0) + it.qty); if (trusted && it.price != null) prices.set(it.variantId, it.price) }
-    else custom.push({ variantId: null, product_id: null, name: it.name, sku: it.sku ?? '', size: '', color: '', price: it.price, qty: it.qty, taxRate: it.taxRate ?? 0, stock: null });
+    else custom.push({ variantId: null, product_id: null, name: it.name, sku: it.sku ?? '', size: '', color: '', price: it.price, qty: it.qty, taxRate: it.taxRate ?? 0, stock: null, ...(it.measure ? { measure: it.measure } : {}) });
   }
   const ids = [...want.keys()].sort((a, b) => a - b);
   const info = ids.length ? await rows(t, `
@@ -166,7 +166,7 @@ export async function createSale(db, user, d) {
         }
         await t.query(`INSERT INTO pos_sale_items (sale_id, product_id, variant_id, name_snapshot, sku_snapshot, variant_snapshot, unit_price, quantity, line_total, discount_alloc, tax_rate, tax_amount)
                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-          [sale.id, l.product_id, l.variantId, l.name, l.sku, JSON.stringify(l.variantId ? { size: l.size, color: l.color } : {}), l.price, l.qty, l.lineTotal, l.alloc, l.taxRate, l.tax]);
+          [sale.id, l.product_id, l.variantId, l.name, l.sku, JSON.stringify(l.variantId ? { size: l.size, color: l.color } : l.measure ? { measure: l.measure } : {}), l.price, l.qty, l.lineTotal, l.alloc, l.taxRate, l.tax]);
         if (l.variantId) await t.query('INSERT INTO inventory_movements (variant_id, quantity_change, reason, reference_id) VALUES ($1,$2,$3,$4)', [l.variantId, -l.qty, 'pos_sale', number]);
       }
       if (await hasCostColumns(t)) await t.query('UPDATE pos_sale_items i SET cost_snapshot = p.cost_price FROM products p WHERE i.sale_id = $1 AND i.product_id = p.id', [sale.id]);
@@ -358,11 +358,12 @@ export const listProducts = async (db, q = '', onlyId = null) => {
   const costSql = (await hasCostColumns(db)) ? 'p.cost_price' : '0';
   const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
   return rows(db, `
-    SELECT p.id, p.slug, p.name, p.status, p.base_price AS price, ${costSql}::int AS "costPrice", p.tax_rate AS "taxRate", p.description, p.is_sample AS "isSample",
+    SELECT p.id, p.slug, p.name, p.status, p.base_price AS price, ${costSql}::int AS "costPrice", p.tax_rate AS "taxRate", p.description, p.material, p.featured, p.is_sample AS "isSample",
+           COALESCE((SELECT json_agg(col.slug ORDER BY col.display_order) FROM collection_products cp JOIN collections col ON col.id = cp.collection_id WHERE cp.product_id = p.id), '[]'::json) AS collections,
            c.name AS category, c.slug AS "categorySlug",
            (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
            COALESCE((SELECT SUM(v.stock_quantity) FROM product_variants v WHERE v.product_id = p.id), 0)::int AS stock,
-           COALESCE((SELECT json_agg(json_build_object('id', v.id, 'sku', v.sku, 'size', v.size, 'color', v.color, 'stock', v.stock_quantity, 'price', COALESCE(v.price_override, p.base_price), 'active', v.active) ORDER BY v.id)
+           COALESCE((SELECT json_agg(json_build_object('id', v.id, 'sku', v.sku, 'size', v.size, 'color', v.color, 'stock', v.stock_quantity, 'price', COALESCE(v.price_override, p.base_price), 'priceOverride', v.price_override, 'active', v.active) ORDER BY v.id)
                      FROM product_variants v WHERE v.product_id = p.id), '[]'::json) AS variants
     FROM products p LEFT JOIN categories c ON c.id = p.category_id
     WHERE ($3::int IS NULL OR p.id = $3) AND ($1 = '' OR p.name ILIKE $2 OR c.name ILIKE $2 OR EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.sku ILIKE $2))
@@ -401,7 +402,7 @@ export async function createAdvance(db, user, d) {
       if (!await one(t, 'SELECT 1 AS x FROM pos_advances WHERE code = $1', [c])) number = c;
     }
     if (!number) throw new HttpError(500, 'Could not create an advance order number. Please try again.');
-    const items = lines.map(l => ({ variantId: l.variantId, name: l.name, sku: l.sku, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate }));
+    const items = lines.map(l => ({ variantId: l.variantId, name: l.name, sku: l.sku, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate, ...(l.measure ? { measure: l.measure } : {}) }));
     await t.query(`INSERT INTO pos_advances (code, customer_name, customer_phone, customer_address, is_gst, gst_rate, discount_type, discount_value, delivery_fee, items,
         subtotal, discount_amount, tax_amount, total_amount, deposit, deposit_mode, delivery_date, notes, created_by)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
@@ -449,7 +450,7 @@ export async function finalizeAdvance(db, user, code, { balanceMode, paymentRef 
   const paymentMode = modes.length > 1 ? 'split' : (modes[0] ?? balanceMode);
   const sale = await createSale(db, user, {
     idempotencyKey: `advance-${a.id}-final`, channel: 'retail', source: 'offline', trusted: true,
-    items: a.items.map(i => i.variantId ? { variantId: i.variantId, qty: i.qty, price: i.price } : { name: i.name, sku: i.sku, price: i.price, qty: i.qty, taxRate: i.taxRate }),
+    items: a.items.map(i => i.variantId ? { variantId: i.variantId, qty: i.qty, price: i.price } : { name: i.name, sku: i.sku, price: i.price, qty: i.qty, taxRate: i.taxRate, ...(i.measure ? { measure: i.measure } : {}) }),
     customerName: a.customer_name, customerPhone: a.customer_phone, customerAddress: a.customer_address, isGst: a.is_gst, gstRate: a.gst_rate ?? undefined,
     discountType: a.discount_type, discountValue: a.discount_value, deliveryFee: a.delivery_fee, paymentMode, cashTendered: paymentMode === 'cash' ? a.total_amount : undefined,
     payments: { cash: b.cash, upi: b.upi, card: b.card }, paymentRef, notes: `Advance order ${code}${a.notes ? ' · ' + a.notes : ''}`,

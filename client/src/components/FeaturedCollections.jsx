@@ -6,6 +6,7 @@ import { inr } from '../lib/format';
 import { waLink } from '../lib/contact';
 import { useApp } from '../context/App';
 import { Reveal } from './Motion';
+import { useSiteText } from '../lib/siteText';
 import { ProductMedia } from './ProductCard3D';
 
 const LIMIT = 4;
@@ -49,6 +50,7 @@ function Item({ p, i }) {
 // Until something is picked, the products flagged as featured are shown.
 export default function FeaturedCollections() {
   const { catalog, loadCatalog, site } = useApp();
+  const t = useSiteText();
   const picks = site.homepage?.trending;
   const key = (picks || []).join(',');
   const [picked, setPicked] = useState(null);
@@ -72,9 +74,9 @@ export default function FeaturedCollections() {
       <div className="cu-in">
         <Reveal className="cu-head">
           <div>
-            <p className="cu-label"><i aria-hidden="true" />TRENDING NOW</p>
-            <h2 id="edit-h">TRENDING COLLECTIONS</h2>
-            <p className="cu-sub">Handpicked pieces everyone is loving right now.</p>
+            <p className="cu-label"><i aria-hidden="true" />{t.trendingEyebrow}</p>
+            <h2 id="edit-h">{t.trendingTitle}</h2>
+            <p className="cu-sub">{t.trendingSub}</p>
           </div>
           <Link className="cu-all" to="/shop?category=sarees" data-cursor="VIEW">VIEW ALL →</Link>
         </Reveal>

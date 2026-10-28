@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../lib/api';
 import { telLink, waLink } from '../lib/contact';
 import { useApp } from '../context/App';
+import { useSiteText } from '../lib/siteText';
 import { Reveal } from './Motion';
 
 const Ico = ({ children }) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>;
@@ -11,6 +12,7 @@ const EMPTY = { name: '', business: '', phone: '', email: '', interest: '', quan
 // The WhatsApp button is an alternative that opens a prefilled message; nothing is sent until the visitor sends it.
 export default function EnquirySection() {
   const { site } = useApp();
+  const t = useSiteText();
   const { store, social, map } = site;
   const [f, setF] = useState(EMPTY);
   const [state, setState] = useState({ s: 'idle', msg: '' });
@@ -32,9 +34,9 @@ export default function EnquirySection() {
     <section className="eq" id="enquiry" aria-labelledby="eq-h">
       <div className="eq-in">
         <Reveal className="eq-info" id="contact">
-          <p className="eq-label"><i aria-hidden="true" />GET IN TOUCH</p>
-          <h2 id="eq-h">ENQUIRE WITH<br />DHANYA BOUTIQUE.</h2>
-          <p className="eq-p">Looking for a particular saree? Tell us what you need and we will get back to you.</p>
+          <p className="eq-label"><i aria-hidden="true" />{t.contactEyebrow}</p>
+          <h2 id="eq-h">{String(t.contactTitle).split('\n').map((l, i, a) => <span key={i}>{l}{i < a.length - 1 && <br />}</span>)}</h2>
+          <p className="eq-p">{t.contactSub}</p>
           <ul className="eq-links">
             {tel && <li><a href={tel}><Ico><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" /></Ico><span><b>Call</b>{store.owner ? `${store.owner} · ` : ''}{store.phone}</span></a></li>}
             {wa && <li><a href={wa} target="_blank" rel="noopener noreferrer"><Ico><path d="M3 21l1.6-4.6A8.5 8.5 0 1 1 8 19.6z" /><path d="M9 9.5c.4 2 2.5 4 4.7 4.8l1.3-1.3-1.8-1-.9.7a4 4 0 0 1-1.9-1.9l.7-.9-1-1.8z" /></Ico><span><b>WhatsApp</b>Chat with us</span></a></li>}

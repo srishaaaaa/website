@@ -5,7 +5,6 @@ import { useApp } from './context/App';
 import FloatingNavbar from './components/FloatingNavbar';
 import LuxuryFooter from './components/LuxuryFooter';
 import Intro from './components/Intro';
-import Cursor from './components/Cursor';
 import Toasts from './components/Toasts';
 import CartDrawer from './components/CartDrawer';
 import SearchOverlay from './components/SearchOverlay';
@@ -27,7 +26,7 @@ const A = {
   pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
   categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
-  storefront: lazyEl(media, 'AdminStorefront'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
+  storefront: lazyEl(media, 'AdminStorefront'), trending: lazyEl(media, 'AdminTrending'), sitetext: lazyEl(media, 'AdminSiteText'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
 };
 
 export default function App() {
@@ -68,6 +67,8 @@ export default function App() {
           <Route path="/admin/settings" element={A.settings} />
           <Route path="/admin/products" element={<Navigate to="/admin/billing/inventory" replace />} />
           <Route path="/admin/storefront" element={A.storefront} />
+          <Route path="/admin/trending" element={A.trending} />
+          <Route path="/admin/site-text" element={A.sitetext} />
           <Route path="/admin/enquiries" element={A.enquiries} />
           <Route path="/admin/sample" element={A.sample} />
           <Route path="/invoice/:token" element={A.invoice} />
@@ -87,7 +88,7 @@ export default function App() {
         </Routes>
       </PageTransition>
       {site && <><LuxuryFooter />
-      <CartDrawer /><SearchOverlay /><QuickView /><Cursor /></>}
+      <CartDrawer /><SearchOverlay /><QuickView /></>}
       {!bare && <Toasts />}
     </>
   );

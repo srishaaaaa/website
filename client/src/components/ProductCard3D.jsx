@@ -38,7 +38,7 @@ export default function ProductCard({ p, tall = false, className = '', index = n
   const ly = useSpring(useTransform(my, [-0.5, 0.5], [-10, 10]), { stiffness: 120, damping: 20 });
   const liked = wish.includes(p.slug);
   const out = p.stock < 1;
-  const tilt = fine && !reduced;
+  const tilt = false; // no 3D tilt or glare on product cards
   const [adding, setAdding] = useState(false);
   // Pieces with a single purchasable variant add straight to the bag; otherwise the visitor picks a size first.
   const add = async () => {

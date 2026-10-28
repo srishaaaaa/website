@@ -28,6 +28,9 @@ export default function PageTransition({ children }) {
   const first = useRef(true);
   useEffect(() => { first.current = false }, []);
 
+  // Admin pages switch instantly: no curtain sweep, no fade.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return <main key={pathname} id="main" tabIndex={-1} className="page"><Page>{children}</Page></main>;
+
   return (
     <>
       {!reduced && !first.current && <Curtain key={pathname} />}

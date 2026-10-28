@@ -37,7 +37,7 @@ const parse = v => {
 };
 export const joinNeck = (front, back) => [front && `Front: ${front}`, back && `Back: ${back}`].filter(Boolean).join(' · ');
 
-function Sheet({ title, options, value, onCancel, onNext, last }) {
+export function Sheet({ title, options, value, onCancel, onNext, last }) {
   const known = options.some(([l]) => l === value);
   const [sel, setSel] = useState(value); const [custom, setCustom] = useState(value && !known ? value : '');
   useEffect(() => { const k = e => e.key === 'Escape' && onCancel(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k) }, [onCancel]);

@@ -547,3 +547,51 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 }
 /* Photos inside the product Edit window */
 .pphotos .adm-gal { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }
+
+/* Billing: service line Measurements */
+.msr { display: grid; gap: 16px }
+.msr-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px }
+.msr-f { display: grid; gap: 6px; min-width: 0 }
+.msr-l { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase }
+.msr-h { margin: 6px 0 0; font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--d-bill, #5a1560) }
+.msr-neck { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 6px 14px; border: 1px solid var(--d-line, #e7e1d6); border-radius: 12px; background: #fff; text-align: left }
+.msr-neck svg { width: 34px; height: 26px; flex: none }
+.msr-neck > span:last-child { margin-left: auto; opacity: .5 }
+.msr-chips { display: flex; flex-wrap: wrap; gap: 8px }
+.msr-chips button { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--d-line, #e7e1d6); background: #fff; font-weight: 700; font-size: 13px }
+.msr-chips button.on { background: var(--d-bill, #5a1560); border-color: var(--d-bill, #5a1560); color: #fff }
+.msr-cm { position: relative; display: block }
+.msr-cm input { width: 100%; padding-right: 40px }
+.msr-cm em { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 12px; opacity: .55; pointer-events: none }
+.msr-rh { display: flex; align-items: center; justify-content: space-between; gap: 12px }
+.msr-rem { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px }
+.msr-rem li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--d-tint, #f6eef6); font-size: 14px }
+.msr-rem button { opacity: .6 }
+.msr-add { display: flex; gap: 8px; flex-wrap: wrap }
+.msr-add input { flex: 1 1 220px }
+.dpos-modal .pick-ov { z-index: 500 }
+.msr-line { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.msr-sum { font-size: 12px; color: var(--d-mut, #6f6b66); line-height: 1.5 }
+@media (max-width: 560px) { .msr-two { grid-template-columns: 1fr } }
+
+.inv-msr { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; color: #6f6b66 }
+
+/* Product card buttons: soft pill edges */
+.pcard-actions .pcard-quick, .pcard-quick, .pcard-add { border-radius: 999px }
+
+/* Admin: Site text */
+.st-fields { display: grid; gap: 14px; max-width: 760px }
+.st-para { display: grid; gap: 4px; margin-bottom: 8px; justify-items: start } .st-para textarea { width: 100% }
+.st-policy { display: grid; gap: 12px; max-width: 760px }
+/* Admin: product editor tabs */
+.pe-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 1px solid var(--d-line, #e7e1d6) }
+.pe-tabs button { padding: 10px 14px; font-weight: 700; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--d-mut, #6f6b66) }
+.pe-tabs button.on { color: var(--d-ink, #121214); border-bottom-color: var(--d-bill, #5a1560) }
+.pe-check { display: flex; align-items: center; gap: 10px; font-weight: 600 }
+.pe-cols { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px }
+.pe-col { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--d-line, #e7e1d6); border-radius: 999px; background: #fff; font-weight: 600; font-size: 13px; cursor: pointer }
+.pe-col.on { border-color: var(--d-bill, #5a1560); background: var(--d-tint, #f6eef6) }
+.pe-vars input { width: 100%; min-width: 70px; padding: 8px 10px }
+.pe-acts { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap }
+.pe-add { display: grid; grid-template-columns: repeat(4, minmax(80px, 1fr)) auto; gap: 8px }
+@media (max-width: 640px) { .pe-add { grid-template-columns: 1fr 1fr } }

@@ -5,6 +5,7 @@ import { inr } from '../lib/format';
 import { useApp } from '../context/App';
 import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
+import MeasureModal, { measureSummary } from '../components/MeasureModal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
 import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
@@ -101,6 +102,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const ws = channel === 'wholesale';
   const [q, setQ] = useState(''); const [results, setResults] = useState(null); const [searching, setSearching] = useState(false);
   const [lines, setLines] = useState(ws ? [blankCustom()] : []);
+  const [measureFor, setMeasureFor] = useState(null); // key of the service line whose Measurements window is open
   const [wsItems, setWsItems] = useState([]);
   const [cust, setCust] = useState({ name: '', phone: '', dob: '', address: '' }); const [billDate, setBillDate] = useState(todayStr()); const [source, setSource] = useState('offline');
   const [isGst, setIsGst] = useState(false); const gstTouched = useRef(false); const [gstRate, setGstRate] = useState('item');
@@ -137,7 +139,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
   const body = useMemo(() => ({
     channel, source: ws ? 'offline' : source, billDate,
-    items: priced.map(l => l.custom ? { name: l.name.trim(), price: l.price, qty: l.qty, taxRate: l.taxRate } : { variantId: l.variantId, qty: l.qty }),
+    items: priced.map(l => l.custom ? { name: l.name.trim(), price: l.price, qty: l.qty, taxRate: l.taxRate, ...(l.service && l.measure ? { measure: l.measure } : {}) } : { variantId: l.variantId, qty: l.qty }),
     customerName: cust.name.trim(), customerPhone: cust.phone.trim(), customerAddress: cust.address.trim(), ...(cust.dob && !ws ? { customerDob: cust.dob } : {}),
     isGst, ...(flat != null ? { gstRate: flat } : {}), ...(coupon ? { couponCode: coupon.code } : { discountType: disc.type, discountValue }), deliveryFee,
     paymentMode: mode, ...(mode === 'cash' ? { cashTendered: tenderedP } : {}),
@@ -196,6 +198,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
     setAdvOpen(false); clearOrder(); onAdvance(adv);
   };
 
+  const measureLine = lines.find(l => l.key === measureFor);
   const lineEls = lines.map(l => (
     <div className="dpos-line" key={l.key}>
       {l.custom ? (
@@ -203,6 +206,10 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           <input aria-label="Item name or description" placeholder={l.service ? 'Service (alteration, stitching…)' : 'Item name / description…'} list={ws ? 'dpos-ws-list' : undefined} value={l.name} onChange={e => patch(l.key, { name: e.target.value })} />
           <input aria-label="Price in rupees" inputMode="decimal" placeholder="Price ₹" value={l.priceStr} onChange={e => patch(l.key, { priceStr: e.target.value })} />
           <select aria-label="GST rate" value={l.taxRate} onChange={e => patch(l.key, { taxRate: +e.target.value })}>{GST_RATES.map(r => <option key={r} value={r}>{r}% GST</option>)}</select>
+          {l.service && <div className="msr-line">
+            <button type="button" className="dpos-btn ghost sm" onClick={() => setMeasureFor(l.key)}>📏 {l.measure ? 'Edit measurements' : 'Add measurements'}</button>
+            {l.measure && <span className="msr-sum">{measureSummary(l.measure)}</span>}
+          </div>}
         </div>
       ) : (
         <div><b>{l.name}</b><div className="muted small">{l.detail}{l.sku ? ` · ${l.sku}` : ''} · {inr(l.price)} each · {l.stock} in stock</div></div>
@@ -250,6 +257,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
               <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom()])}>+ Add {ws ? 'item' : 'custom item'}</button></div></div>
           {ws && <datalist id="dpos-ws-list">{wsItems.map(i => <option key={i.id} value={[i.code, i.company, i.colour].filter(Boolean).join(' · ')} />)}</datalist>}
           {lines.length ? lineEls : <Empty>No items yet. Search above to add products.</Empty>}
+          {measureLine && <MeasureModal value={measureLine.measure} onClose={() => setMeasureFor(null)} onSave={m => patch(measureLine.key, { measure: m || undefined })} />}
         </section>
       </div>
 

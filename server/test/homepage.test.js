@@ -69,3 +69,33 @@ test('collection and category pieces: staff edit membership, order and descripti
   assert.equal((await owner('PUT', `/admin/categories/${kurtas.id}/products`, { slugs: [...before, 'dusk-silk-dress'] })).status, 200);
   assert.ok((await owner('GET', `/admin/categories/${kurtas.id}/products`)).body.some(p => p.slug === 'dusk-silk-dress'));
 });
+
+test('site text, full product edit, sizes, and stitching measurements on a bill', async () => {
+  const pub = client();
+  const owner = client(); await owner('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  // Site text
+  assert.ok([401, 403].includes((await pub('PUT', '/admin/settings/content', { storyTitle: 'x' })).status));
+  assert.equal((await owner('PUT', '/admin/settings/content', { storyTitle: 'Our Story', story: ['One.', 'Two.'], contactTitle: null })).status, 200);
+  const c = (await pub('GET', '/store')).body.content;
+  assert.equal(c.storyTitle, 'Our Story'); assert.deepEqual(c.story, ['One.', 'Two.']);
+
+  // Product details, collections, sizes
+  const p = (await owner('GET', '/admin/pos/products?q=dusk')).body.find(x => x.slug === 'dusk-silk-dress');
+  const body = { name: p.name, price: p.price, taxRate: p.taxRate, categorySlug: p.categorySlug, status: p.status, description: 'Soft silk.', material: 'Silk', featured: true, collections: ['evening-edit'] };
+  assert.equal((await owner('PATCH', `/admin/pos/products/${p.id}`, body)).status, 200);
+  const after = (await owner('GET', `/admin/pos/products/${p.id}`)).body;
+  assert.equal(after.description, 'Soft silk.'); assert.equal(after.material, 'Silk'); assert.equal(after.featured, true); assert.deepEqual(after.collections, ['evening-edit']);
+  const v = after.variants[0];
+  assert.equal((await owner('PATCH', `/admin/pos/products/${p.id}/variants/${v.id}`, { price: 12345, active: false })).status, 200);
+  const v2 = (await owner('GET', `/admin/pos/products/${p.id}`)).body.variants.find(x => x.id === v.id);
+  assert.equal(v2.priceOverride, 12345); assert.equal(v2.active, false);
+  assert.equal((await owner('PATCH', `/admin/pos/products/${p.id}/variants/${v.id}`, { price: null, active: true })).status, 200);
+  assert.equal((await owner('GET', `/admin/pos/products/${p.id}`)).body.variants.find(x => x.id === v.id).priceOverride, null);
+
+  // Measurements travel with a service line onto the bill
+  const measure = { frontNeck: 'V Neck', backNeck: 'U Neck', sleeveType: 'Puff', sleeveLength: 'Elbow', dueDate: '2026-11-20', cm: { chest: 86, waist: 72.5 }, remarks: ['Cotton lining'] };
+  const sale = await owner('POST', '/admin/pos/sales', { idempotencyKey: 'measure-test-key-1', items: [{ name: 'Blouse stitching', price: 80000, qty: 1, taxRate: 5, measure }], paymentMode: 'cash' });
+  assert.equal(sale.status, 201, JSON.stringify(sale.body));
+  const got = (await owner('GET', `/admin/pos/sales/${sale.body.invoiceNo}`)).body;
+  assert.deepEqual((got.sale || got).items[0].variant.measure, measure);
+});

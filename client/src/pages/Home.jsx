@@ -13,11 +13,13 @@ import EnquirySection from '../components/EnquirySection';
 import InstagramStrip from '../components/InstagramStrip';
 import StoreLocationMap from '../components/StoreLocationMap';
 import ServiceHighlights from '../components/ServiceHighlights';
+import { useSiteText } from '../lib/siteText';
 import { brand, media } from '../config/content';
 
 // Shop Story: the boutique's story beside a photograph, on a deep-red panel. The wording lives in config/content.js.
 function Story() {
   const { site } = useApp();
+  const t = useSiteText();
   const b = site.branding || {};
   return (
     <section className="story3" id="story" aria-labelledby="story-h">
@@ -29,8 +31,8 @@ function Story() {
         </svg>
         <div className="story3-panel">
           <span className="story3-logo"><b>DHANYA BOUTIQUE</b></span>
-          <h2 id="story-h" className="story3-h">Shop Story</h2>
-          {brand.story.map((p, i) => <p key={i} className="story3-p">{p}</p>)}
+          <h2 id="story-h" className="story3-h">{t.storyTitle}</h2>
+          {t.story.map((p, i) => <p key={i} className="story3-p">{p}</p>)}
           <Magnetic><Link to="/about" className="story3-link" data-cursor="DISCOVER">Discover more <span aria-hidden="true">→</span></Link></Magnetic>
         </div>
       </Reveal>

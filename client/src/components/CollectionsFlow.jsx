@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { useReduced } from '../lib/hooks';
 import { ProductMedia } from './ProductCard3D';
+import { useSiteText } from '../lib/siteText';
 import { Reveal } from './Motion';
 
 // A 3D coverflow of the real collections. Cards turn toward the centre, sink into depth and cast a soft
@@ -10,6 +11,7 @@ import { Reveal } from './Motion';
 // 3D is only a per-card transform computed from each card's distance to the centre.
 export default function CollectionsFlow() {
   const { catalog, site } = useApp();
+  const t = useSiteText();
   // The admin chooses which collections appear and in what order (Admin → Storefront images → Homepage picks).
   const chosen = site.homepage?.collections || [];
   const cols = (chosen.length ? chosen.map(s => catalog.collections.find(c => c.slug === s)).filter(Boolean) : catalog.collections).slice(0, 8);
@@ -52,7 +54,7 @@ export default function CollectionsFlow() {
   return (
     <section className="cf" aria-labelledby="cf-h">
       <Reveal className="cf-head">
-        <div><p className="eyebrow">COLLECTIONS</p><h2 id="cf-h">CHOOSE YOUR WORLD.</h2></div>
+        <div><p className="eyebrow">{t.worldEyebrow}</p><h2 id="cf-h">{t.worldTitle}</h2></div>
         <div className="cf-nav">
           <span aria-live="polite">{String(active + 1).padStart(2, '0')} / {String(cols.length).padStart(2, '0')}</span>
           <button className="icon-btn lg" onClick={() => go(-1)} aria-label="Previous collection" disabled={active === 0}>‹</button>

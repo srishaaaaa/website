@@ -7,10 +7,12 @@ import { Reveal } from '../components/Motion';
 import { Emblem } from '../components/Wordmark';
 import { ProductMedia } from '../components/ProductCard3D';
 import ServiceHighlights from '../components/ServiceHighlights';
+import { useSiteText } from '../lib/siteText';
 import StoreLocationMap from '../components/StoreLocationMap';
 
 export function About() {
   const { catalog } = useApp();
+  const t = useSiteText();
   const cats = catalog.categories, cols = catalog.collections;
   const total = cats.reduce((s, c) => s + c.product_count, 0);
   const steps = [
@@ -24,9 +26,9 @@ export function About() {
       <header className="ab-hero">
         <div className="ab-hero-copy">
           <p className="eyebrow">OUR STORY</p>
-          <h1>AN INDIAN SOUL.<br />A MODERN WARDROBE.</h1>
-          <p className="ab-lead">{brand.positioning}</p>
-          <p className="ab-sub">{brand.promise}</p>
+          <h1>{String(t.aboutTitle).split('\n').map((l, i, a) => <span key={i}>{l}{i < a.length - 1 && <br />}</span>)}</h1>
+          <p className="ab-lead">{t.aboutLead}</p>
+          <p className="ab-sub">{t.aboutSub}</p>
           <div className="ab-cta"><Link className="btn solid pill" to="/shop" data-cursor="SHOP">EXPLORE COLLECTION</Link><Link className="hl-link" to="/collections" data-cursor="EXPLORE">VIEW COLLECTIONS</Link></div>
         </div>
         <div className="ab-photo cut">

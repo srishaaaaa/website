@@ -51,30 +51,103 @@ function StockModal({ product, variantId, onClose, onDone }) {
   );
 }
 
-function EditModal({ product, categories, onClose, onDone, onPhotos }) {
-  const [f, setF] = useState({ name: product.name, price: rupees(product.price), cost: product.costPrice ? rupees(product.costPrice) : '', tax: product.taxRate, cat: product.categorySlug || '', status: product.status });
-  const [busy, setBusy] = useState(false); const [err, setErr] = useState();
-  const submit = async e => {
-    e.preventDefault(); setBusy(true); setErr();
-    try { await api(`/admin/pos/products/${product.id}`, { method: 'PATCH', body: { name: f.name.trim(), price: toPaise(f.price), costPrice: toPaise(f.cost), taxRate: +f.tax, categorySlug: f.cat || null, status: f.status } }); onDone(); onClose() }
-    catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
+// Everything about one product in one window: details, website text, collections, sizes & colours, and photos.
+function VariantRow({ productId, v, basePrice, onChanged, setErr, onlyOne }) {
+  const [r, setR] = useState({ size: v.size, color: v.color, sku: v.sku, price: v.priceOverride != null ? rupees(v.priceOverride) : '' });
+  const dirty = r.size !== v.size || r.color !== v.color || r.sku !== v.sku || (r.price ? toPaise(r.price) : null) !== (v.priceOverride ?? null);
+  const call = async (body, method = 'PATCH') => {
+    setErr();
+    try { await api(`/admin/pos/products/${productId}/variants/${v.id}`, { method, ...(body ? { body } : {}) }); onChanged() }
+    catch (x) { setErr(x.issues?.[0]?.message || x.message) }
   };
   return (
+    <tr className={v.active ? '' : 'muted'}>
+      <td><input aria-label="Size" value={r.size} maxLength={40} onChange={e => setR({ ...r, size: e.target.value })} /></td>
+      <td><input aria-label="Colour" value={r.color} maxLength={40} onChange={e => setR({ ...r, color: e.target.value })} /></td>
+      <td><input aria-label="SKU" value={r.sku} maxLength={80} onChange={e => setR({ ...r, sku: e.target.value.toUpperCase() })} /></td>
+      <td><input aria-label="Own price in rupees" inputMode="decimal" value={r.price} placeholder={rupees(basePrice)} onChange={e => setR({ ...r, price: e.target.value })} /></td>
+      <td className="r"><b>{v.stock}</b></td>
+      <td className="r pe-acts">
+        {dirty && <button type="button" className="dpos-btn sm" onClick={() => call({ size: r.size.trim(), color: r.color.trim() || 'Default', sku: r.sku.trim(), price: r.price ? toPaise(r.price) : null })}>Save</button>}
+        <button type="button" className="dpos-btn ghost sm" title={v.active ? 'Hide this size from the website and billing' : 'Show this size again'} onClick={() => call({ active: !v.active })}>{v.active ? 'Hide' : 'Show'}</button>
+        <button type="button" className="dpos-btn ghost sm" disabled={onlyOne} aria-label={`Delete ${v.size} ${v.color}`} onClick={() => confirm(`Delete size ${v.size} (${v.color})? Past bills keep their own copy.`) && call(null, 'DELETE')}>✕</button>
+      </td>
+    </tr>
+  );
+}
+
+function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
+  const [product, setProduct] = useState(start);
+  const [f, setF] = useState({ name: start.name, price: rupees(start.price), cost: start.costPrice ? rupees(start.costPrice) : '', tax: start.taxRate, cat: start.categorySlug || '', status: start.status,
+    description: start.description || '', material: start.material || '', featured: !!start.featured, collections: start.collections || [] });
+  const [cols, setCols] = useState([]);
+  const [nv, setNv] = useState({ size: '', color: '', sku: '', stock: '' });
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState(); const [tab, setTab] = useState('details');
+  useEffect(() => { api('/admin/taxonomy').then(d => setCols(d.collections || [])).catch(() => {}) }, []);
+  const reload = () => api(`/admin/pos/products/${start.id}`).then(setProduct).then(() => onPhotos?.()).catch(e => setErr(e.message));
+  const submit = async e => {
+    e.preventDefault(); setBusy(true); setErr();
+    try {
+      await api(`/admin/pos/products/${product.id}`, { method: 'PATCH', body: { name: f.name.trim(), price: toPaise(f.price), costPrice: toPaise(f.cost), taxRate: +f.tax, categorySlug: f.cat || null, status: f.status,
+        description: f.description.trim(), material: f.material.trim(), featured: f.featured, collections: f.collections } });
+      onDone(); onClose();
+    } catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
+  };
+  const addVariant = async e => {
+    e.preventDefault(); setErr();
+    try {
+      await api(`/admin/pos/products/${product.id}/variants`, { method: 'POST', body: { size: nv.size.trim(), color: nv.color.trim() || 'Default', sku: (nv.sku.trim() || `${product.slug}-${slugify(nv.size)}-${slugify(nv.color) || 'default'}`).toUpperCase(), stock: parseInt(nv.stock, 10) || 0 } });
+      setNv({ size: '', color: '', sku: '', stock: '' }); reload();
+    } catch (x) { setErr(x.issues?.[0]?.message || x.message) }
+  };
+  const toggleCol = slug => setF(x => ({ ...x, collections: x.collections.includes(slug) ? x.collections.filter(c => c !== slug) : [...x.collections, slug] }));
+  const editing = tab === 'details' || tab === 'website';
+  const tabs = [['details', 'Details'], ['website', 'Website & collections'], ['sizes', `Sizes & colours (${product.variants?.length || 0})`], ['photos', 'Photos']];
+  return (
     <Modal title="Edit product" sub={product.name} wide onClose={onClose}>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
-        <label className="f">Name<input required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} maxLength={160} /></label>
-        <div className="dpos-grid">
-          <label className="f">Selling price ₹<input required inputMode="decimal" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} /></label>
-          <label className="f">Cost price ₹ <span className="muted small">(what you paid)</span><input inputMode="decimal" value={f.cost} onChange={e => setF({ ...f, cost: e.target.value })} placeholder="0" /></label>
-          <label className="f">GST %<select value={f.tax} onChange={e => setF({ ...f, tax: e.target.value })}>{[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}</select></label>
-          <label className="f">Category<select value={f.cat} onChange={e => setF({ ...f, cat: e.target.value })}><option value="">— None —</option>{categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select></label>
-          <label className="f">Status<select value={f.status} onChange={e => setF({ ...f, status: e.target.value })}><option value="active">Active (on sale)</option><option value="draft">Draft (hidden)</option><option value="archived">Archived</option></select></label>
+      <div className="pe-tabs" role="tablist">{tabs.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
+      <Err>{err}</Err>
+      <form id="pe-form" onSubmit={submit} style={{ display: editing ? 'grid' : 'none', gap: 14 }}>
+        <div style={{ display: tab === 'details' ? 'grid' : 'none', gap: 14 }}>
+          <label className="f">Name<input required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} maxLength={160} /></label>
+          <div className="dpos-grid">
+            <label className="f">Selling price ₹<input required inputMode="decimal" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} /></label>
+            <label className="f">Cost price ₹ <span className="muted small">(what you paid)</span><input inputMode="decimal" value={f.cost} onChange={e => setF({ ...f, cost: e.target.value })} placeholder="0" /></label>
+            <label className="f">GST %<select value={f.tax} onChange={e => setF({ ...f, tax: e.target.value })}>{[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}</select></label>
+            <label className="f">Category<select value={f.cat} onChange={e => setF({ ...f, cat: e.target.value })}><option value="">— None —</option>{categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select></label>
+            <label className="f">Status<select value={f.status} onChange={e => setF({ ...f, status: e.target.value })}><option value="active">Active (on sale)</option><option value="draft">Draft (hidden)</option><option value="archived">Archived</option></select></label>
+            <label className="f">Fabric / material<input value={f.material} maxLength={80} onChange={e => setF({ ...f, material: e.target.value })} placeholder="e.g. Kanjivaram silk" /></label>
+          </div>
         </div>
-        <p className="sub">Stock is adjusted with the Stock button.</p>
-        <Err>{err}</Err>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button></div>
+        <div style={{ display: tab === 'website' ? 'grid' : 'none', gap: 14 }}>
+          <label className="f">Description <span className="muted small">(shown on the product page)</span><textarea rows={6} maxLength={4000} value={f.description} onChange={e => setF({ ...f, description: e.target.value })} placeholder="Fabric, work, drape, care…" /></label>
+          <label className="pe-check"><input type="checkbox" checked={f.featured} onChange={e => setF({ ...f, featured: e.target.checked })} /> Featured piece <span className="muted small">(shown in Trending when no trending pieces are picked)</span></label>
+          <div className="f"><span>Collections</span>
+            <div className="pe-cols">{!cols.length ? <span className="muted small">No collections yet.</span> : cols.map(c => (
+              <label key={c.slug} className={`pe-col ${f.collections.includes(c.slug) ? 'on' : ''}`}><input type="checkbox" checked={f.collections.includes(c.slug)} onChange={() => toggleCol(c.slug)} />{c.name}{c.status !== 'published' && <em className="muted small"> (hidden)</em>}</label>))}</div>
+          </div>
+        </div>
       </form>
-      <div style={{ marginTop: 18 }}><ProductPhotos product={product} onChanged={onPhotos} /></div>
+      {tab === 'sizes' && (
+        <div style={{ display: 'grid', gap: 12 }}>
+          <p className="muted small" style={{ margin: 0 }}>Edit a row and press Save. Leave “Own price” empty to use the product price. Stock is changed with the Stock button in the list.</p>
+          <div className="acc-scroll"><table className="dpos-table pe-vars">
+            <thead><tr><th>Size</th><th>Colour</th><th>SKU</th><th>Own price ₹</th><th className="r">Stock</th><th /></tr></thead>
+            <tbody>{(product.variants || []).map(v => <VariantRow key={`${v.id}-${v.size}-${v.color}-${v.sku}-${v.priceOverride}-${v.active}`} productId={product.id} v={v} basePrice={product.price} onChanged={reload} setErr={setErr} onlyOne={product.variants.length <= 1} />)}</tbody>
+          </table></div>
+          <form onSubmit={addVariant} className="pe-add">
+            <input aria-label="New size" required placeholder="Size" value={nv.size} onChange={e => setNv({ ...nv, size: e.target.value })} />
+            <input aria-label="New colour" placeholder="Colour" value={nv.color} onChange={e => setNv({ ...nv, color: e.target.value })} />
+            <input aria-label="New SKU" placeholder="SKU (auto)" value={nv.sku} onChange={e => setNv({ ...nv, sku: e.target.value })} />
+            <input aria-label="Opening stock" inputMode="numeric" placeholder="Stock" value={nv.stock} onChange={e => setNv({ ...nv, stock: e.target.value.replace(/\D/g, '') })} />
+            <button className="dpos-btn sm">+ Add size</button>
+          </form>
+        </div>)}
+      {tab === 'photos' && <ProductPhotos product={product} onChanged={onPhotos} />}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+        <button type="button" className="dpos-btn ghost" onClick={onClose}>{editing ? 'Cancel' : 'Close'}</button>
+        {editing && <button form="pe-form" className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>}
+      </div>
     </Modal>
   );
 }

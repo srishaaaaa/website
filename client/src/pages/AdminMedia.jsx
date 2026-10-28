@@ -4,6 +4,7 @@ import { api, uploadImage } from '../lib/api';
 import { useApp } from '../context/App';
 import AdminShell from '../components/AdminShell';
 import { Drop, FocusImage } from '../components/ProductPhotos';
+import { TEXT_DEFAULTS } from '../lib/siteText';
 import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
 import StaffOnly from '../components/StaffOnly';
 
@@ -38,7 +39,7 @@ function Slot({ title, hint, value, fallback, onUpload, onReset, alt, onAlt, acc
 }
 
 // Which products are "Trending now" (up to 4, in order) and which collections appear in "Choose your world" (up to 8, in order).
-function HomePicks({ onSaved, toast }) {
+function HomePicks({ onSaved, toast, only }) {
   const { site, catalog } = useApp();
   const hp = site.homepage || { trending: [], collections: [] };
   const [trend, setTrend] = useState((hp.trending || []).slice(0, 4)); const [colSel, setColSel] = useState(hp.collections); const [catSel, setCatSel] = useState(hp.categories || []);
@@ -57,7 +58,7 @@ function HomePicks({ onSaved, toast }) {
   );
   return (
     <section className="adm-block">
-      <h2 className="serif adm-h2">Homepage picks</h2>
+      {!only && <h2 className="serif adm-h2">Homepage picks</h2>}
       {err && <p role="alert" className="err">{err}</p>}
       <h3 className="adm-h3">Trending collections ({trend.length} of 4)</h3>
       <p className="muted small">The pieces shown in “Trending collections” on the homepage, in this order. Leave empty to show your featured products.</p>
@@ -66,6 +67,7 @@ function HomePicks({ onSaved, toast }) {
         <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search a product to add…" aria-label="Search products to add" />
         <ul className="adm-picks">{found.filter(p => !trend.includes(p.slug)).map(p => <li key={p.id} className="adm-pick"><b>{p.name}</b><span className="adm-pick-act"><button type="button" onClick={() => { setNames(n => ({ ...n, [p.slug]: p.name })); setTrend([...trend, p.slug]); setQ('') }}>Add</button></span></li>)}</ul>
       </>}
+      {!only && <>
       <h3 className="adm-h3">Choose your world ({colSel.length} of 8)</h3>
       <p className="muted small">The collections listed on the homepage, in this order. Leave empty to list every published collection.</p>
       <ol className="adm-picks">{colSel.map((s, i) => row(colName(s), i, colSel, setColSel))}</ol>
@@ -74,8 +76,22 @@ function HomePicks({ onSaved, toast }) {
       <p className="muted small">The categories in the “Categories” menu and the “Featured categories” section, in this order. Leave empty to list every category.</p>
       <ol className="adm-picks">{catSel.map((s, i) => row(catName(s), i, catSel, setCatSel))}</ol>
       <ul className="adm-picks">{catalog.categories.filter(c => !catSel.includes(c.slug)).map(c => <li key={c.slug} className="adm-pick"><b>{c.name}</b><span className="adm-pick-act"><button type="button" disabled={catSel.length >= 12} onClick={() => setCatSel([...catSel, c.slug])}>Add</button></span></li>)}</ul>
-      <button className="btn dark" onClick={save} disabled={busy}>{busy ? 'SAVING…' : 'SAVE HOMEPAGE PICKS'}</button>
+      </>}
+      <button className="btn dark" onClick={save} disabled={busy}>{busy ? 'SAVING…' : only ? 'SAVE TRENDING' : 'SAVE HOMEPAGE PICKS'}</button>
     </section>
+  );
+}
+
+// Admin → Trending: just the four "Trending collections" pieces on the homepage.
+export function AdminTrending() {
+  const state = useStaff();
+  const { loadSite, loadCatalog, toast } = useApp();
+  return (
+    <Gate state={state}>
+      <AdminShell title="Trending collections" sub="The 4 pieces shown in “Trending collections” on the homepage, in this order">
+        <div className="adm"><HomePicks only="trending" onSaved={() => { loadSite(); loadCatalog() }} toast={toast} /></div>
+      </AdminShell>
+    </Gate>
   );
 }
 
@@ -220,6 +236,74 @@ export function AdminSample() {
           </div>
         )}
       </div>
+      </AdminShell>
+    </Gate>
+  );
+}
+
+// Admin → Site text: the wording of the website's sections and policy pages. An empty box uses the built-in wording (shown greyed as the placeholder).
+const TEXT_GROUPS = [
+  ['Shop Story', [['storyTitle', 'Title'], ['story', 'Story (one paragraph per box)', 'paras']]],
+  ['Trending collections', [['trendingEyebrow', 'Small label'], ['trendingTitle', 'Title'], ['trendingSub', 'Line under the title']]],
+  ['Choose your world', [['worldEyebrow', 'Small label'], ['worldTitle', 'Title']]],
+  ['Inside DHANYA BOUTIQUE (reels & photos)', [['instaTitle', 'Title'], ['instaSub', 'Line under the title', 'area']]],
+  ['Enquiry / contact', [['contactEyebrow', 'Small label'], ['contactTitle', 'Title (press Enter for a new line)', 'area'], ['contactSub', 'Line under the title', 'area']]],
+  ['About page', [['aboutTitle', 'Title (press Enter for a new line)', 'area'], ['aboutLead', 'Main line', 'area'], ['aboutSub', 'Second line', 'area']]],
+];
+const POLICY_PAGES = [['shipping-returns', 'Shipping and returns'], ['terms', 'Terms and conditions'], ['privacy', 'Privacy policy']];
+
+function PolicyEditor({ slug, label, toast }) {
+  const [p, setP] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  useEffect(() => { api('/pages/' + slug).then(d => setP({ title: d.title || label, body: d.body || '' })).catch(() => setP({ title: label, body: '' })) }, [slug, label]);
+  const save = async () => { setBusy(true); setErr(); try { await api('/admin/pages/' + slug, { method: 'PUT', body: { title: p.title.trim() || label, body: p.body } }); toast(`${label} saved.`) } catch (e) { setErr(e.message) } finally { setBusy(false) } };
+  if (!p) return <p className="muted small">Loading…</p>;
+  return (
+    <div className="st-policy">
+      {err && <p role="alert" className="err">{err}</p>}
+      <label className="f">Title<input value={p.title} maxLength={120} onChange={e => setP({ ...p, title: e.target.value })} /></label>
+      <label className="f">Text <span className="muted small">(leave a blank line between paragraphs)</span><textarea rows={10} maxLength={20000} value={p.body} onChange={e => setP({ ...p, body: e.target.value })} /></label>
+      <button className="btn dark" onClick={save} disabled={busy}>{busy ? 'SAVING…' : `SAVE ${label.toUpperCase()}`}</button>
+    </div>
+  );
+}
+
+export function AdminSiteText() {
+  const state = useStaff();
+  const { site, loadSite, toast } = useApp();
+  const [v, setV] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  useEffect(() => { if (state === 'ok' && site.status !== 'loading' && !v) { const c = site.content || {}; setV({ ...c, story: c.story?.length ? c.story : [''] }) } }, [state, site, v]);
+  const save = async () => {
+    setBusy(true); setErr();
+    const clean = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, Array.isArray(x) ? x.map(s => s.trim()).filter(Boolean) : (x && String(x).trim()) || null]));
+    try { await api('/admin/settings/content', { method: 'PUT', body: clean }); toast('Site text saved.'); loadSite() } catch (e) { setErr(e.issues?.[0]?.message || e.message) } finally { setBusy(false) }
+  };
+  const field = ([k, label, kind]) => {
+    if (kind === 'paras') return (
+      <div key={k} className="f"><span>{label}</span>
+        {v.story.map((para, i) => (
+          <div key={i} className="st-para">
+            <textarea rows={3} maxLength={1200} value={para} placeholder={TEXT_DEFAULTS.story[i] || 'New paragraph'} onChange={e => setV({ ...v, story: v.story.map((x, j) => j === i ? e.target.value : x) })} />
+            {v.story.length > 1 && <button type="button" className="link-u small" onClick={() => setV({ ...v, story: v.story.filter((_, j) => j !== i) })}>Remove</button>}
+          </div>))}
+        {v.story.length < 8 && <button type="button" className="link-u small" onClick={() => setV({ ...v, story: [...v.story, ''] })}>+ Add paragraph</button>}
+      </div>);
+    const props = { value: v[k] || '', placeholder: TEXT_DEFAULTS[k], onChange: e => setV({ ...v, [k]: e.target.value }) };
+    return <label key={k} className="f">{label}{kind === 'area' ? <textarea rows={2} {...props} /> : <input {...props} />}</label>;
+  };
+  return (
+    <Gate state={state}>
+      <AdminShell title="Site text" sub="Change the wording on the website. Leave a box empty to keep the wording shown in grey.">
+        <div className="adm">
+          {err && <p role="alert" className="err">{err}</p>}
+          {!v ? <p className="muted">Loading…</p> : <>
+            {TEXT_GROUPS.map(([title, fields]) => (
+              <section key={title} className="adm-block"><h2 className="serif adm-h2">{title}</h2><div className="st-fields">{fields.map(field)}</div></section>))}
+            <button className="btn dark" onClick={save} disabled={busy}>{busy ? 'SAVING…' : 'SAVE SITE TEXT'}</button>
+            <p className="muted small" style={{ marginTop: 12 }}>Phone, email, address and Instagram are changed in <Link className="link-u" to="/admin/settings">Store settings</Link>. Photos are changed in <Link className="link-u" to="/admin/storefront">Storefront images</Link>.</p>
+          </>}
+          <h2 className="serif adm-h2" style={{ marginTop: 36 }}>Policy pages</h2>
+          {POLICY_PAGES.map(([slug, label]) => <section key={slug} className="adm-block"><h3 className="adm-h3">{label}</h3><PolicyEditor slug={slug} label={label} toast={toast} /></section>)}
+        </div>
       </AdminShell>
     </Gate>
   );

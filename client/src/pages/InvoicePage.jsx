@@ -6,6 +6,7 @@ import { DEFAULT_LOGO } from '../components/Wordmark';
 import PrintSettings, { readPrintPrefs } from '../components/PrintSettings';
 import { PrintIcon } from '../components/PrintIcon';
 import { CHANNEL, MODE, clock, inWords, longDate, money, num2, taxLines } from '../lib/invoiceFormat';
+import { measureSummary } from '../components/MeasureModal';
 import '../invoice.css';
 
 const phoneShown = p => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? `+91 ${d}` : p || '' };
@@ -54,7 +55,7 @@ function A4Doc({ sale, shop }) {
         <thead><tr><th>#</th><th>ITEM DESCRIPTION</th><th className="c">QTY</th><th className="r">RATE (₹)</th><th className="r">AMOUNT (₹)</th></tr></thead>
         <tbody>{sale.items.map((i, n) => (
           <tr key={n}><td className="n">{n + 1}</td>
-            <td><b>{i.name}</b>{i.variant?.size ? <span className="inv-var"> ({i.variant.size}{i.variant.color && i.variant.color !== 'Default' ? `, ${i.variant.color}` : ''})</span> : null}</td>
+            <td><b>{i.name}</b>{i.variant?.size ? <span className="inv-var"> ({i.variant.size}{i.variant.color && i.variant.color !== 'Default' ? `, ${i.variant.color}` : ''})</span> : null}{i.variant?.measure && <span className="inv-msr">{measureSummary(i.variant.measure)}</span>}</td>
             <td className="c mono">{i.quantity}</td><td className="r mono muted">{num2(i.unitPrice)}</td><td className="r mono"><b>{num2(i.lineTotal)}</b></td></tr>))}</tbody>
       </table>
       <section className="inv-foot">
