@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useApp } from '../context/App';
 import '../pos.css';
@@ -65,13 +66,28 @@ export const NAV = [
     ['/admin/users', 'Users', 'users', true], ['/admin/settings', 'Store settings', 'gear', true], ['/admin/sample', 'Sample data', 'flask', true]] },
 ];
 
+// Every admin page draws its own sidebar, so its scroll position is kept here: opening a panel near the bottom
+// no longer jumps the sidebar back to the top.
+const sideScroll = { top: 0, left: 0 };
+
 export default function AdminShell({ title, sub, actions, children }) {
+  const side = useRef();
+  useLayoutEffect(() => {
+    const el = side.current; if (!el) return;
+    el.scrollTop = sideScroll.top; el.scrollLeft = sideScroll.left;
+    const on = el.querySelector('.dpos-nav.on');
+    if (on) { // keep the open panel's button visible inside the sidebar (only the sidebar scrolls, never the page)
+      const a = on.getBoundingClientRect(), b = el.getBoundingClientRect();
+      if (a.top < b.top) el.scrollTop -= b.top - a.top + 12; else if (a.bottom > b.bottom) el.scrollTop += a.bottom - b.bottom + 12;
+      if (a.left < b.left) el.scrollLeft -= b.left - a.left + 12; else if (a.right > b.right) el.scrollLeft += a.right - b.right + 12;
+    }
+  }, []);
   const { user } = useApp();
   const manager = !!user && ['owner', 'admin'].includes(user.role);
   const initial = (user?.name || user?.email || 'A').trim()[0].toUpperCase();
   return (
     <div className="dpos">
-      <nav className="dpos-side" aria-label="Admin sections">
+      <nav className="dpos-side" aria-label="Admin sections" ref={side} onScroll={e => { sideScroll.top = e.currentTarget.scrollTop; sideScroll.left = e.currentTarget.scrollLeft }}>
         <div className="dpos-brand"><div><b>Dhanya</b><br /><i>{manager ? 'ADMIN' : 'CASHIER'}</i></div></div>
         {NAV.map(g => {
           const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => !i[3] || manager);
