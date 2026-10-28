@@ -5,37 +5,17 @@ import { useApp } from '../context/App';
 import { DEFAULT_LOGO } from '../components/Wordmark';
 import PrintSettings, { readPrintPrefs } from '../components/PrintSettings';
 import { PrintIcon } from '../components/PrintIcon';
-import { CHANNEL, MODE, clock, inWords, longDate, money, num2, taxLines } from '../lib/invoiceFormat';
+import { CHANNEL, MODE, clock, inWords, longDate, money, num2 } from '../lib/invoiceFormat';
 import { measureSummary } from '../components/MeasureModal';
+import { billRows, modeName } from '../lib/billSummary';
 import '../invoice.css';
 
 const phoneShown = p => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? `+91 ${d}` : p || '' };
-// How the bill was paid, by bill type:
-// - advance order bill: deposit paid (by mode) + final balance paid (by mode) + remaining balance (0)
-// - split bill: amount paid, then each mode
-// - single-mode bill: amount paid by that mode (cash also shows cash received and change)
-const PAY_L = [['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']];
-const modeRows = s => PAY_L.filter(([k]) => s?.[k] > 0).map(([k, l]) => [l, s[k]]);
-const paidSplit = s => ({ cash: s.payCash, upi: s.payUpi, card: s.payCard });
-export function payBlocks(s) {
-  if (s.advance) {
-    const a = s.advance;
-    return [
-      { title: 'Deposit Paid', amount: a.deposit, rows: modeRows(a.depositSplit) },
-      { title: 'Final Balance Paid', amount: a.balance, rows: modeRows(a.balanceSplit) },
-      { title: 'Remaining Balance (Fully Settled)', amount: 0, strong: true, rows: [] },
-    ];
-  }
-  if (s.paymentMode === 'split') return [{ title: 'Amount Paid', amount: s.total, rows: modeRows(paidSplit(s)) }];
-  const rows = s.paymentMode === 'cash' && s.cashTendered > s.total ? [['Cash received', s.cashTendered], ['Change returned', s.change || s.cashTendered - s.total]] : [];
-  return [{ title: `Paid by ${MODE[s.paymentMode]}`, amount: s.total, rows }];
-}
-const modeName = s => s.advance ? 'Advance order · deposit + balance' : s.paymentMode === 'split' ? `Split · ${modeRows(paidSplit(s)).map(r => r[0]).join(' + ')}` : MODE[s.paymentMode];
+const amt = v => v < 0 ? `- ${money(-v)}` : money(v);
 
 // The full A4 / A5 invoice.
 function A4Doc({ sale, shop }) {
   const showGst = shop.gstin && shop.showGst?.[sale.channel];
-  const tax = sale.isGst ? taxLines(sale.items) : [];
   const terms = String(shop.terms || '').split('\n').map(t => t.trim()).filter(Boolean);
   return (
     <article className="inv-doc">
@@ -82,18 +62,9 @@ function A4Doc({ sale, shop }) {
           {(terms.length > 0 || sale.notes) && <div className="inv-terms"><b>Terms &amp; Notes:</b>{terms.map((t, i) => <p key={i}>• {t}</p>)}{sale.notes && <p>• {sale.notes}</p>}</div>}
         </div>
         <div className="inv-sum">
-          <div><span>Subtotal</span><b className="mono">{money(sale.subtotal)}</b></div>
-          {sale.discount > 0 && <div><span>Discount{sale.couponCode ? ` (${sale.couponCode})` : ''}</span><b className="mono">- {money(sale.discount)}</b></div>}
-          {tax.map(t => <div key={t.label}><span>{t.label}</span><b className="mono">{money(t.amount)}</b></div>)}
-          {sale.deliveryFee > 0 && <div><span>Delivery</span><b className="mono">{money(sale.deliveryFee)}</b></div>}
-          <div className="inv-total"><span>TOTAL</span><b>{money(sale.total)}</b></div>
-          {sale.status !== 'voided' && <div className="inv-pay">
-            {payBlocks(sale).map(b => (
-              <div key={b.title} className="inv-pay-b">
-                <div className={b.strong ? 'inv-pay-t strong' : 'inv-pay-t'}><span>{b.title}</span><b className="mono">{money(b.amount)}</b></div>
-                {b.rows.map(([l, v]) => <div key={l} className="inv-pay-r"><span>{l}</span><span className="mono">{money(v)}</span></div>)}
-              </div>))}
-          </div>}
+          {billRows(sale).map((r, n) => r.kind === 'total'
+            ? <div key={n} className="inv-total"><span>TOTAL</span><b>{money(r.value)}</b></div>
+            : <div key={n} className={`inv-k-${r.kind}`}><span>{r.label}{r.note && <small> {r.note}</small>}</span>{r.value != null && <b className="mono">{amt(r.value)}</b>}</div>)}
           {sale.discount > 0 && <p className="inv-saved">You saved {money(sale.discount)} on this bill</p>}
         </div>
       </section>
@@ -109,7 +80,6 @@ function A4Doc({ sale, shop }) {
 // The thermal roll receipt (58 or 80 mm).
 function Thermal({ sale, shop, paper }) {
   const showGst = shop.gstin && shop.showGst?.[sale.channel];
-  const tax = sale.isGst ? taxLines(sale.items) : [];
   const row = (l, v, cls = '') => <div className={`inv-tr ${cls}`}><span>{l}</span><span>{v}</span></div>;
   return (
     <article className={`inv-th w${paper}`}>
@@ -127,15 +97,9 @@ function Thermal({ sale, shop, paper }) {
       <hr className="soft" />
       {sale.items.map((i, n) => (
         <div key={n} className="inv-ti"><div className="inv-tr"><span className="nm">{i.name}</span><span className="q">{i.quantity}</span><span>{num2(i.lineTotal)}</span></div><hr className="soft" /></div>))}
-      {row('Subtotal:', num2(sale.subtotal))}
-      {sale.discount > 0 && row('Discount:', `- ${num2(sale.discount)}`)}
-      {tax.map(t => row(t.label + ':', num2(t.amount)))}
-      {sale.deliveryFee > 0 && row('Delivery:', num2(sale.deliveryFee))}
-      <hr />
-      {row('TOTAL:', money(sale.total), 'tot')}
-      <hr />
-      {sale.status !== 'voided' && payBlocks(sale).map(b => (
-        <div key={b.title}>{row(b.title + ':', num2(b.amount), b.strong ? 'b' : '')}{b.rows.map(([l, v]) => <div key={l}>{row(`  ${l}`, num2(v), 'sub')}</div>)}</div>))}
+      {billRows(sale).map((r, n) => r.kind === 'total'
+        ? <div key={n}><hr />{row('TOTAL:', money(r.value), 'tot')}<hr /></div>
+        : <div key={n}>{row(r.kind === 'paysub' ? `  ${r.label}` : r.label, r.value == null ? '' : r.value < 0 ? `- ${num2(-r.value)}` : num2(r.value), r.kind === 'paysub' ? 'sub' : r.kind === 'pay' || r.kind === 'strong' ? 'b' : r.kind === 'muted' ? 'sub' : '')}</div>)}
       <hr className="soft" />
       <p className="c words">{inWords(sale.total).toUpperCase()}</p>
       <p className="c thanks">Thank you for your business!</p>

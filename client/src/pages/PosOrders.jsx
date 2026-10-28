@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
@@ -8,6 +8,7 @@ import PrintSettings from '../components/PrintSettings';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
 import { MODE, clock, longDate, money } from '../lib/invoiceFormat';
 import PayPicker, { blankPay, payParts } from '../components/PayPicker';
+import BillSummary from '../components/BillSummary';
 
 // "Cash ₹500 · QR / GPay ₹500" for a {cash, upi, card} split.
 const SPLIT_L = [['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']];
@@ -30,6 +31,8 @@ const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14
 export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
   const [f, setF] = useState({ q: '', name: '', phone: '', source: 'all' }); const [per, setPer] = usePeriod('all');
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [n, setN] = useState(0);
+  const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null);
+  const toggle = no => { if (openNo === no) { setOpenNo(null); return } setOpenNo(no); setDetail(null); api('/admin/pos/sales/' + encodeURIComponent(no)).then(d => setDetail(d.sale || d)).catch(e => setErr(e.message)) };
   const [from, to] = periodRange(per);
   useEffect(() => {
     const t = setTimeout(() => {
@@ -66,8 +69,8 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
         {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No orders match.</Empty> : (
           <div className="dpos-tw"><table className="dpos-ord"><thead><tr><th>Order ID</th><th>Date &amp; time</th><th>Customer name</th><th>Mobile number</th><th>Source</th><th>Total due</th><th className="r">Status</th></tr></thead>
             <tbody>{rows.map(r => { const dt = dtShort(r.createdAt); return (
-              <tr key={r.invoiceNo} className={r.status === 'voided' ? 'voided' : ''}>
-                <td className="oid">{r.invoiceNo}</td>
+              <Fragment key={r.invoiceNo}><tr className={`${r.status === 'voided' ? 'voided' : ''} click`} onClick={e => { if (!e.target.closest('a,button')) toggle(r.invoiceNo) }} title="Show the bill split-up">
+                <td className="oid">{r.invoiceNo} <span className="muted small">{openNo === r.invoiceNo ? '▴' : '▾'}</span></td>
                 <td><b>{longDate(r.billDate)}</b><div className="muted small">{dt.t}</div></td>
                 <td><b>{r.customerName || 'Guest'}</b></td>
                 <td>{r.customerPhone || <span className="muted">—</span>}</td>
@@ -79,7 +82,8 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                   <a className="ra doc" title="Open invoice in a new tab" aria-label="Open invoice" href={`/invoice/${r.shareToken}`} target="_blank" rel="noopener noreferrer"><DocIcon /></a>
                   <button className="ra eye" title="View invoice" aria-label="View invoice" onClick={() => openInvoice(r.invoiceNo, r)}><EyeIcon /></button>
                   {manager && <button className="ra del" title="Void this invoice" aria-label="Void invoice" disabled={r.status === 'voided'} onClick={() => voidIt(r)}><TrashIcon /></button>}
-                </div></td></tr>) })}</tbody></table></div>)}
+                </div></td></tr>
+              {openNo === r.invoiceNo && <tr className="dpos-xrow"><td colSpan={7}>{!detail ? <span className="muted">Loading…</span> : <div className="dpos-xsum"><BillSummary bill={detail} /></div>}</td></tr>}</Fragment>) })}</tbody></table></div>)}
       </section>
     </>
   );
@@ -139,6 +143,7 @@ export function AdvanceDone({ adv, shop, onClose, onView }) {
           <div className="dpos-done-row"><span>Deposit Paid<small className="adv-split">{splitText(depSplit(adv))}</small></span><b className="adv-paid">{money(adv.deposit)}</b></div>
           <div className="adv-bal"><span>Balance Due</span><b>{money(adv.balance)}</b></div>
         </section>
+        <section className="dpos-done-card items"><p className="dpos-done-l">ORDER SPLIT-UP</p><BillSummary bill={adv} /></section>
         <div className="dpos-done-act">
           <button className="dpos-btn outline" onClick={print}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
           <a className="dpos-btn wa" href={waLink(adv.customerPhone, text)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp</a>
@@ -161,6 +166,8 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
   const setStatus = s => act(() => api(`/admin/pos/advances/${encodeURIComponent(code)}/status`, { method: 'PATCH', body: { status: s } }));
   const bill = () => { const pp = payParts(pay, a.balance); if (pp.problem) return setErr(pp.problem); act(async () => { const out = await api(`/admin/pos/advances/${encodeURIComponent(code)}/finalize`, { method: 'POST', body: { balanceMode: pp.mode, balanceSplit: pp.split } }); onBilled(out.sale) }) };
   const open = a && (a.status === 'pending' || a.status === 'ready');
+  const [sale, setSale] = useState(null);
+  useEffect(() => { if (a?.invoiceNo) api('/admin/pos/sales/' + encodeURIComponent(a.invoiceNo)).then(d => setSale(d.sale || d)).catch(() => {}) }, [a?.invoiceNo]);
   const [lab, tone] = a ? ADV_STATUS[a.status] : [];
   return (
     <Modal title={a ? `Advance order ${a.code}` : 'Advance order'} sub={a ? `${a.customerName || 'Walk-in customer'}${a.customerPhone ? ' · ' + a.customerPhone : ''}` : ''} wide onClose={onClose}>
@@ -170,15 +177,7 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}><span className={`dpos-pill ${tone}`}>{lab}</span>{a.deliveryDate && <span className="muted small">Delivery {longDate(a.deliveryDate)}</span>}{a.isGst && <span className="dpos-pill">GST</span>}{a.invoiceNo && <button className="link-u small" onClick={() => onBilled(null, a.invoiceNo)}>Billed as {a.invoiceNo}</button>}</div>
           <div className="dpos-tw"><table><thead><tr><th>Item</th><th className="r">Qty</th><th className="r">Price</th><th className="r">Amount</th></tr></thead>
             <tbody>{a.items.map((i, n) => <tr key={n}><td><b>{i.name}</b>{i.size ? <span className="muted small"> ({i.size}{i.color && i.color !== 'Default' ? `, ${i.color}` : ''})</span> : null}</td><td className="r">{i.qty}</td><td className="r">{inr(i.price)}</td><td className="r">{inr(i.price * i.qty)}</td></tr>)}</tbody></table></div>
-          <div className="dpos-box dpos-sum">
-            <div><span>Subtotal</span><span>{inr(a.subtotal)}</span></div>
-            {a.discount > 0 && <div><span>Discount</span><span>− {inr(a.discount)}</span></div>}
-            {a.isGst && <div><span>GST</span><span>{inr(a.tax)}</span></div>}
-            {a.deliveryFee > 0 && <div><span>Delivery</span><span>{inr(a.deliveryFee)}</span></div>}
-            <div><span>Bill total</span><b>{inr(a.total)}</b></div>
-            <div><span>Advance received <small className="muted">({splitText(depSplit(a))})</small></span><b>{inr(a.deposit)}</b></div>
-            <div className="tot"><span>Balance due</span><span>{inr(a.balance)}</span></div>
-          </div>
+          <div className="dpos-box"><BillSummary bill={a} sale={sale} /></div>
           {a.notes && <p className="sub">Note: {a.notes}</p>}
           {open && <div className="dpos-box" style={{ display: 'grid', gap: 10 }}>
             <p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: 0 }}>BALANCE RECEIVED BY</p>
@@ -261,6 +260,7 @@ export function BillDone({ sale, shop, onClose }) {
           <p className="dpos-done-l">ITEMS SOLD</p>
           {sale.items.map((i, n) => <div key={n} className="dpos-done-item"><span><b>{i.name}</b> <small className="muted">× {i.quantity} piece{i.quantity > 1 ? 's' : ''}</small></span><span>{money(i.lineTotal)}</span></div>)}
         </section>
+        <section className="dpos-done-card items"><p className="dpos-done-l">BILL SPLIT-UP</p><BillSummary bill={sale} /></section>
       </div>
       {ps && <PrintSettings onClose={() => setPs(false)} onPrint={({ type, paper }) => { setPs(false); window.open(`/invoice/${sale.shareToken}?fmt=${type === 'thermal' ? 'thermal' : 'a4'}&size=${paper}&print=1`, '_blank') }} />}
     </div>

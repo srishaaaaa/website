@@ -82,3 +82,10 @@
 .inv-pay-r { padding: 2px 0 2px 12px; font-size: 12px; color: #6f6875 }
 .inv-recv b { color: #17131a } .inv-recv span { display: inline-block; margin-top: 2px; font-size: 12px; opacity: .75 }
 .inv-tr.sub { font-size: .92em; opacity: .8; padding-left: 8px }
+
+/* Complete split-up rows */
+.inv-sum small { font-size: 9px; letter-spacing: .08em; opacity: .6; margin-left: 4px }
+.inv-k-muted { font-size: 11px; letter-spacing: .06em; opacity: .7; border-top: 1px dashed #e3dee6; margin-top: 4px; padding-top: 8px !important }
+.inv-k-pay { margin-top: 6px; color: #17131a !important } .inv-sum > .inv-k-pay:first-of-type { border-top: 1px solid #e8e4ea; padding-top: 12px !important }
+.inv-k-paysub { padding: 2px 0 2px 12px !important; font-size: 12px; color: #6f6875 !important } .inv-k-paysub b { font-weight: 500; font-size: 12px }
+.inv-k-strong { margin-top: 6px; font-weight: 800; color: #17131a !important }

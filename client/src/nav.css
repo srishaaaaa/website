@@ -608,3 +608,15 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .payp-split p { grid-column: 1 / -1; margin: 0; font-size: 12px; font-weight: 700 }
 .payp-ok { color: #1c7a4b } .payp-bad { color: #b3261e }
 .adv-split { display: block; font-size: 11px; font-weight: 600; opacity: .7 }
+
+/* Complete bill split-up (admin) */
+.bsum { display: grid; gap: 2px; font-size: 14px }
+.bsum > div { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0 }
+.bsum small { font-size: 10px; letter-spacing: .08em; opacity: .55 }
+.bsum-muted { font-size: 11px; letter-spacing: .08em; color: var(--d-mut, #6f6b66); border-top: 1px dashed var(--d-line, #e7e1d6); margin-top: 4px }
+.bsum-total { border-top: 2px solid var(--d-ink, #121214); border-bottom: 1px solid var(--d-line, #e7e1d6); margin: 6px 0 4px; padding: 12px 0 !important; font-weight: 800; font-size: 17px }
+.bsum-pay { font-weight: 700; margin-top: 4px }
+.bsum-paysub { padding: 2px 0 2px 14px !important; font-size: 13px; color: var(--d-mut, #6f6b66) } .bsum-paysub b { font-weight: 600 }
+.bsum-strong { font-weight: 800; color: var(--d-bill, #5a1560); margin-top: 4px }
+.dpos-xrow > td { background: var(--d-bg, #f6f4ef) !important; cursor: default }
+.dpos-xsum { max-width: 460px; margin-left: auto; padding: 6px 4px }
