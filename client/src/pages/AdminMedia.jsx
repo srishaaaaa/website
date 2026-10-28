@@ -43,17 +43,21 @@ function HomePicks({ onSaved, toast, only }) {
   const { site, catalog } = useApp();
   const hp = site.homepage || { trending: [], collections: [] };
   const [trend, setTrend] = useState((hp.trending || []).slice(0, 4)); const [colSel, setColSel] = useState(hp.collections); const [catSel, setCatSel] = useState(hp.categories || []);
-  const [names, setNames] = useState({}); const [q, setQ] = useState(''); const [found, setFound] = useState([]);
+  const [names, setNames] = useState({}); const [pics, setPics] = useState({}); const [q, setQ] = useState(''); const [found, setFound] = useState([]);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const auto = !(hp.trending || []).length;
+  const [seeded, setSeeded] = useState(false);
+  const shownNow = (catalog.featured || []).slice(0, 4);
   useEffect(() => { setTrend((hp.trending || []).slice(0, 4)); setColSel(hp.collections); setCatSel(hp.categories || []) }, [site.homepage]); // eslint-disable-line
-  useEffect(() => { if (!trend.length) return; api(`/products?slugs=${encodeURIComponent(trend.join(','))}&limit=48`).then(d => setNames(n => ({ ...n, ...Object.fromEntries(d.items.map(p => [p.slug, p.name])) }))).catch(() => {}) }, [trend.join(',')]); // eslint-disable-line
+  useEffect(() => { if (auto && shownNow.length && !trend.length && !seeded) { setSeeded(true); setTrend(shownNow.map(p => p.slug)); setNames(n => ({ ...n, ...Object.fromEntries(shownNow.map(p => [p.slug, p.name])) })); setPics(x => ({ ...x, ...Object.fromEntries(shownNow.map(p => [p.slug, p.image])) })) } }, [auto, shownNow.map(p => p.slug).join(',')]); // eslint-disable-line
+  useEffect(() => { if (!trend.length) return; api(`/products?slugs=${encodeURIComponent(trend.join(','))}&limit=48`).then(d => { setNames(n => ({ ...n, ...Object.fromEntries(d.items.map(p => [p.slug, p.name])) })); setPics(x => ({ ...x, ...Object.fromEntries(d.items.map(p => [p.slug, p.image])) })) }).catch(() => {}) }, [trend.join(',')]); // eslint-disable-line
   useEffect(() => { const t = q.trim(); if (!t) { setFound([]); return } const id = setTimeout(() => api(`/products?q=${encodeURIComponent(t)}&limit=8`).then(d => setFound(d.items)).catch(() => {}), 250); return () => clearTimeout(id) }, [q]);
   const move = (list, set, i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; [n[i], n[j]] = [n[j], n[i]]; set(n) };
   const save = async () => { setBusy(true); setErr(); try { await api('/admin/settings/homepage', { method: 'PUT', body: { trending: trend, collections: colSel, categories: catSel } }); toast('Homepage picks saved.'); onSaved() } catch (e) { setErr(e.message) } finally { setBusy(false) } };
   const catName = s => catalog.categories.find(c => c.slug === s)?.name || s;
   const colName = s => catalog.collections.find(c => c.slug === s)?.name || s;
   const row = (label, i, list, set) => (
-    <li key={label + i} className="adm-pick"><b>{label}</b>
+    <li key={i} className="adm-pick"><b>{label}</b>
       <span className="adm-pick-act"><button type="button" aria-label="Move up" disabled={i === 0} onClick={() => move(list, set, i, -1)}>↑</button><button type="button" aria-label="Move down" disabled={i === list.length - 1} onClick={() => move(list, set, i, 1)}>↓</button><button type="button" className="danger" onClick={() => set(list.filter((_, j) => j !== i))}>Remove</button></span></li>
   );
   return (
@@ -61,8 +65,9 @@ function HomePicks({ onSaved, toast, only }) {
       {!only && <h2 className="serif adm-h2">Homepage picks</h2>}
       {err && <p role="alert" className="err">{err}</p>}
       <h3 className="adm-h3">Trending collections ({trend.length} of 4)</h3>
-      <p className="muted small">The pieces shown in “Trending collections” on the homepage, in this order. Leave empty to show your featured products.</p>
-      <ol className="adm-picks">{trend.map((s, i) => row(names[s] || s, i, trend, setTrend))}</ol>
+      <p className="muted small">The pieces shown in “Trending collections” on the homepage, in this order.</p>
+      {auto && <p className="adm-note">Nothing is saved here yet, so the homepage is showing your <b>featured</b> pieces, listed below. Change them if you like, then press Save to keep this list.</p>}
+      <ol className="adm-picks">{trend.map((s, i) => row(<span className="adm-pick-n">{pics[s] && <img src={pics[s]} alt="" width="40" height="50" />}{names[s] || s}</span>, i, trend, setTrend))}</ol>
       {trend.length < 4 && <>
         <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search a product to add…" aria-label="Search products to add" />
         <ul className="adm-picks">{found.filter(p => !trend.includes(p.slug)).map(p => <li key={p.id} className="adm-pick"><b>{p.name}</b><span className="adm-pick-act"><button type="button" onClick={() => { setNames(n => ({ ...n, [p.slug]: p.name })); setTrend([...trend, p.slug]); setQ('') }}>Add</button></span></li>)}</ul>

@@ -595,3 +595,8 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .pe-acts { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap }
 .pe-add { display: grid; grid-template-columns: repeat(4, minmax(80px, 1fr)) auto; gap: 8px }
 @media (max-width: 640px) { .pe-add { grid-template-columns: 1fr 1fr } }
+.adv-k small { display: block; margin-top: 4px; font-size: 12px; color: var(--d-mut, #6f6b66) }
+
+.adm-note { margin: 8px 0 12px; padding: 12px 14px; border-radius: 12px; background: #fdf6e7; border: 1px solid #f0dfb5; font-size: 14px }
+.adm-pick-n { display: flex; align-items: center; gap: 10px; font-weight: 700 } .adm-pick-n img { object-fit: cover; border-radius: 8px; flex: none }
+.dpos-warn { display: block; margin-top: 6px; color: #9a5b00; font-size: 12px; font-weight: 600 }

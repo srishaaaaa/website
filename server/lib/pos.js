@@ -409,7 +409,7 @@ export async function createAdvance(db, user, d) {
       [number, d.customerName, d.customerPhone, d.customerAddress ?? '', d.isGst, d.isGst ? (d.gstRate ?? null) : null, d.discountType, d.discountValue, d.deliveryFee, JSON.stringify(items),
         bill.subtotal, bill.discount, bill.tax, bill.total, d.deposit, d.depositMode, d.deliveryDate ?? null, d.notes ?? null, user.id]);
     const ph = normPhone(d.customerPhone);
-    if (ph) await t.query(`INSERT INTO pos_customers (name, phone) VALUES ($1,$2) ON CONFLICT (phone) DO UPDATE SET name = COALESCE(NULLIF(EXCLUDED.name, ''), pos_customers.name), updated_at = now()`, [d.customerName, ph]);
+    if (ph) await t.query(`INSERT INTO pos_customers (name, phone, dob) VALUES ($1,$2,$3) ON CONFLICT (phone) DO UPDATE SET name = COALESCE(NULLIF(EXCLUDED.name, ''), pos_customers.name), dob = COALESCE(EXCLUDED.dob, pos_customers.dob), updated_at = now()`, [d.customerName, ph, d.customerDob ?? null]);
     await audit(t, user.id, 'pos.advance.create', 'pos_advance', number, { total: bill.total, deposit: d.deposit });
     return number;
   });

@@ -77,7 +77,7 @@ const slugify = x => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace
 const stockBody = z.object({ variantId: z.number().int().positive(), type: z.enum(['restock', 'return', 'loss', 'reconcile']), qty: z.number().int().min(0).max(1_000_000), note: text(100).optional() })
   .refine(b => b.type === 'reconcile' || b.qty >= 1, { message: 'Enter a quantity of at least 1', path: ['qty'] });
 const advanceBody = z.object({
-  items: z.array(item).min(1).max(100),
+  items: z.array(item).min(1).max(100), customerDob: date.optional(),
   customerName: text(120).default(''), customerPhone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits').default(''), customerAddress: text(300).default(''),
   isGst: z.boolean().default(false), gstRate: z.number().int().min(0).max(28).optional(),
   discountType: z.enum(['percent', 'fixed']).default('fixed'), discountValue: paise.default(0), deliveryFee: paise.default(0),

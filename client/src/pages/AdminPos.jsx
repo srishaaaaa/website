@@ -193,7 +193,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   // Save as advance order: books the items at today's prices with a deposit; stock is taken and the bill is made when the customer collects.
   const saveAdvance = async ({ deposit, depositMode, deliveryDate, notes: n }) => {
     const note = [n, notes.trim()].filter(Boolean).join(' · ');
-    const adv = await api('/admin/pos/advances', { method: 'POST', body: { items: body.items, customerName: body.customerName, customerPhone: body.customerPhone, customerAddress: body.customerAddress,
+    const adv = await api('/admin/pos/advances', { method: 'POST', body: { items: body.items, ...(body.customerDob ? { customerDob: body.customerDob } : {}), customerName: body.customerName, customerPhone: body.customerPhone, customerAddress: body.customerAddress,
       isGst, ...(flat != null ? { gstRate: flat } : {}), discountType, discountValue, deliveryFee, deposit, depositMode, ...(deliveryDate ? { deliveryDate } : {}), ...(note ? { notes: note } : {}) } });
     setAdvOpen(false); clearOrder(); onAdvance(adv);
   };
@@ -229,7 +229,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
             <label className="f">Customer name<input value={cust.name} onChange={e => setCust({ ...cust, name: e.target.value })} placeholder="Walk-in customer" autoComplete="off" /></label>
             <label className="f">Mobile number (WhatsApp)<input value={cust.phone} inputMode="tel" onChange={e => setCust({ ...cust, phone: e.target.value })} onBlur={lookup} placeholder="Enter 10-digit number" autoComplete="off" /></label>
             <label className="f">Bill date · custom / past<input type="date" max={todayStr()} value={billDate} onChange={e => setBillDate(e.target.value || todayStr())} /></label>
-            {!ws && <label className="f">Date of birth (for birthday offers)<input type="date" max={todayStr()} value={cust.dob} onChange={e => setCust({ ...cust, dob: e.target.value })} /></label>}
+            {!ws && <label className="f">Date of birth (for birthday offers)<input type="date" max={todayStr()} value={cust.dob} onChange={e => setCust({ ...cust, dob: e.target.value })} />{cust.dob && cust.phone.replace(/\D/g, '').length < 10 && <small className="dpos-warn">Add the 10-digit mobile number too, so the birthday is saved to the Date of Birth panel.</small>}</label>}
           </div>
           <label className="f" style={{ marginTop: 14 }}>Customer address (optional)<input value={cust.address} maxLength={300} onChange={e => setCust({ ...cust, address: e.target.value })} placeholder="Enter full address" /></label>
         </section>

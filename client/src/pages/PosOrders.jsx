@@ -193,13 +193,16 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
   useEffect(() => { const t = setTimeout(() => api('/admin/pos/advances?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), 200); return () => clearTimeout(t) }, [q, tick, n]);
   const today = todayStr();
   const shown = useMemo(() => (rows || []).filter(r => inPeriod(r.createdAt, per) && (st === 'all' || r.status === st)), [rows, per, st]);
-  const open = (rows || []).filter(r => ['pending', 'ready'].includes(r.status));
+  // The three money boxes follow the period filter (by booking date) but not the status chips.
+  const inP = (rows || []).filter(r => inPeriod(r.createdAt, per));
+  const openP = inP.filter(r => ['pending', 'ready'].includes(r.status)), liveP = inP.filter(r => r.status !== 'cancelled'), doneP = inP.filter(r => r.status === 'completed');
+  const sum = (list, k) => list.reduce((s, r) => s + (r[k] || 0), 0);
   return (
     <>
       <div className="adv-kpis">
-        <div className="adv-k"><div><span>OUTSTANDING BALANCE</span><b>{rows ? inr(open.reduce((s, r) => s + r.balance, 0)) : '…'}</b></div><i className="rose"><Ico size={22}><path d="M7 5h10M7 9h10M9 5c4 0 6 2 6 4s-2 4-6 4H7l7 6" /></Ico></i></div>
-        <div className="adv-k"><div><span>READY FOR COLLECTION</span><b>{rows ? rows.filter(r => r.status === 'ready').length : '…'}</b></div><i className="blue"><Ico size={22}><path d="M12 3 4 7v10l8 4 8-4V7z" /><path d="M4 7l8 4 8-4M12 11v10" /></Ico></i></div>
-        <div className="adv-k"><div><span>COMPLETED DEPOSITS</span><b>{rows ? rows.filter(r => r.status === 'completed').length : '…'}</b></div><i className="green"><Ico size={22}><path d="m5 12.5 4.5 4.5L19 7.5" /></Ico></i></div>
+        <div className="adv-k"><div><span>BALANCE TO RECEIVE</span><b>{rows ? inr(sum(openP, 'balance')) : '…'}</b><small>{rows ? `${openP.length} open order${openP.length === 1 ? '' : 's'} · ${openP.filter(r => r.status === 'ready').length} ready to collect` : ''}</small></div><i className="rose"><Ico size={22}><path d="M7 5h10M7 9h10M9 5c4 0 6 2 6 4s-2 4-6 4H7l7 6" /></Ico></i></div>
+        <div className="adv-k"><div><span>ADVANCE PAID</span><b>{rows ? inr(sum(liveP, 'deposit')) : '…'}</b><small>{rows ? `Advances received on ${liveP.length} order${liveP.length === 1 ? '' : 's'}` : ''}</small></div><i className="blue"><Ico size={22}><rect x="3" y="6" width="18" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></Ico></i></div>
+        <div className="adv-k"><div><span>COMPLETED ORDERS</span><b>{rows ? inr(sum(doneP, 'total')) : '…'}</b><small>{rows ? `${doneP.length} order${doneP.length === 1 ? '' : 's'} collected and fully paid` : ''}</small></div><i className="green"><Ico size={22}><path d="m5 12.5 4.5 4.5L19 7.5" /></Ico></i></div>
       </div>
       <div className="adv-bar">
         <label className="adv-search"><Ico size={17}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Ico><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search by ID, customer, phone, product or status" aria-label="Search advance orders" /></label>

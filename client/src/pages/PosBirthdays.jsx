@@ -16,6 +16,8 @@ export default function PosBirthdays({ shop, CustomerModal }) {
   const [month, setMonth] = useState(tm); const [range, setRange] = useState({ p: 'all', fm: '', fd: '', tm: '', td: '' }); const [adding, setAdding] = useState(false);
   const [offer, setOffer] = useState(null); const [saved, setSaved] = useState(null); const [editing, setEditing] = useState(null); const [saving, setSaving] = useState(false);
   useEffect(() => { api('/admin/pos/birthdays?days=366').then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)) }, [n]);
+  const [noDob, setNoDob] = useState(null); const [dobFor, setDobFor] = useState(null);
+  useEffect(() => { api('/admin/pos/customers').then(r => setNoDob(r.filter(c => !c.dob))).catch(e => setErr(e.message)) }, [n]);
   useEffect(() => { api('/admin/pos/birthday-offer').then(o => { setOffer(o); setSaved(JSON.stringify(o)) }).catch(e => setErr(e.message)) }, []);
 
   const withMd = useMemo(() => (rows || []).map(r => ({ ...r, ...md(r.dob) })), [rows]);
@@ -61,10 +63,18 @@ export default function PosBirthdays({ shop, CustomerModal }) {
     <div className="bd">
       <div className="bd-top"><p className="sub" style={{ margin: 0 }}>Customer birthdays &amp; one-tap offer sender</p>
         <button type="button" className="bd-add" onClick={() => setAdding(true)}><Icon n="plus" size={15} /> ADD CUSTOMER</button></div>
-      <div className="bd-tabs" role="tablist">{[['calendar', 'Calendar'], ['customers', 'Customers']].map(([v, l]) => <button key={v} role="tab" aria-selected={tab === v} className={tab === v ? 'on' : ''} onClick={() => setTab(v)}>{l}</button>)}</div>
+      <div className="bd-tabs" role="tablist">{[['calendar', 'Calendar'], ['customers', 'Customers'], ['nodob', `No DOB${noDob ? ` (${noDob.length})` : ''}`]].map(([v, l]) => <button key={v} role="tab" aria-selected={tab === v} className={tab === v ? 'on' : ''} onClick={() => setTab(v)}>{l}</button>)}</div>
       {err && <p className="dpos-err" role="alert">{err}</p>}
 
-      {tab === 'calendar' ? (
+      {tab === 'nodob' ? (
+        <section className="bd-card"><h3 className="bd-h" style={{ margin: 0 }}>Customers without a date of birth ({noDob ? noDob.length : '…'})</h3>
+          <p className="sub">Saved from Billing or Customers without a birthday. Add it to include them in birthday offers.</p>
+          {!noDob ? <p className="dpos-empty">Loading…</p> : !noDob.length ? <p className="bd-none">Every saved customer has a date of birth.</p> : (
+            <ul className="bd-list">{noDob.map(c => (
+              <li key={c.id}><div><b>{c.name || '—'}</b><span>{c.phone}</span></div><em>{c.bills} bill{c.bills === 1 ? '' : 's'}</em>
+                <button type="button" className="bd-send" onClick={() => setDobFor(c)}><Icon n="plus" size={14} /> Add DOB</button></li>))}</ul>)}
+        </section>
+      ) : tab === 'calendar' ? (
         <div className="bd-two">
           <div className="bd-col">
             <section className="bd-card">
@@ -109,6 +119,7 @@ export default function PosBirthdays({ shop, CustomerModal }) {
           </section>
         </>
       )}
+      {dobFor && <CustomerModal c={dobFor} onClose={() => setDobFor(null)} onDone={() => { setDobFor(null); setN(x => x + 1) }} />}
       {adding && <CustomerModal c={null} onClose={() => setAdding(false)} onDone={() => { setAdding(false); setN(x => x + 1) }} />}
     </div>
   );
