@@ -7,6 +7,12 @@ import { Icon } from '../components/AdminShell';
 import PrintSettings from '../components/PrintSettings';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
 import { MODE, clock, longDate, money } from '../lib/invoiceFormat';
+import PayPicker, { blankPay, payParts } from '../components/PayPicker';
+
+// "Cash ₹500 · QR / GPay ₹500" for a {cash, upi, card} split.
+const SPLIT_L = [['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']];
+export const splitText = s => SPLIT_L.filter(([k]) => s?.[k] > 0).map(([k, l]) => `${l} ${money(s[k])}`).join(' · ');
+const depSplit = a => a.depositSplit || { [a.depositMode]: a.deposit };
 
 const toPaise = s => { const n = Math.round(parseFloat(String(s || '').replace(/,/g, '')) * 100); return Number.isFinite(n) && n > 0 ? n : 0 };
 const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{children}</p> : null;
@@ -83,14 +89,15 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
 const ClockIcon = () => <Ico size={16}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></Ico>;
 
 export function AdvanceModal({ total, onClose, onSave }) {
-  const [dep, setDep] = useState(''); const [mode, setMode] = useState('cash'); const [date, setDate] = useState(''); const [notes, setNotes] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const [dep, setDep] = useState(''); const [pay, setPay] = useState(blankPay); const [date, setDate] = useState(''); const [notes, setNotes] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const deposit = toPaise(dep);
   const submit = async e => {
     e.preventDefault(); setErr();
     if (!(deposit > 0)) return setErr('Enter the deposit amount received.');
     if (deposit > total) return setErr('The deposit cannot be more than the order total.');
+    const pp = payParts(pay, deposit); if (pp.problem) return setErr(pp.problem);
     setBusy(true);
-    try { await onSave({ deposit, depositMode: mode, deliveryDate: date || null, notes: notes.trim() || undefined }) } catch (x) { setErr(x.issues?.[0]?.message || x.message); setBusy(false) }
+    try { await onSave({ deposit, depositMode: pp.mode, depositSplit: pp.split, deliveryDate: date || null, notes: notes.trim() || undefined }) } catch (x) { setErr(x.issues?.[0]?.message || x.message); setBusy(false) }
   };
   return (
     <Modal className="adv" title="Save as Advance Order" sub="Not counted as revenue until fully paid" onClose={onClose}>
@@ -99,7 +106,7 @@ export function AdvanceModal({ total, onClose, onSave }) {
         <label className="adv-l">DEPOSIT AMOUNT (₹) *<input autoFocus inputMode="decimal" value={dep} onChange={e => setDep(e.target.value)} placeholder="0.00" /></label>
         {deposit > 0 && deposit <= total && <p className="adv-due">Balance due: {inr(total - deposit)}</p>}
         <div><p className="adv-l">DEPOSIT PAYMENT MODE</p>
-          <div className="adv-modes" role="radiogroup" aria-label="Deposit payment mode">{[['cash', 'CASH'], ['upi', 'QR / GPAY'], ['card', 'CARD']].map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l}</button>)}</div></div>
+          <PayPicker value={pay} onChange={setPay} amount={deposit} label="Deposit payment mode" /></div>
         <label className="adv-l">EXPECTED DELIVERY DATE<input type="date" min={todayStr()} value={date} onChange={e => setDate(e.target.value)} /></label>
         <label className="adv-l">NOTES (OPTIONAL)<textarea rows={3} maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Colour preference, follow-up needed…" /></label>
         <Err>{err}</Err>
@@ -116,7 +123,7 @@ export function AdvanceDone({ adv, shop, onClose, onView }) {
   const print = () => {
     const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return;
     const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-    w.document.write(`<!doctype html><title>Advance receipt ${esc(adv.code)}</title><body style="font-family:Arial,sans-serif;max-width:300px;margin:16px auto;color:#111"><h3 style="margin:0 0 4px;text-align:center">${esc(shop?.name || '')}</h3><p style="text-align:center;margin:0 0 12px;font-size:12px">ADVANCE RECEIPT · ${esc(adv.code)}</p><p style="margin:0 0 8px;font-size:13px">Customer: ${esc(who)}${adv.customerPhone ? ' · ' + esc(adv.customerPhone) : ''}</p><hr><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Order total</span><b>${money(adv.total)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Deposit paid</span><b>${money(adv.deposit)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0;font-size:16px"><b>Balance due</b><b>${money(adv.balance)}</b></p>${adv.deliveryDate ? '<p style="font-size:12px">Expected: ' + esc(adv.deliveryDate) + '</p>' : ''}<hr><p style="font-size:11px;text-align:center">Not a tax invoice. The bill is issued when the order is collected.</p><script>onload=()=>{print()}<\/script>`);
+    w.document.write(`<!doctype html><title>Advance receipt ${esc(adv.code)}</title><body style="font-family:Arial,sans-serif;max-width:300px;margin:16px auto;color:#111"><h3 style="margin:0 0 4px;text-align:center">${esc(shop?.name || '')}</h3><p style="text-align:center;margin:0 0 12px;font-size:12px">ADVANCE RECEIPT · ${esc(adv.code)}</p><p style="margin:0 0 8px;font-size:13px">Customer: ${esc(who)}${adv.customerPhone ? ' · ' + esc(adv.customerPhone) : ''}</p><hr><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Order total</span><b>${money(adv.total)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Deposit paid</span><b>${money(adv.deposit)}</b></p><p style="margin:-2px 0 6px;font-size:12px;color:#555">${esc(splitText(depSplit(adv)))}</p><p style="display:flex;justify-content:space-between;margin:8px 0;font-size:16px"><b>Balance due</b><b>${money(adv.balance)}</b></p>${adv.deliveryDate ? '<p style="font-size:12px">Expected: ' + esc(adv.deliveryDate) + '</p>' : ''}<hr><p style="font-size:11px;text-align:center">Not a tax invoice. The bill is issued when the order is collected.</p><script>onload=()=>{print()}<\/script>`);
     w.document.close();
   };
   return (
@@ -129,7 +136,7 @@ export function AdvanceDone({ adv, shop, onClose, onView }) {
         <section className="dpos-done-card">
           <div className="dpos-done-top"><span>ADVANCE RECEIPT — {who.toUpperCase()}</span></div>
           <div className="dpos-done-row"><span>Order Total</span><b className="big">{money(adv.total)}</b></div>
-          <div className="dpos-done-row"><span>Deposit Paid</span><b className="adv-paid">{money(adv.deposit)}</b></div>
+          <div className="dpos-done-row"><span>Deposit Paid<small className="adv-split">{splitText(depSplit(adv))}</small></span><b className="adv-paid">{money(adv.deposit)}</b></div>
           <div className="adv-bal"><span>Balance Due</span><b>{money(adv.balance)}</b></div>
         </section>
         <div className="dpos-done-act">
@@ -147,12 +154,12 @@ const ADV_STATUS = { pending: ['Pending', 'warn'], ready: ['Ready', 'ok'], compl
 
 function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
   const nav = useNavigate();
-  const [a, setA] = useState(null); const [err, setErr] = useState(); const [mode, setMode] = useState('cash'); const [busy, setBusy] = useState(false);
+  const [a, setA] = useState(null); const [err, setErr] = useState(); const [pay, setPay] = useState(blankPay); const [busy, setBusy] = useState(false);
   const load = useCallback(() => api('/admin/pos/advances/' + encodeURIComponent(code)).then(x => { setA(x); setErr() }).catch(e => setErr(e.message)), [code]);
   useEffect(() => { load() }, [load]);
   const act = async fn => { setBusy(true); setErr(); try { await fn(); await load(); onChanged() } catch (e) { setErr(e.message) } finally { setBusy(false) } };
   const setStatus = s => act(() => api(`/admin/pos/advances/${encodeURIComponent(code)}/status`, { method: 'PATCH', body: { status: s } }));
-  const bill = () => act(async () => { const out = await api(`/admin/pos/advances/${encodeURIComponent(code)}/finalize`, { method: 'POST', body: { balanceMode: mode } }); onBilled(out.sale) });
+  const bill = () => { const pp = payParts(pay, a.balance); if (pp.problem) return setErr(pp.problem); act(async () => { const out = await api(`/admin/pos/advances/${encodeURIComponent(code)}/finalize`, { method: 'POST', body: { balanceMode: pp.mode, balanceSplit: pp.split } }); onBilled(out.sale) }) };
   const open = a && (a.status === 'pending' || a.status === 'ready');
   const [lab, tone] = a ? ADV_STATUS[a.status] : [];
   return (
@@ -169,13 +176,13 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
             {a.isGst && <div><span>GST</span><span>{inr(a.tax)}</span></div>}
             {a.deliveryFee > 0 && <div><span>Delivery</span><span>{inr(a.deliveryFee)}</span></div>}
             <div><span>Bill total</span><b>{inr(a.total)}</b></div>
-            <div><span>Advance received ({MODE[a.depositMode]})</span><b>{inr(a.deposit)}</b></div>
+            <div><span>Advance received <small className="muted">({splitText(depSplit(a))})</small></span><b>{inr(a.deposit)}</b></div>
             <div className="tot"><span>Balance due</span><span>{inr(a.balance)}</span></div>
           </div>
           {a.notes && <p className="sub">Note: {a.notes}</p>}
           {open && <div className="dpos-box" style={{ display: 'grid', gap: 10 }}>
             <p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: 0 }}>BALANCE RECEIVED BY</p>
-            <div className="dpos-pills" role="radiogroup" aria-label="Balance paid by">{[['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card']].map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l}</button>)}</div>
+            <PayPicker value={pay} onChange={setPay} amount={a.balance} label="Balance paid by" />
             <button className="dpos-cta" disabled={busy} onClick={bill}>{busy ? 'Billing…' : `Collect ${inr(a.balance)} & generate bill`}</button></div>}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {open && <button className="dpos-btn ghost" disabled={busy} onClick={() => setStatus(a.status === 'pending' ? 'ready' : 'pending')}>{a.status === 'pending' ? 'Mark ready for collection' : 'Back to pending'}</button>}

@@ -10,11 +10,27 @@ import { measureSummary } from '../components/MeasureModal';
 import '../invoice.css';
 
 const phoneShown = p => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? `+91 ${d}` : p || '' };
-const paidLine = s => {
-  if (s.paymentMode === 'cash') return `Cash Received: ${money(s.cashTendered || s.total)}`;
-  if (s.paymentMode === 'split') return `Paid: ${[['Cash', s.payCash], ['GPay / UPI', s.payUpi], ['Card', s.payCard]].filter(([, v]) => v > 0).map(([l, v]) => `${l} ${money(v)}`).join(' · ')}`;
-  return `Paid by ${MODE[s.paymentMode]}`;
-};
+// How the bill was paid, by bill type:
+// - advance order bill: deposit paid (by mode) + final balance paid (by mode) + remaining balance (0)
+// - split bill: amount paid, then each mode
+// - single-mode bill: amount paid by that mode (cash also shows cash received and change)
+const PAY_L = [['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']];
+const modeRows = s => PAY_L.filter(([k]) => s?.[k] > 0).map(([k, l]) => [l, s[k]]);
+const paidSplit = s => ({ cash: s.payCash, upi: s.payUpi, card: s.payCard });
+export function payBlocks(s) {
+  if (s.advance) {
+    const a = s.advance;
+    return [
+      { title: 'Deposit Paid', amount: a.deposit, rows: modeRows(a.depositSplit) },
+      { title: 'Final Balance Paid', amount: a.balance, rows: modeRows(a.balanceSplit) },
+      { title: 'Remaining Balance (Fully Settled)', amount: 0, strong: true, rows: [] },
+    ];
+  }
+  if (s.paymentMode === 'split') return [{ title: 'Amount Paid', amount: s.total, rows: modeRows(paidSplit(s)) }];
+  const rows = s.paymentMode === 'cash' && s.cashTendered > s.total ? [['Cash received', s.cashTendered], ['Change returned', s.change || s.cashTendered - s.total]] : [];
+  return [{ title: `Paid by ${MODE[s.paymentMode]}`, amount: s.total, rows }];
+}
+const modeName = s => s.advance ? 'Advance order · deposit + balance' : s.paymentMode === 'split' ? `Split · ${modeRows(paidSplit(s)).map(r => r[0]).join(' + ')}` : MODE[s.paymentMode];
 
 // The full A4 / A5 invoice.
 function A4Doc({ sale, shop }) {
@@ -62,7 +78,7 @@ function A4Doc({ sale, shop }) {
         <div className="inv-words">
           <p className="inv-l">AMOUNT IN WORDS</p>
           <p className="inv-wd">{inWords(sale.total)}</p>
-          <p className="inv-recv">{paidLine(sale)}</p>
+          <p className="inv-recv">{sale.status === 'voided' ? 'VOID — this bill was cancelled' : <>Paid: <b className="mono">{money(sale.total)}</b><br /><span>{modeName(sale)}</span></>}</p>
           {(terms.length > 0 || sale.notes) && <div className="inv-terms"><b>Terms &amp; Notes:</b>{terms.map((t, i) => <p key={i}>• {t}</p>)}{sale.notes && <p>• {sale.notes}</p>}</div>}
         </div>
         <div className="inv-sum">
@@ -71,6 +87,13 @@ function A4Doc({ sale, shop }) {
           {tax.map(t => <div key={t.label}><span>{t.label}</span><b className="mono">{money(t.amount)}</b></div>)}
           {sale.deliveryFee > 0 && <div><span>Delivery</span><b className="mono">{money(sale.deliveryFee)}</b></div>}
           <div className="inv-total"><span>TOTAL</span><b>{money(sale.total)}</b></div>
+          {sale.status !== 'voided' && <div className="inv-pay">
+            {payBlocks(sale).map(b => (
+              <div key={b.title} className="inv-pay-b">
+                <div className={b.strong ? 'inv-pay-t strong' : 'inv-pay-t'}><span>{b.title}</span><b className="mono">{money(b.amount)}</b></div>
+                {b.rows.map(([l, v]) => <div key={l} className="inv-pay-r"><span>{l}</span><span className="mono">{money(v)}</span></div>)}
+              </div>))}
+          </div>}
           {sale.discount > 0 && <p className="inv-saved">You saved {money(sale.discount)} on this bill</p>}
         </div>
       </section>
@@ -111,7 +134,8 @@ function Thermal({ sale, shop, paper }) {
       <hr />
       {row('TOTAL:', money(sale.total), 'tot')}
       <hr />
-      <p className="c b">{MODE[sale.paymentMode]}</p>
+      {sale.status !== 'voided' && payBlocks(sale).map(b => (
+        <div key={b.title}>{row(b.title + ':', num2(b.amount), b.strong ? 'b' : '')}{b.rows.map(([l, v]) => <div key={l}>{row(`  ${l}`, num2(v), 'sub')}</div>)}</div>))}
       <hr className="soft" />
       <p className="c words">{inWords(sale.total).toUpperCase()}</p>
       <p className="c thanks">Thank you for your business!</p>

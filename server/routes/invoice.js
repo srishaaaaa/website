@@ -17,7 +17,7 @@ export default function invoicePublic({ db }) {
       sale: { invoiceNo: s.invoiceNo, status: s.status, channel: s.channel, source: s.source, billDate: s.billDate, createdAt: s.createdAt, customerName: s.customerName, customerPhone: s.customerPhone,
         customerAddress: s.customerAddress, isGst: s.isGst, gstRate: s.gstRate, subtotal: s.subtotal, discount: s.discount, discountType: s.discountType, discountValue: s.discountValue,
         couponCode: s.couponCode, tax: s.tax, deliveryFee: s.deliveryFee, total: s.total, paymentMode: s.paymentMode, payCash: s.payCash, payUpi: s.payUpi, payCard: s.payCard,
-        cashTendered: s.cashTendered, change: s.change, notes: s.notes, items: s.items },
+        cashTendered: s.cashTendered, change: s.change, notes: s.notes, items: s.items, ...(s.advance ? { advance: s.advance } : {}) },
     });
   }));
   return r;

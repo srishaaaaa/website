@@ -111,3 +111,29 @@ test('order history filters and discount report: by name, phone, source; discoun
   assert.equal(rows[a.invoiceNo].couponCode, 'HIST10'); assert.equal(rows[b.invoiceNo].couponCode, null); assert.equal(rows[b.invoiceNo].discount, 5000);
   assert.ok(!rows[(await list('name=No%20Discount'))[0]], 'bills without a discount are not listed');
 });
+
+test('advance orders: split deposit and split balance show on the bill; stock is taken only at completion', async () => {
+  const o = client(); await o('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const v = (await o('GET', '/admin/pos/catalog')).body.find(x => x.stock >= 3), before = await stockOf(v.variantId);
+  const body = { items: [{ name: 'Blouse stitching', price: 100000, qty: 1, taxRate: 0 }, { variantId: v.variantId, qty: 1 }], customerName: 'Split Test', customerPhone: '9000033333' };
+  // a split that does not add up is refused
+  assert.equal((await o('POST', '/admin/pos/advances', { ...body, deposit: 100000, depositMode: 'split', depositSplit: { cash: 50000, upi: 40000 } })).status, 400);
+  const adv = (await o('POST', '/admin/pos/advances', { ...body, deposit: 100000, depositMode: 'split', depositSplit: { cash: 50000, upi: 50000 } }));
+  assert.equal(adv.status, 201, JSON.stringify(adv.body));
+  assert.deepEqual(adv.body.depositSplit, { cash: 50000, upi: 50000, card: 0 });
+  assert.equal(await stockOf(v.variantId), before, 'no stock taken at booking');
+
+  const bal = adv.body.total - 100000;
+  const split = { cash: Math.floor(bal / 3), upi: Math.floor(bal / 3) }; split.card = bal - split.cash - split.upi;
+  const fin = await o('POST', `/admin/pos/advances/${adv.body.code}/finalize`, { balanceMode: 'split', balanceSplit: split });
+  assert.equal(fin.status, 200, JSON.stringify(fin.body));
+  assert.equal(await stockOf(v.variantId), before - 1, 'stock taken once, at completion');
+  const s = fin.body.sale;
+  assert.equal(s.paymentMode, 'split');
+  assert.deepEqual(s.advance.depositSplit, { cash: 50000, upi: 50000, card: 0 });
+  assert.deepEqual(s.advance.balanceSplit, split);
+  assert.equal(s.advance.deposit + s.advance.balance, s.total);
+  // the public invoice link carries the same breakdown
+  const pub = await client()('GET', `/invoice/${s.shareToken}`);
+  assert.deepEqual(pub.body.sale.advance.balanceSplit, split);
+});

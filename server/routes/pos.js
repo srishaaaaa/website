@@ -81,7 +81,7 @@ const advanceBody = z.object({
   customerName: text(120).default(''), customerPhone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits').default(''), customerAddress: text(300).default(''),
   isGst: z.boolean().default(false), gstRate: z.number().int().min(0).max(28).optional(),
   discountType: z.enum(['percent', 'fixed']).default('fixed'), discountValue: paise.default(0), deliveryFee: paise.default(0),
-  deposit: paise, depositMode: z.enum(['cash', 'upi', 'card']).default('cash'), deliveryDate: date.nullable().optional(), notes: text(500).optional(),
+  deposit: paise, depositMode: z.enum(['cash', 'upi', 'card', 'split']).default('cash'), depositSplit: z.object({ cash: paise.default(0), upi: paise.default(0), card: paise.default(0) }).optional(), deliveryDate: date.nullable().optional(), notes: text(500).optional(),
 });
 const id = z.coerce.number().int().positive();
 
@@ -154,7 +154,7 @@ export default function pos({ db, auth }) {
     res.json(await setAdvanceStatus(db, req.user, req.params.code, status));
   }));
   r.post('/pos/advances/:code/finalize', biller, wrap(async (req, res) => {
-    const d = z.object({ balanceMode: z.enum(['cash', 'upi', 'card']).default('cash'), paymentRef: text(80).optional() }).parse(req.body);
+    const d = z.object({ balanceMode: z.enum(['cash', 'upi', 'card', 'split']).default('cash'), balanceSplit: z.object({ cash: paise.default(0), upi: paise.default(0), card: paise.default(0) }).optional(), paymentRef: text(80).optional() }).parse(req.body);
     res.json(await finalizeAdvance(db, req.user, req.params.code, d));
   }));
 

@@ -600,3 +600,11 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .adm-note { margin: 8px 0 12px; padding: 12px 14px; border-radius: 12px; background: #fdf6e7; border: 1px solid #f0dfb5; font-size: 14px }
 .adm-pick-n { display: flex; align-items: center; gap: 10px; font-weight: 700 } .adm-pick-n img { object-fit: cover; border-radius: 8px; flex: none }
 .dpos-warn { display: block; margin-top: 6px; color: #9a5b00; font-size: 12px; font-weight: 600 }
+
+/* Payment split picker (advance deposit / balance) */
+.payp { display: grid; gap: 10px }
+.payp-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+.payp-split label { display: grid; gap: 4px; font-size: 12px; font-weight: 700 }
+.payp-split p { grid-column: 1 / -1; margin: 0; font-size: 12px; font-weight: 700 }
+.payp-ok { color: #1c7a4b } .payp-bad { color: #b3261e }
+.adv-split { display: block; font-size: 11px; font-weight: 600; opacity: .7 }

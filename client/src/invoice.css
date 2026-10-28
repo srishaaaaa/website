@@ -72,3 +72,13 @@
   .inv-th { box-shadow: none; padding: 0; margin: 0; width: 100% }
   .inv-items tr, .inv-sum, .inv-foot { break-inside: avoid }
 }
+
+/* Payment breakdown under the total (deposit / balance / split / single) */
+.inv-sum > .inv-pay { display: block; padding: 10px 0 0; margin-top: 10px; border-top: 1px solid #e8e4ea }
+.inv-pay-b { margin-bottom: 6px }
+.inv-pay-t, .inv-pay-r { display: flex; justify-content: space-between; gap: 10px }
+.inv-pay-t { padding: 4px 0; color: #17131a } .inv-pay-t b { font-size: 13px }
+.inv-pay-t.strong { margin-top: 4px; font-weight: 800 }
+.inv-pay-r { padding: 2px 0 2px 12px; font-size: 12px; color: #6f6875 }
+.inv-recv b { color: #17131a } .inv-recv span { display: inline-block; margin-top: 2px; font-size: 12px; opacity: .75 }
+.inv-tr.sub { font-size: .92em; opacity: .8; padding-left: 8px }

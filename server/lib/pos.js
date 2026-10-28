@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { rows, one } from '../db/index.js';
 import { HttpError } from './http.js';
-import { hasCostColumns } from './cost.js';
+import { hasCostColumns, hasDepositSplit } from './cost.js';
 import { audit } from './orders.js';
 
 const TZ = 'Asia/Kolkata';
@@ -86,6 +86,20 @@ export async function getSaleByToken(q, token) {
   return r ? getSale(q, r.invoice_no) : null;
 }
 
+// {cash, upi, card} for one payment: a single mode takes the whole amount; a split must add up exactly.
+function splitOf(mode, amount, split, what) {
+  if (mode === 'split') {
+    const s = { cash: split?.cash ?? 0, upi: split?.upi ?? 0, card: split?.card ?? 0 };
+    if (s.cash + s.upi + s.card !== amount) throw new HttpError(400, `The split ${what} must add up exactly to ${(amount / 100).toLocaleString('en-IN')}`, 'bad_split');
+    return s;
+  }
+  return { cash: 0, upi: 0, card: 0, [mode]: amount };
+}
+const depositSplitOf = a => {
+  const s = a.dsplit ?? a.depositSplit;
+  return s ? { cash: s.cash ?? 0, upi: s.upi ?? 0, card: s.card ?? 0 } : { cash: 0, upi: 0, card: 0, [a.deposit_mode ?? a.depositMode]: a.deposit };
+};
+
 export async function getSale(q, invoice) {
   const sale = await one(q, `
     SELECT s.id, s.invoice_no AS "invoiceNo", s.channel, s.status, s.customer_name AS "customerName", s.customer_phone AS "customerPhone",
@@ -100,6 +114,13 @@ export async function getSale(q, invoice) {
     SELECT name_snapshot AS name, sku_snapshot AS sku, variant_snapshot AS variant, unit_price AS "unitPrice", quantity,
            line_total AS "lineTotal", discount_alloc AS discount, tax_rate AS "taxRate", tax_amount AS tax
     FROM pos_sale_items WHERE sale_id = $1 ORDER BY id`, [sale.id]);
+  // A bill made by completing an advance order: show what was paid as deposit and what was paid at collection.
+  const adv = await one(q, `SELECT code, deposit, deposit_mode, to_jsonb(a) -> 'deposit_split' AS dsplit FROM pos_advances a WHERE a.finalized_invoice = $1`, [invoice]);
+  if (adv) {
+    const dep = depositSplitOf(adv);
+    const bal = { cash: Math.max(0, sale.payCash - dep.cash), upi: Math.max(0, sale.payUpi - dep.upi), card: Math.max(0, sale.payCard - dep.card) };
+    sale.advance = { code: adv.code, deposit: adv.deposit, depositSplit: dep, balance: sale.total - adv.deposit, balanceSplit: bal };
+  }
   return sale;
 }
 
@@ -388,7 +409,7 @@ export async function shopInfo(db) {
 // ---- advance orders: booked with a deposit now, billed (and stock taken) when the customer collects ----
 const advCols = `a.code, a.status, a.customer_name AS "customerName", a.customer_phone AS "customerPhone", a.customer_address AS "customerAddress",
   a.is_gst AS "isGst", a.gst_rate AS "gstRate", a.discount_type AS "discountType", a.discount_value AS "discountValue", a.delivery_fee AS "deliveryFee",
-  a.subtotal, a.discount_amount AS discount, a.tax_amount AS tax, a.total_amount AS total, a.deposit, (a.total_amount - a.deposit) AS balance, a.deposit_mode AS "depositMode",
+  a.subtotal, a.discount_amount AS discount, a.tax_amount AS tax, a.total_amount AS total, a.deposit, (a.total_amount - a.deposit) AS balance, a.deposit_mode AS "depositMode", to_jsonb(a) -> 'deposit_split' AS "depositSplit",
   a.delivery_date::text AS "deliveryDate", a.notes, a.finalized_invoice AS "invoiceNo", a.created_at AS "createdAt", a.finalized_at AS "finalizedAt", a.cancelled_at AS "cancelledAt"`;
 
 export async function createAdvance(db, user, d) {
@@ -396,6 +417,10 @@ export async function createAdvance(db, user, d) {
     const lines = await resolveLines(t, d.items, { checkStock: true });
     const bill = computeBill(lines, { isGst: d.isGst, gstRate: d.gstRate ?? null, discountType: d.discountType, discountValue: d.discountValue, deliveryFee: d.deliveryFee });
     if (d.deposit > bill.total) throw new HttpError(400, 'The advance cannot be more than the bill total', 'bad_deposit');
+    const dep = splitOf(d.depositMode, d.deposit, d.depositSplit, 'deposit');
+    const depModes = Object.keys(dep).filter(k => dep[k] > 0);
+    if (depModes.length > 1 && !(await hasDepositSplit(t))) throw new HttpError(409, 'Split deposits need a one-time database update first (migration 021).', 'split_not_ready');
+    const depositMode = depModes.length === 1 ? depModes[0] : depModes.sort((x, y) => dep[y] - dep[x])[0] ?? 'cash';
     let number = '';
     for (let i = 0; i < 12 && !number; i++) {
       const c = `DEP-${istDate().replace(/-/g, '')}-${String(crypto.randomInt(0, 10000)).padStart(4, '0')}`;
@@ -407,7 +432,8 @@ export async function createAdvance(db, user, d) {
         subtotal, discount_amount, tax_amount, total_amount, deposit, deposit_mode, delivery_date, notes, created_by)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
       [number, d.customerName, d.customerPhone, d.customerAddress ?? '', d.isGst, d.isGst ? (d.gstRate ?? null) : null, d.discountType, d.discountValue, d.deliveryFee, JSON.stringify(items),
-        bill.subtotal, bill.discount, bill.tax, bill.total, d.deposit, d.depositMode, d.deliveryDate ?? null, d.notes ?? null, user.id]);
+        bill.subtotal, bill.discount, bill.tax, bill.total, d.deposit, depositMode, d.deliveryDate ?? null, d.notes ?? null, user.id]);
+    if (depModes.length > 1) await t.query('UPDATE pos_advances SET deposit_split = $2 WHERE code = $1', [number, JSON.stringify(dep)]);
     const ph = normPhone(d.customerPhone);
     if (ph) await t.query(`INSERT INTO pos_customers (name, phone, dob) VALUES ($1,$2,$3) ON CONFLICT (phone) DO UPDATE SET name = COALESCE(NULLIF(EXCLUDED.name, ''), pos_customers.name), dob = COALESCE(EXCLUDED.dob, pos_customers.dob), updated_at = now()`, [d.customerName, ph, d.customerDob ?? null]);
     await audit(t, user.id, 'pos.advance.create', 'pos_advance', number, { total: bill.total, deposit: d.deposit });
@@ -440,12 +466,13 @@ export async function setAdvanceStatus(db, user, code, status) {
 
 // Collecting the balance bills the order: a real sale is created (stock is taken now, at the price agreed at booking), the deposit is counted
 // under the mode it was paid in and the balance under `balanceMode`. A retry returns the same invoice.
-export async function finalizeAdvance(db, user, code, { balanceMode, paymentRef }) {
-  const a = await one(db, 'SELECT * FROM pos_advances WHERE code = $1', [code]);
+export async function finalizeAdvance(db, user, code, { balanceMode, balanceSplit, paymentRef }) {
+  const a = await one(db, `SELECT a.*, to_jsonb(a) -> 'deposit_split' AS dsplit FROM pos_advances a WHERE a.code = $1`, [code]);
   if (!a) throw new HttpError(404, 'Advance order not found');
   if (a.status === 'cancelled') throw new HttpError(409, 'This advance order was cancelled', 'cancelled');
   const balance = a.total_amount - a.deposit;
-  const b = { cash: 0, upi: 0, card: 0 }; b[a.deposit_mode] += a.deposit; b[balanceMode] += balance;
+  const dep = depositSplitOf(a), bal = splitOf(balanceMode, balance, balanceSplit, 'balance');
+  const b = { cash: dep.cash + bal.cash, upi: dep.upi + bal.upi, card: dep.card + bal.card };
   const modes = Object.keys(b).filter(k => b[k] > 0);
   const paymentMode = modes.length > 1 ? 'split' : (modes[0] ?? balanceMode);
   const sale = await createSale(db, user, {
@@ -457,5 +484,6 @@ export async function finalizeAdvance(db, user, code, { balanceMode, paymentRef 
   });
   await db.query("UPDATE pos_advances SET status = 'completed', finalized_invoice = $2, finalized_at = COALESCE(finalized_at, now()) WHERE id = $1", [a.id, sale.invoiceNo]);
   await audit(db, user.id, 'pos.advance.finalize', 'pos_advance', code, { invoice: sale.invoiceNo });
-  return { advance: await getAdvance(db, code), sale };
+  // read the bill again now that it is linked to this advance order, so it carries the deposit / balance breakdown
+  return { advance: await getAdvance(db, code), sale: (await getSale(db, sale.invoiceNo)) ?? sale };
 }

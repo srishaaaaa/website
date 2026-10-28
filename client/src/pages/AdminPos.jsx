@@ -191,10 +191,10 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   };
 
   // Save as advance order: books the items at today's prices with a deposit; stock is taken and the bill is made when the customer collects.
-  const saveAdvance = async ({ deposit, depositMode, deliveryDate, notes: n }) => {
+  const saveAdvance = async ({ deposit, depositMode, depositSplit, deliveryDate, notes: n }) => {
     const note = [n, notes.trim()].filter(Boolean).join(' · ');
     const adv = await api('/admin/pos/advances', { method: 'POST', body: { items: body.items, ...(body.customerDob ? { customerDob: body.customerDob } : {}), customerName: body.customerName, customerPhone: body.customerPhone, customerAddress: body.customerAddress,
-      isGst, ...(flat != null ? { gstRate: flat } : {}), discountType, discountValue, deliveryFee, deposit, depositMode, ...(deliveryDate ? { deliveryDate } : {}), ...(note ? { notes: note } : {}) } });
+      isGst, ...(flat != null ? { gstRate: flat } : {}), discountType, discountValue, deliveryFee, deposit, depositMode, ...(depositSplit ? { depositSplit } : {}), ...(deliveryDate ? { deliveryDate } : {}), ...(note ? { notes: note } : {}) } });
     setAdvOpen(false); clearOrder(); onAdvance(adv);
   };
 

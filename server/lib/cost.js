@@ -12,3 +12,13 @@ export async function hasCostColumns(db) {
   known = r.n >= 2; return known;
 }
 export const resetCostCheck = () => { known = false; checkedAt = 0 };
+
+// pos_advances.deposit_split arrives with migration 021; until then a deposit can only be paid one way.
+let splitKnown = false, splitAt = 0;
+export async function hasDepositSplit(db) {
+  if (splitKnown) return true;
+  if (Date.now() - splitAt < 60_000) return false;
+  splitAt = Date.now();
+  splitKnown = !!(await one(db, `SELECT 1 AS x FROM information_schema.columns WHERE table_name = 'pos_advances' AND column_name = 'deposit_split'`));
+  return splitKnown;
+}
