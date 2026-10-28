@@ -620,3 +620,6 @@ img.media.is-in, .bh-arch img.is-in { opacity: 1 }
 .bsum-strong { font-weight: 800; color: var(--d-bill, #5a1560); margin-top: 4px }
 .dpos-xrow > td { background: var(--d-bg, #f6f4ef) !important; cursor: default }
 .dpos-xsum { max-width: 460px; margin-left: auto; padding: 6px 4px }
+
+.adv-kpis.five { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) }
+.adv-kpis.five .adv-k b { font-size: 24px }

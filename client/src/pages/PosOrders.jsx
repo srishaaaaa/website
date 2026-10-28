@@ -205,9 +205,11 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
   const sum = (list, k) => list.reduce((s, r) => s + (r[k] || 0), 0);
   return (
     <>
-      <div className="adv-kpis">
-        <div className="adv-k"><div><span>BALANCE TO RECEIVE</span><b>{rows ? inr(sum(openP, 'balance')) : '…'}</b><small>{rows ? `${openP.length} open order${openP.length === 1 ? '' : 's'} · ${openP.filter(r => r.status === 'ready').length} ready to collect` : ''}</small></div><i className="rose"><Ico size={22}><path d="M7 5h10M7 9h10M9 5c4 0 6 2 6 4s-2 4-6 4H7l7 6" /></Ico></i></div>
-        <div className="adv-k"><div><span>ADVANCE PAID</span><b>{rows ? inr(sum(liveP, 'deposit')) : '…'}</b><small>{rows ? `Advances received on ${liveP.length} order${liveP.length === 1 ? '' : 's'}` : ''}</small></div><i className="blue"><Ico size={22}><rect x="3" y="6" width="18" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></Ico></i></div>
+      <div className="adv-kpis five">
+        <div className="adv-k"><div><span>TOTAL ORDERS</span><b>{rows ? inP.length : '…'}</b><small>{rows ? `${openP.length} open · ${doneP.length} completed · ${inP.length - openP.length - doneP.length} cancelled` : ''}</small></div><i className="blue"><Ico size={22}><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></Ico></i></div>
+        <div className="adv-k"><div><span>DEPOSIT PAID</span><b>{rows ? inr(sum(liveP, 'deposit')) : '…'}</b><small>{rows ? `Advances on ${liveP.length} order${liveP.length === 1 ? '' : 's'}` : ''}</small></div><i className="blue"><Ico size={22}><rect x="3" y="6" width="18" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></Ico></i></div>
+        <div className="adv-k"><div><span>FINAL BALANCE PAID</span><b>{rows ? inr(sum(doneP, 'balance')) : '…'}</b><small>{rows ? `Collected on ${doneP.length} completed order${doneP.length === 1 ? '' : 's'}` : ''}</small></div><i className="green"><Ico size={22}><path d="M12 19V5m0 0-6 6m6-6 6 6" /></Ico></i></div>
+        <div className="adv-k"><div><span>REMAINING BALANCE</span><b>{rows ? inr(sum(openP, 'balance')) : '…'}</b><small>{rows ? `To receive on ${openP.length} open order${openP.length === 1 ? '' : 's'} · ${openP.filter(r => r.status === 'ready').length} ready` : ''}</small></div><i className="rose"><Ico size={22}><path d="M7 5h10M7 9h10M9 5c4 0 6 2 6 4s-2 4-6 4H7l7 6" /></Ico></i></div>
         <div className="adv-k"><div><span>COMPLETED ORDERS</span><b>{rows ? inr(sum(doneP, 'total')) : '…'}</b><small>{rows ? `${doneP.length} order${doneP.length === 1 ? '' : 's'} collected and fully paid` : ''}</small></div><i className="green"><Ico size={22}><path d="m5 12.5 4.5 4.5L19 7.5" /></Ico></i></div>
       </div>
       <div className="adv-bar">
