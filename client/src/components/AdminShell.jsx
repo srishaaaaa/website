@@ -99,8 +99,8 @@ export default function AdminShell({ title, sub, actions, children }) {
         })}
       </nav>
       <main className="dpos-main" id="main">
-        <div className="dpos-top"><span className="dpos-top-t">Dashboard</span><Link to="/" className="dpos-view">← View Store</Link><span className="dpos-av" aria-label={user?.email}>{initial}</span></div>
-        <div className="dpos-head"><div><h1>{title}</h1>{sub && <p className="sub">{sub}</p>}</div>{actions}</div>
+        <div className="dpos-head"><div><h1>{title}</h1>{sub && <p className="sub">{sub}</p>}</div>
+          <div className="dpos-head-r">{actions}<Link to="/" className="dpos-view">← View Store</Link><span className="dpos-av" title={user?.email} aria-label={`Signed in as ${user?.email || ''}`}>{initial}</span></div></div>
         {children}
       </main>
     </div>

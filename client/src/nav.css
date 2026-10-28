@@ -629,3 +629,7 @@ html.lenis, html.lenis body { height: auto }
 .lenis.lenis-smooth { scroll-behavior: auto !important }
 .lenis.lenis-smooth [data-lenis-prevent], .lenis.lenis-smooth [role="dialog"] { overscroll-behavior: contain }
 .lenis.lenis-stopped { overflow: clip }
+
+/* Admin page header: title on the left, actions + View Store + profile on the right (no separate Dashboard bar) */
+.dpos-head-r { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-left: auto }
+.dpos-head-r .dpos-view { white-space: nowrap; padding: 8px 14px; border: 1px solid var(--d-line, #e7e1d6); border-radius: 999px; background: var(--d-card, #fff) }
