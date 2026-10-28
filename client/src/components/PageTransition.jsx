@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useReduced } from '../lib/hooks';
+import { scrollTop } from './SmoothScroll';
 
 const ease = [0.76, 0, 0.24, 1];
 
@@ -18,7 +19,7 @@ function Curtain() {
 }
 
 function Page({ children }) {
-  useEffect(() => { window.scrollTo(0, 0) }, []);
+  useEffect(() => { scrollTop() }, []);
   return children;
 }
 

@@ -11,6 +11,7 @@ import SearchOverlay from './components/SearchOverlay';
 import QuickView from './components/QuickView';
 import PageTransition from './components/PageTransition';
 import Home from './pages/Home';
+import SmoothScroll from './components/SmoothScroll';
 import { Shop, Collections, CollectionPage, Search } from './pages/Browse';
 import Product from './pages/Product';
 import { Wishlist, CartPage, Checkout, Auth } from './pages/Shopping';
@@ -45,6 +46,7 @@ export default function App() {
       <a className="skip-link" href="#main">Skip to content</a>
       <AnimatePresence>{!entered && site && <Intro key="intro" onDone={enter} />}</AnimatePresence>
       {site && <FloatingNavbar />}
+      {site && <SmoothScroll />}
       <PageTransition>
         <Routes location={location}>
           <Route path="/" element={<Home />} />

@@ -14,6 +14,7 @@ import InstagramStrip from '../components/InstagramStrip';
 import StoreLocationMap from '../components/StoreLocationMap';
 import ServiceHighlights from '../components/ServiceHighlights';
 import { useSiteText } from '../lib/siteText';
+import { scrollToEl } from '../components/SmoothScroll';
 import { brand, media } from '../config/content';
 
 // Shop Story: the boutique's story beside a photograph, on a deep-red panel. The wording lives in config/content.js.
@@ -58,7 +59,7 @@ export default function Home() {
   // "Shop Story" and "Contact" in the menu are in-page links: scroll to them once the page has transitioned in.
   useEffect(() => {
     if (!hash) return;
-    const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }), 650);
+    const t = setTimeout(() => scrollToEl(document.getElementById(hash.slice(1))), 650);
     return () => clearTimeout(t);
   }, [hash]);
 
