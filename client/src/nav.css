@@ -680,3 +680,8 @@ html.lenis, html.lenis body { height: auto }
 .cf-txt strong { font-weight: 700; font-family: var(--serif) }
 .cf-floor { display: none }
 @media (prefers-reduced-motion: reduce) { .cf-track { scroll-behavior: auto } }
+
+/* tighter rhythm between the categories and "Choose your world" sections */
+.cc { padding-bottom: clamp(4px, .6vw, 10px) }
+.cc-more { margin-top: 18px }
+.cf { padding-top: clamp(14px, 2vw, 28px) }
