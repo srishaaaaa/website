@@ -4,7 +4,7 @@ import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
 
-const MAX_BYTES = 4 * 1024 * 1024; // stays under typical serverless request limits
+const MAX_BYTES = 8 * 1024 * 1024; // videos up to 8 MB (photos are shrunk in the browser first)
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 // Never trust the declared type: identify the image from its first bytes. SVG is deliberately not accepted.
@@ -61,7 +61,7 @@ export function mediaAdmin({ db, auth }) {
   const staff = auth.role('owner', 'admin');
 
   r.post('/media', staff, express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'], limit: MAX_BYTES }), wrap(async (req, res) => {
-    if (!Buffer.isBuffer(req.body) || !req.body.length) throw new HttpError(400, 'Send the file as the request body (JPEG, PNG, WebP, MP4 or WebM, up to 4 MB)');
+    if (!Buffer.isBuffer(req.body) || !req.body.length) throw new HttpError(400, 'Send the file as the request body (JPEG, PNG, WebP, MP4 or WebM, up to 8 MB)');
     const mime = sniff(req.body);
     if (!mime || mime !== req.get('content-type')?.split(';')[0]) throw new HttpError(400, 'That file is not a valid JPEG, PNG, WebP, MP4 or WebM file');
     const name = String(req.query.name || '').slice(0, 120) || null;
