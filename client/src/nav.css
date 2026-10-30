@@ -633,3 +633,38 @@ html.lenis, html.lenis body { height: auto }
 /* Admin page header: title on the left, actions + View Store + profile on the right (no separate Dashboard bar) */
 .dpos-head-r { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-left: auto }
 .dpos-head-r .dpos-view { white-space: nowrap; padding: 8px 14px; border: 1px solid var(--d-line, #e7e1d6); border-radius: 999px; background: var(--d-card, #fff) }
+
+/* ---- Collections + Shop pages: minimal, light, airy ---- */
+.catalog { background: var(--ivory, #fff9f0); color: var(--ink-d, #211714); --ink: #211714; --paper: #fff9f0; min-height: 100vh }
+.catalog .cat-hero, .catalog .cat-hero.with-banner { min-height: 0; display: block; padding: clamp(130px, 15vw, 190px) var(--pad) clamp(28px, 4vw, 52px); color: var(--ink-d, #211714); border-radius: 0; background: none; overflow: visible }
+.catalog .cat-hero-in { gap: 14px; max-width: 1500px; margin-inline: auto }
+.catalog .cat-hero h1 { font-weight: 700; font-size: clamp(38px, 6vw, 92px); letter-spacing: -.02em; line-height: 1 }
+.catalog .cat-hero .eyebrow { font-size: 11px; letter-spacing: .32em; color: var(--antique, #c6a052) }
+.catalog .cat-intro { font-size: 16px; opacity: .6; max-width: 44ch; margin: 0 }
+.catalog .cat-hero-in::after { content: ''; display: block; width: 48px; height: 1px; background: var(--antique, #c6a052); margin-top: 10px }
+
+/* collections list */
+.col-list { max-width: 1500px; margin: 0 auto; padding: 0 var(--pad) clamp(70px, 9vw, 130px) }
+.col-row { display: grid; grid-template-columns: 56px 1fr auto 32px; align-items: baseline; gap: 16px; padding: clamp(18px, 2.4vw, 30px) 4px; border-bottom: 1px solid rgba(33, 23, 20, .12); transition: padding .45s var(--ease), color .3s }
+.col-list > *:first-child .col-row, .col-list > .col-row:first-child { border-top: 1px solid rgba(33, 23, 20, .12) }
+.col-n { font-size: 11px; font-weight: 700; letter-spacing: .2em; color: var(--antique, #c6a052) }
+.col-name { font-size: clamp(26px, 3.6vw, 54px); font-weight: 600; line-height: 1.1; letter-spacing: -.01em }
+.col-count { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; opacity: .5 }
+.col-arrow { opacity: 0; transform: translateX(-10px); transition: opacity .35s, transform .45s var(--ease); color: var(--red, #5a1560); font-size: 22px; text-align: right }
+.col-row:hover, .col-row:focus-visible { padding-left: 18px; color: var(--maroon, #330533) }
+.col-row:hover .col-arrow, .col-row:focus-visible .col-arrow { opacity: 1; transform: none }
+@media (max-width: 640px) { .col-row { grid-template-columns: 34px 1fr auto } .col-arrow { display: none } }
+
+/* shop toolbar: quiet hairline bar */
+.catalog .toolbar { background: rgba(255, 249, 240, .92); border-bottom: 1px solid rgba(33, 23, 20, .1); padding-block: 14px }
+.catalog .toolbar .btn { border: 0; padding: 8px 0; background: none; font-size: 11px; letter-spacing: .26em; border-bottom: 1px solid currentColor; border-radius: 0 }
+.catalog .toolbar select { border: 0; background: transparent; font-size: 13px; padding: 6px 4px; cursor: pointer }
+.catalog .views button { opacity: .35; transition: opacity .3s } .catalog .views button.on, .catalog .views button:hover { opacity: 1 }
+
+/* shop grid: generous spacing, calm cards */
+.catalog .pgrid { gap: clamp(28px, 3.4vw, 56px) clamp(16px, 2vw, 32px) }
+.catalog .pcard-frame { border-radius: 18px }
+.catalog .pcard-meta { padding-top: 14px }
+.catalog .pcard-meta h3 { font-size: clamp(17px, 1.4vw, 21px); font-weight: 500 }
+.catalog .pcard-price { font-size: 13px; opacity: .8 }
+.catalog .empty, .catalog .center { padding-block: 60px }

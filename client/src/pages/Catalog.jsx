@@ -6,7 +6,6 @@ import { toQuery, useFilters } from '../lib/filters';
 import { api } from '../lib/api';
 import { SIZE_ORDER, inr } from '../lib/format';
 import ProductCard, { CardSkeletons } from '../components/ProductCard3D';
-import ProductArt from '../components/ProductArt';
 
 const PAGE = 12;
 const SORTS = [['featured', 'Featured'], ['newest', 'Newest'], ['price-asc', 'Price: low to high'], ['price-desc', 'Price: high to low']];
@@ -92,8 +91,7 @@ export default function Catalog({ base = {}, title, eyebrow, intro, banner, empt
 
   return (
     <div className="catalog">
-      <header className={`cat-hero ${banner ? 'with-banner' : ''}`}>
-        {banner && <div className="cat-banner" aria-hidden="true"><ProductArt seed={banner} view={2} /></div>}
+      <header className="cat-hero">
         <div className="cat-hero-in">
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}
           <h1 className="serif">{title}</h1>
