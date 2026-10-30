@@ -81,3 +81,7 @@
 
 /* the "sample" pill sits under the product name instead of being squeezed into the 52px photo column */
 .dpos .adm-list button .adm-sample { grid-column: 2 / -1; justify-self: start; white-space: nowrap }
+
+.dpos-linkrow { display: flex; gap: 10px; margin: 6px 0 16px; flex-wrap: wrap }
+.dpos-linkrow input { flex: 1; min-width: 240px; padding: 12px 14px; border: 1px solid var(--d-line); border-radius: 12px; background: #fff; font: inherit }
+.dpos-reel .media iframe { width: 100%; height: 100%; border: 0; margin: -10px }

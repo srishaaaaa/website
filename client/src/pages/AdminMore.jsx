@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { api, uploadMedia } from '../lib/api';
+import { isEmbed, parseVideo } from '../lib/media';
 import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import StaffOnly from '../components/StaffOnly';
@@ -157,6 +158,14 @@ export function AdminReels() {
     } catch (e) { setErr(e.message) } finally { setBusy(null) }
   };
   const remove = async (kind, i) => { if (!confirm('Remove this from the home page?')) return; setBusy(kind + i); setErr(); try { await save({ ...lists, [kind]: lists[kind].filter((_, n) => n !== i) }); toast('Removed.') } catch (e) { setErr(e.message) } finally { setBusy(null) } };
+  const [link, setLink] = useState('');
+  const addLink = async () => {
+    const url = link.trim(); if (!url) return;
+    if (!/^https?:\/\//i.test(url)) return setErr('Paste a full link that starts with https://');
+    if (lists.video.length >= REEL_MAX) return setErr(`You already have ${REEL_MAX} reels. Remove one first.`);
+    setBusy('link'); setErr();
+    try { await save({ ...lists, video: [...lists.video, { video: url, alt: 'Boutique reel' }] }); setLink(''); toast('Reel added.') } catch (e) { setErr(e.message) } finally { setBusy(null) }
+  };
   const pick = (kind, i) => { target.current = { kind, i }; input.current.accept = kind === 'video' ? 'video/mp4,video/webm' : 'image/jpeg,image/png,image/webp'; input.current.click() };
   const grid = (kind, max, noun) => {
     const cur = lists[kind];
@@ -167,7 +176,7 @@ export function AdminReels() {
           return (
             <section className="dpos-reel" key={key}>
               <header><span>{noun.toUpperCase()} {i + 1}</span>{live && <span className="dpos-live">LIVE</span>}</header>
-              <div className="media">{!s ? 'Loading…' : p?.video ? <video src={p.video} muted loop playsInline controls preload="metadata" /> : p?.image ? <img src={p.image} alt={p.alt || `${noun} ${i + 1}`} /> : <span>{canAdd ? `Empty — add a ${noun.toLowerCase()}` : `Fill ${noun.toLowerCase()} ${cur.length + 1} first`}</span>}</div>
+              <div className="media">{!s ? 'Loading…' : p?.video ? (isEmbed(p.video) ? <iframe src={parseVideo(p.video).embed.replace('autoplay=1', 'autoplay=0')} title={`Reel ${i + 1}`} allowFullScreen /> : <video src={p.video} muted loop playsInline controls preload="metadata" />) : p?.image ? <img src={p.image} alt={p.alt || `${noun} ${i + 1}`} /> : <span>{canAdd ? `Empty — add a ${noun.toLowerCase()}` : `Fill ${noun.toLowerCase()} ${cur.length + 1} first`}</span>}</div>
               <footer>
                 <button className="dpos-btn ghost sm" disabled={busy !== null || !canAdd || !s} onClick={() => pick(kind, i)}>{busy === key ? 'Uploading…' : live ? '↻ Replace' : '+ Upload'}</button>
                 {live && <a className="dpos-btn ghost sm" href={p.video || p.image} target="_blank" rel="noopener noreferrer" aria-label="Preview"><Icon n="eye" size={14} /></a>}
@@ -182,7 +191,11 @@ export function AdminReels() {
     <AdminShell title="Reels & Photo Gallery" sub="Add up to 6 reels (videos) and up to 6 photos. On the home page the reels come first, then the photo gallery.">
       <Err>{err}</Err>
       <input ref={input} type="file" hidden onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) upload(target.current.kind, target.current.i, f) }} />
-      <h2 className="serif adm-h2">Reels <span className="muted small">({lists.video.length} of {REEL_MAX} · MP4 or WebM, max 4 MB each; compress to 720p first)</span></h2>
+      <h2 className="serif adm-h2">Reels <span className="muted small">({lists.video.length} of {REEL_MAX} · upload MP4/WebM (max 4 MB) or paste a link)</span></h2>
+      <div className="dpos-linkrow">
+        <input type="url" value={link} onChange={e => setLink(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLink()} placeholder="Paste a reel link: Instagram reel, YouTube or a direct .mp4 link" aria-label="Reel link" />
+        <button className="dpos-btn" onClick={addLink} disabled={busy !== null || !s || !link.trim()}>{busy === 'link' ? 'Adding…' : 'Add reel'}</button>
+      </div>
       {grid('video', REEL_MAX, 'Reel')}
       <h2 className="serif adm-h2" style={{ marginTop: 28 }}>Photo gallery <span className="muted small">({lists.photo.length} of {PHOTO_MAX} · JPEG, PNG or WebP)</span></h2>
       {grid('photo', PHOTO_MAX, 'Photo')}

@@ -61,7 +61,8 @@ export default function App() {
           <Route path="/login" element={<Auth mode="login" />} />
           <Route path="/register" element={<Auth mode="register" />} />
           <Route path="/account" element={<Account />} />
-          <Route path="/admin" element={A.orders} />
+          <Route path="/admin" element={<Navigate to="/admin/billing" replace />} />
+          <Route path="/admin/orders" element={A.orders} />
           <Route path="/admin/reviews" element={A.reviews} />
           <Route path="/admin/users" element={A.users} />
           <Route path="/admin/categories" element={A.categories} />
