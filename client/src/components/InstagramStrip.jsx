@@ -19,8 +19,13 @@ function Reel({ post, label, fallbackUrl }) {
   const [muted, setMuted] = useState(true); const [failed, setFailed] = useState(false);
   useEffect(() => {
     const el = v.current; if (!el || reduced || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) el.play().catch(() => {}); else el.pause() }, { threshold: 0.55 });
-    io.observe(el); return () => io.disconnect();
+    // Only plays while mostly on screen, and stays paused while the full-screen viewer is open (two videos decoding at once is what made it stutter).
+    let inView = false, locked = !!window.__dhanyaViewer;
+    const sync = () => { if (inView && !locked) el.play().catch(() => {}); else el.pause() };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; sync() }, { threshold: 0.7 });
+    const lock = e => { locked = !!e.detail; sync() };
+    io.observe(el); addEventListener('dhanya:viewer', lock);
+    return () => { io.disconnect(); removeEventListener('dhanya:viewer', lock) };
   }, [reduced]);
   if (failed) {
     if (post.image) return <img src={post.image} alt={label} loading="lazy" />;
@@ -29,7 +34,7 @@ function Reel({ post, label, fallbackUrl }) {
   }
   return (
     <>
-      <video ref={v} src={post.video} poster={post.image || undefined} muted={muted} loop playsInline preload="metadata" controls={reduced} aria-label={label} onError={() => setFailed(true)} />
+      <video ref={v} src={post.video} poster={post.image || undefined} muted={muted} loop playsInline preload="auto" controls={reduced} aria-label={label} onError={() => setFailed(true)} />
       {!reduced && <button className="reel-mute" onClick={e => { e.stopPropagation(); const next = !muted; setMuted(next); if (v.current) { v.current.muted = next; v.current.play().catch(() => {}) } }} aria-pressed={!muted} aria-label={muted ? 'Turn sound on' : 'Mute'}><Speaker off={muted} /></button>}
     </>
   );
@@ -46,10 +51,11 @@ function Viewer({ items, start, onClose }) {
   const close = useCallback(() => { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); onClose() }, [onClose]);
   useEffect(() => {
     const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    window.__dhanyaViewer = true; dispatchEvent(new CustomEvent('dhanya:viewer', { detail: true }));
     box.current?.requestFullscreen?.().catch(() => {});
     const key = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') setI(n => Math.min(items.length - 1, n + 1)); else if (e.key === 'ArrowLeft') setI(n => Math.max(0, n - 1)) };
     addEventListener('keydown', key);
-    return () => { document.body.style.overflow = prev; removeEventListener('keydown', key) };
+    return () => { document.body.style.overflow = prev; window.__dhanyaViewer = false; dispatchEvent(new CustomEvent('dhanya:viewer', { detail: false })); removeEventListener('keydown', key) };
   }, [close, items.length]);
   useEffect(() => {
     const el = vid.current; if (!el) return;

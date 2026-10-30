@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useReduced } from '../lib/hooks';
@@ -26,15 +26,19 @@ function Page({ children }) {
 export default function PageTransition({ children }) {
   const { pathname } = useLocation();
   const reduced = useReduced();
-  const first = useRef(true);
-  useEffect(() => { first.current = false }, []);
+  // The curtain is for moving between pages only. A reload (or any re-render after it) keeps the same path, so no purple flash.
+  const shown = useRef(pathname);
+  const navigated = shown.current !== pathname;
+  useEffect(() => { shown.current = pathname }, [pathname]);
+  const [curtainFor, setCurtainFor] = useState(null);
+  useEffect(() => { if (navigated) setCurtainFor(pathname) }, [navigated, pathname]);
 
   // Admin pages switch instantly: no curtain sweep, no fade.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return <main key={pathname} id="main" tabIndex={-1} className="page"><Page>{children}</Page></main>;
 
   return (
     <>
-      {!reduced && !first.current && <Curtain key={pathname} />}
+      {!reduced && curtainFor === pathname && <Curtain key={pathname} />}
       <AnimatePresence mode="wait" initial={false}>
         <motion.main key={pathname} id="main" tabIndex={-1} className="page"
           initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.975 }}

@@ -671,7 +671,7 @@ html.lenis, html.lenis body { height: auto }
 
 /* ---- collections coverflow: calm, flat, no mirror reflection ---- */
 .cf-card { -webkit-box-reflect: unset; box-shadow: 0 30px 50px -24px rgba(42, 22, 41, .38), 0 4px 14px rgba(42, 22, 41, .1); border-radius: 28px }
-.cf-track { scroll-behavior: smooth; perspective: 1800px; padding-top: 40px; padding-bottom: 80px }
+.cf-track { perspective: 1800px; padding-top: 40px; padding-bottom: 80px }
 .cf-img > * { transform: translateX(var(--shift, 0)) scale(1.16) !important; transition: none !important }
 .cf-card:hover .cf-img > * { transform: translateX(var(--shift, 0)) scale(1.2) !important; transition: transform 1.2s var(--ease) !important }
 .cf-shade { background: linear-gradient(0deg, rgba(25, 10, 18, .8) 0, rgba(25, 10, 18, .08) 52%, transparent) }
@@ -679,7 +679,6 @@ html.lenis, html.lenis body { height: auto }
 .cf-txt em, .cf-go { opacity: var(--on, 1); max-height: calc(var(--on, 1) * 80px); overflow: hidden }
 .cf-txt strong { font-weight: 700; font-family: var(--serif) }
 .cf-floor { display: none }
-@media (prefers-reduced-motion: reduce) { .cf-track { scroll-behavior: auto } }
 
 /* tighter rhythm between the categories and "Choose your world" sections */
 .cc { padding-bottom: clamp(4px, .6vw, 10px) }
@@ -698,10 +697,14 @@ html.lenis, html.lenis body { height: auto }
 .viewer-stage { height: 100%; width: 100%; display: grid; place-items: center }
 .viewer-stage img, .viewer-stage video { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; background: #000 }
 .viewer-stage iframe { height: 100%; width: min(100%, 56.25vh); border: 0; background: #000 }
-.viewer-back { position: absolute; top: 18px; left: 18px; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 11px 18px 11px 14px; border-radius: 999px; color: #fff; background: rgba(255, 255, 255, .16); backdrop-filter: blur(10px); font-size: 11px; font-weight: 700; letter-spacing: .22em; transition: background .3s }
+.viewer-back { position: absolute; top: 18px; left: 18px; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 11px 18px 11px 14px; border-radius: 999px; color: #fff; background: rgba(0, 0, 0, .45); font-size: 11px; font-weight: 700; letter-spacing: .22em; transition: background .3s }
 .viewer-back:hover { background: rgba(255, 255, 255, .3) }
 .viewer-count { position: absolute; top: 28px; right: 24px; z-index: 3; color: rgba(255, 255, 255, .75); font-size: 12px; letter-spacing: .2em }
 .viewer-nav { position: absolute; top: 50%; z-index: 3; width: 48px; height: 48px; margin-top: -24px; border-radius: 50%; color: #fff; background: rgba(255, 255, 255, .16); font-size: 28px; line-height: 1; display: grid; place-items: center; transition: background .3s }
 .viewer-nav:hover { background: rgba(255, 255, 255, .32) } .viewer-nav.prev { left: 18px } .viewer-nav.next { right: 18px }
 @media (max-width: 640px) { .viewer-nav { display: none } }
 @media (prefers-reduced-motion: reduce) { .viewer { animation: none } }
+
+/* video tiles: keep them on their own GPU layer and drop the blur over playing video */
+.insta-tile video { transform: translateZ(0); will-change: transform }
+.reel-mute { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(20, 14, 22, .7) }
