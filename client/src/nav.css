@@ -668,3 +668,15 @@ html.lenis, html.lenis body { height: auto }
 .catalog .pcard-meta h3 { font-size: clamp(17px, 1.4vw, 21px); font-weight: 500 }
 .catalog .pcard-price { font-size: 13px; opacity: .8 }
 .catalog .empty, .catalog .center { padding-block: 60px }
+
+/* ---- collections coverflow: calm, flat, no mirror reflection ---- */
+.cf-card { -webkit-box-reflect: unset; box-shadow: 0 30px 50px -24px rgba(42, 22, 41, .38), 0 4px 14px rgba(42, 22, 41, .1); border-radius: 28px }
+.cf-track { scroll-behavior: smooth; perspective: 1800px; padding-top: 40px; padding-bottom: 80px }
+.cf-img > * { transform: translateX(var(--shift, 0)) scale(1.16) !important; transition: none !important }
+.cf-card:hover .cf-img > * { transform: translateX(var(--shift, 0)) scale(1.2) !important; transition: transform 1.2s var(--ease) !important }
+.cf-shade { background: linear-gradient(0deg, rgba(25, 10, 18, .8) 0, rgba(25, 10, 18, .08) 52%, transparent) }
+.cf-txt { opacity: calc(.35 + var(--on, 1) * .65); transform: translateY(calc((1 - var(--on, 1)) * 14px)) }
+.cf-txt em, .cf-go { opacity: var(--on, 1); max-height: calc(var(--on, 1) * 80px); overflow: hidden }
+.cf-txt strong { font-weight: 700; font-family: var(--serif) }
+.cf-floor { display: none }
+@media (prefers-reduced-motion: reduce) { .cf-track { scroll-behavior: auto } }

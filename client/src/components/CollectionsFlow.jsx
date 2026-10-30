@@ -27,11 +27,13 @@ export default function CollectionsFlow() {
       const r = el.getBoundingClientRect(), d = (r.left + r.width / 2 - mid) / r.width, ad = Math.abs(d);
       if (ad < bd) { bd = ad; best = i }
       if (reduced) return;
-      const k = Math.min(ad, 2), n = Math.min(ad, 1);
-      // Side cards tilt toward the centre and sink back a little. They stay opaque (no see-through overlaps);
-      // depth comes from a soft darkening (--dim) instead. Updated every frame with no CSS transition, so it tracks the scroll exactly.
-      el.style.transform = `translate3d(${-d * r.width * 0.14}px, 0, ${-k * 60}px) rotateY(${-Math.sign(d) * n * 24}deg) scale(${1 - k * 0.06})`;
-      el.style.setProperty('--dim', (k * 0.22).toFixed(3));
+      const k = Math.min(ad, 2), n = Math.min(ad, 1), on = 1 - n;
+      // Calm coverflow: the centre card is full size and bright; neighbours shrink, turn a few degrees and fade back.
+      // Only the centre card shows its text (--on), and the photo drifts against the scroll for a little parallax (--shift).
+      el.style.transform = `translate3d(${-d * r.width * 0.1}px, ${n * 18}px, 0) rotateY(${-Math.sign(d) * n * 14}deg) scale(${1 - k * 0.1})`;
+      el.style.setProperty('--dim', (Math.min(k, 1.4) * 0.16).toFixed(3));
+      el.style.setProperty('--on', on.toFixed(3));
+      el.style.setProperty('--shift', `${(-d * 7).toFixed(2)}%`);
       el.style.zIndex = String(100 - Math.round(ad * 10));
     });
     setActive(best);
