@@ -638,7 +638,7 @@ html.lenis, html.lenis body { height: auto }
 .catalog { background: var(--ivory, #fff9f0); color: var(--ink-d, #211714); --ink: #211714; --paper: #fff9f0; min-height: 100vh }
 .catalog .cat-hero, .catalog .cat-hero.with-banner { min-height: 0; display: block; padding: clamp(130px, 15vw, 190px) var(--pad) clamp(28px, 4vw, 52px); color: var(--ink-d, #211714); border-radius: 0; background: none; overflow: visible }
 .catalog .cat-hero-in { gap: 14px; max-width: 1500px; margin-inline: auto }
-.catalog .cat-hero h1 { font-weight: 700; font-size: clamp(38px, 6vw, 92px); letter-spacing: -.02em; line-height: 1 }
+.catalog .cat-hero h1 { font-weight: 500; font-size: clamp(30px, 3.8vw, 56px); letter-spacing: -.01em; line-height: 1.05 }
 .catalog .cat-hero .eyebrow { font-size: 11px; letter-spacing: .32em; color: var(--antique, #c6a052) }
 .catalog .cat-intro { font-size: 16px; opacity: .6; max-width: 44ch; margin: 0 }
 .catalog .cat-hero-in::after { content: ''; display: block; width: 48px; height: 1px; background: var(--antique, #c6a052); margin-top: 10px }

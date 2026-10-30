@@ -1,5 +1,7 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Catalog from './Catalog';
+import ProductArt from '../components/ProductArt';
+import { ProductMedia } from '../components/ProductCard3D';
 import { Reveal } from '../components/Motion';
 import { useApp } from '../context/App';
 
@@ -15,15 +17,13 @@ export function Collections() {
   return (
     <div className="catalog">
       <header className="cat-hero"><div className="cat-hero-in"><p className="eyebrow">COLLECTIONS</p><h1 className="serif">Choose your world.</h1></div></header>
-      <div className="col-list">
+      <div className="col-grid">
         {status === 'loading' && <p className="muted">Loading collections…</p>}
         {collections.map((c, i) => (
-          <Reveal key={c.slug} delay={Math.min(i, 6) * 0.04}>
-            <Link to={`/collections/${c.slug}`} className="col-row" data-cursor="EXPLORE">
-              <span className="col-n">{String(i + 1).padStart(2, '0')}</span>
-              <span className="col-name serif">{c.name}</span>
-              <span className="col-count">{c.product_count} {c.product_count === 1 ? 'piece' : 'pieces'}</span>
-              <span className="col-arrow" aria-hidden="true">→</span>
+          <Reveal key={c.slug} delay={(i % 3) * 0.08}>
+            <Link to={`/collections/${c.slug}`} className="col-card" data-cursor="EXPLORE">
+              <span className="col-img"><ProductMedia p={{ slug: c.cover?.slug || c.slug, name: c.name, image: c.hero_image || c.cover?.image, image_pos: c.hero_pos }} view={i % 4} eager={i < 6} /></span>
+              <span className="col-txt"><span className="eyebrow">{c.product_count} {c.product_count === 1 ? 'piece' : 'pieces'}</span><span className="serif">{c.name}</span></span>
             </Link>
           </Reveal>
         ))}
