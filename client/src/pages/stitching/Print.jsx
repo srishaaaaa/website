@@ -36,7 +36,7 @@ export default function Print() {
         </header>
         <div className="two">
           <div><h2>Customer</h2><div><b>{o.customerName}</b></div><div>{o.customerPhone}</div></div>
-          <div><h2>{job ? 'Schedule' : 'Dates'}</h2>{job && <div>Tailor: <b>{o.tailorName || 'Not assigned'}</b></div>}{job && o.startDate && <div>Start: {dmy(o.startDate)}</div>}{o.trialDate && <div>Trial: <b>{dmy(o.trialDate)}</b></div>}<div>Delivery: <b>{dmy(o.deliveryDate)}</b></div></div>
+          <div><h2>{job ? 'Schedule' : 'Dates'}</h2>{job && <div>Tailor: <b>{o.tailorName || 'Not assigned'}</b></div>}{job && o.startDate && <div>Start: {dmy(o.startDate)}</div>}<div>Delivery: <b>{dmy(o.deliveryDate)}</b></div></div>
         </div>
         {o.items.map((it, i) => (
           <section key={it.id}>

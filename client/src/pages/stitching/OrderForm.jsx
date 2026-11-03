@@ -11,7 +11,7 @@ export default function OrderForm() {
   const [designs, setDesigns] = useState([]);
   const [customer, setCustomer] = useState(null);
   const [items, setItems] = useState([]); const [open, setOpen] = useState(0);
-  const [f, setF] = useState({ priority: 'normal', tailorId: '', orderDate: todayStr(), startDate: '', trialDate: '', deliveryDate: addDays(todayStr(), 7), notes: '', urgent: '', isGst: false, gstRate: 5, discount: '', advance: '', advMode: 'cash', advRef: '' });
+  const [f, setF] = useState({ priority: 'normal', tailorId: '', orderDate: todayStr(), startDate: '', deliveryDate: addDays(todayStr(), 7), notes: '', urgent: '', isGst: false, gstRate: 5, discount: '', advance: '', advMode: 'cash', advRef: '' });
   const [review, setReview] = useState(false); const [busy, setBusy] = useState(false); const [err, setErr] = useState(); const [done, setDone] = useState(null);
   const keyRef = useRef({ hash: '', key: newKey() });
   useEffect(() => { api('/admin/stitching/designs').then(setDesigns).catch(() => {}) }, []);
@@ -32,7 +32,6 @@ export default function OrderForm() {
   const problems = [];
   if (f.deliveryDate < f.orderDate) problems.push('The promised delivery date is before the order date.');
   if (f.orderDate > todayStr()) problems.push('The order date cannot be in the future.');
-  if (f.trialDate && (f.trialDate < f.orderDate || f.trialDate > f.deliveryDate)) problems.push('The trial date must fall between the order date and the delivery date.');
   if (f.startDate && (f.startDate < f.orderDate || f.startDate > f.deliveryDate)) problems.push('The start date must fall between the order date and the delivery date.');
   if (tot.overDiscount) problems.push('The discount is more than the order subtotal.');
   if (advance > tot.total) problems.push('The advance is more than the order total.');
@@ -41,13 +40,12 @@ export default function OrderForm() {
   if (meta && f.deliveryDate >= f.orderDate) {
     const need = meta.minDays[f.priority] + Math.floor(Math.max(0, garments - 1) / 2), have = dayDiff(f.orderDate, f.deliveryDate);
     if (have < need) warnings.push(`Only ${have} day${have === 1 ? '' : 's'} to deliver: ${need} or more is realistic for a ${f.priority} order of ${garments} garment${garments === 1 ? '' : 's'}.`);
-    if (f.trialDate && f.trialDate === f.deliveryDate) warnings.push('The trial is on the delivery day, so there is no time left for alterations.');
   }
   const noMeasure = meta ? items.filter(it => { const t = meta.garmentTypes.find(x => x.id === it.garmentTypeId); return t.measureGroups.length && t.measureGroups.some(g => !hasMeasure(it.measurements.groups[g])) }).map(it => meta.garmentTypes.find(x => x.id === it.garmentTypeId).name) : [];
 
   const payload = () => ({
     ...(customer?.id ? { customerId: customer.id } : { customer: { name: customer?.name ?? '', phone: customer?.phone ?? '' } }),
-    priority: f.priority, tailorId: f.tailorId ? Number(f.tailorId) : null, orderDate: f.orderDate, startDate: f.startDate || null, trialDate: f.trialDate || null, deliveryDate: f.deliveryDate,
+    priority: f.priority, tailorId: f.tailorId ? Number(f.tailorId) : null, orderDate: f.orderDate, startDate: f.startDate || null, deliveryDate: f.deliveryDate,
     isGst: f.isGst, gstRate: Number(f.gstRate), discount: toPaise(f.discount), urgentCharge: toPaise(f.urgent), notes: f.notes, items: items.map(itemPayload),
     ...(advance > 0 ? { advance: { amount: advance, mode: f.advMode, ref: f.advRef || undefined } } : {}),
   });
@@ -96,7 +94,6 @@ export default function OrderForm() {
             <Field label="Assigned tailor"><select value={f.tailorId} onChange={set('tailorId')}><option value="">Not assigned yet</option>{meta.tailors.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></Field>
             <Field label="Order date"><input type="date" max={todayStr()} value={f.orderDate} onChange={set('orderDate')} /></Field>
             <Field label="Expected start"><input type="date" min={f.orderDate} value={f.startDate} onChange={set('startDate')} /></Field>
-            <Field label="Trial date"><input type="date" min={f.orderDate} max={f.deliveryDate} value={f.trialDate} onChange={set('trialDate')} /></Field>
             <Field label="Promised delivery"><input type="date" min={f.orderDate} value={f.deliveryDate} onChange={set('deliveryDate')} /></Field>
           </div>
           <Field label="Order notes / scheduling notes" className="" ><textarea rows="2" maxLength={1000} value={f.notes} onChange={set('notes')} /></Field>
@@ -151,7 +148,7 @@ export default function OrderForm() {
             <dl className="stc-kv"><dt>Customer</dt><dd><b>{customer.name}</b> · {customer.phone}{customer.isNew && ' (new)'}</dd>
               <dt>Priority</dt><dd style={{ textTransform: 'capitalize' }}>{f.priority}</dd>
               <dt>Tailor</dt><dd>{meta.tailors.find(t => String(t.id) === f.tailorId)?.name ?? 'Not assigned yet'}</dd>
-              <dt>Dates</dt><dd>Ordered {dmy(f.orderDate)}{f.startDate && ` · start ${dmy(f.startDate)}`}{f.trialDate && ` · trial ${dmy(f.trialDate)}`} · <b>deliver {dmy(f.deliveryDate)}</b></dd></dl>
+              <dt>Dates</dt><dd>Ordered {dmy(f.orderDate)}{f.startDate && ` · start ${dmy(f.startDate)}`} · <b>deliver {dmy(f.deliveryDate)}</b></dd></dl>
             {items.map((it, i) => { const t = meta.garmentTypes.find(x => x.id === it.garmentTypeId); return (
               <div key={it.key} className="stc-box"><div className="stc-row between"><b>{i + 1}. {t.name}{Number(it.qty) > 1 ? ` × ${it.qty}` : ''}</b><b>{inr(chargeOf(it) * (Number(it.qty) || 1))}</b></div>
                 <div className="muted small">{[...Object.entries(it.specs).filter(([, v]) => v).map(([k, v]) => `${meta.specLibrary[k]?.label}: ${v}`), ...it.custom.filter(c => c.label).map(c => `${c.label}: ${c.value}`)].join(' · ') || 'No specifications entered'}</div>

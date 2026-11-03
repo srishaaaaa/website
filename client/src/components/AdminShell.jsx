@@ -58,7 +58,7 @@ export const NAV = [
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true], ['/admin/billing/settings', 'Settings', 'gear', true]] },
   { group: 'Stitching Studio', roles: ['owner', 'admin', 'cashier'], items: [
     ['/admin/stitching', 'Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/stitching/measurements', 'Measurements', 'ruler', false],
-    ['/admin/stitching/appointments', 'Trials & Appointments', 'calendar', false], ['/admin/stitching/designs', 'Design Library', 'image', false], ['/admin/stitching/tailors', 'Tailors', 'users', false],
+    ['/admin/stitching/designs', 'Design Library', 'image', false], ['/admin/stitching/tailors', 'Tailors', 'users', false],
     ['/admin/stitching/reports', 'Stitching Reports', 'chart', true], ['/admin/stitching/garments', 'Garment Types', 'tag', true]] },
   { group: 'Online store', items: [
     ['/admin/orders', 'Online orders', 'orders', true], ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/site-text', 'Site text', 'edit', true],

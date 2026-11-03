@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useApp } from '../../context/App';
 import Modal from '../../components/Modal';
-import { AppointmentModal } from './Schedule';
 import { Empty, Err, Field, ItemForm, PayPill, PriPill, StatusPill, dmy, fromServerItem, inr, itemPayload, kindName, newKey, statusName, toPaise, rupees, useMeta, waLink, when } from './common';
 
 const ACT = { created: 'Order created', edited: 'Order details edited', item_edited: 'Garment edited', note: 'Note', payment: 'Payment received', refund: 'Refund recorded', invoice: 'POS invoice created', alteration: 'Alteration updated', qc: 'Quality check recorded', appointment: 'Appointment' };
@@ -54,7 +53,6 @@ export default function OrderDetail() {
           <div className="stc-row">
             {next.map(s => <button key={s} className="dpos-btn sm" onClick={() => setM({ t: 'status', to: s })}>→ {statusName(meta, s)}</button>)}
             {['trial_scheduled', 'trial_completed', 'finishing_qc', 'ready'].includes(o.status) && <button className="dpos-btn outline sm" onClick={() => setM({ t: 'alt' })}>+ Alteration needed</button>}
-            <button className="dpos-btn outline sm" onClick={() => setM({ t: 'appt' })}>Schedule appointment</button>
             <button className="dpos-btn outline sm" onClick={() => setM({ t: 'sched' })}>Edit schedule / tailor</button>
             {manager && <button className="dpos-btn danger sm" onClick={() => setM({ t: 'status', to: 'cancelled' })}>Cancel order</button>}
           </div>)}
@@ -68,7 +66,7 @@ export default function OrderDetail() {
             <dl className="stc-kv">
               <dt>Customer</dt><dd><b>{o.customerName}</b> · {o.customerPhone} <a className="stc-link" href={waLink(o.customerPhone, `Hello ${o.customerName}, an update on your stitching order ${o.orderNo}: ${statusName(meta, o.status)}.`)} target="_blank" rel="noopener noreferrer">WhatsApp</a></dd>
               <dt>Tailor</dt><dd>{o.tailorName || <span className="muted">Not assigned</span>}</dd>
-              <dt>Ordered</dt><dd>{dmy(o.orderDate)}</dd><dt>Start</dt><dd>{dmy(o.startDate)}</dd><dt>Trial</dt><dd>{dmy(o.trialDate)}</dd><dt>Delivery</dt><dd><b>{dmy(o.deliveryDate)}</b>{o.deliveredAt && ` · delivered ${when(o.deliveredAt)}`}</dd>
+              <dt>Ordered</dt><dd>{dmy(o.orderDate)}</dd><dt>Start</dt><dd>{dmy(o.startDate)}</dd><dt>Delivery</dt><dd><b>{dmy(o.deliveryDate)}</b>{o.deliveredAt && ` · delivered ${when(o.deliveredAt)}`}</dd>
               {o.notes && <><dt>Notes</dt><dd>{o.notes}</dd></>}
             </dl>
           </section>
@@ -144,10 +142,6 @@ export default function OrderDetail() {
               <tr key={p.id}><td className="stc-mono">{p.receipt}<div className="muted small" style={{ fontFamily: 'inherit' }}>{p.kind} · {p.mode.toUpperCase()}{p.ref ? ` · ${p.ref}` : ''}</div></td><td className="small">{when(p.at)}</td><td className="r money" style={p.kind === 'refund' ? { color: 'var(--d-bad)' } : null}>{p.kind === 'refund' ? '− ' : ''}{inr(p.amount)}</td></tr>))}</tbody></table>}
           </section>
 
-          <section className="dpos-card stc-stack">
-            <h2 style={{ margin: 0 }}>Appointments</h2>
-            {!o.appointments.length ? <p className="muted" style={{ margin: 0 }}>None booked.</p> : o.appointments.map(a => <div key={a.id} className="stc-row between"><span><b>{kindName(meta, a.kind)}</b><div className="muted small">{when(a.startsAt)}{a.tailorName ? ` · ${a.tailorName}` : ''}</div></span><span className={`stc-pill ${a.status === 'completed' ? 's-done' : a.status === 'cancelled' ? 's-cancelled' : 's-trial'}`}>{a.status}</span></div>)}
-          </section>
 
           <section className="dpos-card stc-stack">
             <h2 style={{ margin: 0 }}>Internal notes and activity</h2>
@@ -164,7 +158,6 @@ export default function OrderDetail() {
       {m?.t === 'altDone' && <AltDoneModal order={o} a={m.a} onClose={close} onDone={r => { setO(r); close() }} />}
       {m?.t === 'sched' && <SchedModal meta={meta} order={o} manager={manager} tailors={tailors} onClose={close} onDone={r => { setO(r); close() }} />}
       {m?.t === 'item' && <ItemModal meta={meta} order={o} item={m.item} designs={designs} onClose={close} onDone={r => { setO(r); close() }} />}
-      {m?.t === 'appt' && <AppointmentModal meta={meta} tailors={tailors} order={o} onClose={close} onSaved={() => { close(); load() }} />}
     </div>);
 }
 
@@ -262,12 +255,12 @@ function AltDoneModal({ order, a, onClose, onDone }) {
 }
 
 function SchedModal({ meta, order, manager, tailors, onClose, onDone }) {
-  const [f, setF] = useState({ priority: order.priority, tailorId: order.tailorId ? String(order.tailorId) : '', startDate: order.startDate ?? '', trialDate: order.trialDate ?? '', deliveryDate: order.deliveryDate, notes: order.notes, discount: rupees(order.discount), urgent: rupees(order.urgentCharge), isGst: order.isGst, gstRate: order.gstRate });
+  const [f, setF] = useState({ priority: order.priority, tailorId: order.tailorId ? String(order.tailorId) : '', startDate: order.startDate ?? '', deliveryDate: order.deliveryDate, notes: order.notes, discount: rupees(order.discount), urgent: rupees(order.urgentCharge), isGst: order.isGst, gstRate: order.gstRate });
   const set = k => e => setF({ ...f, [k]: e.target.value });
   const locked = !!order.invoiceNo;
   const lockTailor = !manager && order.tailorId;
   const { busy, err, go } = useAction(() => api(`/admin/stitching/orders/${order.id}`, { method: 'PATCH', body: {
-    priority: f.priority, startDate: f.startDate || null, trialDate: f.trialDate || null, deliveryDate: f.deliveryDate, notes: f.notes,
+    priority: f.priority, startDate: f.startDate || null, deliveryDate: f.deliveryDate, notes: f.notes,
     ...(lockTailor ? {} : { tailorId: f.tailorId ? Number(f.tailorId) : null }),
     ...(manager && !locked ? { discount: toPaise(f.discount), urgentCharge: toPaise(f.urgent), isGst: f.isGst, gstRate: Number(f.gstRate) } : {}) } }), (r, raw) => { onDone(r, raw) });
   return (
@@ -275,7 +268,7 @@ function SchedModal({ meta, order, manager, tailors, onClose, onDone }) {
       <div className="stc-stack"><Err>{err}</Err>
         <div className="stc-grid"><Field label="Priority"><select value={f.priority} onChange={set('priority')}><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="express">Express</option></select></Field>
           <Field label="Tailor"><select value={f.tailorId} disabled={!!lockTailor} onChange={set('tailorId')}><option value="">Not assigned</option>{tailors.filter(t => t.active || String(t.id) === f.tailorId).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></Field>
-          <Field label="Start"><input type="date" value={f.startDate} onChange={set('startDate')} /></Field><Field label="Trial"><input type="date" value={f.trialDate} onChange={set('trialDate')} /></Field>
+          <Field label="Start"><input type="date" value={f.startDate} onChange={set('startDate')} /></Field>
           <Field label="Promised delivery"><input type="date" value={f.deliveryDate} onChange={set('deliveryDate')} /></Field></div>
         <Field label="Notes"><textarea rows="2" maxLength={1000} value={f.notes} onChange={set('notes')} /></Field>
         {lockTailor && <p className="muted small" style={{ margin: 0 }}>Only an owner or admin can reassign work that already has a tailor.</p>}
