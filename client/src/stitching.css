@@ -80,3 +80,6 @@
   body.stc-printing { background: #fff !important } body.stc-printing .stc-sheet { box-shadow: none; padding: 0; max-width: none }
   @page { size: A4; margin: 12mm }
 }
+
+/* Recent orders table: every row stays on one line (desktop/tablet; phones use the card layout) */
+@media (min-width: 701px) { .stc-table.cards td { white-space: nowrap } }
