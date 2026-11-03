@@ -30,30 +30,24 @@ const orderBody = z.object({
   idempotencyKey: z.string().min(8).max(80),
   customerId: id.optional(), customer: z.object({ name: text(120), phone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits') }).optional(),
   priority: z.enum(['normal', 'urgent', 'express']).default('normal'), tailorId: id.nullable().optional(),
-  orderDate: date.optional(), startDate: date.nullable().optional(), trialDate: date.nullable().optional(), deliveryDate: date,
+  orderDate: date.optional(), startDate: date.nullable().optional(), deliveryDate: date,
   isGst: z.boolean().default(false), gstRate: z.number().int().min(0).max(28).default(5), discount: paise.default(0), urgentCharge: paise.default(0),
   notes: text(1000).default(''), items: z.array(itemBody).min(1).max(20),
   advance: z.object({ amount: paise, mode, ref: text(80).optional() }).optional(),
 }).refine(b => b.customerId || b.customer, { message: 'Choose or add a customer', path: ['customerId'] });
 const orderPatch = z.object({
-  priority: z.enum(['normal', 'urgent', 'express']).optional(), tailorId: id.nullable().optional(), startDate: date.nullable().optional(), trialDate: date.nullable().optional(), deliveryDate: date.optional(),
+  priority: z.enum(['normal', 'urgent', 'express']).optional(), tailorId: id.nullable().optional(), startDate: date.nullable().optional(), deliveryDate: date.optional(),
   notes: text(1000).optional(), discount: paise.optional(), urgentCharge: paise.optional(), isGst: z.boolean().optional(), gstRate: z.number().int().min(0).max(28).optional(),
 });
 const profileBody = z.object({ name: text(80).min(1), unit: z.enum(['in', 'cm']), values: z.record(z.string(), z.number()).default({}), custom: z.array(z.object({ label: text(40), value: z.number() })).max(12).default([]), fitPref: text(80).default(''), notes: text(300).default('') });
 const alterationBody = z.object({ itemId: id.nullable().optional(), reason: text(200).min(3, 'Give the reason'), feedback: text(500).default(''), corrections: text(500).default(''), charge: paise.default(0), tailorId: id.nullable().optional(), dueDate: date.nullable().optional() });
-const apptBody = z.object({
-  orderId: id.nullable().optional(), customerId: id.optional(), kind: z.enum(S.APPT_KINDS.map(k => k[0])), startsAt: z.string().datetime({ offset: true }), minutes: z.number().int().min(5).max(480).default(30),
-  tailorId: id.nullable().optional(), notes: text(300).default(''), ignoreConflicts: z.boolean().default(false),
-});
 
 // Stitching Studio API. Everything here is staff-only (never public). owner/admin manage; cashiers run the day-to-day order, measurement,
-// payment and appointment work. The role is re-read from the database on every request by auth.role.
+// and payment work. The role is re-read from the database on every request by auth.role.
 export default function stitching({ db, auth }) {
   const r = Router();
   const staffer = auth.role('owner', 'admin', 'cashier');
   const manager = auth.role('owner', 'admin');
-  const conflict = (res, e) => res.status(409).json({ error: e.message, code: e.code, conflicts: e.conflicts });
-  const withConflicts = fn => wrap(async (req, res) => { try { await fn(req, res) } catch (e) { if (e.conflicts) return conflict(res, e); throw e } });
   const P = '/stitching';
 
   r.get(`${P}/meta`, staffer, wrap(async (_req, res) => res.json(await S.meta(db))));
@@ -114,17 +108,6 @@ export default function stitching({ db, auth }) {
   r.patch(`${P}/measurements/:id`, staffer, wrap(async (req, res) => res.json(await S.updateProfile(db, req.user, id.parse(req.params.id), profileBody.extend({ archived: z.boolean().default(false) }).parse(req.body)))));
   r.post(`${P}/measurements/:id/duplicate`, staffer, wrap(async (req, res) => res.status(201).json(await S.duplicateProfile(db, req.user, id.parse(req.params.id)))));
   r.get(`${P}/measurements/:id/history`, staffer, wrap(async (req, res) => res.json(await S.profileHistory(db, id.parse(req.params.id)))));
-
-  // ---- appointments ----
-  r.get(`${P}/appointments`, staffer, wrap(async (req, res) => {
-    const f = z.object({ from: date, to: date, status: z.enum(['all', 'scheduled', 'completed', 'cancelled']).default('all'), kind: z.enum(['all', ...S.APPT_KINDS.map(k => k[0])]).default('all') }).parse(req.query);
-    res.json(await S.listAppointments(db, f));
-  }));
-  r.post(`${P}/appointments`, staffer, withConflicts(async (req, res) => res.status(201).json(await S.createAppointment(db, req.user, apptBody.parse(req.body)))));
-  r.patch(`${P}/appointments/:id`, staffer, withConflicts(async (req, res) => {
-    const b = z.object({ startsAt: z.string().datetime({ offset: true }).optional(), minutes: z.number().int().min(5).max(480).optional(), tailorId: id.nullable().optional(), status: z.enum(['scheduled', 'completed', 'cancelled']).optional(), notes: text(300).optional(), ignoreConflicts: z.boolean().default(false) }).parse(req.body);
-    res.json(await S.updateAppointment(db, req.user, id.parse(req.params.id), b));
-  }));
 
   // ---- tailors (a work-assignment list, not staff accounts: no attendance or HR) ----
   r.get(`${P}/tailors`, staffer, wrap(async (_req, res) => res.json(await S.listTailors(db))));

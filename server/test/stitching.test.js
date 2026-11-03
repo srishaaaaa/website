@@ -29,7 +29,6 @@ test('pure rules: measurement validation, date checks and delivery warnings', ()
   assert.throws(() => validateMeasure('blouse', 'in', {}), /at least one/);
   assert.equal(validateMeasure('misc', 'cm', {}, [{ label: 'Cape drop', value: 55 }]).custom[0].value, 55);
   assert.throws(() => checkDates({ orderDate: '2026-05-10', deliveryDate: '2026-05-09' }), /before the order date/);
-  assert.throws(() => checkDates({ orderDate: '2026-05-10', trialDate: '2026-05-20', deliveryDate: '2026-05-15' }), /trial date/);
   assert.equal(deliveryWarnings({ orderDate: '2026-05-10', deliveryDate: '2026-05-11', priority: 'normal', garments: 1 }).length, 1, 'one day for a normal order is unrealistic');
   assert.equal(deliveryWarnings({ orderDate: '2026-05-10', deliveryDate: '2026-05-11', priority: 'express', garments: 1 }).length, 0);
 });
@@ -49,7 +48,7 @@ test('stitching studio: access control, totals, duplicates, workflow, alteration
   assert.equal((await inventory('GET', '/admin/stitching/orders')).status, 403, 'inventory staff do not see stitching');
 
   const meta = (await cashier('GET', '/admin/stitching/meta')).body;
-  assert.equal(meta.garmentTypes.length, 10); assert.equal(meta.statuses.length, 12);
+  assert.equal(meta.garmentTypes.length, 10); assert.equal(meta.statuses.length, 10);
   const gt = c => meta.garmentTypes.find(g => g.code === c).id;
 
   assert.equal((await cashier('POST', '/admin/stitching/tailors', { name: 'Meena' })).status, 403, 'only owner/admin manage tailors');
@@ -58,7 +57,7 @@ test('stitching studio: access control, totals, duplicates, workflow, alteration
   // ---- create an order: server computes the totals ----
   const body = {
     idempotencyKey: key(), customer: { name: 'Anitha R', phone: '98765 43210' }, priority: 'urgent', tailorId: tailor,
-    deliveryDate: addDays(today(), 8), trialDate: addDays(today(), 4), isGst: true, gstRate: 5, discount: 10000, urgentCharge: 20000, notes: 'Wedding on the 15th',
+    deliveryDate: addDays(today(), 8), isGst: true, gstRate: 5, discount: 10000, urgentCharge: 20000, notes: 'Wedding on the 15th',
     items: [
       { garmentTypeId: gt('saree-blouse'), qty: 1, specs: { neck_design: 'Boat neck', sleeve_style: 'Elbow', bogus_field: 'dropped' }, charges: { base: 80000, embroidery: 30000 },
         measurements: { groups: { blouse: { unit: 'in', values: { bust: 36, waist: 30, blouse_length: 15 }, saveAs: 'Anitha blouse' } } } },
@@ -114,8 +113,6 @@ test('stitching studio: access control, totals, duplicates, workflow, alteration
   assert.equal((await st(cashier, 'measurements_confirmed')).status, 200);
   assert.equal((await st(cashier, 'cutting')).status, 200);
   assert.equal((await st(cashier, 'stitching')).status, 200);
-  assert.equal((await st(cashier, 'trial_scheduled')).status, 200);
-  assert.equal((await st(cashier, 'trial_completed')).status, 200);
   assert.equal((await st(cashier, 'cancelled', { note: 'no' })).status, 403, 'cashiers cannot cancel');
 
   // alteration round 1: charge changes the total (manager-set charge is allowed at creation)
@@ -183,22 +180,11 @@ test('stitching studio: access control, totals, duplicates, workflow, alteration
   assert.equal((await cashier('POST', `/admin/stitching/orders/${o2.id}/payments`, { idempotencyKey: key(), kind: 'part', amount: 100, mode: 'cash' })).status, 409, 'no payments on a cancelled order');
 
   const o3 = (await cashier('POST', '/admin/stitching/orders', { ...body, idempotencyKey: key(), customer: undefined, customerId: o.customerId, advance: { amount: 20000, mode: 'cash' }, deliveryDate: addDays(today(), 10), items: [{ garmentTypeId: gt('churidar'), charges: { base: 40000 }, measurements: { groups: { bottom: { unit: 'in', values: { waist: 30, length: 38 } } } } }] })).body.order;
-  const at = `${addDays(today(), 3)}T10:00:00+05:30`;
-  const a = await cashier('POST', '/admin/stitching/appointments', { orderId: o3.id, kind: 'trial', startsAt: at, minutes: 30, tailorId: tailor });
-  assert.equal(a.status, 201); assert.equal(a.body.customerName, 'Anitha R');
-  const clash = await cashier('POST', '/admin/stitching/appointments', { orderId: o3.id, kind: 'follow_up_trial', startsAt: `${addDays(today(), 3)}T10:15:00+05:30`, minutes: 30 });
-  assert.equal(clash.status, 409); assert.equal(clash.body.conflicts.length, 1, 'overlap warns');
-  assert.equal((await cashier('POST', '/admin/stitching/appointments', { orderId: o3.id, kind: 'follow_up_trial', startsAt: `${addDays(today(), 3)}T10:15:00+05:30`, ignoreConflicts: true })).status, 201);
-  const moved = await cashier('PATCH', `/admin/stitching/appointments/${a.body.id}`, { startsAt: `${addDays(today(), 3)}T16:00:00+05:30` });
-  assert.equal(moved.status, 200);
-  assert.equal((await cashier('PATCH', `/admin/stitching/appointments/${a.body.id}`, { status: 'cancelled' })).body.status, 'cancelled');
-  assert.equal((await cashier('PATCH', `/admin/stitching/appointments/${a.body.id}`, { startsAt: at })).status, 409, 'a cancelled appointment cannot be rescheduled');
-
   // ---- dashboard, list, reports: real records only ----
   const dash = (await cashier('GET', '/admin/stitching/dashboard')).body;
   assert.equal(dash.counts.active, 2, 'the delivered and cancelled orders are not active');
   assert.equal(dash.counts.today, 4); assert.equal(dash.counts.awaitingCollection, 0); assert.equal(dash.counts.overdue, 0);
-  assert.equal(dash.recent.length, 4); assert.ok(dash.appointments.length >= 1);
+  assert.equal(dash.recent.length, 4);
   const list = (await cashier('GET', '/admin/stitching/orders?status=active&sort=delivery&dir=asc')).body;
   assert.equal(list.total, 2); assert.ok(list.rows[0].deliveryDate <= list.rows[1].deliveryDate);
   assert.equal((await cashier('GET', '/admin/stitching/orders?q=98765')).body.total, 4, 'search by phone');
