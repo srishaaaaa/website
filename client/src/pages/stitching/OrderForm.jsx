@@ -102,31 +102,46 @@ export default function OrderForm() {
           <Field label="Order notes / scheduling notes" className="" ><textarea rows="2" maxLength={1000} value={f.notes} onChange={set('notes')} /></Field>
           {warnings.map(w => <p key={w} className="stc-warn" style={{ marginBottom: 0 }}>⚠ {w}</p>)}
         </Step>
-        <Step n="4" title="Pricing and advance payment">
-          <div className="stc-grid">
-            <Field label="Urgent / express charge (₹)"><input type="number" min="0" inputMode="decimal" value={f.urgent} onChange={set('urgent')} /></Field>
-            <Field label="Discount (₹)"><input type="number" min="0" inputMode="decimal" value={f.discount} onChange={set('discount')} /></Field>
-            <Field label="GST"><select value={f.isGst ? String(f.gstRate) : 'none'} onChange={e => e.target.value === 'none' ? setF({ ...f, isGst: false }) : setF({ ...f, isGst: true, gstRate: Number(e.target.value) })}><option value="none">No GST</option>{[5, 12, 18].map(r => <option key={r} value={r}>GST {r}%</option>)}</select></Field>
-            <Field label="Advance received (₹)"><input type="number" min="0" inputMode="decimal" value={f.advance} onChange={set('advance')} /></Field>
-            <Field label="Advance paid by"><select value={f.advMode} onChange={set('advMode')}><option value="cash">Cash</option><option value="upi">GPay / UPI</option><option value="card">Card</option></select></Field>
-            <Field label="Payment reference"><input value={f.advRef} onChange={set('advRef')} placeholder="UPI / card ref (optional)" /></Field>
-          </div>
-          <p className="muted small" style={{ marginBottom: 0 }}>Alteration charges are added later, if an alteration is needed. The server recalculates every amount when the order is saved.</p>
-        </Step>
       </div>
-      <aside className="dpos-card stc-stack">
-        <h2 style={{ margin: 0 }}>Order summary</h2>
-        <div className="stc-sum">
-          {lines.map((l, i) => <div key={i}><span>{l.name}{l.qty > 1 ? ` × ${l.qty}` : ''}</span><span>{inr(l.price * l.qty)}</span></div>)}
-          {tot.discount > 0 && <div><span>Discount</span><span>− {inr(tot.discount)}</span></div>}
-          {f.isGst && <div><span>GST {f.gstRate}%</span><span>{inr(tot.tax)}</span></div>}
-          <div className="tot"><span>Total</span><span>{inr(tot.total)}</span></div>
-          <div><span>Advance</span><span>{inr(Math.min(advance, tot.total))}</span></div>
-          <div><b>Balance</b><b>{inr(Math.max(tot.total - advance, 0))}</b></div>
+      <aside className="dpos-card dpos-sticky">
+        <div className="dpos-head" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}>Current order</h2></div>
+        <div className="dpos-box dpos-sum" style={{ marginBottom: 14 }}>
+          <div><span>SOURCE</span><span className="dpos-pill">Stitching</span></div>
+          <div><span>CUSTOMER</span><span>{customer?.name || '-'}</span></div><div><span>PHONE</span><span>{customer?.phone || '-'}</span></div>
+          <div><span>DATE</span><span>{dmy(f.orderDate)}</span></div>
+          <hr style={{ border: 0, borderTop: '1px solid var(--d-line)', width: '100%' }} />
+          {lines.length ? lines.map((l, i) => <div key={i}><span>{l.name}{l.qty > 1 ? ` × ${l.qty}` : ''}</span><span>{inr(l.price * l.qty)}</span></div>) : <em className="muted" style={{ textAlign: 'center', display: 'block' }}>No items added yet</em>}
         </div>
-        {problems.map(p => <p key={p} className="stc-warn" style={{ margin: 0, background: '#fdecea', color: 'var(--d-bad)' }}>{p}</p>)}
-        {noMeasure.length > 0 && <p className="stc-warn" style={{ margin: 0 }}>No measurements yet for {noMeasure.join(', ')}. You can add them later, but cutting cannot start without them.</p>}
-        <button className="dpos-btn big" disabled={problems.length > 0} onClick={() => { setErr(); setReview(true) }}>Review order</button>
+        <p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: '0 0 6px' }}>MANUAL DISCOUNT</p>
+        <div className="dpos-grid" style={{ gridTemplateColumns: '110px 1fr', marginBottom: 12 }}>
+          <select aria-label="Discount type" disabled><option>₹</option></select>
+          <input inputMode="decimal" value={f.discount} onChange={set('discount')} placeholder="0" aria-label="Discount value" style={{ textAlign: 'right' }} />
+        </div>
+        <div className="dpos-ledger">
+          <div className="dpos-lrow"><span>Subtotal ({garments} item{garments === 1 ? '' : 's'}) <small className="dpos-excl">EXCL. GST</small></span><b>{inr(tot.subtotal)}</b></div>
+          {tot.discount > 0 && <div className="dpos-lrow"><span>Discount</span><span>− {inr(tot.discount)}</span></div>}
+          <div className="dpos-lrow"><span>Urgent / express</span><input aria-label="Urgent or express charge in rupees" inputMode="decimal" value={f.urgent} onChange={set('urgent')} placeholder="0" /></div>
+        </div>
+        <div className="dpos-two" role="radiogroup" aria-label="Invoice type">
+          <button role="radio" aria-checked={!f.isGst} className={!f.isGst ? 'on' : ''} onClick={() => setF({ ...f, isGst: false })}>Non-GST bill</button>
+          <button role="radio" aria-checked={f.isGst} className={f.isGst ? 'on' : ''} onClick={() => setF({ ...f, isGst: true })}>GST invoice</button></div>
+        {f.isGst && <div className="dpos-gstrow"><b>GST <small>(+ ADDED)</small></b>
+          <select aria-label="GST rate" value={f.gstRate} onChange={e => setF({ ...f, gstRate: Number(e.target.value) })}>{[5, 12, 18].map(r => <option key={r} value={r}>{r}%</option>)}</select>
+          <b className="acc">{inr(tot.tax)}</b></div>}
+        <p className="dpos-flabel">ADVANCE PAID BY</p>
+        <div className="dpos-pills" role="radiogroup" aria-label="Advance payment method">{[['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']].map(([v, l]) => <button key={v} role="radio" aria-checked={f.advMode === v} className={f.advMode === v ? 'on' : ''} onClick={() => setF({ ...f, advMode: v })}>{l}</button>)}</div>
+        <hr className="dpos-hr" />
+        <div className="dpos-grand"><span>GRAND TOTAL</span><b>{inr(tot.total)}</b></div>
+        <div className="dpos-paybox">
+          <p className="dpos-pl">{f.advMode === 'upi' ? 'GPAY' : f.advMode.toUpperCase()} ADVANCE</p>
+          <label className="f">Advance Received (₹)<input className="bigin" inputMode="decimal" value={f.advance} onChange={set('advance')} placeholder="0.00" /></label>
+          <p className="sub" style={{ marginTop: 8 }}>Balance due: {inr(Math.max(tot.total - advance, 0))}</p>
+          {f.advMode !== 'cash' && <label className="f" style={{ marginTop: 12 }}>{f.advMode === 'card' ? 'Slip / approval no.' : 'Transaction ID'} (optional)<input value={f.advRef} onChange={set('advRef')} maxLength={80} /></label>}
+        </div>
+        <p className="sub" style={{ margin: '8px 2px 14px' }}>Alteration charges are added later, if needed. The server recalculates every amount when the order is saved.</p>
+        {problems.map(p => <p key={p} className="stc-warn" style={{ margin: '0 0 10px', background: '#fdecea', color: 'var(--d-bad)' }}>{p}</p>)}
+        {noMeasure.length > 0 && <p className="stc-warn" style={{ margin: '0 0 10px' }}>No measurements yet for {noMeasure.join(', ')}. You can add them later, but cutting cannot start without them.</p>}
+        <button className="dpos-cta" disabled={problems.length > 0} onClick={() => { setErr(); setReview(true) }}>REVIEW ORDER</button>
       </aside>
 
       {review && (
