@@ -5,7 +5,6 @@ import { useApp } from '../context/App';
 import { useReduced } from '../lib/hooks';
 import { Reveal } from './Motion';
 import { useSiteText } from '../lib/siteText';
-import BlankFrame from './BlankFrame';
 import { parseVideo } from '../lib/media';
 
 const IgIcon = ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none" /></svg>;
@@ -78,7 +77,7 @@ function Viewer({ items, start, onClose }) {
 }
 
 // "Inside DHANYA BOUTIQUE": a photo gallery (up to 6) and a row of videos (up to 6), shown separately. Both are managed in
-// Admin → Storefront images. Until anything is added, blank frames keep the section in place.
+// Admin → Storefront images. Only what has been added is shown; a gallery with nothing in it is hidden.
 export default function InstagramStrip() {
   const { site } = useApp();
   const t = useSiteText();
@@ -95,39 +94,37 @@ export default function InstagramStrip() {
         <p className="insta-sub">{t.instaSub}</p>
         {ig?.url && <a className="btn solid pill" href={ig.url} target="_blank" rel="noopener noreferrer" data-cursor="FOLLOW"><IgIcon size={16} /> FOLLOW ON INSTAGRAM <span aria-hidden="true">↗</span></a>}
       </Reveal>
-      {/* Two separate galleries: reels (tall videos) and photos (4:5 photo grid). Empty slots keep each in place until media is added. */}
-      <div className="insta-block insta-reels">
-        <div className="insta-bh"><h3>Reel Gallery</h3><span>{videos.length ? `${videos.length} ${videos.length === 1 ? 'REEL' : 'REELS'}` : 'COMING SOON'}</span></div>
+      {/* Two separate galleries: reels (tall videos) and photos (4:5 photo grid). */}
+      {videos.length > 0 && <div className="insta-block insta-reels">
+        <div className="insta-bh"><h3>Reel Gallery</h3><span>{videos.length} {videos.length === 1 ? 'REEL' : 'REELS'}</span></div>
         <ul className="insta-grid">
-          {Array.from({ length: 6 }, (_, i) => {
-            const t = videos[i];
+          {videos.map((t, i) => {
             return (
-              <Reveal as="li" key={(t?.video || 'empty') + i} delay={(i % 3) * 0.1}>
-                <div className={`insta-tile ${t ? 'insta-click' : 'insta-empty'}`} onClick={t ? () => setView({ list: videos, i }) : undefined} role={t ? 'button' : undefined} tabIndex={t ? 0 : undefined} aria-label={t ? 'Play reel full screen' : undefined} onKeyDown={t ? e => { if (e.key === 'Enter') setView({ list: videos, i }) } : undefined}>
-                  {t ? <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} /> : <BlankFrame label={`Reel ${i + 1}`} kind="video" to="/admin/reels" where="Reels & Gallery" />}
-                  {t?.href && <a className="insta-open" onClick={e => e.stopPropagation()} href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
+              <Reveal as="li" key={t.video + i} delay={(i % 3) * 0.1}>
+                <div className="insta-tile insta-click" onClick={() => setView({ list: videos, i })} role="button" tabIndex={0} aria-label="Play reel full screen" onKeyDown={e => { if (e.key === 'Enter') setView({ list: videos, i }) }}>
+                  <Reel post={t} label={t.alt || 'Boutique video'} fallbackUrl={ig?.url} />
+                  {t.href && <a className="insta-open" onClick={e => e.stopPropagation()} href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
                 </div>
               </Reveal>
             );
           })}
         </ul>
-      </div>
-      <div className="insta-block insta-photos">
-        <div className="insta-bh"><h3>Photo Gallery</h3><span>{photos.length ? `${photos.length} ${photos.length === 1 ? 'PHOTO' : 'PHOTOS'}` : 'COMING SOON'}</span></div>
+      </div>}
+      {photos.length > 0 && <div className="insta-block insta-photos">
+        <div className="insta-bh"><h3>Photo Gallery</h3><span>{photos.length} {photos.length === 1 ? 'PHOTO' : 'PHOTOS'}</span></div>
         <ul className="insta-grid">
-          {Array.from({ length: 6 }, (_, i) => {
-            const t = photos[i];
+          {photos.map((t, i) => {
             return (
-              <Reveal as="li" key={(t?.image || 'empty') + i} delay={(i % 3) * 0.1}>
-                <div className={`insta-tile ${t ? 'insta-click' : 'insta-empty'}`} onClick={t ? () => setView({ list: photos, i }) : undefined} role={t ? 'button' : undefined} tabIndex={t ? 0 : undefined} aria-label={t ? 'View photo full screen' : undefined} onKeyDown={t ? e => { if (e.key === 'Enter') setView({ list: photos, i }) } : undefined}>
-                  {t ? <img src={t.image} alt={t.alt || 'Boutique photo'} loading="lazy" /> : <BlankFrame label={`Photo ${i + 1}`} to="/admin/reels" where="Reels & Gallery" />}
-                  {t?.href && <a className="insta-open" onClick={e => e.stopPropagation()} href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
+              <Reveal as="li" key={t.image + i} delay={(i % 3) * 0.1}>
+                <div className="insta-tile insta-click" onClick={() => setView({ list: photos, i })} role="button" tabIndex={0} aria-label="View photo full screen" onKeyDown={e => { if (e.key === 'Enter') setView({ list: photos, i }) }}>
+                  <img src={t.image} alt={t.alt || 'Boutique photo'} loading="lazy" />
+                  {t.href && <a className="insta-open" onClick={e => e.stopPropagation()} href={t.href} target="_blank" rel="noopener noreferrer" aria-label="Open this post on Instagram">↗</a>}
                 </div>
               </Reveal>
             );
           })}
         </ul>
-      </div>
+      </div>}
       {view && <Viewer items={view.list} start={view.i} onClose={() => setView(null)} />}
     </section>
   );
