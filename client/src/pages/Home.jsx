@@ -6,7 +6,6 @@ import BoutiqueHero from '../components/hero/BoutiqueHero';
 import Ticker from '../components/Ticker';
 import FeaturedCollections from '../components/FeaturedCollections';
 import EditorialSection from '../components/EditorialSection';
-import CollectionsFlow from '../components/CollectionsFlow';
 import CategoryCircles from '../components/CategoryCircles';
 import CustomerReviews from '../components/CustomerReviews';
 import EnquirySection from '../components/EnquirySection';
@@ -70,7 +69,6 @@ export default function Home() {
       <FeaturedCollections />
       <EditorialSection />
       <CategoryCircles />
-      <CollectionsFlow />
       <Details />
       <ServiceHighlights />
       <Story />
