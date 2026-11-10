@@ -32,7 +32,7 @@ const TONE = { received: 'received', measurements_confirmed: 'received', materia
 export const StatusPill = ({ s, meta }) => <span className={`stc-pill s-${TONE[s] ?? 'received'}`}>{statusName(meta, s)}</span>;
 export const PayPill = ({ s }) => <span className={`stc-pill pay-${s}`}>{{ unpaid: 'Unpaid', partial: 'Part paid', paid: 'Paid', held: 'Advance held', none: '—' }[s]}</span>;
 export const PriPill = ({ p }) => p === 'normal' ? null : <span className={`stc-pill pr-${p}`}>{p}</span>;
-export const kindName = (meta, k) => meta?.apptKinds.find(x => x[0] === k)?.[1] ?? k;
+export const kindName = (meta, k) => meta?.apptKinds?.find(x => x[0] === k)?.[1] ?? k;
 
 export function Field({ label, children, className = '' }) { return <label className={`stc-f ${className}`}>{label}{children}</label> }
 

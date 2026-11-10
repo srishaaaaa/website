@@ -53,7 +53,6 @@ export default function LuxuryFooter() {
           <nav aria-label="Shop"><h2 className="foot-h">Shop</h2><ul>
             <li><Link to="/shop">All Products</Link></li>
             <li><Link to={catalog.collections.some(c => c.slug === 'new-arrivals') ? '/collections/new-arrivals' : '/shop?sort=newest'}>New Arrivals</Link></li>
-            <li><Link to="/collections">Collections</Link></li>
             <li><Link to="/wishlist">Wishlist</Link></li>
             <li><Link to="/cart">Cart</Link></li>
             <li><Link to="/account">My Account</Link></li>

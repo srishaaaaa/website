@@ -79,7 +79,7 @@ function VariantRow({ productId, v, basePrice, onChanged, setErr, onlyOne }) {
 function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
   const [product, setProduct] = useState(start);
   const [f, setF] = useState({ name: start.name, price: rupees(start.price), cost: start.costPrice ? rupees(start.costPrice) : '', tax: start.taxRate, cat: start.categorySlug || '', status: start.status,
-    description: start.description || '', material: start.material || '', featured: !!start.featured, collections: start.collections || [] });
+    description: start.description || '', material: start.material || '', featured: !!start.featured, best: !!start.bestSeller, low: start.lowAlert ?? 3, collections: start.collections || [] });
   const [cols, setCols] = useState([]);
   const [nv, setNv] = useState({ size: '', color: '', sku: '', stock: '' });
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(); const [tab, setTab] = useState('details');
@@ -89,7 +89,7 @@ function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
     e.preventDefault(); setBusy(true); setErr();
     try {
       await api(`/admin/pos/products/${product.id}`, { method: 'PATCH', body: { name: f.name.trim(), price: toPaise(f.price), costPrice: toPaise(f.cost), taxRate: +f.tax, categorySlug: f.cat || null, status: f.status,
-        description: f.description.trim(), material: f.material.trim(), featured: f.featured, collections: f.collections } });
+        description: f.description.trim(), material: f.material.trim(), featured: f.featured, bestSeller: f.best, lowAlert: Math.max(0, Math.round(+f.low) || 0), collections: f.collections } });
       onDone(); onClose();
     } catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
   };
@@ -102,7 +102,7 @@ function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
   };
   const toggleCol = slug => setF(x => ({ ...x, collections: x.collections.includes(slug) ? x.collections.filter(c => c !== slug) : [...x.collections, slug] }));
   const editing = tab === 'details' || tab === 'website';
-  const tabs = [['details', 'Details'], ['website', 'Website & collections'], ['sizes', `Sizes & colours (${product.variants?.length || 0})`], ['photos', 'Photos']];
+  const tabs = [['details', 'Details'], ['website', 'Website & categories'], ['sizes', `Sizes & colours (${product.variants?.length || 0})`], ['photos', 'Photos']];
   return (
     <Modal title="Edit product" sub={product.name} wide onClose={onClose}>
       <div className="pe-tabs" role="tablist">{tabs.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
@@ -121,9 +121,11 @@ function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
         </div>
         <div style={{ display: tab === 'website' ? 'grid' : 'none', gap: 14 }}>
           <label className="f">Description <span className="muted small">(shown on the product page)</span><textarea rows={6} maxLength={4000} value={f.description} onChange={e => setF({ ...f, description: e.target.value })} placeholder="Fabric, work, drape, care…" /></label>
-          <label className="pe-check"><input type="checkbox" checked={f.featured} onChange={e => setF({ ...f, featured: e.target.checked })} /> Featured piece <span className="muted small">(shown in Trending when no trending pieces are picked)</span></label>
-          <div className="f"><span>Collections</span>
-            <div className="pe-cols">{!cols.length ? <span className="muted small">No collections yet.</span> : cols.map(c => (
+          <label className="pe-check"><input type="checkbox" checked={f.best} onChange={e => setF({ ...f, best: e.target.checked })} /> Show in “Best Sellers” <span className="muted small">(the home page keeps the 10 newest)</span></label>
+          <label className="f">Low-stock alert at <span className="muted small">(compared with the total across all sizes)</span><input type="number" min="0" value={f.low} onChange={e => setF({ ...f, low: e.target.value })} style={{ maxWidth: 120 }} /></label>
+          <label className="pe-check"><input type="checkbox" checked={f.featured} onChange={e => setF({ ...f, featured: e.target.checked })} /> Show in “Trending collections” <span className="muted small">(shown in Trending when no trending pieces are picked)</span></label>
+          <div className="f"><span>Categories</span>
+            <div className="pe-cols">{!cols.length ? <span className="muted small">No categories yet.</span> : cols.map(c => (
               <label key={c.slug} className={`pe-col ${f.collections.includes(c.slug) ? 'on' : ''}`}><input type="checkbox" checked={f.collections.includes(c.slug)} onChange={() => toggleCol(c.slug)} />{c.name}{c.status !== 'published' && <em className="muted small"> (hidden)</em>}</label>))}</div>
           </div>
         </div>

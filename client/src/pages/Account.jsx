@@ -145,7 +145,7 @@ function SecurityTab({ data, onSaved }) {
 }
 
 export function Account() {
-  const { user, authReady, signOut } = useApp();
+  const { user, authReady, signOut, wish } = useApp();
   const [sp, setSp] = useSearchParams();
   const tab = TABS.some(([k]) => k === sp.get('tab')) ? sp.get('tab') : 'profile';
   const [data, setData] = useState(null); const [err, setErr] = useState();
@@ -154,9 +154,12 @@ export function Account() {
   if (!user) return <Navigate to="/login" replace />;
   return (
     <div className="account">
-      <p className="eyebrow">ACCOUNT</p>
-      <h1 className="serif">{user.name ? `Hello, ${user.name.split(' ')[0]}` : 'Your account'}</h1>
-      {user.role !== 'customer' && <p><Link className="link-u" to="/admin">Open the staff dashboard</Link></p>}
+      <section className="acc-hero">
+        <span className="acc-av" aria-hidden="true">{(user.name || user.email || 'D').trim()[0].toUpperCase()}</span>
+        <div><p className="eyebrow">ACCOUNT</p><h1 className="serif">{user.name ? `Hello, ${user.name.split(' ')[0]}` : 'Your account'}</h1><p className="acc-mail">{user.email}</p></div>
+        <div className="acc-hero-btns">{user.role !== 'customer' && <Link className="btn pill" to="/admin">STAFF DASHBOARD</Link>}<Link className="btn pill" to="/wishlist">WISHLIST ({wish.length})</Link></div>
+      </section>
+      <div className="acc-stats"><div><b>{data ? data.addresses.length : '…'}</b><span>Saved addresses</span></div><div><b>{wish.length}</b><span>Wishlist</span></div></div>
       <nav className="acc-tabs" aria-label="Account sections">
         {TABS.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => setSp(k === 'profile' ? {} : { tab: k })}>{l}</button>)}
       </nav>

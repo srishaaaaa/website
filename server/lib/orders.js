@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { rows, one } from '../db/index.js';
 import { HttpError } from './http.js';
-import { cartLines, issueFor, shippingFor } from './cart.js';
+import { cartLines, gstSplit, issueFor, shippingFor } from './cart.js';
 
 export const orderNumber = () => 'DH' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(2).toString('hex').toUpperCase();
 export const audit = (q, actorId, action, entity, entityId, meta = {}) =>
@@ -19,9 +19,10 @@ export async function createPendingOrder({ db, cfg }, { cartId, user, email, add
       if (issue) throw new HttpError(409, issue === 'insufficient_stock' ? `Only ${l.stock} left of ${l.name} (${l.size})` : `${l.name} (${l.size}) is no longer available`, issue);
     }
     let subtotal = 0, tax = 0;
-    for (const l of lines) { const lt = l.price * l.qty; subtotal += lt; tax += Math.round(lt * l.taxRate / 100) }
+    for (const l of lines) subtotal += l.price * l.qty;
+    tax = gstSplit(lines).included; // prices include GST: the tax is shown, never added on top
     const ship = await shippingFor(t, subtotal);
-    const total = subtotal + tax + ship.amount;
+    const total = subtotal + ship.amount;
     const number = orderNumber();
     const order = await one(t, `INSERT INTO orders (user_id, order_number, email, subtotal, shipping_amount, tax_amount, total_amount, shipping_address_snapshot, shipping_method_id, reservation_expires_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, now() + ($10 || ' minutes')::interval) RETURNING id, order_number, total_amount, currency`,

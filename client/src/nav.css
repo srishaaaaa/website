@@ -708,3 +708,48 @@ html.lenis, html.lenis body { height: auto }
 /* video tiles: keep them on their own GPU layer and drop the blur over playing video */
 .insta-tile video { transform: translateZ(0); will-change: transform }
 .reel-mute { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(20, 14, 22, .7) }
+
+/* Galleries show only what was added: 1 or 2 items sit centred at the same size instead of leaving blank boxes */
+@media (min-width: 768px) { .insta-block .insta-grid { display: flex; flex-wrap: wrap; justify-content: center } .insta-block .insta-grid > li { width: calc((100% - 2 * clamp(14px, 2vw, 32px)) / 3) } }
+
+/* ---- shop category tabs, product page boxes, bag totals, checkout (plum + gold) ---- */
+.cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px var(--pad) 16px; max-width: 1500px; margin: 0 auto }
+.cat-tabs button { padding: 9px 20px; border-radius: 999px; border: 1px solid rgba(198, 160, 82, .55); background: #fff; color: #211714; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; transition: background .25s, color .25s }
+.cat-tabs button:hover { border-color: #C6A052 } .cat-tabs button.on { background: #330533; border-color: #330533; color: #fff }
+.dr-box { margin: 18px 0; padding: 16px 18px; background: #f6efe6; border: 1px solid rgba(198, 160, 82, .45); border-radius: 16px }
+.dr-box h3 { margin: 0 0 8px; font-size: 12px; font-weight: 800; letter-spacing: .18em } .dr-box ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13.5px }
+.pdp-text p { margin: 0 0 10px }
+.bag-totals { display: grid; gap: 8px; font-size: 14px; margin: 14px 0 }
+.bag-totals .bt-total { padding-top: 10px; border-top: 1px solid rgba(33, 23, 20, .14); font-size: 17px }
+.bt-gst { margin-top: 4px; padding: 12px 14px; border-radius: 12px; background: #f3e8f4; color: #330533; font-size: 12.5px; display: grid; gap: 4px } .bt-gst p { margin: 0 0 2px; font-weight: 800; letter-spacing: .08em; font-size: 11px; text-transform: uppercase } .bt-sum { font-weight: 700; padding-top: 4px; border-top: 1px dashed rgba(51, 5, 51, .3) }
+.shipbar { margin-bottom: 14px } .shipbar p { margin: 0 0 6px; font-size: 13px } .shipbar-track { height: 6px; border-radius: 6px; background: rgba(33, 23, 20, .1); overflow: hidden } .shipbar-track i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #C6A052, #e8cf94); transition: width .5s var(--ease, ease) }
+.bag-go { background: linear-gradient(135deg, #5a1560, #330533) !important; border-radius: 999px !important }
+.co2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; max-width: 1180px; margin: 0 auto; padding: 120px var(--pad) 60px }
+.co2 .co-bag { order: 1; background: #fff; border: 1px solid rgba(198, 160, 82, .45); border-radius: 22px; padding: 22px }
+.co2 .co-form { order: 2; position: sticky; top: 100px; background: #fff; border: 1px solid rgba(198, 160, 82, .45); border-radius: 22px; padding: 24px }
+.co-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px } .co-head h1 { margin: 0 }
+.co-steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0 } .co-steps li { padding: 6px 14px; border-radius: 999px; background: #f3eeea; font-size: 11px; font-weight: 700; letter-spacing: .1em } .co-steps .done { background: #f3e8f4; color: #5a1560 } .co-steps .on { background: #330533; color: #fff }
+.co-trust { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; font-size: 12.5px; color: #5a4a5a }
+.co-modal { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; background: rgba(33, 10, 33, .6); padding: 16px }
+.co-sheet { position: relative; width: min(440px, 100%); padding: 28px; background: #f9f3ec; color: #211714; border-radius: 22px; display: grid; gap: 14px; text-align: center } .co-sheet h2 { margin: 0; font-size: 16px; letter-spacing: .2em } .co-sheet p { margin: 0 }
+.co-x { position: absolute; top: 12px; right: 14px; font-size: 18px }
+.co-method { display: grid; gap: 4px; padding: 14px; background: #fff; border-radius: 14px; border: 1px solid rgba(198, 160, 82, .45) } .co-method span { font-size: 12px; color: #6f6270 }
+.co-confirm { padding: 15px; border-radius: 999px; background: #000; color: #fff; font-weight: 800; letter-spacing: .12em; font-size: 13px }
+@media (max-width: 860px) { .co2 { grid-template-columns: 1fr } .co2 .co-form { position: static; order: 1 } .co2 .co-bag { order: 2 } }
+
+/* ---- sign in / register (split) and account dashboard ---- */
+.auth2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); max-width: 980px; margin: 110px auto 60px; padding: 0; border-radius: 26px; overflow: hidden; box-shadow: 0 30px 70px rgba(51, 5, 51, .18); background: #fff }
+.auth2 .auth-side { padding: 44px 36px; display: flex; flex-direction: column; justify-content: center; gap: 14px; color: #fff; background: radial-gradient(120% 90% at 20% 10%, #5a1560 0%, #330533 55%, #1d031d 100%) }
+.auth-brand { margin: 0; letter-spacing: .4em; font-size: 15px; color: #C6A052 } .auth-tag { margin: 0; font-size: clamp(30px, 4vw, 46px); line-height: 1.05 }
+.auth-side ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 10px; font-size: 14px; opacity: .88 } .auth-side li::before { content: '✓'; color: #C6A052; margin-right: 10px }
+.auth2 form { padding: 40px 34px; border: 0; box-shadow: none; background: #fff; max-width: none }
+.auth2 .field input { background: #fbf8f6 } .auth2 .field input:focus { outline: 2px solid rgba(198, 160, 82, .6); outline-offset: 0 }
+.auth2 .btn.solid { background: linear-gradient(135deg, #5a1560, #330533); border-radius: 999px } .auth2 .btn.solid:hover { background: linear-gradient(135deg, #C6A052, #a8843a) }
+@media (max-width: 760px) { .auth2 { grid-template-columns: 1fr; margin-top: 90px } .auth2 .auth-side ul { display: none } .auth2 .auth-side { padding: 28px 24px } }
+.acc-hero { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 24px 28px; margin-bottom: 16px; border-radius: 24px; color: #fff; background: linear-gradient(135deg, #5a1560, #330533 60%, #1d031d) }
+.acc-hero h1, .acc-hero .eyebrow { color: #fff; margin: 0 } .acc-mail { margin: 4px 0 0; opacity: .75; font-size: 14px }
+.acc-av { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font: 700 28px var(--serif, Georgia, serif); color: #330533; background: linear-gradient(135deg, #e8cf94, #C6A052) }
+.acc-hero-btns { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap } .acc-hero .btn { background: rgba(255, 255, 255, .14); color: #fff; border-color: rgba(255, 255, 255, .35) }
+.acc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px }
+.acc-stats > div { padding: 16px 18px; border-radius: 16px; background: #fff; border: 1px solid rgba(198, 160, 82, .4); display: grid; gap: 2px } .acc-stats b { font-size: 26px; color: #330533 } .acc-stats span { font-size: 12px; color: #6f6270; letter-spacing: .06em }
+.acc-tabs button.on { background: #330533; color: #fff }

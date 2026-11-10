@@ -35,7 +35,7 @@ export const SPEC_LIBRARY = {
 };
 export const STATUSES = [
   ['received', 'Order received'], ['measurements_confirmed', 'Measurements confirmed'], ['materials_ready', 'Fabric & materials prepared'], ['cutting', 'Cutting'], ['stitching', 'Stitching in progress'],
-  ['trial_scheduled', 'Trial scheduled'], ['trial_completed', 'Trial completed'], ['alterations_required', 'Alterations required'], ['finishing_qc', 'Final finishing & quality check'],
+  ['alterations_required', 'Alterations required'], ['finishing_qc', 'Final finishing & quality check'],
   ['ready', 'Ready for delivery'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled'],
 ];
 // Manual transitions. Stages may be skipped; alterations_required is entered only by adding an alteration round; delivered/cancelled are final.
@@ -44,17 +44,17 @@ export const TRANSITIONS = {
   measurements_confirmed: ['materials_ready', 'cutting', 'stitching', 'cancelled'],
   materials_ready: ['cutting', 'stitching', 'cancelled'],
   cutting: ['stitching', 'cancelled'],
-  stitching: ['trial_scheduled', 'finishing_qc', 'cancelled'],
-  trial_scheduled: ['trial_completed', 'cancelled'],
+  stitching: ['finishing_qc', 'cancelled'],
+  // Trials were removed. These two only let an order that was already at a trial stage move on.
+  trial_scheduled: ['finishing_qc', 'cancelled'],
   trial_completed: ['finishing_qc', 'cancelled'],
-  alterations_required: ['stitching', 'trial_scheduled', 'finishing_qc', 'cancelled'],
+  alterations_required: ['stitching', 'finishing_qc', 'cancelled'],
   finishing_qc: ['ready', 'stitching', 'cancelled'],
   ready: ['delivered', 'cancelled'],
   delivered: [], cancelled: [],
 };
-const ALTERABLE = ['trial_scheduled', 'trial_completed', 'finishing_qc', 'ready'];
+const ALTERABLE = ['stitching', 'trial_scheduled', 'trial_completed', 'finishing_qc', 'ready'];
 export const QC_CHECKS = [['fit', 'Measurements and fit'], ['stitching', 'Stitching quality'], ['finishing', 'Finishing'], ['closures', 'Buttons, hooks, zippers and closures'], ['design', 'Design requirements'], ['final', 'Final garment inspection']];
-export const APPT_KINDS = [['measurement', 'Measurement'], ['trial', 'First fitting / trial'], ['follow_up_trial', 'Follow-up trial'], ['alteration', 'Alteration'], ['final_fitting', 'Final fitting'], ['delivery', 'Delivery / collection']];
 export const MIN_DAYS = { normal: 5, urgent: 3, express: 1 };
 const ACTIVE = "('delivered','cancelled')";
 
@@ -79,16 +79,14 @@ export function validateMeasure(group, unit, values = {}, custom = []) {
 }
 
 export function checkDates(d, today = istDate()) {
-  const { orderDate, startDate, trialDate, deliveryDate } = d;
+  const { orderDate, startDate, deliveryDate } = d;
   if (orderDate > today) throw new HttpError(400, 'The order date cannot be in the future', 'bad_date');
   if (deliveryDate < orderDate) throw new HttpError(400, 'The promised delivery date is before the order date', 'bad_date');
   if (startDate && (startDate < orderDate || startDate > deliveryDate)) throw new HttpError(400, 'The start date must fall between the order date and delivery date', 'bad_date');
-  if (trialDate && (trialDate < orderDate || trialDate > deliveryDate)) throw new HttpError(400, 'The trial date must fall between the order date and delivery date', 'bad_date');
 }
-export function deliveryWarnings({ orderDate, deliveryDate, trialDate, priority, garments }) {
+export function deliveryWarnings({ orderDate, deliveryDate, priority, garments }) {
   const out = [], need = MIN_DAYS[priority] + Math.floor(Math.max(0, garments - 1) / 2), have = dayDiff(orderDate, deliveryDate);
   if (have < need) out.push(`Only ${have} day${have === 1 ? '' : 's'} to deliver: ${need} or more is realistic for a ${priority} order of ${garments} garment${garments === 1 ? '' : 's'}.`);
-  if (trialDate && trialDate === deliveryDate) out.push('The trial is on the delivery day, so there is no time left for alterations.');
   return out;
 }
 
@@ -122,7 +120,7 @@ const moved = (t, orderId, user, from, to, text = '', override = false) =>
 const PAY_SQL = `LEFT JOIN LATERAL (SELECT SUM(CASE WHEN kind = 'refund' THEN -amount ELSE amount END) AS paid FROM stitch_payments WHERE order_id = o.id) p ON true`;
 const BASE = `
   SELECT o.id, o.order_no AS "orderNo", o.customer_id AS "customerId", o.customer_name AS "customerName", o.customer_phone AS "customerPhone", o.status, o.priority,
-         o.tailor_id AS "tailorId", t.name AS "tailorName", o.order_date::text AS "orderDate", o.start_date::text AS "startDate", o.trial_date::text AS "trialDate", o.delivery_date::text AS "deliveryDate",
+         o.tailor_id AS "tailorId", t.name AS "tailorName", o.order_date::text AS "orderDate", o.start_date::text AS "startDate", o.delivery_date::text AS "deliveryDate",
          o.is_gst AS "isGst", o.gst_rate AS "gstRate", o.discount, o.urgent_charge AS "urgentCharge", o.alteration_total AS "alterationTotal", o.subtotal, o.tax_amount AS tax, o.total_amount AS total,
          o.notes, o.invoice_no AS "invoiceNo", o.delivered_at AS "deliveredAt", o.cancelled_at AS "cancelledAt", o.created_at AS "createdAt",
          COALESCE(p.paid, 0)::int AS paid,
@@ -156,7 +154,7 @@ export async function listOrders(db, f) {
 export async function getOrder(q, id) {
   const o = withPay(await one(q, `${BASE} WHERE o.id = $1`, [id]));
   if (!o) return null;
-  const [items, history, activity, payments, alterations, qc, appointments, rounds] = await Promise.all([
+  const [items, history, activity, payments, alterations, qc, rounds] = await Promise.all([
     rows(q, `SELECT i.id, i.garment_type_id AS "garmentTypeId", i.garment_name AS "garmentName", i.qty, i.design_id AS "designId", d.name AS "designName", i.specs, i.custom, i.notes, i.fabric, i.measurements, i.charges,
              i.unit_charge AS "unitCharge", t.measure_groups AS "measureGroups", t.spec_fields AS "specFields"
              FROM stitch_items i JOIN stitch_garment_types t ON t.id = i.garment_type_id LEFT JOIN stitch_designs d ON d.id = i.design_id WHERE i.order_id = $1 ORDER BY i.position, i.id`, [id]),
@@ -166,11 +164,10 @@ export async function getOrder(q, id) {
     rows(q, `SELECT a.id, a.item_id AS "itemId", a.round, a.reason, a.feedback, a.corrections, a.charge, a.tailor_id AS "tailorId", t.name AS "tailorName", a.due_date::text AS "dueDate", a.status,
              a.completion_notes AS "completionNotes", a.created_at AS "createdAt", a.completed_at AS "completedAt" FROM stitch_alterations a LEFT JOIN stitch_tailors t ON t.id = a.tailor_id WHERE a.order_id = $1 ORDER BY a.round`, [id]),
     rows(q, 'SELECT round, check_key AS key, passed, note, checked_at AS "at" FROM stitch_qc WHERE order_id = $1 ORDER BY round, check_key', [id]),
-    rows(q, `SELECT a.id, a.kind, a.starts_at AS "startsAt", a.minutes, a.status, a.notes, t.name AS "tailorName" FROM stitch_appointments a LEFT JOIN stitch_tailors t ON t.id = a.tailor_id WHERE a.order_id = $1 ORDER BY a.starts_at`, [id]),
     one(q, 'SELECT COUNT(*)::int AS n FROM stitch_alterations WHERE order_id = $1', [id]),
   ]);
   const inv = o.invoiceNo ? await one(q, 'SELECT share_token AS "shareToken" FROM pos_sales WHERE invoice_no = $1', [o.invoiceNo]) : null;
-  return { ...o, items, history, activity, payments, alterations, appointments, qcRound: rounds.n, qc, shareToken: inv?.shareToken ?? null };
+  return { ...o, items, history, activity, payments, alterations, qcRound: rounds.n, qc, shareToken: inv?.shareToken ?? null };
 }
 
 // ---- items ----
@@ -267,7 +264,7 @@ export async function createOrder(db, user, d) {
   if (dup) return { order: await getOrder(db, dup.id), duplicate: true, warnings: [] };
   const orderDate = d.orderDate ?? istDate();
   checkDates({ ...d, orderDate });
-  const warnings = deliveryWarnings({ orderDate, deliveryDate: d.deliveryDate, trialDate: d.trialDate, priority: d.priority, garments: d.items.reduce((s, i) => s + i.qty, 0) });
+  const warnings = deliveryWarnings({ orderDate, deliveryDate: d.deliveryDate, priority: d.priority, garments: d.items.reduce((s, i) => s + i.qty, 0) });
   try {
     const id = await db.tx(async t => {
       const cust = await resolveCustomer(t, d);
@@ -279,10 +276,10 @@ export async function createOrder(db, user, d) {
       const y = istYear();
       const { last } = await one(t, 'INSERT INTO stitch_counters (year, last) VALUES ($1, 1) ON CONFLICT (year) DO UPDATE SET last = stitch_counters.last + 1 RETURNING last', [y]);
       const no = `SO-${y}-${String(last).padStart(4, '0')}`;
-      const o = await one(t, `INSERT INTO stitch_orders (order_no, idempotency_key, customer_id, customer_name, customer_phone, priority, tailor_id, order_date, start_date, trial_date, delivery_date, is_gst, gst_rate,
+      const o = await one(t, `INSERT INTO stitch_orders (order_no, idempotency_key, customer_id, customer_name, customer_phone, priority, tailor_id, order_date, start_date, delivery_date, is_gst, gst_rate,
           discount, urgent_charge, subtotal, tax_amount, total_amount, notes, created_by)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING id`,
-        [no, d.idempotencyKey, cust.id, cust.name, cust.phone, d.priority, d.tailorId ?? null, orderDate, d.startDate ?? null, d.trialDate ?? null, d.deliveryDate, d.isGst, d.gstRate, d.discount, d.urgentCharge,
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+        [no, d.idempotencyKey, cust.id, cust.name, cust.phone, d.priority, d.tailorId ?? null, orderDate, d.startDate ?? null, d.deliveryDate, d.isGst, d.gstRate, d.discount, d.urgentCharge,
           tot.subtotal, tot.tax, tot.total, d.notes, user.id]);
       for (const i of items) await t.query(`INSERT INTO stitch_items (order_id, garment_type_id, garment_name, qty, design_id, specs, custom, notes, fabric, measurements, charges, unit_charge, position)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, [o.id, i.type.id, i.type.name, i.qty, i.designId, JSON.stringify(i.specs), JSON.stringify(i.custom), i.notes, JSON.stringify(i.fabric), JSON.stringify(i.measurements), JSON.stringify(i.charges), i.unit, i.position]);
@@ -309,12 +306,12 @@ export async function createOrder(db, user, d) {
 export async function updateOrder(db, user, id, d) {
   const warnings = [];
   await db.tx(async t => {
-    const o = await one(t, 'SELECT *, order_date::text AS od, start_date::text AS sd, trial_date::text AS td, delivery_date::text AS dd FROM stitch_orders WHERE id = $1 FOR UPDATE', [id]);
+    const o = await one(t, 'SELECT *, order_date::text AS od, start_date::text AS sd, delivery_date::text AS dd FROM stitch_orders WHERE id = $1 FOR UPDATE', [id]);
     if (!o) throw new HttpError(404, 'Order not found');
     if (['delivered', 'cancelled'].includes(o.status)) throw new HttpError(409, `A ${o.status} order can no longer be edited`, 'closed');
     const next = { ...o };
     const set = (k, v) => { if (v !== undefined) next[k] = v };
-    for (const [k, col] of [['priority', 'priority'], ['startDate', 'sd'], ['trialDate', 'td'], ['deliveryDate', 'dd'], ['notes', 'notes']]) set(col, d[k]);
+    for (const [k, col] of [['priority', 'priority'], ['startDate', 'sd'], ['deliveryDate', 'dd'], ['notes', 'notes']]) set(col, d[k]);
     if (d.tailorId !== undefined && d.tailorId !== o.tailor_id) {
       if (o.tailor_id && !isManager(user)) throw new HttpError(403, 'Only an owner or admin can reassign work', 'forbidden');
       if (d.tailorId && !(await one(t, 'SELECT 1 AS x FROM stitch_tailors WHERE id = $1 AND active', [d.tailorId]))) throw new HttpError(400, 'Choose an active tailor', 'bad_tailor');
@@ -326,12 +323,12 @@ export async function updateOrder(db, user, id, d) {
       if (o.invoice_no) throw new HttpError(409, 'This order is already invoiced, so its charges are locked', 'invoiced');
       set('discount', d.discount); set('urgent_charge', d.urgentCharge); set('is_gst', d.isGst); set('gst_rate', d.gstRate);
     }
-    checkDates({ orderDate: o.od, startDate: next.sd, trialDate: next.td, deliveryDate: next.dd });
-    await t.query(`UPDATE stitch_orders SET priority = $2, tailor_id = $3, start_date = $4, trial_date = $5, delivery_date = $6, notes = $7, discount = $8, urgent_charge = $9, is_gst = $10, gst_rate = $11, updated_at = now() WHERE id = $1`,
-      [id, next.priority, next.tailor_id, next.sd, next.td, next.dd, next.notes, next.discount, next.urgent_charge, next.is_gst, next.gst_rate]);
+    checkDates({ orderDate: o.od, startDate: next.sd, deliveryDate: next.dd });
+    await t.query(`UPDATE stitch_orders SET priority = $2, tailor_id = $3, start_date = $4, delivery_date = $5, notes = $6, discount = $7, urgent_charge = $8, is_gst = $9, gst_rate = $10, updated_at = now() WHERE id = $1`,
+      [id, next.priority, next.tailor_id, next.sd, next.dd, next.notes, next.discount, next.urgent_charge, next.is_gst, next.gst_rate]);
     if (money) await recompute(t, id);
     const items = await one(t, 'SELECT COALESCE(SUM(qty), 1)::int AS n FROM stitch_items WHERE order_id = $1', [id]);
-    warnings.push(...deliveryWarnings({ orderDate: o.od, deliveryDate: next.dd, trialDate: next.td, priority: next.priority, garments: items.n }));
+    warnings.push(...deliveryWarnings({ orderDate: o.od, deliveryDate: next.dd, priority: next.priority, garments: items.n }));
     const changed = Object.keys(d).filter(k => d[k] !== undefined);
     await note(t, id, user, 'edited', { fields: changed });
     await audit(t, user.id, 'stitch.order.edit', 'stitch_order', o.order_no, { fields: changed });
@@ -440,7 +437,7 @@ export async function addAlteration(db, user, orderId, d) {
   await db.tx(async t => {
     const o = await one(t, 'SELECT * FROM stitch_orders WHERE id = $1 FOR UPDATE', [orderId]);
     if (!o) throw new HttpError(404, 'Order not found');
-    if (!ALTERABLE.includes(o.status)) throw new HttpError(409, `Alterations are added after a trial, during quality check, or when the garment is ready (this order is "${label(o.status)}")`, 'bad_status');
+    if (!ALTERABLE.includes(o.status)) throw new HttpError(409, `Alterations are added during stitching, quality check, or when the garment is ready (this order is "${label(o.status)}")`, 'bad_status');
     if (d.charge > 0 && o.invoice_no) throw new HttpError(409, 'This order is already invoiced, so an alteration charge cannot be added', 'invoiced');
     if (d.itemId && !(await one(t, 'SELECT 1 AS x FROM stitch_items WHERE id = $1 AND order_id = $2', [d.itemId, orderId]))) throw new HttpError(400, 'That garment is not on this order');
     if (d.tailorId && !(await one(t, 'SELECT 1 AS x FROM stitch_tailors WHERE id = $1 AND active', [d.tailorId]))) throw new HttpError(400, 'Choose an active tailor', 'bad_tailor');
@@ -540,47 +537,6 @@ export async function createInvoice(db, user, orderId, { balanceMode, paymentRef
   return { order: await getOrder(db, orderId), sale, duplicate: false };
 }
 
-// ---- appointments ----
-const APPT = `SELECT a.id, a.order_id AS "orderId", o.order_no AS "orderNo", a.customer_id AS "customerId", c.name AS "customerName", c.phone AS "customerPhone", a.kind, a.starts_at AS "startsAt", a.minutes,
-  a.tailor_id AS "tailorId", t.name AS "tailorName", a.status, a.notes, (a.status = 'scheduled' AND a.starts_at + (a.minutes || ' minutes')::interval < now()) AS overdue
-  FROM stitch_appointments a JOIN pos_customers c ON c.id = a.customer_id LEFT JOIN stitch_orders o ON o.id = a.order_id LEFT JOIN stitch_tailors t ON t.id = a.tailor_id`;
-export function listAppointments(db, { from, to, status, kind }) {
-  return rows(db, `${APPT} WHERE (a.starts_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN $1::date AND $2::date AND ($3 = 'all' OR a.status = $3) AND ($4 = 'all' OR a.kind = $4) ORDER BY a.starts_at LIMIT 500`, [from, to, status, kind]);
-}
-async function conflicts(q, { startsAt, minutes, tailorId, customerId, ignoreId = 0 }) {
-  return rows(q, `${APPT} WHERE a.status = 'scheduled' AND a.id <> $4 AND a.starts_at < ($1::timestamptz + ($2 || ' minutes')::interval) AND a.starts_at + (a.minutes || ' minutes')::interval > $1::timestamptz
-    AND (a.customer_id = $3 OR ($5::int IS NOT NULL AND a.tailor_id = $5::int)) ORDER BY a.starts_at`, [startsAt, minutes, customerId, ignoreId, tailorId ?? null]);
-}
-export async function createAppointment(db, user, d) {
-  let customerId = d.customerId;
-  if (d.orderId) {
-    const o = await one(db, 'SELECT customer_id FROM stitch_orders WHERE id = $1', [d.orderId]);
-    if (!o) throw new HttpError(404, 'Order not found');
-    customerId = o.customer_id;
-  }
-  if (!customerId || !(await one(db, 'SELECT 1 AS x FROM pos_customers WHERE id = $1', [customerId]))) throw new HttpError(400, 'Choose a customer or an order', 'bad_customer');
-  if (d.tailorId && !(await one(db, 'SELECT 1 AS x FROM stitch_tailors WHERE id = $1 AND active', [d.tailorId]))) throw new HttpError(400, 'Choose an active tailor', 'bad_tailor');
-  const clash = await conflicts(db, { ...d, customerId });
-  if (clash.length && !d.ignoreConflicts) throw Object.assign(new HttpError(409, 'That time overlaps another appointment', 'conflict'), { conflicts: clash });
-  const a = await one(db, 'INSERT INTO stitch_appointments (order_id, customer_id, kind, starts_at, minutes, tailor_id, notes, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id', [d.orderId ?? null, customerId, d.kind, d.startsAt, d.minutes, d.tailorId ?? null, d.notes, user.id]);
-  if (d.orderId) await note(db, d.orderId, user, 'appointment', { kind: d.kind, startsAt: d.startsAt });
-  return one(db, `${APPT} WHERE a.id = $1`, [a.id]);
-}
-export async function updateAppointment(db, user, id, d) {
-  const a = await one(db, 'SELECT * FROM stitch_appointments WHERE id = $1', [id]);
-  if (!a) throw new HttpError(404, 'Appointment not found');
-  if (a.status !== 'scheduled' && (d.startsAt || d.status === 'scheduled')) throw new HttpError(409, `A ${a.status} appointment cannot be rescheduled. Book a new one`, 'bad_status');
-  const next = { startsAt: d.startsAt ?? a.starts_at.toISOString(), minutes: d.minutes ?? a.minutes, tailorId: d.tailorId === undefined ? a.tailor_id : d.tailorId };
-  if (d.tailorId && !(await one(db, 'SELECT 1 AS x FROM stitch_tailors WHERE id = $1 AND active', [d.tailorId]))) throw new HttpError(400, 'Choose an active tailor', 'bad_tailor');
-  if ((d.startsAt || d.minutes || d.tailorId !== undefined) && (d.status ?? a.status) === 'scheduled') {
-    const clash = await conflicts(db, { ...next, customerId: a.customer_id, ignoreId: id });
-    if (clash.length && !d.ignoreConflicts) throw Object.assign(new HttpError(409, 'That time overlaps another appointment', 'conflict'), { conflicts: clash });
-  }
-  await db.query('UPDATE stitch_appointments SET starts_at = $2, minutes = $3, tailor_id = $4, status = $5, notes = $6 WHERE id = $1', [id, next.startsAt, next.minutes, next.tailorId, d.status ?? a.status, d.notes ?? a.notes]);
-  if (a.order_id) await note(db, a.order_id, user, 'appointment', { kind: a.kind, change: d.status ?? (d.startsAt ? 'rescheduled' : 'edited') });
-  return one(db, `${APPT} WHERE a.id = $1`, [id]);
-}
-
 // ---- tailors, designs, garment types ----
 export const listTailors = db => rows(db, `
   SELECT t.id, t.name, t.phone, t.notes, t.active,
@@ -597,7 +553,7 @@ export const listGarmentTypes = (db, all = false) => rows(db, `SELECT id, code, 
 
 export async function meta(db) {
   return { statuses: STATUSES, transitions: TRANSITIONS, measureGroups: Object.fromEntries(Object.entries(MEASURE_GROUPS).map(([k, g]) => [k, { label: g.label, fields: g.fields }])), specLibrary: SPEC_LIBRARY, qcChecks: QC_CHECKS,
-    apptKinds: APPT_KINDS, minDays: MIN_DAYS, garmentTypes: await listGarmentTypes(db), tailors: (await listTailors(db)).filter(t => t.active).map(t => ({ id: t.id, name: t.name })) };
+    minDays: MIN_DAYS, garmentTypes: await listGarmentTypes(db), tailors: (await listTailors(db)).filter(t => t.active).map(t => ({ id: t.id, name: t.name })) };
 }
 
 // ---- dashboard and reports (real records only) ----
@@ -612,15 +568,11 @@ export async function dashboard(db) {
            COUNT(*) FILTER (WHERE b.status = 'ready')::int AS awaiting,
            COALESCE(SUM(b.balance) FILTER (WHERE b.status <> 'cancelled'), 0)::int AS outstanding
     FROM (${BASE}) b`, [today]);
-  const trials = (await one(db, `SELECT COUNT(*)::int AS n FROM (
-      SELECT order_id AS k FROM stitch_appointments WHERE status = 'scheduled' AND kind IN ('trial','follow_up_trial','final_fitting') AND (starts_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN $1::date AND $2::date AND order_id IS NOT NULL
-      UNION SELECT id FROM stitch_orders WHERE status NOT IN ${ACTIVE} AND trial_date BETWEEN $1::date AND $2::date) x`, [today, soon])).n;
   const stages = await rows(db, 'SELECT status, COUNT(*)::int AS n FROM stitch_orders GROUP BY status');
   const recent = await rows(db, `SELECT b.*, (CASE WHEN b.status = 'cancelled' THEN 'none' WHEN b.paid <= 0 THEN 'unpaid' WHEN b.balance > 0 THEN 'partial' ELSE 'paid' END) AS "paymentStatus" FROM (${BASE}) b ORDER BY b.id DESC LIMIT 8`);
   const deadlines = await rows(db, `SELECT b.id, b."orderNo", b."customerName", b.garments, b.status, b."deliveryDate", b.overdue, b."tailorName" FROM (${BASE}) b WHERE b.status NOT IN ${ACTIVE} AND b."deliveryDate" <= $1 ORDER BY b."deliveryDate", b.id LIMIT 8`, [soon]);
-  const appts = await rows(db, `${APPT} WHERE a.status = 'scheduled' AND (a.starts_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN $1::date AND $2::date ORDER BY a.starts_at LIMIT 8`, [today, soon]);
   const alterations = await rows(db, `SELECT a.id, a.order_id AS "orderId", o.order_no AS "orderNo", a.round, a.reason, a.due_date::text AS "dueDate", a.status FROM stitch_alterations a JOIN stitch_orders o ON o.id = a.order_id WHERE a.status <> 'done' AND o.status <> 'cancelled' ORDER BY a.due_date NULLS LAST, a.id LIMIT 8`);
-  return { counts: { active: c.active, today: c.today, inProgress: c.in_progress, upcomingTrials: trials, dueToday: c.due_today, overdue: c.overdue, awaitingCollection: c.awaiting, outstanding: c.outstanding }, stages, recent, deadlines, appointments: appts, alterations };
+  return { counts: { active: c.active, today: c.today, inProgress: c.in_progress, dueToday: c.due_today, overdue: c.overdue, awaitingCollection: c.awaiting, outstanding: c.outstanding }, stages, recent, deadlines, alterations };
 }
 
 export async function report(db, from, to) {

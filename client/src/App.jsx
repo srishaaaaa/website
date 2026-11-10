@@ -24,7 +24,7 @@ const lazyEl = (load, name) => { const C = lazy(() => load().then(m => ({ defaul
 const store = () => import('./pages/AdminStore'), media = () => import('./pages/AdminMedia'), more = () => import('./pages/AdminMore');
 const A = {
   stitch: lazyEl(() => import('./pages/AdminStitching')), stitchNew: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="new" /> }))), stitchDetail: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="detail" /> }))), stitchPrint: lazyEl(() => import('./pages/stitching/Print')),
-  pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')),
+  pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')), coupon: lazyEl(() => import('./pages/CouponCard')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
   categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
   storefront: lazyEl(media, 'AdminStorefront'), trending: lazyEl(media, 'AdminTrending'), sitetext: lazyEl(media, 'AdminSiteText'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
@@ -33,7 +33,7 @@ const A = {
 export default function App() {
   const { entered, enter, setBagOpen, setSearchOpen, setMenuOpen, setQuick } = useApp();
   const location = useLocation();
-  const bare = location.pathname.startsWith('/invoice/') || location.pathname.startsWith('/admin/stitching/print/'); // invoice / job card pages are clean documents: no site header, footer, intro or overlays
+  const bare = location.pathname.startsWith('/invoice/') || location.pathname.startsWith('/coupon/') || location.pathname.startsWith('/admin/stitching/print/'); // invoice / job card pages are clean documents: no site header, footer, intro or overlays
 
   const admin = location.pathname === '/admin' || location.pathname.startsWith('/admin/'); // the admin panel has its own sidebar: no website menu, footer or intro
   const site = !bare && !admin;
@@ -75,6 +75,7 @@ export default function App() {
           <Route path="/admin/enquiries" element={A.enquiries} />
           <Route path="/admin/sample" element={A.sample} />
           <Route path="/invoice/:token" element={A.invoice} />
+          <Route path="/coupon/:code" element={A.coupon} />
           <Route path="/admin/stitching" element={A.stitch} />
           <Route path="/admin/stitching/print/:id" element={A.stitchPrint} />
           <Route path="/admin/stitching/orders/new" element={A.stitchNew} />

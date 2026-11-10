@@ -5,8 +5,8 @@ import { Magnetic, Reveal } from '../components/Motion';
 import BoutiqueHero from '../components/hero/BoutiqueHero';
 import Ticker from '../components/Ticker';
 import FeaturedCollections from '../components/FeaturedCollections';
+import BestSellers from '../components/BestSellers';
 import EditorialSection from '../components/EditorialSection';
-import CollectionsFlow from '../components/CollectionsFlow';
 import CategoryCircles from '../components/CategoryCircles';
 import CustomerReviews from '../components/CustomerReviews';
 import EnquirySection from '../components/EnquirySection';
@@ -68,9 +68,9 @@ export default function Home() {
       <BoutiqueHero />
       <Ticker />
       <FeaturedCollections />
+      <BestSellers />
       <EditorialSection />
       <CategoryCircles />
-      <CollectionsFlow />
       <Details />
       <ServiceHighlights />
       <Story />

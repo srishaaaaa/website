@@ -106,7 +106,7 @@ test('payments: totals computed server-side; only a valid signature marks an ord
   const c = client(); const v = await variantOf('banarasi-silk-saree', 'M');
   await c('POST', '/cart/items', { variantId: v });
   const co = await c('POST', '/checkout', { email: 'buyer@test.dev', address, total: 1, items: [{ price: 1 }] }); // tampered fields ignored
-  assert.equal(co.status, 200); assert.equal(co.body.total, 1850000 + Math.round(1850000 * 0.05)); // free shipping above threshold
+  assert.equal(co.status, 200); assert.equal(co.body.total, 1850000); // prices include GST; free shipping above threshold
   const sign = (o, p) => crypto.createHmac('sha256', SECRET).update(`${o}|${p}`).digest('hex');
   const bad = await c('POST', '/payments/verify', { razorpay_order_id: co.body.providerOrderId, razorpay_payment_id: 'pay_1', razorpay_signature: 'forged' });
   assert.equal(bad.status, 400);

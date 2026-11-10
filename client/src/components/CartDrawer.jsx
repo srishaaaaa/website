@@ -14,6 +14,36 @@ export function ShippingNote({ subtotal }) {
   return <p className="muted small">{amount === 0 ? 'Complimentary shipping applies.' : `Shipping ${inr(amount)}${freeOver != null ? ` — complimentary above ${inr(freeOver)}` : ''}.`} GST is calculated at checkout.</p>;
 }
 
+// Subtotal and shipping, the total, and a tinted box showing how much GST is already inside it (prices include GST).
+export function BagTotals() {
+  const { cartInfo } = useApp();
+  const gst = cartInfo.gst?.byRate || [], ship = cartInfo.shipping || { amount: 0 };
+  const total = cartInfo.total ?? (cartInfo.subtotal + ship.amount);
+  return (
+    <div className="bag-totals">
+      <div className="row between"><span>Subtotal (incl. GST)</span><span>{inr(cartInfo.subtotal)}</span></div>
+      <div className="row between"><span>Shipping</span><span>{ship.amount === 0 ? 'Free' : inr(ship.amount)}</span></div>
+      <div className="row between bt-total"><strong>Total</strong><strong>{inr(total)}</strong></div>
+      {gst.length > 0 && (
+        <div className="bt-gst"><p>GST included in your total</p>
+          {gst.map(g => <div key={g.rate} className="row between"><span>GST {g.rate}% on {inr(g.base)}</span><span>{inr(g.tax)}</span></div>)}
+          {gst.length > 1 && <div className="row between bt-sum"><span>Total GST</span><span>{inr(cartInfo.gst.included)}</span></div>}</div>)}
+    </div>
+  );
+}
+
+// "Add ₹x more for free shipping" with a progress bar.
+function FreeShipBar() {
+  const { cartInfo } = useApp();
+  const need = cartInfo.shipping?.freeOver;
+  if (need == null || !cartInfo.subtotal) return null;
+  const left = Math.max(0, need - cartInfo.subtotal);
+  return (
+    <div className="shipbar"><p>{left > 0 ? `Add ${inr(left)} more for free shipping.` : 'You have free shipping on this order.'}</p>
+      <div className="shipbar-track"><i style={{ width: `${Math.min(100, Math.round(cartInfo.subtotal / need * 100))}%` }} /></div></div>
+  );
+}
+
 export function BagLines({ compact = false }) {
   const { cart, setQty, removeItem } = useApp();
   return (
@@ -44,7 +74,7 @@ export function BagLines({ compact = false }) {
 }
 
 export default function CartDrawer() {
-  const { bagOpen, setBagOpen, cart, bagSubtotal, bagCount } = useApp();
+  const { bagOpen, setBagOpen, cart, bagSubtotal, bagCount, cartInfo } = useApp();
   const ref = useRef();
   const close = () => setBagOpen(false);
   useModal(bagOpen, close, ref);
@@ -60,15 +90,16 @@ export default function CartDrawer() {
               <button className="icon-btn" onClick={close} aria-label="Close shopping bag">✕</button>
             </header>
             <div className="drawer-body">
+              {cart.length > 0 && <FreeShipBar />}
               {!cart.length
-                ? <div className="empty"><p className="serif big">Your bag is empty.</p><p className="muted">Pieces you add will wait for you here.</p><Link className="btn" to="/shop" onClick={close}>EXPLORE THE COLLECTION</Link></div>
+                ? <div className="empty"><p className="serif big">Your bag is empty.</p><p className="muted">Pieces you add will wait for you here.</p><Link className="btn" to="/shop" onClick={close}>EXPLORE THE SHOP</Link></div>
                 : <BagLines compact />}
             </div>
             {cart.length > 0 && (
               <footer className="drawer-foot">
-                <div className="row between"><span>Subtotal</span><strong>{inr(bagSubtotal)}</strong></div>
-                <ShippingNote subtotal={bagSubtotal} />
-                <Link className="btn solid wide" to="/checkout" onClick={close} data-cursor="PAY">CHECKOUT</Link>
+                <BagTotals />
+                <Link className="btn solid wide bag-go" to="/checkout" onClick={close} data-cursor="PAY">CHECKOUT · {inr(cartInfo.total ?? bagSubtotal)}</Link>
+                <p className="muted small center">Secure payment · Prices include GST</p>
                 <Link className="link-u center" to="/cart" onClick={close}>View bag</Link>
               </footer>
             )}

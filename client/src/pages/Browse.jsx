@@ -5,7 +5,7 @@ import { ProductMedia } from '../components/ProductCard3D';
 import { Reveal } from '../components/Motion';
 import { useApp } from '../context/App';
 
-const empty = (msg, to = '/collections', label = 'ALL COLLECTIONS') => <div className="empty page-pad"><p className="serif big">{msg}</p><Link className="btn" to={to}>{label}</Link></div>;
+const empty = (msg, to = '/collections', label = 'ALL CATEGORIES') => <div className="empty page-pad"><p className="serif big">{msg}</p><Link className="btn" to={to}>{label}</Link></div>;
 
 export function Shop() {
   return <Catalog title="The Collection" eyebrow="SHOP" intro="Every piece, in one place." banner="shop" emptyNote="The collection is being prepared." />;
@@ -16,9 +16,9 @@ export function Collections() {
   const { collections, status } = catalog;
   return (
     <div className="catalog">
-      <header className="cat-hero"><div className="cat-hero-in"><p className="eyebrow">COLLECTIONS</p><h1 className="serif">Choose your world.</h1></div></header>
+      <header className="cat-hero"><div className="cat-hero-in"><p className="eyebrow">CATEGORIES</p><h1 className="serif">Choose your world.</h1></div></header>
       <div className="col-grid">
-        {status === 'loading' && <p className="muted">Loading collections…</p>}
+        {status === 'loading' && <p className="muted">Loading categories…</p>}
         {collections.map((c, i) => (
           <Reveal key={c.slug} delay={(i % 3) * 0.08}>
             <Link to={`/collections/${c.slug}`} className="col-card" data-cursor="EXPLORE">
@@ -28,8 +28,8 @@ export function Collections() {
           </Reveal>
         ))}
       </div>
-      {status === 'ready' && !collections.length && <div className="empty"><p className="serif big">No collections yet.</p></div>}
-      {status === 'error' && <div className="empty"><p className="serif big">Collections could not be loaded.</p></div>}
+      {status === 'ready' && !collections.length && <div className="empty"><p className="serif big">No categories yet.</p></div>}
+      {status === 'error' && <div className="empty"><p className="serif big">Categories could not be loaded.</p></div>}
     </div>
   );
 }
@@ -39,8 +39,8 @@ export function CollectionPage() {
   const { catalog } = useApp();
   if (catalog.status === 'loading') return <div className="page-pad"><p className="muted">Loading…</p></div>;
   const col = catalog.collections.find(c => c.slug === slug);
-  if (!col) return empty('We could not find that collection.');
-  return <Catalog base={{ collection: slug }} title={col.name} eyebrow="COLLECTION" intro={col.description} banner={col.cover?.slug || slug} />;
+  if (!col) return empty('We could not find that category.');
+  return <Catalog base={{ collection: slug }} title={col.name} eyebrow="CATEGORY" intro={col.description} banner={col.cover?.slug || slug} />;
 }
 
 export function Search() {

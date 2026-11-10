@@ -5,12 +5,14 @@ import { inr } from '../lib/format';
 import { useApp } from '../context/App';
 import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
+import CatalogPicker from '../components/CatalogPicker';
 import MeasureModal, { measureSummary } from '../components/MeasureModal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
 import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
 import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
+import PosMeasurements from './PosMeasurements';
 import PosBirthdays from './PosBirthdays';
 import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
@@ -27,7 +29,7 @@ const k = p => p >= 10000000 ? `₹${(p / 10000000).toFixed(1).replace(/\.0$/, '
 const MODES = [['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']];
 const MODE_LABEL = { cash: 'Cash', upi: 'GPay / UPI', card: 'Card', split: 'Split' };
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `k-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-const TABS = { billing: false, analytics: true, advance: false, orders: false, inventory: true, customers: false, coupons: true, birthdays: true, expenses: true, settings: true };
+const TABS = { billing: false, analytics: true, advance: false, orders: false, measurements: false, inventory: true, customers: false, coupons: true, birthdays: true, expenses: true, settings: true };
 
 // ---- live preview of the bill (the server recomputes everything on checkout) ----
 function preview(lines, { isGst, gstRate, discountType, discountValue, deliveryFee }) {
@@ -113,6 +115,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const [split, setSplit] = useState({ cash: '', upi: '', card: '' }); const [splitOn, setSplitOn] = useState({ cash: true, upi: true, card: false }); const [ref, setRef] = useState(''); const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const key = useRef(null); const [advOpen, setAdvOpen] = useState(false);
+  const [catOpen, setCatOpen] = useState(false); const [added, setAdded] = useState(null); const [pulse, setPulse] = useState([]);
 
   useEffect(() => { if (shop?.gstin && !gstTouched.current) setIsGst(true) }, [shop]);
   useEffect(() => { if (ws) api('/admin/pos/ws/items').then(setWsItems).catch(() => {}) }, [ws]);
@@ -159,6 +162,22 @@ function Billing({ channel, shop, onSale, onAdvance }) {
     if (i >= 0) return ls.map((l, n) => n === i ? { ...l, qty: Math.min(l.qty + 1, v.stock) } : l);
     return [...ls, { key: uuid(), variantId: v.variantId, name: v.name, detail: [v.size, v.color !== 'Default' ? v.color : null].filter(Boolean).join(' · '), sku: v.sku, price: v.price, qty: 1, stock: v.stock, taxRate: v.taxRate }];
   });
+  // Everything ticked in the Catalog window goes onto the bill at once; quantities add to lines already there.
+  const addMany = picks => {
+    setLines(ls => {
+      let next = [...ls];
+      for (const { v, qty } of picks) {
+        const i = next.findIndex(l => l.variantId === v.variantId);
+        if (i >= 0) next = next.map((l, n) => n === i ? { ...l, qty: Math.min(l.qty + qty, v.stock) } : l);
+        else next.push({ key: uuid(), variantId: v.variantId, name: v.name, detail: [v.size, v.color !== 'Default' ? v.color : null].filter(Boolean).join(' · '), sku: v.sku, price: v.price, qty: Math.min(qty, v.stock), stock: v.stock, taxRate: v.taxRate });
+      }
+      return next;
+    });
+    const n = picks.reduce((a, x) => a + x.qty, 0);
+    setAdded({ id: Date.now(), t: picks.length === 1 ? `${picks[0].v.name} added to the bill` : `${n} items added to the bill` });
+    setPulse(picks.map(x => x.v.variantId)); setTimeout(() => setPulse([]), 1700); setTimeout(() => setAdded(null), 2600);
+    setCatOpen(false);
+  };
   const patch = (kk, p) => setLines(ls => ls.map(l => l.key === kk ? { ...l, ...p } : l));
   const setQty = (l, n) => { const max = l.stock ?? 99999; patch(l.key, { qty: Math.max(1, Math.min(max, Math.floor(n) || 1)) }) };
   const drop = kk => setLines(ls => ls.filter(l => l.key !== kk));
@@ -169,7 +188,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   };
   const applyCoupon = async () => {
     setCouponMsg();
-    try { const c = await api(`/admin/pos/coupons/check?code=${encodeURIComponent(couponIn.trim())}&subtotal=${bill.subtotal}`); setCoupon(c); setCouponMsg({ ok: true, t: `Coupon ${c.code} applied` }) }
+    try { const c = await api(`/admin/pos/coupons/check?code=${encodeURIComponent(couponIn.trim())}&subtotal=${bill.subtotal}&phone=${encodeURIComponent(cust.phone)}`); setCoupon(c); setCouponMsg({ ok: true, t: `Coupon ${c.code} applied` }) }
     catch (e) { setCoupon(null); setCouponMsg({ ok: false, t: e.message }) }
   };
   const clearOrder = () => {
@@ -200,7 +219,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
   const measureLine = lines.find(l => l.key === measureFor);
   const lineEls = lines.map(l => (
-    <div className="dpos-line" key={l.key}>
+    <div className={`dpos-line ${pulse.includes(l.variantId) ? 'flash' : ''}`} key={l.key}>
       {l.custom ? (
         <div className="dpos-grid" style={{ gridTemplateColumns: 'minmax(150px,2fr) minmax(90px,1fr) 90px' }}>
           <input aria-label="Item name or description" placeholder={l.service ? 'Service (alteration, stitching…)' : 'Item name / description…'} list={ws ? 'dpos-ws-list' : undefined} value={l.name} onChange={e => patch(l.key, { name: e.target.value })} />
@@ -223,6 +242,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
   return (
     <div className="dpos-bill">
+      {added && <div className="dpos-added" role="status">✓ {added.t}</div>}
       <div className="dpos-col">
         <section className="dpos-card"><h2><Icon n="user" />Customer details</h2>
           <div className="dpos-grid">
@@ -234,35 +254,22 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           <label className="f" style={{ marginTop: 14 }}>Customer address (optional)<input value={cust.address} maxLength={300} onChange={e => setCust({ ...cust, address: e.target.value })} placeholder="Enter full address" /></label>
         </section>
 
-        {!ws && (
-          <section className="dpos-card"><h2><Icon n="box" />Find a product</h2>
-            <input autoFocus type="search" value={q} onChange={e => setQ(e.target.value)} onKeyDown={onSearchEnter} placeholder="Search name, SKU, size, colour or category — or scan a barcode" aria-label="Search products" />
-            {q.trim() ? (
-              <div className="dpos-results" aria-live="polite">
-                {results === null || (searching && !results.length) ? <Empty>Loading…</Empty> : !results.length ? <Empty>No products match “{q}”.</Empty> : results.map(v => (
-                  <button key={v.variantId} className="dpos-res" disabled={v.stock < 1} onClick={() => add(v)}>
-                    {v.image ? <img src={v.image} alt="" loading="lazy" /> : <img alt="" />}
-                    <span><b>{v.name}</b><em>{[v.size, v.color !== 'Default' ? v.color : null].filter(Boolean).join(' · ')} · {v.sku}{v.category ? ` · ${v.category}` : ''}</em></span>
-                    <span style={{ textAlign: 'right', flex: 'none' }}><b>{inr(v.price)}</b><em>{v.stock < 1 ? 'Out of stock' : `${v.stock} in stock`}</em></span>
-                  </button>))}
-              </div>
-            ) : <Browse onAdd={add} />}
-          </section>)}
-
         <section className="dpos-card">
           <div className="dpos-head" style={{ marginBottom: 6 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" />Order items</h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button className="dpos-btn ghost sm" onClick={clearOrder}><Icon n="trash" size={14} />Clear order</button>
+              {!ws && <button className="dpos-btn sm" onClick={() => setCatOpen(true)}>☰ Catalog</button>}
               {!ws && <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom(true)])}>✂ Add service</button>}
               <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom()])}>+ Add {ws ? 'item' : 'custom item'}</button></div></div>
           {ws && <datalist id="dpos-ws-list">{wsItems.map(i => <option key={i.id} value={[i.code, i.company, i.colour].filter(Boolean).join(' · ')} />)}</datalist>}
-          {lines.length ? lineEls : <Empty>No items yet. Search above to add products.</Empty>}
+          {lines.length ? lineEls : <Empty>{ws ? 'No items yet.' : 'No items yet. Open the Catalog to add products.'}</Empty>}
+          {catOpen && <CatalogPicker onClose={() => setCatOpen(false)} onPick={addMany} />}
           {measureLine && <MeasureModal value={measureLine.measure} onClose={() => setMeasureFor(null)} onSave={m => patch(measureLine.key, { measure: m || undefined })} />}
         </section>
       </div>
 
       <div className="dpos-col dpos-sticky">
-        <section className="dpos-card"><div className="dpos-head" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" />Current order</h2>
+        <section className="dpos-card"><div className="dpos-head" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" />Current order{lines.length > 0 && <b key={added?.id ?? 0} className="dpos-count">{lines.reduce((a, l) => a + l.qty, 0)}</b>}</h2>
           {!ws && <div className="dpos-src" role="radiogroup" aria-label="Order source"><button role="radio" aria-checked={source === 'offline'} className={source === 'offline' ? 'on' : ''} onClick={() => setSource('offline')}>Offline (POS)</button><button role="radio" aria-checked={source === 'online'} className={source === 'online' ? 'on' : ''} onClick={() => setSource('online')}><i />Online order</button></div>}</div>
           <div className="dpos-box dpos-sum" style={{ marginBottom: 14 }}>
             <div><span>SOURCE</span><span className="dpos-pill">{ws ? 'Wholesale' : source === 'online' ? 'Online' : 'Offline'}</span></div>
@@ -341,6 +348,8 @@ function BillsTable({ rows, onOpen, empty = 'No bills found.' }) {
   );
 }
 const GST_CHIPS = [['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']];
+const PAY_CHIPS = [['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']];
+const SRC_CHIPS = [['all', 'All channels'], ['offline', 'Offline (POS)'], ['online', 'Online']];
 
 // ============================ analytics ============================
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'], DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -434,19 +443,20 @@ function MoneyDetail({ kind, rep, from, to, onClose, goExpenses }) {
 
 function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const ws = channel === 'wholesale';
-  const [tab, setTab] = useState('revenue'); const [gst, setGst] = useState('all'); const [per, setPer] = usePeriod('all');
+  const [tab, setTab] = useState('revenue'); const [gst, setGst] = useState('all'); const [pay, setPay] = useState('all'); const [src, setSrc] = useState('all'); const [per, setPer] = usePeriod('all');
   const [rep, setRep] = useState(null); const [bills, setBills] = useState(null); const [err, setErr] = useState(); const [detail, setDetail] = useState(null);
   const today = todayStr();
   const [from, to] = tab === 'today' ? [today, today] : periodRange(per);
   useEffect(() => {
     setRep(null); setBills(null); setErr();
-    api(`/admin/pos/reports?from=${from}&to=${to}&channel=${channel}&gst=${gst}`).then(setRep).catch(e => setErr(e.message));
-    if (tab === 'today') api(`/admin/pos/sales?from=${from}&to=${to}&channel=${channel}&gst=${gst}`).then(setBills).catch(() => {});
-  }, [from, to, channel, gst, tab, tick]);
+    api(`/admin/pos/reports?from=${from}&to=${to}&channel=${channel}&gst=${gst}&payment=${pay}&source=${src}`).then(setRep).catch(e => setErr(e.message));
+    if (tab === 'today') api(`/admin/pos/sales?from=${from}&to=${to}&channel=${channel}&gst=${gst}&payment=${pay}`).then(setBills).catch(() => {});
+  }, [from, to, channel, gst, pay, src, tab, tick]);
   const v = (f, d = '…') => rep ? f(rep) : d;
   return (
     <>
-      <div className="dpos-bar-tools"><Chips value={gst} onChange={setGst} options={GST_CHIPS} />{tab !== 'today' && <PeriodFilter value={per} onChange={setPer} />}</div>
+      <div className="dpos-bar-tools">{tab !== 'today' && <PeriodFilter value={per} onChange={setPer} />}</div>
+      <div className="dpos-filterbar">{!ws && <Chips label="Channel" value={src} onChange={setSrc} options={SRC_CHIPS} />}<Chips label="Bills" value={gst} onChange={setGst} options={GST_CHIPS} /><Chips label="Payment" value={pay} onChange={setPay} options={PAY_CHIPS} /></div>
       <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
       <Err>{err}</Err>
 
@@ -647,16 +657,18 @@ export default function AdminPos() {
     billing: <Billing channel="retail" shop={shop} onSale={onSale} onAdvance={onAdvance} />,
     analytics: <Analytics channel="retail" openInvoice={openInvoice} tick={tick} goExpenses={goExpenses} />,
     advance: <AdvanceOrders manager={manager} tick={tick} onBilled={onBilled} />,
+    measurements: <PosMeasurements />,
     orders: <OrderHistory manager={manager} tick={tick} openInvoice={openInvoice} onChanged={() => setTick(t => t + 1)} />,
-    inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <PosCoupons />, birthdays: <PosBirthdays shop={shop} CustomerModal={CustomerModal} />,
+    inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <PosCoupons shop={shop} />, birthdays: <PosBirthdays shop={shop} CustomerModal={CustomerModal} />,
     expenses: <PosExpenses />, settings: <Settings onSaved={loadShop} />,
   }[tab];
   const sub = {
     billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'All bills — full store & channel insights', advance: 'Orders booked with a deposit, billed when the customer collects', orders: 'Manage and track past invoices',
+    measurements: 'Tailoring measurements for each saved bill',
     inventory: 'Manage products and stock — add, edit and adjust', customers: 'Customer details with date of birth', coupons: 'Discount codes for the till', birthdays: 'Customers to wish and reward',
     expenses: 'Record spending by category and see your real net profit', settings: 'POS logo, shop details on bills, GST number and delivery quick picks',
   }[tab];
-  const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
+  const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', measurements: 'Measurements', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
   return (
     <AdminShell title={title} sub={sub}>
       <Err>{err}</Err>

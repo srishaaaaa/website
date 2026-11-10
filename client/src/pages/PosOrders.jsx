@@ -29,14 +29,14 @@ const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14
 
 // ============================ order history ============================
 export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
-  const [f, setF] = useState({ q: '', name: '', phone: '', source: 'all' }); const [per, setPer] = usePeriod('all');
+  const [f, setF] = useState({ q: '', name: '', phone: '', source: 'all', gst: 'all', payment: 'all' }); const [per, setPer] = usePeriod('all'); const [preview, setPreview] = useState(null);
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [n, setN] = useState(0);
   const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null);
   const toggle = no => { if (openNo === no) { setOpenNo(null); return } setOpenNo(no); setDetail(null); api('/admin/pos/sales/' + encodeURIComponent(no)).then(d => setDetail(d.sale || d)).catch(e => setErr(e.message)) };
   const [from, to] = periodRange(per);
   useEffect(() => {
     const t = setTimeout(() => {
-      const p = new URLSearchParams({ q: f.q, name: f.name, phone: f.phone, source: f.source, channel: 'retail' }); if (manager) { p.set('from', from); p.set('to', to) }
+      const p = new URLSearchParams({ q: f.q, name: f.name, phone: f.phone, source: f.source, gst: f.gst, payment: f.payment, channel: 'retail' }); if (manager) { p.set('from', from); p.set('to', to) }
       api('/admin/pos/sales?' + p).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message));
     }, 220);
     return () => clearTimeout(t);
@@ -64,6 +64,10 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
         <label className="f">Customer phone<input value={f.phone} inputMode="tel" onChange={set('phone')} placeholder="Search phone…" /></label>
         <label className="f">Order source<select value={f.source} onChange={set('source')}><option value="all">All Sources</option><option value="offline">Offline</option><option value="online">Online</option></select></label>
       </section>
+      <div className="dpos-filterbar">
+        <Chips label="Bills" value={f.gst} onChange={v => setF({ ...f, gst: v })} options={[['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']]} />
+        <Chips label="Payment" value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} />
+      </div>
       <Err>{err}</Err>
       <section className="dpos-card dpos-ordcard">
         {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No orders match.</Empty> : (
@@ -79,13 +83,27 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                 <td className="r"><div className="dpos-rowact">
                   <span className={`dpos-pill ${r.status === 'voided' ? 'bad' : 'ok'}`}>{r.status === 'voided' ? 'Void' : 'Completed'}</span>
                   <a className="ra wa" title="Send invoice on WhatsApp" aria-label="Send on WhatsApp" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>
-                  <a className="ra doc" title="Open invoice in a new tab" aria-label="Open invoice" href={`/invoice/${r.shareToken}`} target="_blank" rel="noopener noreferrer"><DocIcon /></a>
-                  <button className="ra eye" title="View invoice" aria-label="View invoice" onClick={() => openInvoice(r.invoiceNo, r)}><EyeIcon /></button>
+                  <button className="ra doc" title="Invoice preview" aria-label="Invoice preview" onClick={() => setPreview(r)}><DocIcon /></button>
+                  <button className="ra eye" title="Quick details" aria-label="Quick details" onClick={() => toggle(r.invoiceNo)}><EyeIcon /></button>
                   {manager && <button className="ra del" title="Void this invoice" aria-label="Void invoice" disabled={r.status === 'voided'} onClick={() => voidIt(r)}><TrashIcon /></button>}
                 </div></td></tr>
               {openNo === r.invoiceNo && <tr className="dpos-xrow"><td colSpan={7}>{!detail ? <span className="muted">Loading…</span> : <div className="dpos-xsum"><BillSummary bill={detail} /></div>}</td></tr>}</Fragment>) })}</tbody></table></div>)}
       </section>
+      {preview && <InvoicePreview row={preview} onClose={() => setPreview(null)} />}
     </>
+  );
+}
+
+// In-page invoice preview: the real invoice page in a frame, so nothing navigates away. "Open Full Page" goes to /invoice/<token>.
+export function InvoicePreview({ row, onClose }) {
+  const nav = useNavigate();
+  return (
+    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Invoice preview" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div className="dpos-sheet invprev">
+        <div className="invprev-bar"><b>🖨 INVOICE PREVIEW • #{row.invoiceNo}</b><span><button type="button" onClick={() => nav('/invoice/' + row.shareToken)}>Open Full Page ↗</button><button type="button" aria-label="Close" onClick={onClose}>✕</button></span></div>
+        <iframe title={`Invoice ${row.invoiceNo}`} src={`/invoice/${row.shareToken}`} />
+      </div>
+    </div>
   );
 }
 

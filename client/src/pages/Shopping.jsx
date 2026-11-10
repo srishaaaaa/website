@@ -4,7 +4,7 @@ import { useApp } from '../context/App';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
 import ProductCard from '../components/ProductCard3D';
-import { BagLines, ShippingNote } from '../components/CartDrawer';
+import { BagLines, BagTotals, ShippingNote } from '../components/CartDrawer';
 import GoogleSignIn from '../components/GoogleSignIn';
 
 export function Wishlist() {
@@ -40,8 +40,7 @@ export function CartPage() {
           <BagLines />
           <aside className="summary">
             <h2 className="eyebrow">Summary</h2>
-            <div className="row between"><span>Subtotal</span><strong>{inr(bagSubtotal)}</strong></div>
-            <ShippingNote subtotal={bagSubtotal} />
+            <BagTotals />
             {cartInfo.hasIssues && <p role="alert" className="err small">Some items in your bag need attention before checkout.</p>}
             <Link className="btn solid wide" to="/checkout" aria-disabled={cartInfo.hasIssues}>PROCEED TO CHECKOUT</Link>
           </aside>
@@ -58,7 +57,7 @@ const FIELDS = [['email', 'Email', 'email'], ['name', 'Full name', 'name'], ['ph
 export function Checkout() {
   const { cart, cartInfo, clearCart, loadCart, bagSubtotal, user } = useApp();
   const [f, setF] = useState({ email: user?.email || '', name: user?.name || '', phone: '', line1: '', city: '', state: '', pin: '' });
-  const [err, setErr] = useState(); const [busy, setBusy] = useState(false); const [done, setDone] = useState(); const [test, setTest] = useState(false);
+  const [err, setErr] = useState(); const [busy, setBusy] = useState(false); const [done, setDone] = useState(); const [test, setTest] = useState(false); const [ask, setAsk] = useState(false);
   const set = k => e => setF({ ...f, [k]: e.target.value });
   // Signed-in customers get their saved details filled in (only into fields they have not typed in yet).
   useEffect(() => {
@@ -87,20 +86,31 @@ export function Checkout() {
       }).open();
     } catch (x) { setErr(x.message); setBusy(false); loadCart() }
   }
+  const total = cartInfo.total ?? bagSubtotal;
+  const confirm = e => { e.preventDefault(); if (!cartInfo.hasIssues) setAsk(true) };
   if (done) return <div className="empty page-pad"><p className="serif big">Thank you.</p><p>Order {done} is confirmed.</p><Link className="btn dark" to="/shop">CONTINUE SHOPPING</Link></div>;
   if (!cart.length) return <Navigate to="/shop" replace />;
   return (
-    <div className="checkout">
-      <form onSubmit={pay}>
-        <h1 className="serif">Checkout</h1>
+    <div className="checkout co2">
+      <aside className="co-bag"><h2 className="eyebrow">Your bag</h2><BagLines compact /><BagTotals />
+        <ul className="co-trust"><li>✓ Prices include GST</li><li>✓ Secure payment by Razorpay</li><li>✓ Totals calculated on our server</li></ul></aside>
+      <form className="co-form" onSubmit={confirm}>
+        <div className="co-head"><h1 className="serif">Checkout</h1>
+          <ol className="co-steps" aria-label="Steps"><li className="done">Bag</li><li className="on">Details</li><li>Payment</li></ol></div>
         {test && <p className="small gold">Test mode — no real money is moved.</p>}
         {FIELDS.map(([k, l, ac]) => <label key={k} className="field"><span>{l}</span><input required autoComplete={ac} type={k === 'email' ? 'email' : 'text'} value={f[k]} onChange={set(k)} /></label>)}
         {cartInfo.hasIssues && <p role="alert" className="err">Some items in your bag are no longer available in the requested quantity. Please review your bag.</p>}
         {err && <p role="alert" className="err">{err}</p>}
-        <button className="btn solid wide" disabled={busy || cartInfo.hasIssues}>{busy ? 'PROCESSING…' : 'PAY SECURELY'}</button>
+        <button className="btn solid wide" disabled={busy || cartInfo.hasIssues}>{busy ? 'PROCESSING…' : `PAY ${inr(total)}`}</button>
         <p className="muted small">Totals, GST and shipping are calculated on our server. Payments are verified by signature before any order is marked paid.</p>
       </form>
-      <aside className="summary"><h2 className="eyebrow">Your bag</h2><BagLines compact /><div className="row between"><span>Subtotal</span><strong>{inr(bagSubtotal)}</strong></div><ShippingNote subtotal={bagSubtotal} /></aside>
+      {ask && (
+        <div className="co-modal" role="dialog" aria-modal="true" aria-label="Secure checkout" onMouseDown={e => e.target === e.currentTarget && setAsk(false)}>
+          <div className="co-sheet"><button className="co-x" aria-label="Close" onClick={() => setAsk(false)}>✕</button>
+            <h2>SECURE CHECKOUT</h2><p>You will be securely redirected to Razorpay to complete your payment.</p>
+            <div className="co-method"><b>UPI, Cards, Netbanking &amp; Wallets</b><span>100% secure payments powered by Razorpay</span></div>
+            <button className="co-confirm" disabled={busy} onClick={e => { setAsk(false); pay(e) }}>CONFIRM ORDER {inr(total)}</button></div>
+        </div>)}
     </div>
   );
 }
@@ -120,7 +130,12 @@ export function Auth({ mode }) {
     } catch (x) { setErr(x.message === 'Validation failed' ? 'Please enter a valid email and a password of at least 8 characters.' : x.message); setBusy(false) }
   }
   return (
-    <div className="auth">
+    <div className="auth auth2">
+      <aside className="auth-side" aria-hidden={false}>
+        <p className="auth-brand serif">DHANYA</p>
+        <p className="auth-tag serif">{reg ? 'Join the Dhanya family' : 'Welcome back'}</p>
+        <ul><li>Track your orders and bills</li><li>Save addresses for one-tap checkout</li><li>Keep a wishlist of pieces you love</li></ul>
+      </aside>
       <form onSubmit={submit} noValidate>
         <p className="eyebrow">{reg ? 'JOIN' : 'WELCOME BACK'}</p>
         <h1 className="serif">{reg ? 'Create your account' : 'Sign in'}</h1>

@@ -4,13 +4,17 @@ import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
 import { hasCostColumns } from '../lib/cost.js';
-import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
+import { createReturn, getReturn } from '../lib/returns.js';
+import { listMeasurements, setTailoring } from '../lib/measurements.js';
+import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const paise = z.number().int().min(0).max(100_000_000);
 const text = n => z.string().trim().max(n);
 const channel = z.enum(['retail', 'wholesale']).default('retail');
 const gstFilter = z.enum(['all', 'gst', 'nongst']).default('all');
+const payFilter = z.enum(['all', 'cash', 'upi', 'card', 'split']).default('all');
+const csvCell = v => { const t = String(v ?? ''); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t };
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
 // Stitching measurements on a service line (Billing → Add service → Measurements). Sizes are in cm.
@@ -62,14 +66,14 @@ const settingsBody = z.object({
 const couponBody = z.object({
   code: text(40).regex(/^[A-Za-z0-9_-]{3,40}$/, 'Use 3-40 letters, digits, - or _'),
   discountType: z.enum(['percent', 'fixed']), discountValue: z.number().int().min(1).max(100_000_000),
-  minOrder: paise.default(0), expiresOn: date.nullable().default(null), usageLimit: z.number().int().min(1).nullable().default(null),
+  minOrder: paise.default(0), expiresOn: date.nullable().default(null), usageLimit: z.number().int().min(1).nullable().default(null), sentOnly: z.boolean().default(false),
 }).refine(c => c.discountType !== 'percent' || c.discountValue <= 100, { message: 'Percent discount cannot exceed 100', path: ['discountValue'] });
 const wsItem = z.object({ code: text(60).min(1), company: text(120).default(''), colour: text(60).default('') });
 const customerBody = z.object({ name: text(120).default(''), phone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits'), dob: date.nullable().default(null), notes: text(300).nullable().default(null) });
 const expenseBody = z.object({ title: text(120).min(1), category: text(60).default('General'), amount: z.number().int().min(1).max(100_000_000), paymentMode: z.enum(['cash', 'upi', 'card']).default('cash'), notes: text(300).nullable().default(null), date: date.optional() });
 const productPatch = z.object({ name: text(160).min(1), price: paise, costPrice: paise.optional(), taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']),
-  description: text(4000).optional(), material: text(80).optional(), featured: z.boolean().optional(), collections: z.array(text(120).min(1)).max(50).optional() });
-const variantPatch = z.object({ size: text(40).min(1), color: text(40).min(1), sku: text(80).min(1), price: paise.nullable(), active: z.boolean() }).partial();
+  description: text(4000).optional(), material: text(80).optional(), featured: z.boolean().optional(), bestSeller: z.boolean().optional(), lowAlert: z.number().int().min(0).max(100000).optional(), collections: z.array(text(120).min(1)).max(50).optional() });
+const variantPatch = z.object({ size: text(40).min(1), color: text(40).min(1), sku: text(80).min(1), price: paise.nullable(), cost: paise.nullable(), active: z.boolean() }).partial();
 const variantBody = z.object({ size: text(40).min(1), color: text(40).default('Default'), sku: text(80).min(1), stock: z.number().int().min(0).max(1_000_000).default(0) });
 const colourBody = z.object({ color: text(40).min(1), price: paise.nullable().default(null),
   sizes: z.array(z.object({ size: text(40).min(1), stock: z.number().int().min(0).max(1_000_000).default(0), sku: text(80).optional() })).min(1).max(30) });
@@ -120,7 +124,7 @@ export default function pos({ db, auth }) {
     res.status(sale.duplicate ? 200 : 201).json(sale);
   }));
   r.get('/pos/sales', biller, wrap(async (req, res) => {
-    const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), source: z.enum(['all', 'offline', 'online']).default('all'), from: date.optional(), to: date.optional(), channel, gst: gstFilter }).parse(req.query);
+    const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), source: z.enum(['all', 'offline', 'online']).default('all'), from: date.optional(), to: date.optional(), channel, gst: gstFilter, payment: payFilter }).parse(req.query);
     // Cashiers only see today's bills; owner/admin can search the full history.
     if (req.user.role === 'cashier') f.from = f.to = today();
     res.json(await listSales(db, f));
@@ -135,9 +139,30 @@ export default function pos({ db, auth }) {
     res.json(await voidSale(db, req.user, req.params.invoice, reason));
   }));
   r.get('/pos/reports', manager, wrap(async (req, res) => {
-    const { from, to, channel: ch, gst } = z.object({ from: date, to: date, channel, gst: gstFilter }).parse(req.query);
+    const { from, to, channel: ch, gst, source, payment } = z.object({ from: date, to: date, channel, gst: gstFilter, source: z.enum(['all', 'offline', 'online']).default('all'), payment: payFilter }).parse(req.query);
     if (from > to) throw new HttpError(400, 'From date is after To date');
-    res.json(await report(db, from, to, ch, gst));
+    res.json(await report(db, from, to, ch, gst, source, payment));
+  }));
+
+  // ---- return invoices (credit notes) ----
+  r.post('/pos/sales/:invoice/returns', manager, wrap(async (req, res) => {
+    const d = z.object({ items: z.array(z.object({ itemId: z.number().int().positive(), qty: z.number().int().min(1).max(99999) })).min(1).max(100), reason: text(300).default(''), refundMode: z.enum(['cash', 'upi', 'card']).default('cash') }).parse(req.body);
+    res.status(201).json(await createReturn(db, req.user, req.params.invoice, d));
+  }));
+  r.get('/pos/returns/:no', biller, wrap(async (req, res) => {
+    const ret = await getReturn(db, req.params.no);
+    if (!ret) throw new HttpError(404, 'Return invoice not found');
+    res.json(ret);
+  }));
+
+  // ---- measurements: bills with stitching lines, and their tailoring progress ----
+  r.get('/pos/measurements', biller, wrap(async (req, res) => {
+    const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), status: z.enum(['all', 'pending', 'completed', 'cancelled']).default('all'), from: date.optional(), to: date.optional() }).parse(req.query);
+    res.json(await listMeasurements(db, f));
+  }));
+  r.patch('/pos/sales/:invoice/tailoring', biller, wrap(async (req, res) => {
+    const { status } = z.object({ status: z.enum(['pending', 'completed']) }).parse(req.body);
+    res.json(await setTailoring(db, req.user, req.params.invoice, status));
   }));
 
   // ---- advance orders (deposit now, bill on collection) ----
@@ -160,28 +185,61 @@ export default function pos({ db, auth }) {
 
   // ---- coupons ----
   r.get('/pos/coupons', manager, wrap(async (_req, res) => res.json(await rows(db, `
-    SELECT id, code, discount_type AS "discountType", discount_value AS "discountValue", min_order AS "minOrder", expires_on::text AS "expiresOn",
-           usage_limit AS "usageLimit", used_count AS "usedCount", active FROM pos_coupons ORDER BY id DESC`))));
+    SELECT c.id, c.code, c.discount_type AS "discountType", c.discount_value AS "discountValue", c.min_order AS "minOrder", c.expires_on::text AS "expiresOn",
+           c.usage_limit AS "usageLimit", c.used_count AS "usedCount", c.active, c.sent_only AS "sentOnly",
+           (SELECT COUNT(*) FROM pos_coupon_sends s WHERE s.coupon_id = c.id)::int AS "sentCount" FROM pos_coupons c ORDER BY c.id DESC`))));
+  r.get('/pos/coupons/export', manager, wrap(async (_req, res) => {
+    const list = await rows(db, 'SELECT code, discount_type, discount_value, min_order, expires_on::text AS expires_on, usage_limit, used_count, active, sent_only FROM pos_coupons ORDER BY id DESC');
+    const head = ['Code', 'Discount', 'Minimum order', 'Expires', 'Usage limit', 'Used', 'Status', 'Only sent customers'];
+    const lines = list.map(c => [c.code, c.discount_type === 'percent' ? `${c.discount_value}%` : (c.discount_value / 100).toFixed(2), (c.min_order / 100).toFixed(2), c.expires_on ?? '', c.usage_limit ?? '', c.used_count, c.active ? 'Active' : 'Inactive', c.sent_only ? 'Yes' : 'No']);
+    res.set('Content-Type', 'text/csv; charset=utf-8').set('Content-Disposition', 'attachment; filename="coupons.csv"').send('\ufeff' + [head, ...lines].map(l => l.map(csvCell).join(',')).join('\n'));
+  }));
   // Cashiers can validate a code at the till; the final check is repeated inside the sale transaction.
   r.get('/pos/coupons/check', biller, wrap(async (req, res) => {
-    const q = z.object({ code: text(40).min(1), subtotal: z.coerce.number().int().min(0) }).parse(req.query);
+    const q = z.object({ code: text(40).min(1), subtotal: z.coerce.number().int().min(0), phone: text(20).default('') }).parse(req.query);
     const c = await one(db, 'SELECT * FROM pos_coupons WHERE upper(code) = upper($1)', [q.code]);
-    const problem = couponProblem(c, q.subtotal);
+    const problem = couponProblem(c, q.subtotal) ?? await couponAccessProblem(db, c, q.phone);
     if (problem) throw new HttpError(400, problem, 'bad_coupon');
     res.json({ code: c.code, discountType: c.discount_type, discountValue: c.discount_value });
   }));
   r.post('/pos/coupons', manager, wrap(async (req, res) => {
     const c = couponBody.parse(req.body);
-    const row = await one(db, `INSERT INTO pos_coupons (code, discount_type, discount_value, min_order, expires_on, usage_limit) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [c.code, c.discountType, c.discountValue, c.minOrder, c.expiresOn, c.usageLimit]).catch(e => { if (e.code === '23505') throw new HttpError(409, 'That coupon code already exists'); throw e });
+    const row = await one(db, `INSERT INTO pos_coupons (code, discount_type, discount_value, min_order, expires_on, usage_limit, sent_only) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [c.code, c.discountType, c.discountValue, c.minOrder, c.expiresOn, c.usageLimit, c.sentOnly]).catch(e => { if (e.code === '23505') throw new HttpError(409, 'That coupon code already exists'); throw e });
     await audit(db, req.user.id, 'pos.coupon.create', 'pos_coupon', row.id, { code: c.code });
     res.status(201).json({ id: row.id });
   }));
+  // Either switch it on/off ({ active }) or edit it (everything except the code).
   r.patch('/pos/coupons/:id', manager, wrap(async (req, res) => {
-    const { active } = z.object({ active: z.boolean() }).parse(req.body);
-    const u = await db.query('UPDATE pos_coupons SET active = $2 WHERE id = $1 RETURNING id', [id.parse(req.params.id), active]);
+    const cid = id.parse(req.params.id);
+    if (Object.keys(req.body ?? {}).length === 1 && 'active' in req.body) {
+      const { active } = z.object({ active: z.boolean() }).parse(req.body);
+      const u = await db.query('UPDATE pos_coupons SET active = $2 WHERE id = $1 RETURNING id', [cid, active]);
+      if (!u.rows.length) throw new HttpError(404, 'Coupon not found');
+      return res.json({ ok: true });
+    }
+    const c = z.object({ discountType: z.enum(['percent', 'fixed']), discountValue: z.number().int().min(1).max(100_000_000), minOrder: paise.default(0), expiresOn: date.nullable().default(null), usageLimit: z.number().int().min(1).nullable().default(null), sentOnly: z.boolean().default(false) })
+      .refine(x => x.discountType !== 'percent' || x.discountValue <= 100, { message: 'Percent discount cannot exceed 100', path: ['discountValue'] }).parse(req.body);
+    const u = await db.query('UPDATE pos_coupons SET discount_type = $2, discount_value = $3, min_order = $4, expires_on = $5, usage_limit = $6, sent_only = $7 WHERE id = $1 RETURNING id', [cid, c.discountType, c.discountValue, c.minOrder, c.expiresOn, c.usageLimit, c.sentOnly]);
     if (!u.rows.length) throw new HttpError(404, 'Coupon not found');
     res.json({ ok: true });
+  }));
+  // Record that a coupon was sent to a customer (the WhatsApp message itself is opened by the browser). onlyThis = make the coupon sent-only.
+  r.post('/pos/coupons/:id/sends', manager, wrap(async (req, res) => {
+    const d = z.object({ phone: text(20).min(1), name: text(120).default(''), onlyThis: z.boolean().default(false) }).parse(req.body);
+    const cid = id.parse(req.params.id), ph = normPhone(d.phone);
+    if (!ph) throw new HttpError(400, 'Enter a valid mobile number');
+    if (!(await one(db, 'SELECT 1 AS x FROM pos_coupons WHERE id = $1', [cid]))) throw new HttpError(404, 'Coupon not found');
+    await db.query(`INSERT INTO pos_coupon_sends (coupon_id, phone, name) VALUES ($1,$2,$3) ON CONFLICT (coupon_id, phone) DO UPDATE SET sent_at = now(), name = COALESCE(NULLIF(EXCLUDED.name, ''), pos_coupon_sends.name)`, [cid, ph, d.name]);
+    if (d.onlyThis) await db.query('UPDATE pos_coupons SET sent_only = true WHERE id = $1', [cid]);
+    res.status(201).json({ ok: true, sentOnly: !!(await one(db, 'SELECT 1 AS x FROM pos_coupons WHERE id = $1 AND sent_only', [cid])) });
+  }));
+  // Every customer with a phone number, and whether this coupon was already sent to them.
+  r.get('/pos/coupons/:id/recipients', manager, wrap(async (req, res) => {
+    const cid = id.parse(req.params.id);
+    res.json(await rows(db, `
+      SELECT c.name, c.phone, EXISTS (SELECT 1 FROM pos_coupon_sends s WHERE s.coupon_id = $1 AND s.phone = c.phone) AS sent
+      FROM pos_customers c ORDER BY sent DESC, c.name, c.id LIMIT 1000`, [cid]));
   }));
   r.delete('/pos/coupons/:id', manager, wrap(async (req, res) => {
     const d = await db.query('DELETE FROM pos_coupons WHERE id = $1 RETURNING code', [id.parse(req.params.id)]);
@@ -253,6 +311,12 @@ export default function pos({ db, auth }) {
     if (d.description !== undefined || d.material !== undefined || d.featured !== undefined)
       await db.query(`UPDATE products SET description = COALESCE($2, description), material = CASE WHEN $3::text IS NULL THEN material ELSE NULLIF($3, '') END, featured = COALESCE($4, featured) WHERE id = $1`,
         [pid, d.description ?? null, d.material ?? null, d.featured ?? null]);
+    if (d.bestSeller !== undefined) {
+      await db.query('UPDATE products SET best_seller = $2, updated_at = now() WHERE id = $1', [pid, d.bestSeller]);
+      // The Best Sellers shelf keeps only the 10 newest flagged pieces.
+      await db.query('UPDATE products SET best_seller = false WHERE best_seller AND id NOT IN (SELECT id FROM products WHERE best_seller ORDER BY updated_at DESC, id DESC LIMIT 10)');
+    }
+    if (d.lowAlert !== undefined) await db.query('UPDATE products SET low_stock_alert = $2 WHERE id = $1', [pid, d.lowAlert]);
     // Collections this piece belongs to: added at the end of a new collection, kept in place in ones it was already in.
     if (d.collections) await db.tx(async t => {
       const ids = (await rows(t, 'SELECT id FROM collections WHERE slug = ANY($1)', [d.collections])).map(r => r.id);
@@ -267,8 +331,9 @@ export default function pos({ db, auth }) {
   r.patch('/pos/products/:id/variants/:vid', manager, wrap(async (req, res) => {
     const d = variantPatch.parse(req.body); const pid = id.parse(req.params.id), vid = id.parse(req.params.vid);
     const u = await db.query(`UPDATE product_variants SET size = COALESCE($3, size), color = COALESCE($4, color), sku = COALESCE($5, sku),
-        price_override = CASE WHEN $6 THEN $7::int ELSE price_override END, active = COALESCE($8, active) WHERE id = $2 AND product_id = $1 RETURNING id`,
-      [pid, vid, d.size ?? null, d.color ?? null, d.sku ?? null, d.price !== undefined, d.price ?? null, d.active ?? null])
+        price_override = CASE WHEN $6 THEN $7::int ELSE price_override END, active = COALESCE($8, active),
+        cost_override = CASE WHEN $9 THEN $10::int ELSE cost_override END WHERE id = $2 AND product_id = $1 RETURNING id`,
+      [pid, vid, d.size ?? null, d.color ?? null, d.sku ?? null, d.price !== undefined, d.price ?? null, d.active ?? null, d.cost !== undefined, d.cost ?? null])
       .catch(e => { if (e.code === '23505') throw new HttpError(409, 'That SKU or size/colour already exists for this product'); throw e });
     if (!u.rows.length) throw new HttpError(404, 'Size not found');
     await audit(db, req.user.id, 'pos.variant.edit', 'product', pid, { variant: vid, ...d });
@@ -323,6 +388,20 @@ export default function pos({ db, auth }) {
       await t.query('UPDATE product_images SET color = NULL WHERE product_id = $1 AND lower(color) = lower($2)', [pid, color]);
       await audit(t, req.user.id, 'pos.colour.remove', 'product', pid, { color });
     });
+    res.json({ ok: true });
+  }));
+  // "Complete the look": up to 4 suggested pieces per product, in order.
+  r.get('/pos/products/:id/suggested', biller, wrap(async (req, res) => res.json(await rows(db, `
+    SELECT p.id, p.slug, p.name, (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image
+    FROM product_suggestions s JOIN products p ON p.id = s.suggested_id WHERE s.product_id = $1 ORDER BY s.display_order`, [id.parse(req.params.id)]))));
+  r.put('/pos/products/:id/suggested', manager, wrap(async (req, res) => {
+    const pid = id.parse(req.params.id);
+    const { ids } = z.object({ ids: z.array(id).max(4) }).parse(req.body);
+    if (new Set(ids).size !== ids.length || ids.includes(pid)) throw new HttpError(400, 'Pick each suggested piece once, and not the product itself');
+    await db.tx(async t => {
+      await t.query('DELETE FROM product_suggestions WHERE product_id = $1', [pid]);
+      for (const [i, sid] of ids.entries()) await t.query('INSERT INTO product_suggestions (product_id, suggested_id, display_order) VALUES ($1,$2,$3)', [pid, sid, i]);
+    }).catch(e => { if (e.code === '23503') throw new HttpError(400, 'One of those products does not exist'); throw e });
     res.json({ ok: true });
   }));
   r.post('/pos/stock', stockers, wrap(async (req, res) => res.json(await adjustStock(db, req.user, stockBody.parse(req.body)))));

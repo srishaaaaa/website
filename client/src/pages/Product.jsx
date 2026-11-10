@@ -117,7 +117,7 @@ export default function Product() {
         <div className="pdp-info">
           <p className="eyebrow">{p.category}</p>
           <h1 className="serif">{p.name}</h1>
-          <p className="price big">{inr(variant?.price ?? (sizes.length && sizes.every(v => v.price === sizes[0].price) ? sizes[0].price : p.price))} <small>+ {p.gst_rate}% GST</small></p>
+          <p className="price big">{inr(variant?.price ?? (sizes.length && sizes.every(v => v.price === sizes[0].price) ? sizes[0].price : p.price))} <small>{p.gst_rate > 0 ? `incl. ${p.gst_rate}% GST` : 'GST-free'}</small></p>
 
           {colors.length > 1 && (
             <fieldset><legend className="eyebrow">Colour — {color}</legend>
@@ -136,14 +136,28 @@ export default function Product() {
           </div>
           {total < 1 && <p className="err small">This piece is currently sold out.</p>}
 
-          <Accordion title="Description" open><p>{p.description || 'Details for this piece will be added soon.'}</p></Accordion>
-          <Accordion title="Shipping"><p>Shipping is {inr(SHIPPING_FLAT)}, complimentary on bag totals above {inr(FREE_SHIPPING_AT)}. GST at {p.gst_rate}% is added at checkout, and the final total is always calculated securely on our server.</p></Accordion>
+          <div className="dr-box">
+            <h3>DELIVERY &amp; RETURNS</h3>
+            <ul>
+              <li>Delivery across India: {inr(SHIPPING_FLAT)}, free on bag totals above {inr(FREE_SHIPPING_AT)}</li>
+              <li>{p.gst_rate > 0 ? `Price includes ${p.gst_rate}% GST, itemised at checkout and on your bill` : 'This piece carries no GST'}</li>
+              <li>Made-to-measure and altered garments are non-returnable</li>
+              <li>Questions about fit or fabric? Message us on WhatsApp before you order</li>
+            </ul>
+          </div>
+          <Accordion title="Product details" open><div className="pdp-text">{(p.description || 'Details for this piece will be added soon.').split(/\n\s*\n/).map((para, i) => <p key={i}>{para.split(/(\*\*[^*]+\*\*)/g).map((t, k) => /^\*\*[^*]+\*\*$/.test(t) ? <strong key={k}>{t.slice(2, -2)}</strong> : t)}</p>)}</div></Accordion>
         </div>
       </div>
 
+      {p.suggested?.length > 0 && (
+        <section className="related" aria-labelledby="sug-h">
+          <Reveal><h2 id="sug-h" className="serif">Complete the look</h2></Reveal>
+          <div className="pgrid cols-4">{p.suggested.map(r => <ProductCard key={r.id} p={r} />)}</div>
+        </section>
+      )}
       {related.length > 0 && (
         <section className="related" aria-labelledby="rel-h">
-          <Reveal><h2 id="rel-h" className="serif">Complete the look</h2></Reveal>
+          <Reveal><h2 id="rel-h" className="serif">More from {p.category}</h2></Reveal>
           <div className="pgrid cols-4">{related.map(r => <ProductCard key={r.id} p={r} />)}</div>
         </section>
       )}

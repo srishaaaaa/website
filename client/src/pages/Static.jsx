@@ -16,7 +16,7 @@ export function About() {
   const cats = catalog.categories, cols = catalog.collections;
   const total = cats.reduce((s, c) => s + c.product_count, 0);
   const steps = [
-    ['01', 'Browse', 'Filter by category, size, colour, price and fabric. Collections group pieces for weddings, festivals and evenings.'],
+    ['01', 'Browse', 'Filter by category, size, colour, price and fabric. Categories group pieces for weddings, festivals and evenings.'],
     ['02', 'Choose your size', 'Every size shows live availability, so what you see is what can be yours.'],
     ['03', 'Pay securely', 'Checkout is calculated on our server and paid through Razorpay. An order is only confirmed once payment is verified.'],
     ['04', 'Track it', 'Sign in to see your orders, keep a wishlist and find your bag waiting on any device.'],
@@ -29,17 +29,17 @@ export function About() {
           <h1>{String(t.aboutTitle).split('\n').map((l, i, a) => <span key={i}>{l}{i < a.length - 1 && <br />}</span>)}</h1>
           <p className="ab-lead">{t.aboutLead}</p>
           <p className="ab-sub">{t.aboutSub}</p>
-          <div className="ab-cta"><Link className="btn solid pill" to="/shop" data-cursor="SHOP">EXPLORE COLLECTION</Link><Link className="hl-link" to="/collections" data-cursor="EXPLORE">VIEW COLLECTIONS</Link></div>
+          <div className="ab-cta"><Link className="btn solid pill" to="/shop" data-cursor="SHOP">EXPLORE COLLECTION</Link><Link className="hl-link" to="/collections" data-cursor="EXPLORE">VIEW CATEGORIES</Link></div>
         </div>
         <div className="ab-photo cut">
           <picture><source srcSet={media.heroCutoutWebp} type="image/webp" /><img src={media.heroCutout} alt={media.heroAlt} /></picture>
           {total > 0 && <span className="ab-chip c1"><b>{total}</b> pieces</span>}
-          {cols.length > 0 && <span className="ab-chip c2"><b>{cols.length}</b> collections</span>}
+          {cols.length > 0 && <span className="ab-chip c2"><b>{cols.length}</b> categories</span>}
         </div>
       </header>
 
       <section className="ab-stats" aria-label="DHANYA at a glance">
-        {[[total || '—', 'Pieces in the collection'], [cats.length || '—', 'Categories, from sarees to couple combos'], [cols.length || '—', 'Curated collections'], ['India', 'Delivered across the country']].map(([n, l]) => (
+        {[[total || '—', 'Pieces in the collection'], [cats.length || '—', 'Categories, from sarees to couple combos'], [cols.length || '—', 'Curated categories'], ['India', 'Delivered across the country']].map(([n, l]) => (
           <Reveal key={l} className="ab-stat"><strong>{n}</strong><span>{l}</span></Reveal>
         ))}
       </section>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { Empty, Err, Kpi, PayPill, StatusPill, dmy, inr, kindName, todayStr, useMeta, when } from './common';
+import { Empty, Err, Kpi, PayPill, StatusPill, dmy, inr, todayStr, useMeta } from './common';
 
 export default function Dashboard() {
   const [meta] = useMeta(); const [d, setD] = useState(null); const [err, setErr] = useState();
@@ -15,7 +15,6 @@ export default function Dashboard() {
       <div className="stc-row">
         <Link className="dpos-btn" to="/admin/stitching/orders/new">+ New stitching order</Link>
         <Link className="dpos-btn outline" to="/admin/stitching/measurements">Add measurements</Link>
-        <Link className="dpos-btn outline" to="/admin/stitching/appointments?new=1">Schedule a trial</Link>
         <Link className="dpos-btn outline" to="/admin/stitching/orders?payment=partial">Record a payment</Link>
         <Link className="dpos-btn ghost" to="/admin/stitching/orders">View all orders</Link>
       </div>
@@ -23,7 +22,6 @@ export default function Dashboard() {
         <Kpi label="Active orders" value={c.active} to="/admin/stitching/orders?status=active" />
         <Kpi label="Received today" value={c.today} />
         <Kpi label="In progress" value={c.inProgress} />
-        <Kpi label="Trials, next 7 days" value={c.upcomingTrials} to="/admin/stitching/appointments" />
         <Kpi label="Due for delivery today" value={c.dueToday} to="/admin/stitching/orders?status=active&sort=delivery&dir=asc" />
         <Kpi label="Overdue" value={c.overdue} tone={c.overdue ? '#b3261e' : undefined} to="/admin/stitching/orders?overdue=1" />
         <Kpi label="Ready, awaiting collection" value={c.awaitingCollection} to="/admin/stitching/orders?status=ready" />
@@ -44,7 +42,7 @@ export default function Dashboard() {
           <p className="muted small" style={{ marginBottom: 0 }}>Counts every order currently at that stage. Delivered orders are included.</p>
         </section>
       </div>
-      <div className="stc-grid w2">
+      <div className="stc-grid">
         <section className="dpos-card">
           <h2>Upcoming deadlines</h2>
           {!d.deadlines.length ? <Empty>Nothing due in the next 7 days.</Empty> : <ul className="stc-stack" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 10 }}>{d.deadlines.map(o => (
@@ -52,12 +50,6 @@ export default function Dashboard() {
               <span>{o.overdue ? <span className="stc-pill late">Overdue · {dmy(o.deliveryDate)}</span> : <span className={o.deliveryDate === todayStr() ? 'stc-pill pr-urgent' : 'stc-pill'}>{o.deliveryDate === todayStr() ? 'Today' : dmy(o.deliveryDate)}</span>}</span></li>))}</ul>}
           {d.alterations.length > 0 && <><h3 style={{ margin: '18px 0 8px' }}>Pending alterations</h3><ul className="stc-stack" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 8 }}>{d.alterations.map(a => (
             <li key={a.id} className="stc-row between"><span><Link className="stc-mono stc-link" to={`/admin/stitching/orders/${a.orderId}`}>{a.orderNo}</Link> · round {a.round}: {a.reason}</span><span className="muted small">{a.dueDate ? `due ${dmy(a.dueDate)}` : 'no due date'}</span></li>))}</ul></>}
-        </section>
-        <section className="dpos-card">
-          <h2>Trials and appointments</h2>
-          {!d.appointments.length ? <Empty>No appointments in the next 7 days.</Empty> : <ul className="stc-stack" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 10 }}>{d.appointments.map(a => (
-            <li key={a.id} className="stc-row between"><span><b>{kindName(meta, a.kind)}</b> · {a.customerName}{a.orderNo && <span className="muted small"> · {a.orderNo}</span>}</span><span className="muted small">{when(a.startsAt)}</span></li>))}</ul>}
-          <p style={{ marginBottom: 0 }}><Link className="stc-link" to="/admin/stitching/appointments">Open the calendar</Link></p>
         </section>
       </div>
     </div>);

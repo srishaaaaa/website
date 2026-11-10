@@ -46,7 +46,7 @@ function MobileMenu() {
   const { menuOpen, setMenuOpen, catalog, setSearchOpen, wish, user } = useApp();
   const ref = useRef(); const close = () => setMenuOpen(false);
   useModal(menuOpen, close, ref);
-  const links = [['Home', '/'], ['Collection', '/collections'], ['Categories', '/shop'], ['Shop Story', '/#story'], ['Contact', '/#contact']];
+  const links = [['Home', '/'], ['Categories', '/shop'], ['Shop Story', '/#story'], ['Contact', '/#contact']];
   return (
     <AnimatePresence>
       {menuOpen && (
@@ -75,7 +75,6 @@ function MobileMenu() {
 
 const LINKS = [
   { label: 'HOME', to: '/', on: (p, h) => p === '/' && !h },
-  { label: 'COLLECTION', to: '/collections', mega: 'collections', on: p => p.startsWith('/collections') },
   { label: 'CATEGORIES', to: '/shop', mega: 'categories', on: p => p === '/shop' || p.startsWith('/product') },
   { label: 'SHOP STORY', to: '/#story', on: (p, h) => p === '/' && h === '#story' },
   { label: 'CONTACT', to: '/#contact', on: (p, h) => p === '/' && (h === '#contact' || h === '#enquiry') },

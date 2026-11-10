@@ -62,6 +62,18 @@ export async function shippingFor(q, subtotal) {
   return { id: m.id, name: m.name, amount: m.free_over != null && subtotal >= m.free_over ? 0 : m.base_amount, freeOver: m.free_over };
 }
 
+// Shop prices include GST. Splits the GST out of the (inclusive) line totals, grouped by rate: tax = gross x rate / (100 + rate).
+export function gstSplit(lines) {
+  const by = new Map();
+  for (const l of lines) {
+    const gross = l.price * l.qty, rate = l.taxRate ?? 0, tax = Math.round(gross * rate / (100 + rate));
+    const g = by.get(rate) ?? { rate, gross: 0, base: 0, tax: 0 };
+    g.gross += gross; g.tax += tax; g.base += gross - tax; by.set(rate, g);
+  }
+  const byRate = [...by.values()].filter(g => g.rate > 0).sort((a, b) => a.rate - b.rate);
+  return { byRate, included: byRate.reduce((s, g) => s + g.tax, 0) };
+}
+
 export function issueFor(l) {
   if (!l.available) return 'unavailable';
   if (l.stock < 1) return 'sold_out';
@@ -71,10 +83,11 @@ export function issueFor(l) {
 
 export async function cartView(db, cart) {
   const lines = cart ? await cartLines(db, cart.id) : [];
-  const items = lines.map(l => ({ variantId: l.variantId, slug: l.slug, name: l.name, size: l.size, color: l.color, price: l.price, qty: l.qty, stock: l.stock, image: l.image, issue: issueFor(l) }));
+  const items = lines.map(l => ({ variantId: l.variantId, slug: l.slug, name: l.name, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate, stock: l.stock, image: l.image, issue: issueFor(l) }));
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const ship = await shippingFor(db, subtotal);
-  return { items, count: items.reduce((s, i) => s + i.qty, 0), subtotal, shipping: { amount: items.length ? ship.amount : 0, freeOver: ship.freeOver ?? null }, hasIssues: items.some(i => i.issue) };
+  const shipping = { amount: items.length ? ship.amount : 0, freeOver: ship.freeOver ?? null };
+  return { items, count: items.reduce((s, i) => s + i.qty, 0), subtotal, shipping, gst: gstSplit(items), total: subtotal + shipping.amount, hasIssues: items.some(i => i.issue) };
 }
 
 export async function setQuantity(db, cartId, variantId, quantity, { add = false } = {}) {

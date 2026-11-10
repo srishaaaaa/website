@@ -26,7 +26,7 @@ function AddModal({ kind, onClose, onDone }) {
     catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
   };
   return (
-    <Modal title={kind === 'category' ? 'Add category' : 'Add collection'} sub={kind === 'category' ? 'A product category such as Sarees or Blouses' : 'A department / collection shown on the storefront (starts hidden)'} onClose={onClose}>
+    <Modal title={kind === 'category' ? 'Add category' : 'Add category'} sub={kind === 'category' ? 'A product category such as Sarees or Blouses' : 'A department / collection shown on the storefront (starts hidden)'} onClose={onClose}>
       <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
         <label className="f">Name<input autoFocus required value={name} maxLength={80} onChange={e => setName(e.target.value)} placeholder={kind === 'category' ? 'e.g. Dupattas' : 'e.g. Festive 2026'} /></label>
         <Err>{err}</Err>
@@ -99,7 +99,7 @@ export function AdminCategories() {
       <Err>{err}</Err>
       <div className="dpos-tx">
         <div>
-          <h2><Icon n="layers" size={20} />Departments <button className="dpos-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setModal('collection')}>+ Add collection</button></h2>
+          <h2><Icon n="layers" size={20} />Departments <button className="dpos-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setModal('collection')}>+ Add category</button></h2>
           {!d ? <p className="dpos-empty">Loading…</p> : !cols.length ? <p className="dpos-empty">No departments found.</p> : cols.map(c => (
             <div className="dpos-txc" key={c.id}>
               <div><b>{c.name}</b><small>{c.products} products · {c.status === 'published' ? 'Live on the site' : 'Hidden'}</small></div>
@@ -124,7 +124,7 @@ export function AdminCategories() {
         </div>
       </div>
       {edit && <PiecesModal kind={edit.kind} item={edit.item} onClose={() => setEdit(null)} onDone={() => { toast('Saved.'); load(); loadCatalog?.() }} />}
-      {modal && <AddModal kind={modal} onClose={() => setModal(null)} onDone={() => { toast(modal === 'category' ? 'Category added.' : 'Collection added.'); load(); loadCatalog?.() }} />}
+      {modal && <AddModal kind={modal} onClose={() => setModal(null)} onDone={() => { toast(modal === 'category' ? 'Category added.' : 'Category added.'); load(); loadCatalog?.() }} />}
     </AdminShell>
   );
 }

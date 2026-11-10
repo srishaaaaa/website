@@ -3,7 +3,7 @@ import { rows, one } from '../db/index.js';
 const BASE_SELECT = `
   SELECT p.id, p.slug, p.name, p.description, c.name AS category, c.slug AS category_slug,
          p.base_price AS price, p.material, p.currency,
-         (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id OFFSET 1 LIMIT 1) AS image2, p.tax_rate AS gst_rate, p.featured, p.created_at,
+         (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id OFFSET 1 LIMIT 1) AS image2, p.tax_rate AS gst_rate, p.featured, p.best_seller, p.created_at,
          (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
          (SELECT CASE WHEN focus_x IS NOT NULL THEN focus_x || '% ' || focus_y || '%' END FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image_pos,
          COALESCE(st.stock, 0)::int AS stock, st.single_variant,
@@ -28,6 +28,7 @@ function where(f, { baseOnly = false } = {}) {
   if (f.slugs?.length) w.push(`p.slug = ANY(${add(f.slugs)})`);
   if (f.q) { const p = add(like(f.q)); w.push(`(p.name ILIKE ${p} OR p.description ILIKE ${p} OR c.name ILIKE ${p} OR p.material ILIKE ${p})`) }
   if (f.featured) w.push('p.featured');
+  if (f.flag === 'best') w.push('p.best_seller');
   if (!baseOnly) {
     if (f.category?.length) w.push(`c.slug = ANY(${add(f.category)})`);
     if (f.material?.length) w.push(`p.material = ANY(${add(f.material)})`);
@@ -79,8 +80,13 @@ export async function productBySlug(q, slug) {
              FROM product_variants v WHERE v.product_id = $1 AND v.active ORDER BY v.id`, [p.id, p.price]),
     rows(q, 'SELECT image_url AS url, alt_text AS alt, variant_id, color, focus_x AS "focusX", focus_y AS "focusY" FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [p.id]),
   ]);
-  const related = await rows(q, `${BASE_SELECT} WHERE p.status = 'active' AND p.id <> $1 ORDER BY (p.category_id IS NOT DISTINCT FROM (SELECT category_id FROM products WHERE id = $1)) DESC, p.featured DESC, p.id DESC LIMIT 4`, [p.id]);
-  return { ...p, material: extra.material, variants, images, related };
+  // "More from <category>": only pieces of the same category (none when the product has no category).
+  const related = await rows(q, `${BASE_SELECT} WHERE p.status = 'active' AND p.id <> $1 AND p.category_id IS NOT NULL AND p.category_id = (SELECT category_id FROM products WHERE id = $1) ORDER BY p.featured DESC, p.id DESC LIMIT 8`, [p.id]);
+  // "Complete the look": hand-picked suggestions (migration 026); empty until that has been run.
+  const suggested = await rows(q, `${BASE_SELECT} WHERE p.status = 'active' AND p.id IN (SELECT suggested_id FROM product_suggestions WHERE product_id = $1)`, [p.id]).catch(() => []);
+  const order = (await rows(q, 'SELECT suggested_id FROM product_suggestions WHERE product_id = $1 ORDER BY display_order', [p.id]).catch(() => [])).map(r => r.suggested_id);
+  suggested.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  return { ...p, material: extra.material, variants, images, related, suggested };
 }
 
 export const listCategories = (q) => rows(q, `

@@ -90,7 +90,7 @@ export default function SearchOverlay() {
                 </button>
               ))}
               {cats.map(c => catRow('c' + c.slug, c.name, 'Category', `/shop?category=${c.slug}`))}
-              {cols.map(c => catRow('o' + c.slug, c.name, 'Collection', `/collections/${c.slug}`))}
+              {cols.map(c => catRow('o' + c.slug, c.name, 'Category', `/collections/${c.slug}`))}
               {term && (
                 <button id="so-all" role="option" aria-selected={active('all')} className={`s-item cat ${active('all') ? 'on' : ''}`} onClick={() => go(`/search?q=${encodeURIComponent(term)}`)}>
                   <span className="s-text"><span className="serif">See all results for “{term}”</span></span><span aria-hidden="true">↵</span>

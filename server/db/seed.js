@@ -55,9 +55,8 @@ export async function seed(db, cfg, log = console.log, { sample = true } = {}) {
       for (const [i, ps] of products.entries()) await t.query('INSERT INTO collection_products (collection_id, product_id, display_order) SELECT $1, id, $2 FROM products WHERE slug = $3', [c.id, i, ps]);
     };
     if (sample) {
-    await col('curated-edit', 'The Curated Edit', 'Pieces chosen by the boutique.', 0, ['banarasi-silk-saree', 'midnight-kurta-set', 'champagne-co-ord', 'dusk-silk-dress']);
-    await col('festive-edit', 'The Festive Edit', 'For celebrations.', 1, ['plum-festive-lehenga', 'banarasi-silk-saree', 'gold-thread-co-ord']);
-    await col('evening-edit', 'The Evening Edit', 'After-dark silhouettes.', 2, ['rose-organza-dress', 'dusk-silk-dress', 'midnight-kurta-set']);
+    await col('festive-edit', 'The Festive Edit', 'For celebrations.', 0, ['plum-festive-lehenga', 'banarasi-silk-saree', 'gold-thread-co-ord']);
+    await col('evening-edit', 'The Evening Edit', 'After-dark silhouettes.', 1, ['rose-organza-dress', 'dusk-silk-dress', 'midnight-kurta-set']);
     for (const [slug, name, description, order, flag] of COLLECTIONS_BY_FLAG) await col(slug, name, description, order, flagged[flag]);
     // "New Arrivals" (made by migration 020) starts with the 12 newest pieces when it is still empty; the admin edits it afterwards.
     await t.query(`INSERT INTO collection_products (collection_id, product_id, display_order)

@@ -151,7 +151,7 @@ export function AdminStorefront() {
           </div>
         )}
 
-        {[['Category covers', 'categories', cats], ['Collection covers', 'collections', cols]].map(([title, kind, rows]) => (
+        {[['Category covers', 'categories', cats], ['More category covers', 'collections', cols]].map(([title, kind, rows]) => (
           <section key={kind} className="adm-block">
             <h2 className="serif adm-h2">{title}</h2>
             <p className="muted small">Click a photo on the part that must stay visible (a face, the zari border). The website frames the photo around that point.</p>

@@ -33,7 +33,13 @@ export function billRows(b, { sale } = {}) {
   if (b.deliveryFee > 0) rows.push({ label: 'Delivery', value: b.deliveryFee, kind: 'row' });
   if (b.isGst && b.tax > 0) rows.push({ label: 'TAXABLE VALUE', value: b.subtotal - (b.discount || 0), kind: 'muted' }, ...gstRows(b));
   rows.push({ label: 'TOTAL', value: b.total, kind: 'total' });
-  return rows.concat(payRows(b, { sale }));
+  const out = rows.concat(payRows(b, { sale }));
+  // Returns against the bill: what went back and what the bill is worth now.
+  if (b.returns?.length) {
+    for (const r of b.returns) out.push({ label: `Less: returned (${r.returnNo})`, value: -r.total, kind: 'row' });
+    out.push({ label: 'NET AFTER RETURNS', value: b.total - b.returns.reduce((s, r) => s + r.total, 0), kind: 'strong' });
+  }
+  return out;
 }
 
 export function payRows(b, { sale } = {}) {
