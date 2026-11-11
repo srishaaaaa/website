@@ -543,3 +543,9 @@
   .pe2-two { grid-template-columns: minmax(0, 1fr) !important }
 }
 @media (max-width: 480px) { .pe2-g { grid-template-columns: minmax(0, 1fr) } .pe2 .dpos-mhead { padding: 16px 18px } }
+/* Order history rows: every single-line detail uses the same size and family so the row reads evenly */
+.dpos table tbody td { font-size: 14px; font-weight: 500; line-height: 1.35; color: #1a1420 }
+.dpos table tbody td b { font-size: 14px; font-weight: 600 }
+.dpos table tbody td.oid { font: 600 13px/1.35 ui-monospace, 'SF Mono', Consolas, monospace; letter-spacing: 0 }
+.dpos table tbody td.due, .dpos table tbody td.due b { font-size: 14px; font-weight: 700 }
+.dpos table tbody td .small, .dpos table tbody td small { font-size: 12px; font-weight: 400 }
