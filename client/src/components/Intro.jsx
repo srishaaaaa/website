@@ -20,6 +20,8 @@ export default function Intro({ onDone }) {
   useModal(true, finish, ref); // Esc skips
 
   useEffect(() => { const t = setTimeout(() => setLine2(true), 1700); return () => clearTimeout(t) }, []);
+  // The splash runs by itself on every load; no tap needed. Skip / Esc still end it at once.
+  useEffect(() => { const t = setTimeout(() => { clearTimeout(timer.current); onDone() }, reduced ? 600 : 3300); return () => clearTimeout(t) }, []); // eslint-disable-line
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const enter = () => {
@@ -32,7 +34,7 @@ export default function Intro({ onDone }) {
 
   return (
     <motion.div ref={ref} className="intro" role="dialog" aria-modal="true" aria-label="Welcome to DHANYA"
-      initial={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.08, filter: 'blur(6px)' }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}>
+      initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
       <div className="intro-bg" aria-hidden="true">
         {webgl
           ? <Suspense fallback={null}><PortalCanvas entering={entering} quality={quality} reduced={reduced} /></Suspense>

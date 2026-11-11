@@ -38,7 +38,6 @@ export default function PageTransition({ children }) {
 
   return (
     <>
-      {!reduced && curtainFor === pathname && <Curtain key={pathname} />}
       <AnimatePresence mode="wait" initial={false}>
         <motion.main key={pathname} id="main" tabIndex={-1} className="page"
           initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.975 }}

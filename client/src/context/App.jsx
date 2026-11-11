@@ -13,7 +13,8 @@ export function AppProvider({ children }) {
   const [entered, setEntered] = useState(() => {
     try {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-      return !!localStorage.getItem('dhanya.entered');
+      if (/^\/(admin|invoice|coupon)(\/|$)/.test(location.pathname)) return true; // staff screens and shared documents never open with the splash
+      return false; // the splash plays on every load / reload of the customer site
     } catch { return true }
   });
   const enter = useCallback(() => { try { localStorage.setItem('dhanya.entered', String(Date.now())) } catch { /* ignore */ } setEntered(true) }, []);
