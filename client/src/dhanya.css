@@ -533,3 +533,13 @@
 .dpos-modal .dpos-sheet.cpk .cpk-foot .dpos-btn { padding: 12px 28px; font-size: 14px }
 .dpos .dpos-bill .dpos-card > .dpos-head h2 { white-space: nowrap } .dpos .dpos-bill .dpos-head .dpos-count { margin-left: 8px; min-width: 22px; height: 22px; font-size: 12px }
 .dpos .dpos-line.dpos-flash { border-radius: 12px }
+/* Add / Edit product window: the two columns stack on narrower screens so nothing is squeezed */
+.pe2-g { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) }
+.pe2-f input, .pe2-f select, .pe2-f textarea { width: 100%; min-width: 0 }
+@media (max-width: 900px) {
+  .pe2-top { grid-template-columns: minmax(0, 1fr) }
+  .pe2-r { border-left: 0; border-top: 1px solid #ece6dd }
+  .pe2-l, .pe2-r { padding: 20px 18px }
+  .pe2-two { grid-template-columns: minmax(0, 1fr) !important }
+}
+@media (max-width: 480px) { .pe2-g { grid-template-columns: minmax(0, 1fr) } .pe2 .dpos-mhead { padding: 16px 18px } }
