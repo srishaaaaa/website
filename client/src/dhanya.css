@@ -522,3 +522,12 @@
 .dpos .dpos-bill .dpos-card > .dpos-head { flex-wrap: nowrap; align-items: center }
 .dpos .dpos-bill .dpos-card > .dpos-head > div[style] { margin-left: auto }
 .dpos .cp-card > form > .cp-l, .dpos .cp-card > .cp-l { margin-bottom: 4px } .dpos .cp-code { margin: 0 0 14px }
+/* Catalog picker: window never taller than the screen; only the product list scrolls, OK / Cancel stay visible */
+.dpos-modal .dpos-sheet.cpk { display: flex; flex-direction: column; max-height: 92vh; overflow: hidden; padding: 0 }
+.dpos-modal .dpos-sheet.cpk > .dpos-mhead { flex: none; margin: 0 }
+.dpos-modal .dpos-sheet.cpk > .cpk-search { flex: none; margin: 16px 22px 0; width: auto }
+.dpos-modal .dpos-sheet.cpk > .cpk-chips { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 22px 8px }
+.dpos-modal .dpos-sheet.cpk > .cpk-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 22px 14px }
+.dpos-modal .dpos-sheet.cpk > .cpk-foot { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 22px; border-top: 1px solid #e8e8dc; background: #fff }
+.dpos-modal .dpos-sheet.cpk > .cpk-foot > div { display: inline-flex; gap: 10px }
+.dpos-modal .dpos-sheet.cpk .cpk-foot .dpos-btn { padding: 12px 28px; font-size: 14px }
