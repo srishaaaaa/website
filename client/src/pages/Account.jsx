@@ -148,7 +148,8 @@ export function Account() {
   const { user, authReady, signOut, wish } = useApp();
   const [sp, setSp] = useSearchParams();
   const tab = TABS.some(([k]) => k === sp.get('tab')) ? sp.get('tab') : 'profile';
-  const [data, setData] = useState(null); const [err, setErr] = useState();
+  const [data, setData] = useState(null); const [err, setErr] = useState(); const [ords, setOrds] = useState(null);
+  useEffect(() => { if (user) api('/orders').then(setOrds).catch(() => {}) }, [user?.id]); // eslint-disable-line
   useEffect(() => { if (user) api('/auth/profile').then(setData).catch(e => setErr(e.message)) }, [user?.id]); // eslint-disable-line
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
@@ -159,7 +160,7 @@ export function Account() {
         <div><p className="eyebrow">ACCOUNT</p><h1 className="serif">{user.name ? `Hello, ${user.name.split(' ')[0]}` : 'Your account'}</h1><p className="acc-mail">{user.email}</p></div>
         <div className="acc-hero-btns">{user.role !== 'customer' && <Link className="btn pill" to="/admin">STAFF DASHBOARD</Link>}<Link className="btn pill" to="/wishlist">WISHLIST ({wish.length})</Link></div>
       </section>
-      <div className="acc-stats"><div><b>{data ? data.addresses.length : '…'}</b><span>Saved addresses</span></div><div><b>{wish.length}</b><span>Wishlist</span></div></div>
+      <div className="acc-stats"><div><b>{ords ? ords.length : '…'}</b><span>Orders</span></div><div><b>{ords ? inr(ords.filter(o => o.payment_status === 'paid').reduce((a, o) => a + (o.total || 0), 0)) : '…'}</b><span>Total spent</span></div><div><b>{data ? data.addresses.length : '…'}</b><span>Saved addresses</span></div><div><b>{wish.length}</b><span>Wishlist</span></div></div>
       <nav className="acc-tabs" aria-label="Account sections">
         {TABS.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => setSp(k === 'profile' ? {} : { tab: k })}>{l}</button>)}
       </nav>

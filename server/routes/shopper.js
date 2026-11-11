@@ -13,9 +13,9 @@ export function cartRoutes(ctx) {
   const { db, auth } = ctx;
   const r = Router();
   r.use(auth.optional);
-  const view = async (res, cart) => res.json(await cartView(db, cart));
+  const view = async (res, cart, pin) => res.json(await cartView(db, cart, pin));
 
-  r.get('/', wrap(async (req, res) => view(res, await resolveCart(ctx, req, res))));
+  r.get('/', wrap(async (req, res) => view(res, await resolveCart(ctx, req, res), String(req.query.pin ?? ''))));
   r.post('/items', wrap(async (req, res) => {
     const d = z.object({ variantId, quantity: qty.default(1) }).parse(req.body);
     const cart = await resolveCart(ctx, req, res, { create: true });

@@ -1,6 +1,7 @@
 import { rows, one } from '../db/index.js';
 import { HttpError } from './http.js';
 import { CART_COOKIE, cookieOpts, randomToken, sha256 } from './auth.js';
+import { shippingWithRules } from './delivery.js';
 
 export const MAX_QTY = 10;
 const GUEST_DAYS = 90;
@@ -56,10 +57,10 @@ export function cartLines(q, cartId) {
     WHERE ci.cart_id = $1 ORDER BY ci.id`, [cartId]);
 }
 
-export async function shippingFor(q, subtotal) {
+export async function shippingFor(q, subtotal, pin) {
   const m = await one(q, `SELECT id, code, name, base_amount, free_over FROM shipping_methods WHERE active ORDER BY id LIMIT 1`);
-  if (!m) return { id: null, amount: 0, name: 'Shipping' };
-  return { id: m.id, name: m.name, amount: m.free_over != null && subtotal >= m.free_over ? 0 : m.base_amount, freeOver: m.free_over };
+  const base = !m ? { id: null, amount: 0, name: 'Shipping' } : { id: m.id, name: m.name, amount: m.free_over != null && subtotal >= m.free_over ? 0 : m.base_amount, freeOver: m.free_over };
+  return shippingWithRules(q, subtotal, pin, base); // the admin's delivery rules (by PIN zone and order value) when they are switched on
 }
 
 // Shop prices include GST. Splits the GST out of the (inclusive) line totals, grouped by rate: tax = gross x rate / (100 + rate).
@@ -81,12 +82,12 @@ export function issueFor(l) {
   return null;
 }
 
-export async function cartView(db, cart) {
+export async function cartView(db, cart, pin) {
   const lines = cart ? await cartLines(db, cart.id) : [];
   const items = lines.map(l => ({ variantId: l.variantId, slug: l.slug, name: l.name, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate, stock: l.stock, image: l.image, issue: issueFor(l) }));
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const ship = await shippingFor(db, subtotal);
-  const shipping = { amount: items.length ? ship.amount : 0, freeOver: ship.freeOver ?? null };
+  const ship = await shippingFor(db, subtotal, pin);
+  const shipping = { amount: items.length ? ship.amount : 0, freeOver: ship.freeOver ?? null, note: ship.note ?? null, zone: ship.zone ?? null };
   return { items, count: items.reduce((s, i) => s + i.qty, 0), subtotal, shipping, gst: gstSplit(items), total: subtotal + shipping.amount, hasIssues: items.some(i => i.issue) };
 }
 

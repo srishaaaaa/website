@@ -52,9 +52,9 @@ function StockModal({ product, variantId, onClose, onDone }) {
 }
 
 // Everything about one product in one window: details, website text, collections, sizes & colours, and photos.
-function VariantRow({ productId, v, basePrice, onChanged, setErr, onlyOne }) {
-  const [r, setR] = useState({ size: v.size, color: v.color, sku: v.sku, price: v.priceOverride != null ? rupees(v.priceOverride) : '' });
-  const dirty = r.size !== v.size || r.color !== v.color || r.sku !== v.sku || (r.price ? toPaise(r.price) : null) !== (v.priceOverride ?? null);
+function VariantRow({ productId, v, basePrice, productCost, canCost, onChanged, setErr, onlyOne }) {
+  const [r, setR] = useState({ size: v.size, color: v.color, sku: v.sku, price: v.priceOverride != null ? rupees(v.priceOverride) : '', cost: v.costOverride != null ? rupees(v.costOverride) : '' });
+  const dirty = r.size !== v.size || r.color !== v.color || r.sku !== v.sku || (r.price ? toPaise(r.price) : null) !== (v.priceOverride ?? null) || (r.cost ? toPaise(r.cost) : null) !== (v.costOverride ?? null);
   const call = async (body, method = 'PATCH') => {
     setErr();
     try { await api(`/admin/pos/products/${productId}/variants/${v.id}`, { method, ...(body ? { body } : {}) }); onChanged() }
@@ -66,9 +66,10 @@ function VariantRow({ productId, v, basePrice, onChanged, setErr, onlyOne }) {
       <td><input aria-label="Colour" value={r.color} maxLength={40} onChange={e => setR({ ...r, color: e.target.value })} /></td>
       <td><input aria-label="SKU" value={r.sku} maxLength={80} onChange={e => setR({ ...r, sku: e.target.value.toUpperCase() })} /></td>
       <td><input aria-label="Own price in rupees" inputMode="decimal" value={r.price} placeholder={rupees(basePrice)} onChange={e => setR({ ...r, price: e.target.value })} /></td>
+      {canCost && <td><input aria-label="Own cost price in rupees" inputMode="decimal" value={r.cost} placeholder={productCost ? rupees(productCost) : 'product cost'} onChange={e => setR({ ...r, cost: e.target.value })} /></td>}
       <td className="r"><b>{v.stock}</b></td>
       <td className="r pe-acts">
-        {dirty && <button type="button" className="dpos-btn sm" onClick={() => call({ size: r.size.trim(), color: r.color.trim() || 'Default', sku: r.sku.trim(), price: r.price ? toPaise(r.price) : null })}>Save</button>}
+        {dirty && <button type="button" className="dpos-btn sm" onClick={() => call({ size: r.size.trim(), color: r.color.trim() || 'Default', sku: r.sku.trim(), price: r.price ? toPaise(r.price) : null, cost: r.cost ? toPaise(r.cost) : null })}>Save</button>}
         <button type="button" className="dpos-btn ghost sm" title={v.active ? 'Hide this size from the website and billing' : 'Show this size again'} onClick={() => call({ active: !v.active })}>{v.active ? 'Hide' : 'Show'}</button>
         <button type="button" className="dpos-btn ghost sm" disabled={onlyOne} aria-label={`Delete ${v.size} ${v.color}`} onClick={() => confirm(`Delete size ${v.size} (${v.color})? Past bills keep their own copy.`) && call(null, 'DELETE')}>✕</button>
       </td>
@@ -134,8 +135,8 @@ function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
         <div style={{ display: 'grid', gap: 12 }}>
           <p className="muted small" style={{ margin: 0 }}>Edit a row and press Save. Leave “Own price” empty to use the product price. Stock is changed with the Stock button in the list.</p>
           <div className="acc-scroll"><table className="dpos-table pe-vars">
-            <thead><tr><th>Size</th><th>Colour</th><th>SKU</th><th>Own price ₹</th><th className="r">Stock</th><th /></tr></thead>
-            <tbody>{(product.variants || []).map(v => <VariantRow key={`${v.id}-${v.size}-${v.color}-${v.sku}-${v.priceOverride}-${v.active}`} productId={product.id} v={v} basePrice={product.price} onChanged={reload} setErr={setErr} onlyOne={product.variants.length <= 1} />)}</tbody>
+            <thead><tr><th>Size</th><th>Colour</th><th>SKU</th><th>Own price ₹</th>{start.costPrice !== undefined && <th>Cost price ₹</th>}<th className="r">Stock</th><th /></tr></thead>
+            <tbody>{(product.variants || []).map(v => <VariantRow key={`${v.id}-${v.size}-${v.color}-${v.sku}-${v.priceOverride}-${v.active}`} productId={product.id} v={v} basePrice={product.price} productCost={product.costPrice} canCost={start.costPrice !== undefined} onChanged={reload} setErr={setErr} onlyOne={product.variants.length <= 1} />)}</tbody>
           </table></div>
           <form onSubmit={addVariant} className="pe-add">
             <input aria-label="New size" required placeholder="Size" value={nv.size} onChange={e => setNv({ ...nv, size: e.target.value })} />
@@ -154,7 +155,7 @@ function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
   );
 }
 
-const blankVar = () => ({ size: 'Free Size', color: 'Default', sku: '', stock: '' });
+const blankVar = () => ({ size: 'Free Size', color: 'Default', sku: '', stock: '', cost: '' });
 function AddModal({ categories, onClose, onDone }) {
   const [f, setF] = useState({ name: '', price: '', cost: '', tax: 5, cat: '', status: 'active' }); const [vars, setVars] = useState([blankVar()]); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const setV = (i, p) => setVars(v => v.map((x, n) => n === i ? { ...x, ...p } : x));
@@ -162,7 +163,7 @@ function AddModal({ categories, onClose, onDone }) {
     e.preventDefault(); setErr(); setBusy(true);
     const base = slugify(f.name) || 'product';
     const payload = slug => ({ slug, name: f.name.trim(), description: '', category: f.cat || undefined, price: toPaise(f.price), ...(toPaise(f.cost) ? { cost_price: toPaise(f.cost) } : {}), gst_rate: +f.tax, status: f.status, featured: false,
-      variants: vars.map(v => ({ size: v.size.trim() || 'Free Size', color: v.color.trim() || 'Default', sku: (v.sku.trim() || `${slug}-${slugify(v.size) || 'free'}-${slugify(v.color) || 'default'}`).toUpperCase(), stock: Math.max(0, parseInt(v.stock, 10) || 0) })) });
+      variants: vars.map(v => ({ size: v.size.trim() || 'Free Size', color: v.color.trim() || 'Default', sku: (v.sku.trim() || `${slug}-${slugify(v.size) || 'free'}-${slugify(v.color) || 'default'}`).toUpperCase(), stock: Math.max(0, parseInt(v.stock, 10) || 0), ...(toPaise(v.cost) ? { cost: toPaise(v.cost) } : {}) })) });
     try {
       let made;
       try { made = await api('/admin/products', { method: 'POST', body: payload(base) }) }
@@ -185,7 +186,7 @@ function AddModal({ categories, onClose, onDone }) {
           {vars.map((v, i) => (
             <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr)) auto', gap: 8, marginTop: 10 }}>
               <input aria-label="Size" placeholder="Size" value={v.size} onChange={e => setV(i, { size: e.target.value })} /><input aria-label="Colour" placeholder="Colour" value={v.color} onChange={e => setV(i, { color: e.target.value })} />
-              <input aria-label="SKU" placeholder="SKU (auto)" value={v.sku} onChange={e => setV(i, { sku: e.target.value })} /><input aria-label="Opening stock" inputMode="numeric" placeholder="Stock" value={v.stock} onChange={e => setV(i, { stock: e.target.value.replace(/\D/g, '') })} />
+              <input aria-label="SKU" placeholder="SKU (auto)" value={v.sku} onChange={e => setV(i, { sku: e.target.value })} /><input aria-label="Opening stock" inputMode="numeric" placeholder="Stock" value={v.stock} onChange={e => setV(i, { stock: e.target.value.replace(/\D/g, '') })} /><input aria-label="Cost price for this size in rupees" inputMode="decimal" placeholder="Cost ₹ (product)" value={v.cost} onChange={e => setV(i, { cost: e.target.value })} />
               <button type="button" className="dpos-btn ghost sm" aria-label="Remove size" disabled={vars.length === 1} onClick={() => setVars(vs => vs.filter((_, n) => n !== i))}>✕</button></div>))}
           <button type="button" className="dpos-btn ghost sm" style={{ marginTop: 10 }} onClick={() => setVars(v => [...v, blankVar()])}>+ Add size / colour</button></div>
         <Err>{err}</Err>
@@ -198,11 +199,16 @@ function AddModal({ categories, onClose, onDone }) {
 function ProductsStock({ manager, stocker }) {
   const { toast } = useApp();
   const [q, setQ] = useState(''); const [stock, setStock] = useState('all'); const [list, setList] = useState(null); const [cats, setCats] = useState([]);
+  const [view, setView] = useState('grid'); const [alerts, setAlerts] = useState(false); const [sortBy, setSortBy] = useState('name'); const [catF, setCatF] = useState('all');
   const [open, setOpen] = useState(null); const [modal, setModal] = useState(null); const [err, setErr] = useState(); const [nv, setNv] = useState({ size: '', color: '', sku: '', stock: '' });
   const load = useCallback(() => api('/admin/pos/products?q=' + encodeURIComponent(q)).then(r => { setList(r); setErr() }).catch(e => setErr(e.message)), [q]);
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t) }, [load]);
   useEffect(() => { api('/admin/pos/categories').then(setCats).catch(() => {}) }, []);
-  const shown = useMemo(() => (list || []).filter(p => stock === 'all' || (stock === 'out' ? p.stock < 1 : stock === 'low' ? p.stock >= 1 && p.stock <= LOW : p.stock > LOW)), [list, stock]);
+  const lowOf = p => p.lowAlert ?? LOW;
+  const shown = useMemo(() => (list || []).filter(p => (stock === 'all' || (stock === 'out' ? p.stock < 1 : stock === 'low' ? p.stock >= 1 && p.stock <= lowOf(p) : stock === 'best' ? p.bestSeller : p.stock > lowOf(p))) && (catF === 'all' || p.categorySlug === catF))
+    .sort((a, b) => sortBy === 'stock-asc' ? a.stock - b.stock : sortBy === 'stock-desc' ? b.stock - a.stock : sortBy === 'price-asc' ? a.price - b.price : sortBy === 'price-desc' ? b.price - a.price : a.name.localeCompare(b.name)), [list, stock, catF, sortBy]);
+  const needs = useMemo(() => (list || []).filter(p => p.stock < 1 || p.stock <= lowOf(p) || p.variants.some(v => v.active && v.stock < 1)), [list]);
+  const counts = useMemo(() => ({ out: (list || []).filter(p => p.stock < 1).length, low: (list || []).filter(p => p.stock >= 1 && p.stock <= lowOf(p)).length, size: (list || []).filter(p => p.stock >= 1 && p.stock > lowOf(p) && p.variants.some(v => v.active && v.stock < 1)).length }), [list]);
   const del = async p => { if (!confirm(`Delete "${p.name}" permanently, with its sizes and photos? Past bills keep their own copy.`)) return; try { await api('/admin/products/' + p.id, { method: 'DELETE' }); toast('Product deleted.'); if (open === p.id) setOpen(null); load() } catch (e) { setErr(e.message) } };
   const addVariant = async (p, e) => {
     e.preventDefault(); setErr();
@@ -215,13 +221,32 @@ function ProductsStock({ manager, stocker }) {
 
   return (
     <>
-      <div className="dpos-bar-tools">
+      <p className="inv-count">{list ? `${list.length} products` : '…'} · same catalog customers see</p>
+      <div className="dpos-bar-tools inv-filters">
         <input type="search" style={{ maxWidth: 360 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Search products, SKU or category…" aria-label="Search products" />
-        <Chips label="Stock" value={stock} onChange={setStock} options={[['all', 'All'], ['in', 'In stock'], ['low', 'Low'], ['out', 'Out']]} />
+        <Chips label="Stock" value={stock} onChange={setStock} options={[['all', 'All'], ['best', `Best Sellers (${(list || []).filter(p => p.bestSeller).length})`], ['low', 'Low Stock'], ['out', 'Out of Stock']]} />
+        <button className="dpos-btn ghost" onClick={() => setAlerts(true)} style={{ color: '#8a5a00', borderColor: '#e0b44c' }}>⚠ Alerts{needs.length > 0 && <b className="dpos-count" style={{ background: '#b3261e' }}>{needs.length}</b>}</button>
         {manager && <button className="dpos-btn" onClick={() => setModal({ t: 'add' })}><Icon n="plus" size={16} />Add product</button>}
       </div>
+      {(counts.out + counts.low + counts.size) > 0 && <p className="inv-warn">⚠ {counts.out > 0 && `${counts.out} out of stock`}{counts.out > 0 && counts.low > 0 && ' · '}{counts.low > 0 && `${counts.low} running low`}{(counts.out + counts.low) > 0 && counts.size > 0 && ' · '}{counts.size > 0 && `${counts.size} with a size sold out`} — restock soon.</p>}
+      <div className="dpos-bar-tools inv-ftools">
+        <select aria-label="Category" value={catF} onChange={e => setCatF(e.target.value)}><option value="all">All categories</option>{cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select>
+        <select aria-label="Sort" value={sortBy} onChange={e => setSortBy(e.target.value)}><option value="name">Name A–Z</option><option value="stock-asc">Stock low → high</option><option value="stock-desc">Stock high → low</option><option value="price-asc">Price low → high</option><option value="price-desc">Price high → low</option></select>
+        <div className="inv-vt" role="group" aria-label="View">{[['grid', 'Grid'], ['list', 'List']].map(([k, l]) => <button key={k} type="button" className={view === k ? 'on' : ''} aria-pressed={view === k} onClick={() => setView(k)}>{l}</button>)}</div>
+      </div>
       <Err>{err}</Err>
-      <section className="dpos-card" style={{ padding: '8px 16px' }}>
+      {view === 'grid' && (!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No products found.</p> : (
+        <div className="inv-grid">{shown.map(p => { const st = p.stock < 1 ? 'out' : p.stock <= lowOf(p) ? 'low' : 'in'; return (
+          <article key={p.id} className={`inv-card ${st}`}>
+            <div className="inv-ph">{p.image ? <img src={p.image} alt="" loading="lazy" /> : <span>No photo</span>}
+              <em className={`inv-badge ${st}`}>{st === 'out' ? 'OUT OF STOCK' : st === 'low' ? 'LOW STOCK' : 'IN STOCK'}</em>
+              <span className="inv-ph-act">{manager && <button type="button" aria-label={`Edit ${p.name}`} onClick={() => setModal({ t: 'edit', p })}><Icon n="edit" size={14} /></button>}{manager && <button type="button" aria-label={`Delete ${p.name}`} onClick={() => del(p)}><Icon n="trash" size={14} /></button>}</span></div>
+            <div className="inv-info"><div className="inv-nm"><b>{p.name}</b></div><small>{p.category || 'Uncategorised'}{p.bestSeller ? ' · Best seller' : ''}</small>
+              <div className="inv-cs"><span><em>Cost</em><b>{manager && p.costPrice ? inr(p.costPrice) : '—'}</b></span><span><em>Selling</em><b>{inr(p.price)}</b></span></div>
+              <button type="button" className="inv-units" disabled={!stocker} onClick={() => setModal({ t: 'stock', p })}><b>{p.stock}</b> Total Units</button>
+              <small className={`inv-note ${st}`}>{st === 'out' ? 'Sold out' : st === 'low' ? `Low · reorder at ${lowOf(p)}` : 'In stock'}</small></div>
+          </article>) })}</div>))}
+      {view === 'list' && <section className="dpos-card" style={{ padding: '8px 16px' }}>
         <div className="dpos-ph"><span /><span>Product</span><span>Type</span><span style={{ textAlign: 'right' }}>Stock</span><span style={{ textAlign: 'right' }}>Price</span><span style={{ textAlign: 'right' }}>Actions</span></div>
         {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No products found.</p> : shown.map(p => (
           <div className="dpos-prod" key={p.id}>
@@ -260,7 +285,8 @@ function ProductsStock({ manager, stocker }) {
                   <button className="dpos-btn sm">+ Add size</button></form>}
               </div>)}
           </div>))}
-      </section>
+      </section>}
+      {alerts && <AlertsModal list={list || []} canStock={stocker} onClose={() => setAlerts(false)} onDone={load} onEdit={manager ? p => { setAlerts(false); setModal({ t: 'edit', p }) } : null} />}
       {modal?.t === 'stock' && <StockModal product={list.find(x => x.id === modal.p.id) || modal.p} variantId={modal.vid} onClose={() => setModal(null)} onDone={stockDone} />}
       {modal?.t === 'edit' && <EditModal product={modal.p} categories={cats} onClose={() => setModal(null)} onDone={() => { toast('Product saved.'); load() }} onPhotos={load} />}
       {modal?.t === 'colour' && <ColourModal product={modal.p} onClose={() => setModal(null)} onDone={() => { toast('Colour added.'); load() }} />}
@@ -274,6 +300,26 @@ function ProductsStock({ manager, stocker }) {
 }
 
 // Inventory: "Products & Stock" and "Stock Movements" tabs.
+// Products that need attention (out of stock, low, or with a sold-out size) with one-tap restock buttons.
+function AlertsModal({ list, onClose, onDone, canStock, onEdit }) {
+  const [err, setErr] = useState();
+  const lowOf = p => p.lowAlert ?? LOW;
+  const items = list.filter(p => p.stock < 1 || p.stock <= lowOf(p) || p.variants.some(v => v.active && v.stock < 1));
+  const add = async (v, qty) => { try { await api('/admin/pos/stock', { method: 'POST', body: { variantId: v.id, type: 'restock', qty } }); onDone() } catch (e) { setErr(e.message) } };
+  return (
+    <Modal title="Stock Alert" sub={items.length ? `${items.length} product${items.length > 1 ? 's' : ''} need attention` : 'Everything is stocked'} onClose={onClose} footer={<button className="dpos-btn" onClick={onClose}>Dismiss</button>}>
+      <Err>{err}</Err>
+      <div className="inv-al">{items.map(p => (
+        <div key={p.id} className={`inv-al-c ${p.stock < 1 ? 'out' : ''}`}>
+          <div className="inv-al-h"><div><b>{p.name}</b><small>{p.category || 'Uncategorised'} · <strong>{p.stock} units in total</strong> · alert at {lowOf(p)} or fewer</small></div>{onEdit && <button type="button" className="dpos-btn sm" onClick={() => onEdit(p)}>Edit</button>}</div>
+          {p.variants.filter(v => v.active && v.stock <= 1).map(v => (
+            <div key={v.id} className="inv-al-r"><span>{v.size}{v.color !== 'Default' ? ` / ${v.color}` : ''} · {v.stock < 1 ? 'sold out' : `${v.stock} left`}</span>
+              {canStock && <span>{[1, 5, 10].map(n => <button key={n} type="button" onClick={() => add(v, n)}>+{n}</button>)}</span>}</div>))}
+        </div>))}</div>
+    </Modal>
+  );
+}
+
 export default function PosInventory({ manager, stocker }) {
   const [tab, setTab] = useState('products');
   const snapshot = async () => {

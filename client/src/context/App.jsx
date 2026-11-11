@@ -58,7 +58,7 @@ export function AppProvider({ children }) {
   // --- bag: persisted on the server (guest cookie or customer account) -----------
   const [cartState, setCart] = useState(EMPTY_CART);
   const [bagOpen, setBagOpen] = useState(false);
-  const loadCart = useCallback(() => api('/cart').then(setCart).catch(() => {}), []);
+  const loadCart = useCallback(pin => api('/cart' + (typeof pin === 'string' && /^\d{6}$/.test(pin) ? `?pin=${pin}` : '')).then(setCart).catch(() => {}), []);
   useEffect(() => {
     if (!authReady) return;
     (async () => {

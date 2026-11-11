@@ -13,6 +13,7 @@ import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowS
 import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
 import PosMeasurements from './PosMeasurements';
+import DeliveryRulesCard from '../components/DeliveryRulesCard';
 import PosBirthdays from './PosBirthdays';
 import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
@@ -138,6 +139,17 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const splitNet = { ...splitAmt, cash: Math.max(0, splitAmt.cash - splitOver) };
   const splitOk = splitSum >= bill.total && (splitOver === 0 || splitAmt.cash >= splitOver);
   const pickedN = Object.values(splitOn).filter(Boolean).length;
+  // Typing an amount keeps it; the remaining balance goes into the first box that has not been typed in.
+  const touched = useRef({});
+  const typeSplit = (m, val) => {
+    touched.current[m] = val !== '';
+    setSplit(s => {
+      const n = { ...s, [m]: val }; const on = ['cash', 'upi', 'card'].filter(x => splitOn[x]);
+      const typed = on.filter(x => touched.current[x]).reduce((a, x) => a + toPaise(n[x]), 0), free = on.find(x => !touched.current[x]);
+      if (free) { const rest = Math.max(0, bill.total - typed); n[free] = rest ? rupees(rest) : '' }
+      return n;
+    });
+  };
   const toggleSplit = m => { if (splitOn[m] && pickedN <= 2) return; if (splitOn[m]) setSplit(s => ({ ...s, [m]: '' })); setSplitOn(o => ({ ...o, [m]: !o[m] })) };
 
   const body = useMemo(() => ({
@@ -193,7 +205,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   };
   const clearOrder = () => {
     setLines(ws ? [blankCustom()] : []); setCust({ name: '', phone: '', dob: '', address: '' }); setBillDate(todayStr()); setSource('offline'); setDisc({ type: 'fixed', value: '' }); setCoupon(null); setCouponIn(''); setCouponMsg();
-    setDelivery(''); setTendered(''); setSplit({ cash: '', upi: '', card: '' }); setRef(''); setNotes(''); key.current = null; setErr();
+    setDelivery(''); setTendered(''); touched.current = {}; setSplit({ cash: '', upi: '', card: '' }); setRef(''); setNotes(''); key.current = null; setErr();
   };
 
   const problem = !priced.length ? 'Add at least one item.' : mode === 'split' && !splitOk ? (splitSum < bill.total ? `Received ${inr(splitSum)}; the bill is ${inr(bill.total)}.` : 'The extra can only be returned out of the cash amount.')
@@ -314,7 +326,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
             {mode === 'split' && <>
               <p className="dpos-flabel" style={{ marginTop: 0 }}>SPLIT BETWEEN (PICK 2 OR 3)</p>
               <div className="dpos-splitpick" role="group" aria-label="Split between">{['cash', 'upi', 'card'].map(m => <button key={m} type="button" aria-pressed={splitOn[m]} className={splitOn[m] ? 'on' : ''} onClick={() => toggleSplit(m)}>{splitOn[m] ? '✓ ' : ''}{m === 'upi' ? 'QR / GPAY' : MODE_LABEL[m].toUpperCase()}</button>)}</div>
-              <div className="dpos-grid" style={{ gridTemplateColumns: `repeat(${pickedN}, 1fr)` }}>{['cash', 'upi', 'card'].filter(m => splitOn[m]).map(m => <label className="f" key={m}>{m === 'upi' ? 'QR / GPay' : MODE_LABEL[m]} (₹)<input className="bigin" inputMode="decimal" value={split[m]} onChange={e => setSplit({ ...split, [m]: e.target.value })} placeholder="0.00" /></label>)}</div>
+              <div className="dpos-grid" style={{ gridTemplateColumns: `repeat(${pickedN}, 1fr)` }}>{['cash', 'upi', 'card'].filter(m => splitOn[m]).map(m => <label className="f" key={m}>{m === 'upi' ? 'QR / GPay' : MODE_LABEL[m]} (₹)<input className="bigin" inputMode="decimal" value={split[m]} onChange={e => typeSplit(m, e.target.value)} placeholder="0.00" /></label>)}</div>
               <div className="dpos-recv"><span>TOTAL RECEIVED</span><b className={splitSum >= bill.total && bill.total > 0 ? 'ok' : 'short'}>{inr(splitSum)}</b></div>
               <div className="dpos-recv"><span>CHANGE TO RETURN</span><b className="ok">{inr(splitOver)}</b></div></>}
             {mode !== 'cash' && <label className="f" style={{ marginTop: mode === 'split' ? 12 : 0 }}>{mode === 'card' ? 'Slip / approval no.' : 'Transaction ID'} (optional)<input value={ref} onChange={e => setRef(e.target.value)} maxLength={80} /></label>}
@@ -423,7 +435,7 @@ function MoneyDetail({ kind, rep, from, to, onClose, goExpenses }) {
   useEffect(() => { api(`/admin/pos/expenses?from=${from}&to=${to}`).then(setRows).catch(() => setRows([])) }, [from, to]);
   const cats = rep.expenseByCategory || [];
   return (
-    <Modal wide className="money" title={kind === 'net' ? 'Net profit, step by step' : 'Where the money went'} sub={`${dmy(from)} to ${dmy(to)}`} onClose={onClose}>
+    <Modal wide className="money" title={kind === 'net' ? 'Net profit, step by step' : 'Where the money went'} sub={`${dmy(from)} to ${dmy(to)} · after returns`} onClose={onClose}>
       <div className="money-sum">
         <div><span>Sales (revenue)</span><b>{inr(rep.revenue)}</b></div>
         {rep.costs?.enabled && <div><span>− Cost of goods sold</span><b className="neg">{inr(rep.cogs)}</b></div>}
@@ -536,9 +548,30 @@ function CustomerModal({ c, onClose, onDone }) {
     </Modal>
   );
 }
+// Everything one customer has bought: totals, invoices (click to open), advance orders and stitching bills.
+function CustomerHistory({ id, onClose }) {
+  const [d, setD] = useState(null); const [err, setErr] = useState(); const nav = useNavigate();
+  useEffect(() => { api(`/admin/pos/customers/${id}/history`).then(setD).catch(e => setErr(e.message)) }, [id]);
+  return (
+    <Modal wide title={d ? (d.customer.name || d.customer.phone) : 'Customer'} sub={d ? `${d.customer.phone}${d.customer.dob ? ' · born ' + dmy(d.customer.dob) : ''}` : ''} onClose={onClose}>
+      <Err>{err}</Err>
+      {!d ? <Empty>Loading…</Empty> : <>
+        <div className="dpos-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', marginBottom: 14 }}>
+          {[['Bills', d.totals.bills], ['Total spent', inr(d.totals.spent)], ['Advance orders', d.totals.advances], ['Stitching bills', d.stitching.length]].map(([l, v]) => <div key={l} className="dpos-box"><span className="muted small">{l}</span><div style={{ fontWeight: 800, fontSize: 20 }}>{v}</div></div>)}
+        </div>
+        <h3 className="adm-h3">Invoices</h3>
+        {!d.invoices.length ? <Empty>No bills yet.</Empty> : <div className="dpos-tw"><table><thead><tr><th>Invoice</th><th>Date</th><th>Payment</th><th className="r">Total</th><th>Status</th></tr></thead>
+          <tbody>{d.invoices.map(i => <tr key={i.invoiceNo} className="click" onClick={() => nav('/invoice/' + i.shareToken)}><td className="oid">{i.invoiceNo}{i.stitching ? ' ✂' : ''}</td><td>{dmy(i.billDate)}</td><td>{MODE_LABEL[i.paymentMode]}</td><td className="r">{inr(i.total)}</td><td><span className={`dpos-pill ${i.status === 'voided' ? 'bad' : 'ok'}`}>{i.status === 'voided' ? 'Void' : 'Completed'}</span></td></tr>)}</tbody></table></div>}
+        {d.advances.length > 0 && <><h3 className="adm-h3" style={{ marginTop: 16 }}>Advance orders</h3><div className="dpos-tw"><table><thead><tr><th>Code</th><th>Status</th><th>Delivery</th><th className="r">Deposit</th><th className="r">Total</th></tr></thead>
+          <tbody>{d.advances.map(a => <tr key={a.code}><td className="oid">{a.code}</td><td>{a.status}</td><td>{a.deliveryDate ? dmy(a.deliveryDate) : '—'}</td><td className="r">{inr(a.deposit)}</td><td className="r">{inr(a.total)}</td></tr>)}</tbody></table></div></>}
+      </>}
+    </Modal>
+  );
+}
+
 function Customers({ manager }) {
   const { toast } = useApp();
-  const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all'); const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [modal, setModal] = useState(null);
+  const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all'); const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [modal, setModal] = useState(null); const [hist, setHist] = useState(null);
   const load = useCallback(() => api('/admin/pos/customers?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), [q]);
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t) }, [load]);
   const shown = (rows || []).filter(c => inPeriod(c.createdAt, per));
@@ -552,9 +585,10 @@ function Customers({ manager }) {
         {!rows ? <Empty>Loading…</Empty> : !shown.length ? <Empty>No customers yet. They are added automatically when you bill with a mobile number.</Empty> : (
           <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Mobile</th><th>Date of birth</th><th className="r">Bills</th><th className="r">Spent</th><th /></tr></thead>
             <tbody>{shown.map(c => <tr key={c.id}><td><b>{c.name || '—'}</b></td><td>{c.phone}</td><td>{c.dob ? dmy(c.dob) : <span className="muted">—</span>}</td><td className="r">{c.bills}</td><td className="r">{inr(c.spent)}</td>
-              <td className="r" style={{ whiteSpace: 'nowrap' }}>{manager && <><button className="dpos-btn ghost sm" onClick={() => setModal(c)}>Edit</button> <button className="dpos-btn danger sm" onClick={() => del(c)}>Delete</button></>}</td></tr>)}</tbody></table></div>)}
+              <td className="r" style={{ whiteSpace: 'nowrap' }}><button className="dpos-btn ghost sm" onClick={() => setHist(c.id)}>View</button> {manager && <><button className="dpos-btn ghost sm" onClick={() => setModal(c)}>Edit</button> <button className="dpos-btn danger sm" onClick={() => del(c)}>Delete</button></>}</td></tr>)}</tbody></table></div>)}
       </section>
       {modal && <CustomerModal c={modal.id ? modal : null} onClose={() => setModal(null)} onDone={() => { toast('Customer saved.'); load() }} />}
+      {hist && <CustomerHistory id={hist} onClose={() => setHist(null)} />}
     </>
   );
 }
@@ -610,6 +644,7 @@ function Settings({ onSaved }) {
           <label className="f" style={{ marginTop: 14 }}>Terms &amp; notes printed on the invoice (one point per line)<textarea rows={3} maxLength={600} value={s.terms || ''} onChange={e => setS({ ...s, terms: e.target.value })} placeholder="e.g. Custom-stitched and altered garments are made to order and are non-returnable." /></label>
           <p className="sub" style={{ marginTop: 12 }}>Invoice numbers are created automatically, like INV-2026-G3AKL.</p>
         </section>
+        <DeliveryRulesCard />
         <section className="dpos-card"><h2><Icon n="truck" />Delivery &amp; packing quick picks</h2>
           {s.deliveryPresets.map((p, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>

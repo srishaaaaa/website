@@ -22,3 +22,13 @@ export async function hasDepositSplit(db) {
   splitKnown = !!(await one(db, `SELECT 1 AS x FROM information_schema.columns WHERE table_name = 'pos_advances' AND column_name = 'deposit_split'`));
   return splitKnown;
 }
+
+// product_variants.cost_override arrives with migration 027; until then every size uses the product's cost price.
+let vcKnown = false, vcAt = 0;
+export async function hasVariantCost(db) {
+  if (vcKnown) return true;
+  if (Date.now() - vcAt < 60_000) return false;
+  vcAt = Date.now();
+  vcKnown = !!(await one(db, `SELECT 1 AS x FROM information_schema.columns WHERE table_name = 'product_variants' AND column_name = 'cost_override'`));
+  return vcKnown;
+}

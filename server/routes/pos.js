@@ -6,7 +6,8 @@ import { audit } from '../lib/orders.js';
 import { hasCostColumns } from '../lib/cost.js';
 import { createReturn, getReturn } from '../lib/returns.js';
 import { listMeasurements, setTailoring } from '../lib/measurements.js';
-import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
+import { DEFAULT_RULES, loadRules } from '../lib/delivery.js';
+import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, PHONE_SQL, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const paise = z.number().int().min(0).max(100_000_000);
@@ -273,6 +274,30 @@ export default function pos({ db, auth }) {
     const d = await db.query('DELETE FROM pos_customers WHERE id = $1 RETURNING id', [id.parse(req.params.id)]);
     if (!d.rows.length) throw new HttpError(404, 'Customer not found');
     res.json({ ok: true });
+  }));
+  // Everything one customer has bought: bills, advance orders and stitching bills, with totals.
+  r.get('/pos/customers/:id/history', biller, wrap(async (req, res) => {
+    const c = await one(db, 'SELECT id, name, phone, dob::text AS dob, notes, created_at AS "createdAt" FROM pos_customers WHERE id = $1', [id.parse(req.params.id)]);
+    if (!c) throw new HttpError(404, 'Customer not found');
+    const invoices = await rows(db, `SELECT s.invoice_no AS "invoiceNo", s.status, s.bill_date::text AS "billDate", s.total_amount AS total, s.payment_mode AS "paymentMode", s.share_token AS "shareToken",
+        EXISTS (SELECT 1 FROM pos_sale_items i WHERE i.sale_id = s.id AND i.variant_snapshot ? 'measure') AS stitching
+      FROM pos_sales s WHERE ${PHONE_SQL('s.customer_phone')} = $1 ORDER BY s.id DESC LIMIT 200`, [c.phone]);
+    const advances = await rows(db, `SELECT a.code, a.status, a.total_amount AS total, a.deposit, a.delivery_date::text AS "deliveryDate", a.finalized_invoice AS "invoiceNo"
+      FROM pos_advances a WHERE ${PHONE_SQL('a.customer_phone')} = $1 ORDER BY a.id DESC LIMIT 100`, [c.phone]);
+    const done = invoices.filter(i => i.status === 'completed');
+    res.json({ customer: c, totals: { bills: done.length, spent: done.reduce((s, i) => s + i.total, 0), advances: advances.length }, invoices, advances, stitching: invoices.filter(i => i.stitching) });
+  }));
+  // Delivery charge rules (by PIN zone and order value).
+  r.get('/pos/delivery-rules', manager, wrap(async (_req, res) => res.json(await loadRules(db))));
+  r.put('/pos/delivery-rules', manager, wrap(async (req, res) => {
+    const v = z.object({
+      enabled: z.boolean(), defaultFee: paise, freeOver: paise.nullable(),
+      zones: z.array(z.object({ name: text(60).min(1), prefixes: z.array(z.string().regex(/^\d{1,6}$/)).min(1).max(30), fee: paise })).max(30).default([]),
+      orderTiers: z.array(z.object({ minOrder: paise, fee: paise })).max(20).default([]),
+      blockedPrefixes: z.array(z.string().regex(/^\d{1,6}$/)).max(50).default([]),
+    }).parse(req.body);
+    await putSetting(db, 'delivery_rules', { ...DEFAULT_RULES, ...v }); await audit(db, req.user.id, 'pos.delivery_rules', 'pos_settings', 'delivery_rules');
+    res.json(await loadRules(db));
   }));
   r.get('/pos/birthday-offer', manager, wrap(async (_req, res) => res.json({ ...DEFAULT_BDAY, ...(await getSetting(db, 'birthday_offer', {})) })));
   r.put('/pos/birthday-offer', manager, wrap(async (req, res) => {
