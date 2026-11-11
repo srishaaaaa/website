@@ -454,3 +454,12 @@
   .dpos .an-all .an-pay { max-width: 100%; overflow-x: auto; scrollbar-width: none } .dpos .an-all .an-pay button { white-space: nowrap }
   .dpos .an-all .an-grp { max-width: 100%; overflow-x: auto; scrollbar-width: none } .dpos .an-all .an-grp button { white-space: nowrap }
 }
+/* Stock Alert: compact window */
+.dpos-modal .sa { width: min(520px, 94vw); padding: 24px 26px 22px; border-radius: 24px }
+.sa-head { gap: 14px; margin-bottom: 16px } .sa-head h2 { font-size: 20px } .sa-head p { font-size: 13.5px }
+.sa-ic { width: 46px; height: 46px } .sa-ic svg { width: 22px; height: 22px }
+.sa .inv-al { gap: 10px } .sa .inv-al-c { padding: 14px 18px; border-radius: 16px; gap: 10px }
+.sa .inv-al-h b { font-size: 15.5px } .sa .inv-al-h small, .sa .inv-al-h span { font-size: 12.5px }
+.sa-edit { padding: 9px 18px; border-radius: 11px; font-size: 13px }
+.sa .inv-al-r { font-size: 13.5px; padding-top: 10px } .sa .inv-al-r button { min-width: 38px; padding: 8px 10px; font-size: 13px; border-radius: 10px }
+.sa-dismiss { margin-top: 12px; padding: 13px; border-radius: 14px; font-size: 14px }
