@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useApp } from '../context/App';
+import { DEFAULT_LOGO } from './Wordmark';
 import '../pos.css';
 import '../pos2.css';
 import '../pos3.css';
@@ -53,11 +54,11 @@ export const Icon = ({ n, size = 18 }) => <svg width={size} height={size} viewBo
 // [path, label, icon, managerOnly]
 export const NAV = [
   { group: 'Retail billing', items: [
-    ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/advance', 'Advance Orders', 'clock'], ['/admin/billing/orders', 'Order History', 'orders'], ['/admin/billing/measurements', 'Measurements', 'ruler'],
+    ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/advance', 'Advance Orders', 'clock'], ['/admin/billing/orders', 'Order History', 'orders'],
     ['/admin/billing/inventory', 'Inventory', 'box', true], ['/admin/billing/customers', 'Customers', 'user'], ['/admin/billing/coupons', 'Coupons', 'tag', true],
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true]] },
-  { group: 'Stitching Studio', roles: ['owner', 'admin', 'cashier'], items: [
-    ['/admin/stitching', 'Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/stitching/measurements', 'Measurements', 'ruler', false],
+  { group: 'Stitching', roles: ['owner', 'admin', 'cashier'], items: [
+    ['/admin/stitching', 'Stitching Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/billing/measurements', 'Measurements', 'ruler', false],
     ['/admin/stitching/designs', 'Design Library', 'image', false], ['/admin/stitching/tailors', 'Tailors', 'users', false],
     ['/admin/stitching/reports', 'Stitching Reports', 'chart', true], ['/admin/stitching/garments', 'Garment Types', 'tag', true]] },
   { group: 'Online store', items: [
@@ -89,7 +90,7 @@ export default function AdminShell({ title, sub, actions, children }) {
   return (
     <div className="dpos">
       <nav className="dpos-side" aria-label="Admin sections" ref={side} onScroll={e => { sideScroll.top = e.currentTarget.scrollTop; sideScroll.left = e.currentTarget.scrollLeft }}>
-        <div className="dpos-brand"><div><b>Dhanya</b><br /><i>{manager ? 'ADMIN' : 'CASHIER'}</i></div></div>
+        <div className="dpos-brand"><img src={DEFAULT_LOGO} alt="Dhanya Boutique" /><i>{manager ? 'ADMIN' : 'CASHIER'}</i></div>
         {NAV.map(g => {
           const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => !i[3] || manager);
           return items.length ? (

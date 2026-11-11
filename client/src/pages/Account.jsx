@@ -166,10 +166,12 @@ export function Account() {
       </nav>
       {err && <p role="alert" className="err">{err}</p>}
       {!data && !err && <p className="muted">Loading…</p>}
-      {data && tab === 'profile' && <ProfileTab data={data} onSaved={setData} />}
-      {data && tab === 'addresses' && <AddressesTab data={data} onSaved={setData} />}
-      {tab === 'orders' && <OrdersTab />}
-      {data && tab === 'security' && <SecurityTab data={data} onSaved={setData} />}
+      <section className="acc-panel">
+        {data && tab === 'profile' && <ProfileTab data={data} onSaved={setData} />}
+        {data && tab === 'addresses' && <AddressesTab data={data} onSaved={setData} />}
+        {tab === 'orders' && <OrdersTab />}
+        {data && tab === 'security' && <SecurityTab data={data} onSaved={setData} />}
+      </section>
       <button className="btn dark acc-out" onClick={signOut}>SIGN OUT</button>
     </div>
   );

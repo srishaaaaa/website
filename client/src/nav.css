@@ -767,7 +767,7 @@ html.lenis, html.lenis body { height: auto }
 .account .acc-tabs { display: grid; gap: 6px; align-content: start; padding: 14px; border-radius: 22px; background: #fff; border: 1px solid rgba(198, 160, 82, .4) }
 .account .acc-tabs button { text-align: left; padding: 14px 16px; border-radius: 14px; letter-spacing: .16em; font-size: 12px; font-weight: 700; text-transform: uppercase }
 .account .acc-tabs button.on { background: #330533; color: #fff }
-@media (min-width: 900px) { .account { display: grid; grid-template-columns: 270px minmax(0, 1fr); column-gap: 24px; align-items: start } .account > .acc-hero, .account > .acc-stats { grid-column: 1 / -1 } .account > .acc-tabs { grid-column: 1; grid-row: 3 } .account > :nth-child(n+5):not(.acc-out) { grid-column: 2; grid-row: 3 } .account > .acc-out { grid-column: 1; grid-row: 4 } }
+@media (min-width: 900px) { .account { display: grid; grid-template-columns: 270px minmax(0, 1fr); column-gap: 24px; align-items: start } .account > .acc-hero, .account > .acc-stats { grid-column: 1 / -1 } .account > .acc-tabs { grid-column: 1; grid-row: 3 } .account > .acc-panel { grid-column: 2; grid-row: 3 } .account > .acc-out { grid-column: 1; grid-row: 4 } }
 
 /* ---- store sub-pages: Cormorant Garamond headings, as in the reference ---- */
 .account h1, .acc-hero h1, .co2 h1, .co-head h1, .drawer-head h2, .acc-tabs + * h2, .account h2, .cart-page h1, .auth2 h1 { font-family: 'Cormorant Garamond', var(--serif), Georgia, serif; text-transform: uppercase; font-weight: 600; letter-spacing: .01em }
@@ -775,3 +775,8 @@ html.lenis, html.lenis body { height: auto }
 .drawer-head h2 { font-size: 30px } .drawer-head h2 .muted { color: #c58a78 }
 .bag-lines .serif, .co-bag .serif { font-family: 'Cormorant Garamond', var(--serif), serif; font-weight: 600; font-size: 22px }
 .co2 .field span, .acc-stats span { letter-spacing: .18em }
+
+/* ---- shop hero sits under the navbar (no dark band), account panel as a card ---- */
+.catalog { padding-top: 92px } .catalog .cat-hero, .catalog .cat-hero.with-banner { margin: 0 var(--pad) }
+.catalog .cat-hero h1 { text-transform: none }
+.account > .acc-panel { background: #fff; border: 1px solid rgba(198, 160, 82, .4); border-radius: 24px; padding: 28px 32px; min-width: 0 }

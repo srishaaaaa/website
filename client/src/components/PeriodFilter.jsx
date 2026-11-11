@@ -25,8 +25,8 @@ export function PeriodFilter({ value, onChange }) {
     <div className="dpos-pf">
       <div className="dpos-pg" role="radiogroup" aria-label="Period"><span className="lab">Period:</span>
         {PERIODS.map(([p, l]) => <button key={p} role="radio" aria-checked={value.p === p} className={value.p === p ? 'on' : ''} onClick={() => onChange(chipValue(p))}>{l}</button>)}</div>
-      <div className="dpos-pg dates"><label><span className="lab">From:</span><input type="date" max={todayStr()} value={value.from} onChange={e => onChange({ ...value, p: 'custom', from: e.target.value })} aria-label="From date" /></label>
-        <label><span className="lab">To:</span><input type="date" max={todayStr()} value={value.to} onChange={e => onChange({ ...value, p: 'custom', to: e.target.value })} aria-label="To date" /></label></div>
+      {value.p === 'custom' && <div className="dpos-pg dates"><label><span className="lab">From:</span><input type="date" max={todayStr()} value={value.from} onChange={e => onChange({ ...value, p: 'custom', from: e.target.value })} aria-label="From date" /></label>
+        <label><span className="lab">To:</span><input type="date" max={todayStr()} value={value.to} onChange={e => onChange({ ...value, p: 'custom', to: e.target.value })} aria-label="To date" /></label></div>}
     </div>
   );
 }

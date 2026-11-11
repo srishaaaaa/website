@@ -468,8 +468,8 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
   return (
     <>
       <div className="dpos-bar-tools">{tab !== 'today' && <PeriodFilter value={per} onChange={setPer} />}</div>
-      <div className="dpos-filterbar">{!ws && <Chips label="Channel" value={src} onChange={setSrc} options={SRC_CHIPS} />}<Chips label="Bills" value={gst} onChange={setGst} options={GST_CHIPS} /><Chips label="Payment" value={pay} onChange={setPay} options={PAY_CHIPS} /></div>
       <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
+      <div className="dpos-filterbar">{!ws && <Chips label="Channel" value={src} onChange={setSrc} options={SRC_CHIPS} />}<Chips label="Bills" value={gst} onChange={setGst} options={GST_CHIPS} /><Chips label="Payment" value={pay} onChange={setPay} options={PAY_CHIPS} /></div>
       <Err>{err}</Err>
 
       {(tab === 'revenue' || tab === 'today') && <>
@@ -698,12 +698,12 @@ export default function AdminPos() {
     expenses: <PosExpenses />, settings: <Settings onSaved={loadShop} />,
   }[tab];
   const sub = {
-    billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'All bills — full store & channel insights', advance: 'Orders booked with a deposit, billed when the customer collects', orders: 'Manage and track past invoices',
+    billing: 'Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing', analytics: 'Real-time store & channel insights', advance: 'Orders booked with a deposit, billed when the customer collects', orders: 'Manage and track past invoices',
     measurements: 'Tailoring measurements for each saved bill',
     inventory: 'Manage products and stock — add, edit and adjust', customers: 'Customer details with date of birth', coupons: 'Discount codes for the till', birthdays: 'Customers to wish and reward',
     expenses: 'Record spending by category and see your real net profit', settings: 'POS logo, shop details on bills, GST number and delivery quick picks',
   }[tab];
-  const title = { billing: 'POS Billing Panel', analytics: 'Revenue Analytics', orders: 'Order History', measurements: 'Measurements', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
+  const title = { billing: 'POS Billing Panel', analytics: 'POS Analytics', orders: 'Order History', measurements: 'Measurements', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupons', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
   return (
     <AdminShell title={title} sub={sub}>
       <Err>{err}</Err>
