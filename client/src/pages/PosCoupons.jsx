@@ -35,12 +35,13 @@ function SendModal({ c, shop, onClose, onDone }) {
     } catch (e) { tab?.close(); setErr(e.message) } finally { setBusy(false) }
   };
   return (
-    <Modal title={`Send coupon ${c.code}`} sub="Opens WhatsApp with the offer and a link to the coupon card" onClose={onClose}
-      footer={<><button className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn outline" disabled={busy} onClick={() => go('pdf')}>Generate &amp; share PDF</button><button className="dpos-btn" style={{ background: '#1c7a4b', borderColor: '#1c7a4b' }} disabled={busy} onClick={() => go('wa')}>Send link on WhatsApp</button></>}>
+    <Modal title={<>Send coupon · <span className="mono">{c.code}</span></>} onClose={onClose}
+      className="cpm" footer={<><button className="cp-b cancel" onClick={onClose}>Cancel</button><button className="cp-b wa" disabled={busy} onClick={() => go('wa')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.2-1.7-1-.8.6a3.5 3.5 0 0 1-1.6-1.6l.6-.8-1-1.7Z" /></svg> Send link on WhatsApp</button><button className="cp-b pdf" disabled={busy} onClick={() => go('pdf')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" /><path d="M9 13h7M9 17h7" /></svg> Generate &amp; share PDF</button></>}>
+      <p className="cpm-p">The coupon goes as a download link in the customer's WhatsApp chat, or as a PDF with “Generate &amp; share PDF”. It is recorded once the chat or share sheet has been used.</p>
       {err && <p className="dpos-err" role="alert">{err}</p>}
-      <label className="f">CUSTOMER PHONE *<input autoFocus inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile number" /></label>
+      <label className="f">CUSTOMER PHONE <em className="req">*</em><input autoFocus inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Enter WhatsApp number" /></label>
       <label className="f" style={{ marginTop: 12 }}>CUSTOMER NAME<input value={name} onChange={e => setName(e.target.value)} placeholder="Optional" /></label>
-      <label className="cp-sw" style={{ marginTop: 14 }}><input type="checkbox" checked={only || c.sentOnly} disabled={c.sentOnly} onChange={e => setOnly(e.target.checked)} /> ONLY FOR THIS CUSTOMER</label>
+      <label className="cp-swrow"><b>ONLY FOR THIS CUSTOMER</b><input type="checkbox" role="switch" className="cp-toggle" checked={only || c.sentOnly} disabled={c.sentOnly} onChange={e => setOnly(e.target.checked)} /></label>
       {(only && !c.sentOnly) && <p className="cp-warn">This coupon will only work for the phones it was sent to. Walk-in customers can't use it any more.</p>}
     </Modal>
   );
@@ -56,7 +57,7 @@ function Recipients({ c, shop, onClose, onDone }) {
   };
   const n = (list || []).filter(p => p.sent || sent[p.phone]).length;
   return (
-    <Modal title={`Send ${c.code} to customers`} sub="Everyone with a mobile number" onClose={onClose} footer={<><span className="muted small" style={{ marginRight: 'auto' }}>{n} sent</span><button className="dpos-btn" onClick={onClose}>Done · {n} sent</button></>}>
+    <Modal className="cpm" title={<>Send <span className="mono">{c.code}</span> to customers</>} onClose={onClose} footer={<><span className="muted small" style={{ marginRight: 'auto' }}>{n} sent</span><button className="dpos-btn" onClick={onClose}>Done · {n} sent</button></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       {!list ? <p className="muted">Loading…</p> : !list.length ? <p className="muted">No customers with a mobile number yet.</p> : (
         <ul className="cp-rec">{list.map(p => { const done = p.sent || sent[p.phone]; return (
@@ -74,7 +75,7 @@ function EditModal({ c, onClose, onDone }) {
     catch (e) { setErr(e.issues?.[0]?.message || e.message) }
   };
   return (
-    <Modal title={`Edit ${c.code}`} sub="The code itself cannot be changed" onClose={onClose} footer={<><button className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" onClick={save}>Save changes</button></>}>
+    <Modal className="cpm" title={`Edit ${c.code}`} sub="The code itself cannot be changed" onClose={onClose} footer={<><button className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" onClick={save}>Save changes</button></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       <div className="cp-g2">
         <label className="f">DISCOUNT {f.type === 'percent' ? '%' : '(₹)'}<input inputMode="decimal" value={f.value} onChange={e => setF({ ...f, value: e.target.value })} /></label>
@@ -82,7 +83,7 @@ function EditModal({ c, onClose, onDone }) {
         <label className="f">EXPIRY DATE<input type="date" value={f.expires} onChange={e => setF({ ...f, expires: e.target.value })} /></label>
         <label className="f">USAGE LIMIT<input inputMode="numeric" value={f.limit} onChange={e => setF({ ...f, limit: e.target.value.replace(/\D/g, '') })} placeholder="Unlimited" /></label>
       </div>
-      <label className="cp-sw" style={{ marginTop: 14 }}><input type="checkbox" checked={f.only} onChange={e => setF({ ...f, only: e.target.checked })} /> Only for customers it's sent to</label>
+      <label className="cp-swrow"><span><b>Only for customers it's sent to</b></span><input type="checkbox" role="switch" className="cp-toggle" checked={f.only} onChange={e => setF({ ...f, only: e.target.checked })} /></label>
     </Modal>
   );
 }
@@ -110,7 +111,7 @@ export default function PosCoupons({ shop }) {
     all.map(c => [c.code, c.discountType === 'percent' ? `${c.discountValue}%` : (c.discountValue / 100).toFixed(2), (c.minOrder / 100).toFixed(2), c.expiresOn ? dmy(c.expiresOn) : '', c.usageLimit ?? '', c.usedCount, c.active ? 'Active' : 'Inactive', c.sentOnly ? 'Yes' : 'No']));
   return (
     <div className="cp">
-      <div className="cp-top"><div><h2>Coupon Management</h2><p className="sub">Create discount codes and send them to customers on WhatsApp. Applies to the product subtotal only.</p></div>
+      <div className="cp-top"><span />
         <div style={{ display: 'flex', gap: 8 }}><button type="button" className="cp-ref" disabled={!all.length} onClick={exportCsv}><Icon n="download" size={16} /> Download Excel</button>
           <button type="button" className="cp-ref" onClick={load}><Icon n="refresh" size={16} /> Refresh</button></div></div>
       <div className="cp-kpis">
@@ -122,24 +123,24 @@ export default function PosCoupons({ shop }) {
       {err && <p className="dpos-err" role="alert">{err}</p>}
       <div className="cp-two">
         <form className="cp-card" onSubmit={create}>
-          <span className="cp-badge">NEW COUPON</span><h3>Create Coupon</h3>
-          <label className="cp-l">COUPON CODE <em>*</em></label>
-          <div className="cp-code"><input required value={f.code} maxLength={40} onChange={e => setF({ ...f, code: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '') })} placeholder="WELCOME10" /><button type="button" onClick={() => setF({ ...f, code: generate() })}>Generate</button></div>
+          <h3 className="cp-h"><Icon n="plus" size={22} /> New Coupon</h3>
+          <label className="cp-l">COUPON CODE <em className="req">*</em></label>
+          <div className="cp-code"><input required value={f.code} maxLength={40} onChange={e => setF({ ...f, code: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '') })} placeholder="E.G. SUMMER20" /><button type="button" onClick={() => setF({ ...f, code: generate() })}>Generate</button></div>
           <div className="cp-g2">
-            <label className="cp-l">DISCOUNT {f.type === 'percent' ? '%' : '(₹)'} <em>*</em><input required inputMode="decimal" value={f.value} onChange={e => setF({ ...f, value: e.target.value })} placeholder={f.type === 'percent' ? '10' : '500'} /></label>
-            <label className="cp-l">MIN ORDER (₹)<input inputMode="decimal" value={f.min} onChange={e => setF({ ...f, min: e.target.value })} placeholder="0 = no minimum" /></label>
+            <label className="cp-l">DISCOUNT {f.type === 'percent' ? '%' : '(₹)'} <em>*</em><input required inputMode="decimal" value={f.value} onChange={e => setF({ ...f, value: e.target.value })} placeholder={f.type === 'percent' ? 'e.g. 15' : 'e.g. 500'} /></label>
+            <label className="cp-l">MIN ORDER (₹)<input inputMode="decimal" value={f.min} onChange={e => setF({ ...f, min: e.target.value })} placeholder="e.g. 100" /></label>
           </div>
           <div className="cp-type" role="radiogroup" aria-label="Discount type">{[['percent', '% off'], ['fixed', '₹ off']].map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={f.type === v} className={f.type === v ? 'on' : ''} onClick={() => setF({ ...f, type: v })}>{l}</button>)}</div>
           <div className="cp-g2">
             <label className="cp-l">EXPIRY DATE<input type="date" value={f.expires} onChange={e => setF({ ...f, expires: e.target.value })} /></label>
-            <label className="cp-l">USAGE LIMIT<input inputMode="numeric" value={f.limit} onChange={e => setF({ ...f, limit: e.target.value.replace(/\D/g, '') })} placeholder="Unlimited" /></label>
+            <label className="cp-l">USAGE LIMIT<input inputMode="numeric" value={f.limit} onChange={e => setF({ ...f, limit: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 50" /></label>
           </div>
-          <label className="cp-sw"><input type="checkbox" checked={f.sentOnly} onChange={e => setF({ ...f, sentOnly: e.target.checked })} /><span><b>Only for customers it's sent to</b><small>Works only for the mobile numbers you send it to from this page</small></span></label>
-          <button className="cp-go" disabled={busy}><Icon n="tag" size={15} /> CREATE COUPON</button>
+          <label className="cp-swrow"><span><b>Only for customers it's sent to</b><small>Works only for the mobile numbers you send it to from this page</small></span><input type="checkbox" role="switch" className="cp-toggle" checked={f.sentOnly} onChange={e => setF({ ...f, sentOnly: e.target.checked })} /></label>
+          <button className="cp-go" disabled={busy}>CREATE COUPON</button>
         </form>
         <section className="cp-card">
-          <div className="cp-lh"><h3>All Coupons <span className="cp-n">{all.length}</span></h3><span className="cp-adm">ADMIN ONLY</span></div>
-          <div className="cp-filt">{[['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive'], ['sent', 'Sent only']].map(([k, l]) => <button key={k} type="button" className={filter === k ? 'on' : ''} aria-pressed={filter === k} onClick={() => setFilter(k)}>{l} ({counts[k]})</button>)}
+          <div className="cp-lh"><h3>All Coupons <span className="cp-n">{all.length}</span></h3></div>
+          <div className="cp-filt">{[['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive'], ['sent', 'Sent only']].map(([k, l]) => <button key={k} type="button" className={filter === k ? 'on' : ''} aria-pressed={filter === k} onClick={() => setFilter(k)}>{l} <small>{counts[k]}</small></button>)}
             <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search code…" aria-label="Search coupons" /></div>
           {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <div className="cp-empty">{all.length ? 'No coupons match.' : 'No coupons yet. Create your first coupon!'}</div> : (
             <ul className="cp-list">{shown.map(c => (
@@ -147,11 +148,11 @@ export default function PosCoupons({ shop }) {
                 <div><b className="cp-c">{c.code}</b><span className={`cp-st ${c.active ? 'on' : ''}`}>{c.active ? 'ACTIVE' : 'INACTIVE'}</span>{c.sentOnly && <span className="cp-st sent">SENT ONLY</span>}<span className="cp-d">{c.discountType === 'percent' ? `${c.discountValue}% off` : `${inr(c.discountValue)} off`}{c.minOrder ? ` · min ${inr(c.minOrder)}` : ''}</span></div>
                 <p>Used {c.usedCount}{c.usageLimit ? ` of ${c.usageLimit}` : ' times'} · {c.expiresOn ? `expires ${dmy(c.expiresOn)}` : 'no expiry'} · sent to {c.sentCount}</p>
                 <div className="cp-act">
-                  <button type="button" className="cp-mini" onClick={() => setRec(c)}>EVERYONE</button>
-                  <button type="button" className="cp-mini solid" onClick={() => setSend(c)}>SEND</button>
-                  <button type="button" role="switch" aria-checked={c.active} aria-label={`${c.code} ${c.active ? 'on' : 'off'}`} className={`dpos-switch ${c.active ? 'on' : ''}`} onClick={() => toggle(c)}><i /></button>
-                  <button type="button" className="cp-mini" aria-label={`Edit ${c.code}`} onClick={() => setEdit(c)}><Icon n="edit" size={14} /></button>
-                  <button type="button" className="dpos-trash" aria-label={`Delete ${c.code}`} onClick={() => del(c)}><Icon n="trash" size={16} /></button>
+                  <button type="button" className="cp-bt wa-o" onClick={() => setRec(c)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.2-1.7-1-.8.6a3.5 3.5 0 0 1-1.6-1.6l.6-.8-1-1.7Z" /></svg> EVERYONE</button>
+                  <button type="button" className="cp-bt wa" onClick={() => setSend(c)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.2-1.7-1-.8.6a3.5 3.5 0 0 1-1.6-1.6l.6-.8-1-1.7Z" /></svg> SEND</button>
+                  <button type="button" className={`cp-bt ${c.active ? 'on' : 'off'}`} aria-pressed={c.active} onClick={() => toggle(c)}>{c.active ? 'ACTIVE' : 'INACTIVE'}</button>
+                  <button type="button" className="cp-ic" aria-label={`Edit ${c.code}`} onClick={() => setEdit(c)}><Icon n="edit" size={15} /></button>
+                  <button type="button" className="cp-ic" aria-label={`Delete ${c.code}`} onClick={() => del(c)}><Icon n="trash" size={16} /></button>
                 </div>
               </li>))}</ul>)}
         </section>

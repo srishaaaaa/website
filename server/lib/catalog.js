@@ -1,6 +1,7 @@
 import { rows, one } from '../db/index.js';
+import { hasBestSeller } from './cost.js';
 
-const BASE_SELECT = `
+const FULL_SELECT = `
   SELECT p.id, p.slug, p.name, p.description, c.name AS category, c.slug AS category_slug,
          p.base_price AS price, p.material, p.currency,
          (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id OFFSET 1 LIMIT 1) AS image2, p.tax_rate AS gst_rate, p.featured, p.best_seller, p.created_at,
@@ -17,6 +18,13 @@ const BASE_SELECT = `
            CASE WHEN COUNT(*) FILTER (WHERE v.stock_quantity > 0) = 1 THEN MIN(v.id) FILTER (WHERE v.stock_quantity > 0) END AS single_variant
     FROM product_variants v WHERE v.product_id = p.id AND v.active
   ) st ON true`;
+let BASE_SELECT = FULL_SELECT, HAS_BEST = true;
+// Picks the column list for this database (best_seller exists after migration 028).
+async function prepare(q) {
+  HAS_BEST = await hasBestSeller(q);
+  BASE_SELECT = HAS_BEST ? FULL_SELECT : FULL_SELECT.replace('p.best_seller,', 'false AS best_seller,');
+}
+
 
 const like = s => `%${s.replace(/[\\%_]/g, m => '\\' + m)}%`;
 
@@ -28,7 +36,10 @@ function where(f, { baseOnly = false } = {}) {
   if (f.slugs?.length) w.push(`p.slug = ANY(${add(f.slugs)})`);
   if (f.q) { const p = add(like(f.q)); w.push(`(p.name ILIKE ${p} OR p.description ILIKE ${p} OR c.name ILIKE ${p} OR p.material ILIKE ${p})`) }
   if (f.featured) w.push('p.featured');
-  if (f.flag === 'best') w.push('p.best_seller');
+  if (f.flag === 'best') {
+    const top = "p.id IN (SELECT product_id FROM pos_sale_items WHERE product_id IS NOT NULL GROUP BY product_id ORDER BY SUM(quantity) DESC LIMIT 10)";
+    w.push(HAS_BEST ? `(p.best_seller OR (NOT EXISTS (SELECT 1 FROM products b WHERE b.best_seller AND b.status = 'active') AND ${top}))` : top);
+  }
   if (!baseOnly) {
     if (f.category?.length) w.push(`c.slug = ANY(${add(f.category)})`);
     if (f.material?.length) w.push(`p.material = ANY(${add(f.material)})`);
@@ -49,6 +60,7 @@ const ORDER = {
 };
 
 export async function listProducts(q, f) {
+  await prepare(q);
   const { sql, a } = where(f);
   const limit = Math.min(f.limit ?? 12, 48), page = Math.max(f.page ?? 1, 1);
   const items = await rows(q, `${BASE_SELECT} WHERE ${sql} ORDER BY ${ORDER[f.sort] || ORDER.featured} LIMIT ${limit} OFFSET ${(page - 1) * limit}`, a);
@@ -72,6 +84,7 @@ export async function facets(q, f) {
 }
 
 export async function productBySlug(q, slug) {
+  await prepare(q);
   const p = await one(q, `${BASE_SELECT} WHERE p.status = 'active' AND p.slug = $1`, [slug]);
   if (!p) return null;
   const extra = await one(q, 'SELECT material FROM products WHERE id = $1', [p.id]);

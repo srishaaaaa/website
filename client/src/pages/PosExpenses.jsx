@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { inr } from '../lib/format';
 import { useApp } from '../context/App';
 import { Icon } from '../components/AdminShell';
+import ExportCsv from '../components/ExportCsv';
 import { PeriodFilter, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
 
 const toPaise = s => { const n = Math.round(parseFloat(String(s || '').replace(/,/g, '')) * 100); return Number.isFinite(n) && n > 0 ? n : 0 };
@@ -37,7 +38,7 @@ export default function PosExpenses() {
 
   return (
     <div className="ex">
-      <div className="ex-top"><span /><PeriodFilter value={per} onChange={setPer} /></div>
+      <div className="ex-top"><div className="ex-tools"><button type="button" className="dpos-btn outline" onClick={() => setManage(true)}>⚙ Manage categories</button><ExportCsv name="expenses" header={['Date', 'Expense', 'Category', 'Amount', 'Paid by', 'Notes']} rows={(rows || []).map(x => [x.date, x.title, x.category, (x.amount / 100).toFixed(2), x.paymentMode, x.notes || ''])} /></div><PeriodFilter value={per} onChange={setPer} /></div>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       <div className="ex-kpis">
         <div className="ex-k big"><span>TOTAL EXPENSES</span><b>{inr(total)}</b><small>{per.p === 'all' ? 'ALL TIME' : String(per.p || 'PERIOD').toUpperCase()}</small></div>

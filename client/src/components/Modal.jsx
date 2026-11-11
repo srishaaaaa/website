@@ -7,7 +7,7 @@ export default function Modal({ title, sub, onClose, wide, className = '', child
     document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k);
   }, [onClose]);
   return (
-    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label={title} onMouseDown={e => e.target === e.currentTarget && onClose()}>
+    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined} onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className={`dpos-sheet ${wide ? 'wide' : ''} ${className}`}>
         <div className="dpos-mhead"><div><b style={{ fontSize: 17 }}>{title}</b>{sub && <small>{sub}</small>}</div><button type="button" aria-label="Close" onClick={onClose}>✕</button></div>
         {children}

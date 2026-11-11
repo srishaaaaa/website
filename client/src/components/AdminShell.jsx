@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useApp } from '../context/App';
-import { DEFAULT_LOGO } from './Wordmark';
 import '../pos.css';
 import '../pos2.css';
 import '../pos3.css';
@@ -59,8 +58,7 @@ export const NAV = [
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true]] },
   { group: 'Stitching', roles: ['owner', 'admin', 'cashier'], items: [
     ['/admin/stitching', 'Stitching Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/billing/measurements', 'Measurements', 'ruler', false],
-    ['/admin/stitching/designs', 'Design Library', 'image', false], ['/admin/stitching/tailors', 'Tailors', 'users', false],
-    ['/admin/stitching/reports', 'Stitching Reports', 'chart', true], ['/admin/stitching/garments', 'Garment Types', 'tag', true]] },
+    ['/admin/stitching/reports', 'Stitching Reports', 'chart', true]] },
   { group: 'Online store', items: [
     ['/admin/orders', 'Online orders', 'orders', true], ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/site-text', 'Site text', 'edit', true],
     ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
@@ -84,13 +82,14 @@ export default function AdminShell({ title, sub, actions, children }) {
       if (a.left < b.left) el.scrollLeft -= b.left - a.left + 12; else if (a.right > b.right) el.scrollLeft += a.right - b.right + 12;
     }
   }, []);
-  const { user } = useApp();
+  const { user, site } = useApp();
+  const nm = site?.store?.name || 'Dhanyas Boutique';
   const manager = !!user && ['owner', 'admin'].includes(user.role);
   const initial = (user?.name || user?.email || 'A').trim()[0].toUpperCase();
   return (
     <div className="dpos">
       <nav className="dpos-side" aria-label="Admin sections" ref={side} onScroll={e => { sideScroll.top = e.currentTarget.scrollTop; sideScroll.left = e.currentTarget.scrollLeft }}>
-        <div className="dpos-brand"><img src={DEFAULT_LOGO} alt="Dhanya Boutique" /><i>{manager ? 'ADMIN' : 'CASHIER'}</i></div>
+        <div className="dpos-brand"><span className="wm-text" aria-label={nm}><b>{nm.split(' ')[0]}</b><i>{nm.split(' ').slice(1).join(' ') || 'Boutique'}</i></span><em>{manager ? 'ADMIN' : 'CASHIER'}</em></div>
         {NAV.map(g => {
           const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => !i[3] || manager);
           return items.length ? (

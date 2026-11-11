@@ -32,3 +32,13 @@ export async function hasVariantCost(db) {
   vcKnown = !!(await one(db, `SELECT 1 AS x FROM information_schema.columns WHERE table_name = 'product_variants' AND column_name = 'cost_override'`));
   return vcKnown;
 }
+
+// products.best_seller arrives with migration 028; until then the shop works exactly as before and the Best Sellers shelf falls back to top-selling pieces.
+let bsKnown = false, bsAt = 0;
+export async function hasBestSeller(db) {
+  if (bsKnown) return true;
+  if (Date.now() - bsAt < 60_000) return false;
+  bsAt = Date.now();
+  bsKnown = !!(await one(db, `SELECT 1 AS x FROM information_schema.columns WHERE table_name = 'products' AND column_name = 'best_seller'`));
+  return bsKnown;
+}

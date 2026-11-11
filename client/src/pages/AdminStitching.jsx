@@ -11,12 +11,9 @@ const named = (load, name, props) => { const C = lazy(() => load().then(m => ({ 
 const S = {
   dashboard: sec(() => import('./stitching/Dashboard')), orders: sec(() => import('./stitching/Orders')), new: sec(() => import('./stitching/OrderForm')), detail: sec(() => import('./stitching/OrderDetail')),
   measurements: sec(() => import('./stitching/Book')), reports: sec(() => import('./stitching/Reports')),
-  designs: [named(() => import('./stitching/Setup'), 'Designs', { manager: false }), named(() => import('./stitching/Setup'), 'Designs', { manager: true })],
-  tailors: [named(() => import('./stitching/Setup'), 'Tailors', { manager: false }), named(() => import('./stitching/Setup'), 'Tailors', { manager: true })],
-  garments: named(() => import('./stitching/Setup'), 'GarmentTypes', {}),
 };
-const TABS = [['', 'Dashboard'], ['orders', 'Orders'], ['measurements', 'Measurements'], ['designs', 'Designs'], ['tailors', 'Tailors'], ['reports', 'Reports', true], ['garments', 'Garment types', true]];
-const TITLE = { '': 'Stitching Studio', orders: 'Stitching orders', new: 'New stitching order', detail: 'Stitching order', measurements: 'Measurement book', designs: 'Design library', tailors: 'Tailors & workload', reports: 'Stitching reports', garments: 'Garment types' };
+const TABS = [['', 'Dashboard'], ['orders', 'Orders'], ['measurements', 'Measurements'], ['reports', 'Reports', true]];
+const TITLE = { '': 'Stitching Studio', orders: 'Stitching orders', new: 'New stitching order', detail: 'Stitching order', measurements: 'Measurement book', reports: 'Stitching reports' };
 
 export default function AdminStitching({ view }) {
   const { user, authReady } = useApp(); const { tab } = useParams();
@@ -27,8 +24,8 @@ export default function AdminStitching({ view }) {
   const key = view ?? tab ?? '';
   const known = key === '' || key === 'new' || key === 'detail' || TABS.some(t => t[0] === key);
   if (!known) return <Navigate to="/admin/stitching" replace />;
-  if (['reports', 'garments'].includes(key) && !manager) return <div className="empty page-pad"><p className="serif big">Owners and admins only.</p></div>;
-  const body = key === '' ? S.dashboard : ['designs', 'tailors'].includes(key) ? S[key][manager ? 1 : 0] : S[key === 'detail' ? 'detail' : key];
+  if (key === 'reports' && !manager) return <div className="empty page-pad"><p className="serif big">Owners and admins only.</p></div>;
+  const body = key === '' ? S.dashboard : S[key === 'detail' ? 'detail' : key];
   return (
     <AdminShell title={TITLE[key]} sub={key === '' ? 'Orders, measurements, alterations and payments for made-to-measure work.' : undefined}>
       <div className="stc-stack">
