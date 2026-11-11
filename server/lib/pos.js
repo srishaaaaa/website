@@ -117,7 +117,7 @@ export async function getSale(q, invoice) {
            s.tax_amount AS tax, s.delivery_fee AS "deliveryFee", s.total_amount AS total, s.payment_mode AS "paymentMode",
            s.pay_cash AS "payCash", s.pay_upi AS "payUpi", s.pay_card AS "payCard", s.cash_tendered AS "cashTendered", s.change_given AS change,
            s.payment_ref AS "paymentRef", s.customer_dob::text AS "customerDob", s.coupon_code AS "couponCode", s.notes,
-           s.share_token AS "shareToken", s.bill_date::text AS "billDate", s.customer_address AS "customerAddress", s.source, s.gst_rate AS "gstRate", s.created_at AS "createdAt", s.tailoring_status AS "tailoringStatus", s.voided_at AS "voidedAt", s.void_reason AS "voidReason", pr.full_name AS cashier
+           s.share_token AS "shareToken", s.bill_date::text AS "billDate", s.customer_address AS "customerAddress", s.source, s.gst_rate AS "gstRate", s.created_at AS "createdAt", s.edited_at AS "editedAt", s.tailoring_status AS "tailoringStatus", s.voided_at AS "voidedAt", s.void_reason AS "voidReason", pr.full_name AS cashier
     FROM pos_sales s LEFT JOIN profiles pr ON pr.id = s.cashier_id WHERE s.invoice_no = $1`, [invoice]);
   if (!sale) return null;
   sale.items = await rows(q, `
@@ -540,4 +540,16 @@ export async function finalizeAdvance(db, user, code, { balanceMode, balanceSpli
   await audit(db, user.id, 'pos.advance.finalize', 'pos_advance', code, { invoice: sale.invoiceNo });
   // read the bill again now that it is linked to this advance order, so it carries the deposit / balance breakdown
   return { advance: await getAdvance(db, code), sale: (await getSale(db, sale.invoiceNo)) ?? sale };
+}
+
+// Correct an invoice after billing: customer details, bill date and the note. Money, items and stock are never changed here (use Return / Void for that).
+export async function editSale(db, user, invoice, d) {
+  const s = await one(db, 'SELECT id, status FROM pos_sales WHERE invoice_no = $1', [invoice]);
+  if (!s) throw new HttpError(404, 'Invoice not found');
+  if (s.status === 'voided') throw new HttpError(409, 'A voided invoice cannot be edited');
+  await db.query(`UPDATE pos_sales SET customer_name = COALESCE($2, customer_name), customer_phone = COALESCE($3, customer_phone), customer_address = COALESCE($4, customer_address),
+    bill_date = COALESCE($5::date, bill_date), notes = COALESCE($6, notes), edited_at = now() WHERE id = $1`,
+    [s.id, d.customerName ?? null, d.customerPhone ?? null, d.customerAddress ?? null, d.billDate ?? null, d.notes ?? null]);
+  await audit(db, user.id, 'pos.sale_edit', 'pos_sales', invoice);
+  return getSale(db, invoice);
 }

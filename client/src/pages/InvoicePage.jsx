@@ -34,7 +34,7 @@ function A4Doc({ sale, shop }) {
         </div>
         <div className="inv-meta">
           <h2>{sale.isGst ? 'TAX INVOICE' : 'INVOICE'}</h2>
-          <p className="inv-no">#{sale.invoiceNo}</p>
+          <p className="inv-no">#{sale.invoiceNo}</p>{sale.editedAt && <p className="inv-edited">EDITED</p>}
           <dl>
             <div><dt>Date:</dt><dd>{longDate(sale.billDate)}</dd></div>
             <div><dt>Time:</dt><dd>{clock(sale.createdAt)}</dd></div>
@@ -213,7 +213,7 @@ export default function InvoicePage() {
   };
   return (
     <div className="inv-page">
-      <div className="inv-bar">
+      {window.self === window.top && <div className="inv-bar">
         {staff ? <Link className="inv-btn" to="/admin/billing/orders">← Return to POS</Link> : <Link className="inv-btn" to="/">← {shop.name}</Link>}
         <span className="inv-grow" />
         <a className="inv-btn" href={wa} target="_blank" rel="noopener noreferrer">Share WhatsApp</a>
@@ -221,7 +221,7 @@ export default function InvoicePage() {
         {manager && sale.status === 'completed' && sale.items.some(i => i.quantity > (i.returnedQty || 0)) && <button className="inv-btn" onClick={() => setRet(true)}>↩ Return items</button>}
         {manager && sale.status === 'completed' && !(sale.returns?.length) && <button className="inv-btn bad" onClick={voidIt} disabled={busy}>Void</button>}
         <button className="inv-btn dark" onClick={() => setPs(true)}><PrintIcon size={15} /> Print</button>
-      </div>
+      </div>}
       {fmt === 'thermal' ? <Thermal sale={sale} shop={shop} paper={paper} /> : <A4Doc sale={sale} shop={shop} />}
       {ret && <ReturnModal invoiceNo={sale.invoiceNo} onClose={() => setRet(false)} onDone={r => { setRet(false); nav('/invoice/' + r.shareToken) }} />}
       {ps && <PrintSettings onClose={() => setPs(false)} onPrint={printNow} />}

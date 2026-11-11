@@ -557,3 +557,22 @@
   .dpos-modal .dpos-sheet.pe2, .dpos-modal .dpos-sheet.pe-wide { width: min(900px, 96%) !important }
 }
 @media (min-width: 900px) { .dpos-modal .dpos-sheet.wide { width: min(900px, 94vw) } }
+
+/* ---- eye button: invoice quick details ---- */
+.dpos-modal .dpos-sheet.qd { width: min(720px, 94%); padding: 0; border-radius: 28px; overflow: hidden; background: #fff }
+.qd-top { display: flex; align-items: center; gap: 14px; padding: 24px 30px 16px; border-bottom: 1px solid #eee7e0 } .qd-top b { font-size: 24px; font-weight: 800; letter-spacing: .01em }
+.qd-tag { padding: 7px 16px; border-radius: 999px; border: 1px solid #f0b8c0; background: #fff4f5; color: #b3261e; font-size: 13px; font-weight: 700; letter-spacing: .08em; margin-left: auto } .qd-top button { font-size: 22px; color: #6f6b66; padding: 4px 8px }
+.qd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px; padding: 20px 30px 8px } .qd-grid small { display: block; font-size: 13px; letter-spacing: .14em; color: #9a9590; font-weight: 500 } .qd-grid b { display: block; margin-top: 4px; font-size: 18px; font-weight: 800 }
+.qd-box { margin: 14px 30px 0; border: 1px solid #e5dfd8; border-radius: 22px; padding: 4px 20px 10px }
+.qd-line { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid #eee7e0; font-size: 16px } .qd-line em { font-style: normal; color: #9a9590; font-size: 13px } .qd-line b { font-weight: 800; white-space: nowrap }
+.qd-sum { display: flex; justify-content: space-between; padding: 10px 0; font-size: 14.5px } .qd-sum .mono { font: 600 13.5px ui-monospace, Consolas, monospace }
+.qd-total { border-top: 2px solid #1a1420; margin-top: 8px; padding-top: 14px; font-size: 18px } .qd-paid { border-top: 1px solid #e5dfd8; margin-top: 6px; padding-top: 14px } .qd-due { color: var(--d-acc, #330533) }
+.qd-foot { display: flex; justify-content: flex-end; gap: 12px; padding: 20px 30px 26px; flex-wrap: wrap }
+.qd-b { padding: 14px 28px; border-radius: 999px; border: 1px solid #d9d2da; background: #fff; font-size: 13.5px; font-weight: 800; letter-spacing: .12em; color: #1a1420 } .qd-b.ghost { color: var(--d-acc, #330533); border-color: #c9b3cb } .qd-b.solid { background: var(--d-acc, #330533); border-color: var(--d-acc, #330533); color: #fff }
+@media (max-width: 560px) { .qd-grid { grid-template-columns: 1fr } .qd-top { padding: 18px 18px 12px } .qd-grid, .qd-foot { padding-left: 18px; padding-right: 18px } .qd-box { margin: 12px 18px 0 } }
+/* ---- invoice preview window ---- */
+.dpos-modal .dpos-sheet.invprev { width: min(1120px, 94vw) !important; padding: 0; border-radius: 26px; overflow: hidden }
+.invprev-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 26px; background: #330533; color: #fff } .invprev-bar b { font-size: 14px; letter-spacing: .06em } .invprev-bar > span { display: inline-flex; gap: 10px }
+.invprev-bar button { padding: 11px 18px; border-radius: 12px; background: rgba(255, 255, 255, .14); color: #fff; font-weight: 700; font-size: 14px }
+.dpos-modal .dpos-sheet.invprev iframe { display: block; width: 100%; height: min(78vh, 900px); border: 0; background: #f3f1ec }
+.dpos-modal .dpos-sheet.invprev { background: #f3f1ec }

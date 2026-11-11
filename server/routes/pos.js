@@ -7,7 +7,7 @@ import { hasCostColumns } from '../lib/cost.js';
 import { createReturn, getReturn } from '../lib/returns.js';
 import { listMeasurements, setTailoring, stitchingOrders, stitchingOverview } from '../lib/measurements.js';
 import { DEFAULT_RULES, loadRules } from '../lib/delivery.js';
-import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, PHONE_SQL, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
+import { editSale, stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, PHONE_SQL, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const paise = z.number().int().min(0).max(100_000_000);
@@ -168,6 +168,10 @@ export default function pos({ db, auth }) {
   r.get('/pos/stitching/overview', biller, wrap(async (req, res) => {
     const f = z.object({ from: date.optional(), to: date.optional() }).parse(req.query);
     res.json(await stitchingOverview(db, f));
+  }));
+  r.patch('/pos/sales/:invoice', manager, wrap(async (req, res) => {
+    const d = z.object({ customerName: text(120).optional(), customerPhone: text(20).optional(), customerAddress: text(300).optional(), billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), notes: text(300).optional() }).parse(req.body);
+    res.json(await editSale(db, req.user, req.params.invoice, d));
   }));
   r.patch('/pos/sales/:invoice/tailoring', biller, wrap(async (req, res) => {
     const { status } = z.object({ status: z.enum(['pending', 'completed']) }).parse(req.body);

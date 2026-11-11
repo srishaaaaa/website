@@ -32,7 +32,7 @@ const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14
 export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
   const [f, setF] = useState({ q: '', name: '', phone: '', source: 'all', gst: 'all', payment: 'all' }); const [per, setPer] = usePeriod('all'); const [preview, setPreview] = useState(null);
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [n, setN] = useState(0);
-  const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null);
+  const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null); const [editing, setEditing] = useState(null);
   const toggle = no => { if (openNo === no) { setOpenNo(null); return } setOpenNo(no); setDetail(null); api('/admin/pos/sales/' + encodeURIComponent(no)).then(d => setDetail(d.sale || d)).catch(e => setErr(e.message)) };
   const [from, to] = periodRange(per);
   useEffect(() => {
@@ -74,8 +74,8 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
         {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No orders match.</Empty> : (
           <div className="dpos-tw"><table className="dpos-ord"><thead><tr><th>Order ID</th><th>Date &amp; time</th><th>Customer name</th><th>Mobile number</th><th>Source</th><th>Total due</th><th className="r">Status</th></tr></thead>
             <tbody>{rows.map(r => { const dt = dtShort(r.createdAt); return (
-              <Fragment key={r.invoiceNo}><tr className={`${r.status === 'voided' ? 'voided' : ''} click`} onClick={e => { if (!e.target.closest('a,button')) toggle(r.invoiceNo) }} title="Show the bill split-up">
-                <td className="oid">{r.invoiceNo} <span className="muted small">{openNo === r.invoiceNo ? '▴' : '▾'}</span></td>
+              <Fragment key={r.invoiceNo}><tr className={`${r.status === 'voided' ? 'voided' : ''} click`} onClick={e => { if (!e.target.closest('a,button')) toggle(r.invoiceNo) }} title="Show the invoice details">
+                <td className="oid">{r.invoiceNo}</td>
                 <td><b>{longDate(r.billDate)}</b><div className="muted small">{dt.t}</div></td>
                 <td><b>{r.customerName || 'Guest'}</b></td>
                 <td>{r.customerPhone || <span className="muted">—</span>}</td>
@@ -88,10 +88,67 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                   <button className="ra eye" title="Quick details" aria-label="Quick details" onClick={() => toggle(r.invoiceNo)}><EyeIcon /></button>
                   {manager && <button className="ra del" title="Void this invoice" aria-label="Void invoice" disabled={r.status === 'voided'} onClick={() => voidIt(r)}><TrashIcon /></button>}
                 </div></td></tr>
-              {openNo === r.invoiceNo && <tr className="dpos-xrow"><td colSpan={7}>{!detail ? <span className="muted">Loading…</span> : <div className="dpos-xsum"><BillSummary bill={detail} /></div>}</td></tr>}</Fragment>) })}</tbody></table></div>)}
+</Fragment>) })}</tbody></table></div>)}
       </section>
+      {openNo && <QuickDetails row={rows?.find(x => x.invoiceNo === openNo)} sale={detail} manager={manager} onClose={() => setOpenNo(null)} onView={r => { setOpenNo(null); setPreview(r) }} onEdit={() => setEditing(detail)} />}
+      {editing && <EditInvoice sale={editing} onClose={() => setEditing(null)} onSaved={sale => { setEditing(null); setDetail(sale); setN(x => x + 1); onChanged?.() }} />}
       {preview && <InvoicePreview row={preview} onClose={() => setPreview(null)} />}
     </>
+  );
+}
+
+// The eye button: a quick look at one invoice (who, when, what, how much) with Edit invoice and View invoice.
+function QuickDetails({ row, sale, manager, onClose, onView, onEdit }) {
+  useEffect(() => { const k = e => e.key === 'Escape' && onClose(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k) }, [onClose]);
+  const paid = sale ? (sale.payCash || 0) + (sale.payUpi || 0) + (sale.payCard || 0) : 0;
+  const varText = i => [i.variant?.size, i.variant?.color && i.variant.color !== 'Default' ? i.variant.color : ''].filter(Boolean).join(', ');
+  return (
+    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Invoice details" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div className="dpos-sheet qd">
+        <div className="qd-top"><b>{row?.invoiceNo || sale?.invoiceNo}</b><span className="qd-tag">{(sale?.source || row?.source) === 'online' ? 'ONLINE' : 'IN-STORE'}</span><button type="button" aria-label="Close" onClick={onClose}>✕</button></div>
+        {!sale ? <p className="muted" style={{ padding: 24 }}>Loading…</p> : <>
+          <div className="qd-grid">
+            <div><small>CUSTOMER</small><b>{sale.customerName || 'Walk-in Customer'}</b></div><div><small>PHONE</small><b>{sale.customerPhone || '—'}</b></div>
+            <div><small>DATE</small><b>{longDate(sale.billDate)}</b></div><div><small>STATUS</small><b>{sale.status === 'voided' ? 'Void' : 'Completed'}{sale.editedAt ? ' · Edited' : ''}</b></div>
+          </div>
+          <div className="qd-box">
+            {sale.items.map(i => <div className="qd-line" key={i.id}><span>{i.name}{varText(i) ? ` · ${varText(i)}` : ''} <em>× {i.quantity}</em></span><b>{inr(i.lineTotal)}</b></div>)}
+            <div className="qd-sum"><span>Subtotal</span><span className="mono">{inr(sale.subtotal)}</span></div>
+            {sale.discount > 0 && <div className="qd-sum"><span>Discount</span><span className="mono">− {inr(sale.discount)}</span></div>}
+            {sale.deliveryFee > 0 && <div className="qd-sum"><span>Delivery</span><span className="mono">{inr(sale.deliveryFee)}</span></div>}
+            <div className="qd-sum qd-total"><b>TOTAL</b><span className="mono">{inr(sale.total)}</span></div>
+            <div className="qd-sum qd-paid"><b>Paid by {MODE[sale.paymentMode] || sale.paymentMode}</b><span className="mono">{inr(paid || sale.total)}</span></div>
+            <div className="qd-sum qd-due"><b>Balance Due</b><span className="mono">{inr(Math.max(0, sale.total - (paid || sale.total)))}</span></div>
+          </div>
+          <div className="qd-foot"><button type="button" className="qd-b" onClick={onClose}>CLOSE</button>
+            {manager && sale.status !== 'voided' && <button type="button" className="qd-b ghost" onClick={onEdit}>✎ EDIT INVOICE</button>}
+            <button type="button" className="qd-b solid" onClick={() => onView(row || sale)}>VIEW INVOICE</button></div></>}
+      </div>
+    </div>
+  );
+}
+
+// Correct an invoice after billing: customer details, date and note (amounts, items and stock stay as billed).
+function EditInvoice({ sale, onClose, onSaved }) {
+  const [f, setF] = useState({ customerName: sale.customerName || '', customerPhone: sale.customerPhone || '', customerAddress: sale.customerAddress || '', billDate: sale.billDate || todayStr(), notes: sale.notes || '' });
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const save = async e => {
+    e.preventDefault(); setBusy(true); setErr();
+    try { onSaved(await api('/admin/pos/sales/' + encodeURIComponent(sale.invoiceNo), { method: 'PATCH', body: { ...f, customerName: f.customerName.trim(), customerPhone: f.customerPhone.trim(), customerAddress: f.customerAddress.trim(), notes: f.notes.trim() } })) }
+    catch (x) { setErr(x.issues?.[0]?.message || x.message); setBusy(false) }
+  };
+  return (
+    <Modal title={`Edit invoice ${sale.invoiceNo}`} sub="Amounts, items and stock stay as billed. Use Return or Void to change those." onClose={onClose}>
+      <form onSubmit={save} className="dpos-grid" style={{ gap: 12 }}>
+        <label className="f">Customer name<input value={f.customerName} onChange={e => setF({ ...f, customerName: e.target.value })} /></label>
+        <label className="f">Mobile number<input inputMode="tel" value={f.customerPhone} onChange={e => setF({ ...f, customerPhone: e.target.value })} /></label>
+        <label className="f">Bill date<input type="date" max={todayStr()} value={f.billDate} onChange={e => setF({ ...f, billDate: e.target.value || todayStr() })} /></label>
+        <label className="f">Address<input value={f.customerAddress} onChange={e => setF({ ...f, customerAddress: e.target.value })} /></label>
+        <label className="f" style={{ gridColumn: '1 / -1' }}>Note shown on the bill<textarea rows={2} maxLength={300} value={f.notes} onChange={e => setF({ ...f, notes: e.target.value })} /></label>
+        {err && <p className="dpos-err" role="alert" style={{ gridColumn: '1 / -1' }}>{err}</p>}
+        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button></div>
+      </form>
+    </Modal>
   );
 }
 
