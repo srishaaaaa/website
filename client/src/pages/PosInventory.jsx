@@ -208,6 +208,11 @@ function ProductsStock({ manager, stocker }) {
   const shown = useMemo(() => (list || []).filter(p => (stock === 'all' || (stock === 'out' ? p.stock < 1 : stock === 'low' ? p.stock >= 1 && p.stock <= lowOf(p) : stock === 'best' ? p.bestSeller : p.stock > lowOf(p))) && (catF === 'all' || p.categorySlug === catF))
     .sort((a, b) => sortBy === 'stock-asc' ? a.stock - b.stock : sortBy === 'stock-desc' ? b.stock - a.stock : sortBy === 'price-asc' ? a.price - b.price : sortBy === 'price-desc' ? b.price - a.price : a.name.localeCompare(b.name)), [list, stock, catF, sortBy]);
   const needs = useMemo(() => (list || []).filter(p => p.stock < 1 || p.stock <= lowOf(p) || p.variants.some(v => v.active && v.stock < 1)), [list]);
+  useEffect(() => {
+    if (!list || !needs.length) return;
+    try { if (sessionStorage.getItem('dhanya.stock.alerted')) return; sessionStorage.setItem('dhanya.stock.alerted', '1') } catch { return }
+    setAlerts(true);
+  }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
   const counts = useMemo(() => ({ out: (list || []).filter(p => p.stock < 1).length, low: (list || []).filter(p => p.stock >= 1 && p.stock <= lowOf(p)).length, size: (list || []).filter(p => p.stock >= 1 && p.stock > lowOf(p) && p.variants.some(v => v.active && v.stock < 1)).length }), [list]);
   const del = async p => { if (!confirm(`Delete "${p.name}" permanently, with its sizes and photos? Past bills keep their own copy.`)) return; try { await api('/admin/products/' + p.id, { method: 'DELETE' }); toast('Product deleted.'); if (open === p.id) setOpen(null); load() } catch (e) { setErr(e.message) } };
   const addVariant = async (p, e) => {
@@ -445,23 +450,29 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
   );
 }
 
-// Products that need attention (out of stock, low, or with a sold-out size) with one-tap restock buttons.
+// Stock Alert: products that need attention (out of stock, low, or with a sold-out size) with one-tap restock buttons.
 function AlertsModal({ list, onClose, onDone, canStock, onEdit }) {
   const [err, setErr] = useState();
   const lowOf = p => p.lowAlert ?? LOW;
   const items = list.filter(p => p.stock < 1 || p.stock <= lowOf(p) || p.variants.some(v => v.active && v.stock < 1));
+  useEffect(() => { const k = e => e.key === 'Escape' && onClose(); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [onClose]);
   const add = async (v, qty) => { try { await api('/admin/pos/stock', { method: 'POST', body: { variantId: v.id, type: 'restock', qty } }); onDone() } catch (e) { setErr(e.message) } };
   return (
-    <Modal title="Stock Alert" sub={items.length ? `${items.length} product${items.length > 1 ? 's' : ''} need attention` : 'Everything is stocked'} onClose={onClose} footer={<button className="dpos-btn" onClick={onClose}>Dismiss</button>}>
-      <Err>{err}</Err>
-      <div className="inv-al">{items.map(p => (
-        <div key={p.id} className={`inv-al-c ${p.stock < 1 ? 'out' : ''}`}>
-          <div className="inv-al-h"><div><b>{p.name}</b><small>{p.category || 'Uncategorised'} · <strong>{p.stock} units in total</strong> · alert at {lowOf(p)} or fewer</small></div>{onEdit && <button type="button" className="dpos-btn sm" onClick={() => onEdit(p)}>Edit</button>}</div>
-          {p.variants.filter(v => v.active && v.stock <= 1).map(v => (
-            <div key={v.id} className="inv-al-r"><span>{v.size}{v.color !== 'Default' ? ` / ${v.color}` : ''} · {v.stock < 1 ? 'sold out' : `${v.stock} left`}</span>
-              {canStock && <span>{[1, 5, 10].map(n => <button key={n} type="button" onClick={() => add(v, n)}>+{n}</button>)}</span>}</div>))}
-        </div>))}</div>
-    </Modal>
+    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Stock Alert" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div className="sa">
+        <div className="sa-head"><span className="sa-ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3.5 2.8 19.5h18.4z" /><path d="M12 10v4.5M12 17.4v.1" /></svg></span>
+          <div><h2>Stock Alert</h2><p>{items.length ? `${items.length} product${items.length > 1 ? 's' : ''} need attention` : 'Everything is stocked'}</p></div></div>
+        <Err>{err}</Err>
+        <div className="inv-al">{items.map(p => (
+          <div key={p.id} className={`inv-al-c ${p.stock < 1 ? 'out' : ''}`}>
+            <div className="inv-al-h"><div><b>{p.name}</b><small>{p.category || 'Uncategorised'} · <strong>{p.stock} units in total</strong> · alert at {lowOf(p)} or fewer</small></div>{onEdit && <button type="button" className="sa-edit" onClick={() => onEdit(p)}>Edit</button>}</div>
+            {p.variants.filter(v => v.active && v.stock <= 1).map(v => (
+              <div key={v.id} className="inv-al-r"><span>{v.size}{v.color !== 'Default' ? ` / ${v.color}` : ''} · {v.stock < 1 ? 'sold out' : `${v.stock} left`}</span>
+                {canStock && <span>{[1, 5, 10].map(n => <button key={n} type="button" onClick={() => add(v, n)}>+{n}</button>)}</span>}</div>))}
+          </div>))}</div>
+        <button type="button" className="sa-dismiss" onClick={onClose}>Dismiss</button>
+      </div>
+    </div>
   );
 }
 

@@ -104,7 +104,6 @@ export default function AdminShell({ title, sub, actions, children, bare }) {
             <span className="t-panel"><Svg size={20}><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></Svg></span>
             <span className="t-menu"><Svg size={24}><path d="M4 7h16M4 12h16M4 17h16" /></Svg></span>
           </button>
-          <b className="ash-ttl">Dashboard</b>
           <div className="ash-right"><Link to="/" className="ash-view"><Svg size={20}><path d="M19 12H5m6-6-6 6 6 6" /></Svg><span>View Store</span></Link>
             <span className="ash-av" title={user?.email} aria-label={`Signed in as ${user?.email || ''}`}>{initial}</span></div>
         </div>

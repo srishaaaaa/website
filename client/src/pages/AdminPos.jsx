@@ -265,7 +265,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   return (
     <div className="bp">
     <div className="bp-head"><div className="bp-title"><i /><div><h1>POS Billing Panel</h1><p>Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing</p></div></div>
-      {!ws && <div className="dpos-src" role="radiogroup" aria-label="Order source"><button role="radio" aria-checked={source === 'offline'} className={source === 'offline' ? 'on' : ''} onClick={() => setSource('offline')}><i className="or" />Offline (POS)</button><button role="radio" aria-checked={source === 'online'} className={source === 'online' ? 'on' : ''} onClick={() => setSource('online')}><i />Online order</button></div>}</div>
+      </div>
     <div className="dpos-bill">
       {added && <div className="dpos-added" role="status">✓ {added.t}</div>}
       <div className="dpos-col">
@@ -294,24 +294,25 @@ function Billing({ channel, shop, onSale, onAdvance }) {
       </div>
 
       <div className="dpos-col dpos-sticky">
-        <section className="dpos-card bp-sum">
+        <section className="dpos-card bp-sum"><div className="dpos-head" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" size={20} />Current order{lines.length > 0 && <b key={added?.id ?? 0} className="dpos-count">{lines.reduce((a, l) => a + l.qty, 0)}</b>}</h2>
+          {!ws && <div className="dpos-src" role="radiogroup" aria-label="Order source"><button role="radio" aria-checked={source === 'offline'} className={source === 'offline' ? 'on' : ''} onClick={() => setSource('offline')}><i className="or" />Offline (POS)</button><button role="radio" aria-checked={source === 'online'} className={source === 'online' ? 'on' : ''} onClick={() => setSource('online')}><i />Online order</button></div>}</div>
           <div className="dpos-box dpos-sum" style={{ marginBottom: 14 }}>
             <div><span>SOURCE</span><span className="dpos-pill">{ws ? 'Wholesale' : source === 'online' ? 'Online' : 'Offline'}</span></div>
             <div><span>CUSTOMER</span><span>{cust.name || '-'}</span></div><div><span>PHONE</span><span>{cust.phone || '-'}</span></div>
+            <div><span>DATE</span><span>{dmy(billDate)}</span></div>
             <hr style={{ border: 0, borderTop: '1px solid var(--d-line)', width: '100%' }} />
             {priced.length ? priced.map(l => <div key={l.key}><span>{l.name} × {l.qty}</span><span>{inr(l.price * l.qty)}</span></div>) : <em className="muted" style={{ textAlign: 'center', display: 'block' }}>No items added yet</em>}
           </div>
-          {!ws && <div style={{ marginBottom: 4 }}>
-            <p className="bp-l">APPLY COUPON</p>
-            <div style={{ display: 'flex', gap: 8 }}><input value={couponIn} onChange={e => setCouponIn(e.target.value.toUpperCase())} placeholder="Coupon code" aria-label="Coupon code" disabled={!!coupon} />
-              {coupon ? <button className="dpos-btn ghost sm" onClick={() => { setCoupon(null); setCouponMsg(); setCouponIn('') }}>Remove</button> : <button className="dpos-btn sm" disabled={!couponIn.trim()} onClick={applyCoupon}>Apply</button>}</div>
-            {couponMsg && <p className={couponMsg.ok ? 'dpos-ok' : 'dpos-err'} style={{ marginTop: 8 }}>{couponMsg.t}</p>}
-          </div>}
-          <p className="bp-l">MANUAL DISCOUNT</p>
+          <p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: '0 0 6px' }}>MANUAL DISCOUNT</p>
           <div className="dpos-grid" style={{ gridTemplateColumns: '110px 1fr', marginBottom: 12 }}>
             <select aria-label="Discount type" value={disc.type} disabled={!!coupon} onChange={e => setDisc({ ...disc, type: e.target.value })}><option value="fixed">₹</option><option value="percent">%</option></select>
             <input inputMode="decimal" disabled={!!coupon} value={disc.value} onChange={e => setDisc({ ...disc, value: e.target.value })} placeholder="0" aria-label="Discount value" style={{ textAlign: 'right' }} />
           </div>
+          {!ws && <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 8 }}><input value={couponIn} onChange={e => setCouponIn(e.target.value.toUpperCase())} placeholder="Coupon code" aria-label="Coupon code" disabled={!!coupon} />
+              {coupon ? <button className="dpos-btn ghost sm" onClick={() => { setCoupon(null); setCouponMsg(); setCouponIn('') }}>Remove</button> : <button className="dpos-btn sm" disabled={!couponIn.trim()} onClick={applyCoupon}>Apply</button>}</div>
+            {couponMsg && <p className={couponMsg.ok ? 'dpos-ok' : 'dpos-err'} style={{ marginTop: 8 }}>{couponMsg.t}</p>}
+          </div>}
           <label className="f" style={{ marginBottom: 16 }}>Note (optional)<input value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} placeholder="Shown on the bill" /></label>
           <div className="dpos-ledger">
             <div className="dpos-lrow"><span>Subtotal ({priced.reduce((t, l) => t + l.qty, 0)} items) <small className="dpos-excl">EXCL. GST</small></span><b>{inr(bill.subtotal)}</b></div>
