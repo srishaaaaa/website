@@ -264,8 +264,6 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
   return (
     <div className="bp">
-    <div className="bp-head"><div className="bp-title"><i /><div><h1>POS Billing Panel</h1><p>Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing</p></div></div>
-      </div>
     <div className="dpos-bill">
       {added && <div className="dpos-added" role="status">✓ {added.t}</div>}
       <div className="dpos-col">
@@ -347,8 +345,8 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           <p className="sub" style={{ margin: '8px 2px 14px' }}>GPay / UPI and card are confirmed by the cashier at the counter; no payment gateway is attached.</p>
           <Err>{err}</Err>
           {problem && priced.length > 0 && <p className="sub" role="status" style={{ marginBottom: 10 }}>{problem}</p>}
-          <button className="bp-wa" disabled={!!problem || busy} onClick={() => submit('wa')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /></svg> {busy ? 'SAVING…' : 'COMPLETE SALE & WHATSAPP'}</button>
-          <div className="bp-two2"><button type="button" disabled={!!problem || busy} onClick={() => submit('print')}>PRINT</button><button type="button" disabled={!!problem || busy} onClick={() => submit('save')}>SAVE ONLY</button></div>
+          <button className="dpos-cta" disabled={!!problem || busy} onClick={() => submit('wa')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /></svg> {busy ? 'SAVING…' : 'COMPLETE SALE & WHATSAPP'}</button>
+          <div className="dpos-two" style={{ marginTop: 10 }}><button type="button" disabled={!!problem || busy} onClick={() => submit('print')}>PRINT</button><button type="button" disabled={!!problem || busy} onClick={() => submit('save')}>SAVE ONLY</button></div>
           {!ws && <button className="dpos-cta amber" disabled={!priced.length || busy} onClick={() => setAdvOpen(true)}><ClockI /> SAVE AS ADVANCE ORDER</button>}
         </section>
       </div>
@@ -418,7 +416,7 @@ function TodayPanels({ rep, bills, openInvoice }) {
         </section>
         <section className="dpos-card"><h2>Today’s Top Items</h2>
           {!top.length ? <Empty>No sales today yet.</Empty> : top.map((p, i) => (
-            <div className="an-top" key={p.name}><b>{i + 1}</b><div><div className="an-toprow"><span>{p.name}</span><em>{inr(p.revenue)}</em></div><i><u style={{ width: `${p.revenue / topMax * 100}%` }} /></i></div><span>{p.qty} pcs</span></div>))}
+            <div className="an-tp" key={p.name}><b>{i + 1}</b><div><div className="an-toprow"><span>{p.name}</span><em>{inr(p.revenue)}</em></div><i><u style={{ width: `${p.revenue / topMax * 100}%` }} /></i></div><span>{p.qty} pcs</span></div>))}
         </section>
       </div>
     </div>
@@ -482,12 +480,14 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const v = (f, d = '…') => rep ? f(rep) : d;
   return (
     <>
-      <div className="dpos-bar-tools">{tab !== 'today' && <PeriodFilter value={per} onChange={setPer} />}</div>
-      <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
-      <div className="an-fb">
-        {!ws && <div className="an-ch" role="radiogroup" aria-label="Channel">{[['all', 'All Channels', ''], ['offline', 'Offline (POS)', '#f5a524'], ['online', 'Online', '#22a06b']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={src === k} className={src === k ? 'on' : ''} onClick={() => setSrc(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>}
-        <Chips value={gst} onChange={setGst} options={GST_CHIPS} />
-        <div className="an-pay" role="radiogroup" aria-label="Payment"><span>PAYMENT</span>{[['all', 'All', ''], ['cash', 'Cash', '#f5a524'], ['upi', 'GPay / UPI', '#3b82f6'], ['card', 'Card', '#ec4899'], ['split', 'Split', '#8b5cf6']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={pay === k} className={pay === k ? 'on' : ''} onClick={() => setPay(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>
+      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /></div>}
+      <div className="an-top">
+        <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
+      </div>
+      <div className="an-all">
+        {!ws && <div className="an-grp" role="radiogroup" aria-label="Channel">{[['all', 'All Channels', ''], ['offline', 'Offline (POS)', '#f5a524'], ['online', 'Online', '#22a06b']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={src === k} className={src === k ? 'on' : ''} onClick={() => setSrc(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>}
+        <div className="an-gst"><Chips value={gst} onChange={setGst} options={GST_CHIPS} /></div>
+        <div className="an-pay" role="radiogroup" aria-label="Payment"><b>PAYMENT</b>{[['all', 'All', ''], ['cash', 'Cash', '#f5a524'], ['upi', 'GPay / UPI', '#3b82f6'], ['card', 'Card', '#ec4899'], ['split', 'Split', '#8b5cf6']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={pay === k} className={pay === k ? 'on' : ''} onClick={() => setPay(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>
       </div>
       <Err>{err}</Err>
 
@@ -498,6 +498,14 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
           <Stat cls="nong" icon="trend" label="Non-GST sales" value={v(r => `+ ${inr(r.nonGstSales)}`)} sub={v(r => `${r.nonGstBills} ${ws ? 'wholesale' : 'retail'} bills`, ' ')} />
           {!ws && <Stat cls="exp" icon="wallet" label="Total expenses" value={v(r => `− ${inr(r.expenses)}`)} sub={v(r => r.expenseByCategory?.length ? `${r.expenseByCategory.length} categor${r.expenseByCategory.length === 1 ? 'y' : 'ies'} · top: ${r.expenseByCategory[0].category}` : 'No expenses yet', ' ')} onOpen={rep ? () => setDetail('expenses') : undefined} />}
         </div>
+        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;Sales ({inr(rep.revenue)}){rep.costs?.enabled ? ` − Cost of goods (${inr(rep.cogs)})` : ''} − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{rep.net < 0 ? `− ${inr(-rep.net)}` : inr(rep.net)}</span></span></div>}
+        {!ws && rep && (
+          <div className="cost-row">
+            <div className="cost-card teal"><div className="cc-t"><span>TOTAL COST PRICE (STOCK IN HAND)</span><i><Icon n="box" size={22} /></i></div>
+              <b>{inr(rep.costs.stockCost)}</b><small>{rep.costs.enabled ? `Cost price × current stock · ${rep.costs.stockProducts} product${rep.costs.stockProducts === 1 ? '' : 's'} in stock` : 'Add each product’s cost price in Inventory → Edit'}</small></div>
+            <div className="cost-card amber"><div className="cc-t"><span>COST PRICE OF PRODUCTS SOLD</span><i><Icon n="swap" size={22} /></i></div>
+              <b>{inr(rep.costs.soldCost)}</b><small>{rep.costs.enabled ? <>Cost price × qty sold · {rep.costs.soldUnits} unit{rep.costs.soldUnits === 1 ? '' : 's'} · Margin <em className={rep.costs.margin < 0 ? 'neg' : ''}>{inr(rep.costs.margin)}</em></> : 'Cost prices are not set up yet'}</small></div>
+          </div>)}
         <div className="dpos-k6">
           <Stat icon="wallet" label="Total revenue" value={v(r => inr(r.revenue))} sub={v(r => `GST (${inr(r.gstSales)}) + Non-GST (${inr(r.nonGstSales)})`, ' ')} />
           <Stat icon="doc" label="Completed bills" value={v(r => r.bills)} sub="POS + manual bills" />
@@ -508,14 +516,6 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
           <Stat icon="box" label="Total items sold" value={v(r => r.units)} sub="From completed bills" />
           <Stat icon="star" label="Top product" txt value={v(r => r.topProduct || '—')} sub="Most sold item" />
         </div>
-        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;Sales ({inr(rep.revenue)}){rep.costs?.enabled ? ` − Cost of goods (${inr(rep.cogs)})` : ''} − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{rep.net < 0 ? `− ${inr(-rep.net)}` : inr(rep.net)}</span></span></div>}
-        {!ws && rep && (
-          <div className="cost-row">
-            <div className="cost-card teal"><div className="cc-t"><span>TOTAL COST PRICE (STOCK IN HAND)</span><i><Icon n="box" size={22} /></i></div>
-              <b>{inr(rep.costs.stockCost)}</b><small>{rep.costs.enabled ? `Cost price × current stock · ${rep.costs.stockProducts} product${rep.costs.stockProducts === 1 ? '' : 's'} in stock` : 'Add each product’s cost price in Inventory → Edit'}</small></div>
-            <div className="cost-card amber"><div className="cc-t"><span>COST PRICE OF PRODUCTS SOLD</span><i><Icon n="swap" size={22} /></i></div>
-              <b>{inr(rep.costs.soldCost)}</b><small>{rep.costs.enabled ? <>Cost price × qty sold · {rep.costs.soldUnits} unit{rep.costs.soldUnits === 1 ? '' : 's'} · Margin <em className={rep.costs.margin < 0 ? 'neg' : ''}>{inr(rep.costs.margin)}</em></> : 'Cost prices are not set up yet'}</small></div>
-          </div>)}
       </>}
 
       {tab === 'revenue' && rep && <>
@@ -724,7 +724,7 @@ export default function AdminPos() {
   }[tab];
   const title = { billing: 'POS Billing Panel', analytics: 'POS Analytics', orders: 'Order History', measurements: 'Measurements', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupon Management', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
   return (
-    <AdminShell title={title} sub={sub} bare={tab === 'billing'}>
+    <AdminShell title={title} sub={sub}>
       <Err>{err}</Err>
       {body}
       {allowed && <LowStockAlert />}

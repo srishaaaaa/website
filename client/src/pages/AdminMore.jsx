@@ -103,15 +103,6 @@ export function AdminCategories() {
           {d?.shelves && <>
             <div className="dpos-txc"><div><b>Trending collections</b><small>{d.shelves.trending} products · Featured pieces on the home page · Live on the site</small></div><Link className="dpos-btn ghost sm" to="/admin/trending">Edit pieces</Link></div>
             <div className="dpos-txc"><div><b>Best Sellers</b><small>{d.shelves.best} products · Products marked best seller · Up to 10 · Live on the site</small></div><Link className="dpos-btn ghost sm" to="/admin/billing/inventory">Edit in products</Link></div></>}
-          {!d ? <p className="dpos-empty">Loading…</p> : !cols.length ? <p className="dpos-empty">No departments found.</p> : cols.map(c => (
-            <div className="dpos-txc" key={c.id}>
-              <div><b>{c.name}</b><small>{c.products} products · {c.status === 'published' ? 'Live on the site' : 'Hidden'}</small></div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <button className="dpos-btn ghost sm" onClick={() => setEdit({ kind: 'collection', item: c })}>Edit pieces</button>
-                <Switch on={c.status === 'published'} label={`Show ${c.name} on the storefront`} onChange={on => act(() => api(`/admin/collections/${c.id}`, { method: 'PATCH', body: { status: on ? 'published' : 'draft' } }))} />
-                <button className="dpos-trash" aria-label={`Delete ${c.name}`} onClick={() => confirm(`Delete the collection “${c.name}”? Its products are not deleted.`) && act(() => api(`/admin/collections/${c.id}`, { method: 'DELETE' }), 'Collection deleted.')}><Icon n="trash" size={18} /></button>
-              </div>
-            </div>))}
         </div>
         <div>
           <h2><Icon n="tag" size={20} />Categories</h2>
@@ -122,6 +113,16 @@ export function AdminCategories() {
                 <button className="dpos-btn ghost sm" onClick={() => setEdit({ kind: 'category', item: c })}>Edit pieces</button>
                 <Switch on={c.active} label={`${c.name} active`} onChange={on => act(() => api(`/admin/categories/${c.id}`, { method: 'PATCH', body: { active: on } }))} />
                 <button className="dpos-trash" aria-label={`Delete ${c.name}`} onClick={() => confirm(`Delete the category “${c.name}”? ${c.products ? `${c.products} product(s) will become uncategorised (they are not deleted).` : ''}`) && act(() => api(`/admin/categories/${c.id}`, { method: 'DELETE' }), 'Category deleted.')}><Icon n="trash" size={18} /></button>
+              </div>
+            </div>))}
+          {cols.length > 0 && <h2 style={{ marginTop: 22 }}><Icon n="layers" size={20} />Collections</h2>}
+          {!d ? <p className="dpos-empty">Loading…</p> : !cols.length ? null : cols.map(c => (
+            <div className="dpos-txc" key={c.id}>
+              <div><b>{c.name}</b><small>{c.products} products · {c.status === 'published' ? 'Live on the site' : 'Hidden'}</small></div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button className="dpos-btn ghost sm" onClick={() => setEdit({ kind: 'collection', item: c })}>Edit pieces</button>
+                <Switch on={c.status === 'published'} label={`Show ${c.name} on the storefront`} onChange={on => act(() => api(`/admin/collections/${c.id}`, { method: 'PATCH', body: { status: on ? 'published' : 'draft' } }))} />
+                <button className="dpos-trash" aria-label={`Delete ${c.name}`} onClick={() => confirm(`Delete the collection “${c.name}”? Its products are not deleted.`) && act(() => api(`/admin/collections/${c.id}`, { method: 'DELETE' }), 'Collection deleted.')}><Icon n="trash" size={18} /></button>
               </div>
             </div>))}
         </div>

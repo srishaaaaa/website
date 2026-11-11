@@ -1,9 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useLayoutEffect, useRef } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { useApp } from '../context/App';
+import '../adminbase.css';
 import '../pos.css';
 import '../pos2.css';
 import '../pos3.css';
+import '../dhanya.css';
 import '../invoice.css';
 
 // The admin layout (sidebar + "Dashboard" top bar + cards) shared by every admin page. Admin only: it is imported solely by
@@ -70,16 +72,8 @@ export const NAV = [
 // no longer jumps the sidebar back to the top.
 const sideScroll = { top: 0, left: 0 };
 
-const Svg = ({ children, size = 22, sw = 1.7 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>;
-
-// Admin frame: a fixed top bar (brand, sidebar toggle, View Store, avatar), a full-height sidebar and a content area that scrolls on its own.
-// On phones the sidebar is a slide-in drawer opened from the toggle. `bare` = the page draws its own title (Billing).
-export default function AdminShell({ title, sub, actions, children, bare }) {
+export default function AdminShell({ title, sub, actions, children }) {
   const side = useRef();
-  const { pathname } = useLocation();
-  const [open, setOpen] = useState(false); const [shut, setShut] = useState(false);
-  useEffect(() => { setOpen(false) }, [pathname]);
-  useEffect(() => { if (!open) return; const k = e => e.key === 'Escape' && setOpen(false); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [open]);
   useLayoutEffect(() => {
     const el = side.current; if (!el) return;
     el.scrollTop = sideScroll.top; el.scrollLeft = sideScroll.left;
@@ -87,46 +81,36 @@ export default function AdminShell({ title, sub, actions, children, bare }) {
     if (on) { // keep the open panel's button visible inside the sidebar (only the sidebar scrolls, never the page)
       const a = on.getBoundingClientRect(), b = el.getBoundingClientRect();
       if (a.top < b.top) el.scrollTop -= b.top - a.top + 12; else if (a.bottom > b.bottom) el.scrollTop += a.bottom - b.bottom + 12;
+      if (a.left < b.left) el.scrollLeft -= b.left - a.left + 12; else if (a.right > b.right) el.scrollLeft += a.right - b.right + 12;
     }
   }, []);
   const { user, site } = useApp();
   const nm = site?.store?.name || 'Dhanyas Boutique';
   const manager = !!user && ['owner', 'admin'].includes(user.role);
   const initial = (user?.name || user?.email || 'A').trim()[0].toUpperCase();
-  const tag = manager ? 'ADMIN' : 'CASHIER';
-  const brand = <Link to="/admin/billing" className="ash-wm" aria-label={nm}><span className="wm-text"><b>{nm.split(' ')[0]}</b><i>{nm.split(' ').slice(1).join(' ') || 'Boutique'}</i></span><em>{tag}</em></Link>;
   return (
-    <div className={`dpos ash ${open ? 'is-open' : ''} ${shut ? 'is-shut' : ''}`}>
-      <header className="ash-top">
-        <div className="ash-brand">{brand}</div>
-        <div className="ash-bar">
-          <button type="button" className="ash-tog" aria-label="Toggle menu" aria-expanded={open} onClick={() => (matchMedia('(max-width: 1023px)').matches ? setOpen(o => !o) : setShut(v => !v))}>
-            <span className="t-panel"><Svg size={20}><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></Svg></span>
-            <span className="t-menu"><Svg size={24}><path d="M4 7h16M4 12h16M4 17h16" /></Svg></span>
-          </button>
-          <div className="ash-right"><Link to="/" className="ash-view"><Svg size={20}><path d="M19 12H5m6-6-6 6 6 6" /></Svg><span>View Store</span></Link>
-            <span className="ash-av" title={user?.email} aria-label={`Signed in as ${user?.email || ''}`}>{initial}</span></div>
-        </div>
-      </header>
-      <div className="ash-body">
-        <nav className="ash-side" aria-label="Admin sections" ref={side} onScroll={e => { sideScroll.top = e.currentTarget.scrollTop; sideScroll.left = e.currentTarget.scrollLeft }}>
-          <div className="ash-sbrand">{brand}<button type="button" aria-label="Close menu" onClick={() => setOpen(false)}><Svg size={22}><path d="M6 6l12 12M18 6 6 18" /></Svg></button></div>
-          {NAV.map(g => {
-            const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => !i[3] || manager);
-            return items.length ? (
-              <div key={g.group} style={{ display: 'contents' }}>
-                <p className="dpos-grp">{g.group.toUpperCase()}</p>
-                {items.map(([to, label, icon]) => <NavLink key={to} to={to} end className={({ isActive }) => `dpos-nav ${isActive ? 'on' : ''}`}><Icon n={icon} size={22} />{label}</NavLink>)}
-              </div>) : null;
-          })}
-        </nav>
-        <div className="ash-scrim" onClick={() => setOpen(false)} />
-        <main className="dpos-main ash-main" id="main">
-          {!bare && <div className="dpos-head"><div><h1>{title}</h1>{sub && <p className="sub">{sub}</p>}</div>{actions && <div className="dpos-head-r">{actions}</div>}</div>}
-          {children}
-          <footer className="dpos-foot"><span>© {new Date().getFullYear()} ALL RIGHTS RESERVED. DHANYA BOUTIQUE.</span><span>POWERED BY <b>CENEXA SYSTEMS</b> ©{new Date().getFullYear()}</span><i>• Boutique &amp; Tailoring</i></footer>
-        </main>
-      </div>
+    <div className="dpos">
+      <nav className="dpos-side" aria-label="Admin sections" ref={side} onScroll={e => { sideScroll.top = e.currentTarget.scrollTop; sideScroll.left = e.currentTarget.scrollLeft }}>
+        <Link to="/admin/billing" className="dpos-brand" aria-label={nm}><span className="wm-text"><b>{nm.split(' ')[0]}</b><i>{nm.split(' ').slice(1).join(' ') || 'Boutique'}</i></span><i className="dpos-role">{manager ? 'ADMIN' : 'CASHIER'}</i></Link>
+        {NAV.map(g => {
+          const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => !i[3] || manager);
+          return items.length ? (
+            <div key={g.group} style={{ display: 'contents' }}>
+              <p className="dpos-grp">{g.group.toUpperCase()}</p>
+              {items.map(([to, label, icon]) => <NavLink key={to} to={to} end className={({ isActive }) => `dpos-nav ${isActive ? 'on' : ''}`}><Icon n={icon} />{label}</NavLink>)}
+            </div>) : null;
+        })}
+      </nav>
+      <main className="dpos-main" id="main">
+        <div className="dpos-head"><div><h1>{title}</h1>{sub && <p className="sub">{sub}</p>}</div>
+          <div className="dpos-head-r">{actions}<Link to="/" className="dpos-view">← View Store</Link><span className="dpos-av" title={user?.email} aria-label={`Signed in as ${user?.email || ''}`}>{initial}</span></div></div>
+        {children}
+        <footer className="dpos-foot">
+          <span>© {new Date().getFullYear()} ALL RIGHTS RESERVED. {nm.toUpperCase()}.</span>
+          <span>POWERED BY <b>CENEXA SYSTEMS</b> ©{new Date().getFullYear()}</span>
+          <em>• Boutique &amp; Tailoring</em>
+        </footer>
+      </main>
     </div>
   );
 }

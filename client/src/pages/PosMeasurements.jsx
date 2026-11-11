@@ -24,7 +24,7 @@ export default function PosMeasurements() {
   const rows = bills.flatMap(b => b.items.map(i => [b.invoiceNo, b.customerName, b.customerPhone, dmy(b.billDate), b.status, i.name, i.measure?.frontNeck ?? '', i.measure?.backNeck ?? '', measureSummary(i.measure)]));
   return (
     <div className="msp">
-      <div className="msp-top"><p className="muted">Tailoring measurements for each saved bill</p>
+      <div className="msp-top"><span />
         <div className="msp-tools"><PeriodFilter value={per} onChange={setPer} />
           <ExportCsv name="measurements" header={['Invoice', 'Customer', 'Phone', 'Date', 'Status', 'Item', 'Front neck', 'Back neck', 'Measurements']} rows={rows} /></div></div>
       {err && <p className="dpos-err" role="alert">{err}</p>}

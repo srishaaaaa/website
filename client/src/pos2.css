@@ -5,7 +5,7 @@
 .dpos-pg { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; background: #fff; border: 1px solid var(--d-line); border-radius: 999px; padding: 5px 6px; box-shadow: 0 2px 10px rgba(0, 0, 0, .04) }
 .dpos-pg .lab { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; padding: 0 8px 0 10px; color: var(--d-ink) }
 .dpos-pg button { padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--d-ink) }
-.dpos-pg button:hover { background: #f4f2ee } .dpos-pg button.on { background: var(--d-ink); color: #fff }
+.dpos-pg button:hover { background: #f4f2ee } .dpos-pg button.on { background: var(--d-acc, #330533); color: #fff }
 .dpos-pg.dates { padding: 5px 12px; gap: 12px } .dpos-pg.dates label { display: inline-flex; align-items: center; gap: 4px }
 .dpos-pg.dates input { border: 0; padding: 6px 2px; width: auto; font-weight: 700; background: transparent; border-radius: 0 }
 .dpos-bar-tools { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between }
@@ -15,9 +15,9 @@
 .dpos-switch::after { content: ''; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); transition: transform .15s }
 .dpos-switch.on { background: #12a36b } .dpos-switch.on::after { transform: translateX(22px) }
 .dpos-two { display: grid; grid-template-columns: 1fr 1fr; background: #fff; border: 1px solid var(--d-line); border-radius: 999px; padding: 4px; gap: 4px }
-.dpos-two button { padding: 12px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase } .dpos-two button.on { background: var(--d-ink); color: #fff }
+.dpos-two button { padding: 12px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase } .dpos-two button.on { background: var(--d-acc, #330533); color: #fff }
 .dpos-src { display: inline-flex; background: #fff; border: 1px solid var(--d-line); border-radius: 999px; padding: 4px; gap: 2px; justify-self: end }
-.dpos-src button { padding: 8px 16px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px } .dpos-src button.on { background: var(--d-ink); color: #fff }
+.dpos-src button { padding: 8px 16px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px } .dpos-src button.on { background: var(--d-acc, #330533); color: #fff }
 .dpos-src i { width: 8px; height: 8px; border-radius: 50%; background: #12a36b; display: inline-block }
 
 /* ---- analytics cards / charts ---- */
@@ -30,24 +30,24 @@
 .dpos-card2 .v { font-size: 30px; font-weight: 800; line-height: 1.1; letter-spacing: -.01em; overflow-wrap: anywhere } .dpos-card2 .v.txt { font-size: 20px }
 .dpos-card2 .s { font-size: 12px; color: var(--d-mut) }
 .dpos-card2.net { background: linear-gradient(135deg, #0a9a68, #0d1f1a); color: #fff; border: 0 } .dpos-card2.net .ic { background: rgba(255, 255, 255, .18) } .dpos-card2.net .s { color: rgba(255, 255, 255, .85) }
-.dpos-card2.gstc { border-color: #d9d4e8 } .dpos-card2.nong { border-color: #bfe8d8 } .dpos-card2.nong .v { color: #0a8a5c } .dpos-card2.exp { border-color: #f1c9c9 } .dpos-card2.exp .v { color: #b3261e }
+.dpos-card2.gstc { border-color: #d9d4e8 } .dpos-card2.nong { border-color: #bfe8d8 } .dpos-card2.nong .v { color: #0a8a5c } .dpos-card2.exp { border-color: #efc3b3 } .dpos-card2.exp .v { color: #b3261e }
 .dpos-formula { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; background: #fff; border: 1px solid var(--d-line); border-radius: 16px; padding: 12px 16px; font-size: 14px }
-.dpos-formula b.tag { background: #e8e6fb; color: #3a2fc0; border-radius: 8px; padding: 4px 10px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase }
+.dpos-formula b.tag { background: #e8e6fb; color: #5a1560; border-radius: 8px; padding: 4px 10px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase }
 .dpos-formula .np { color: #0a8a5c; font-weight: 800; font-family: ui-monospace, monospace }
 .dpos-split { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: 18px; align-items: start } @media (max-width: 1099px) { .dpos-split { grid-template-columns: 1fr } }
 .dpos-ch { display: flex; align-items: flex-end; gap: 6px; height: 190px; padding-top: 22px }
 .dpos-ch .c { flex: 1; min-width: 0; display: grid; grid-template-rows: 1fr auto; height: 100%; text-align: center; font-size: 11px; font-weight: 800; color: #444; gap: 8px; position: relative }
 .dpos-ch .c .col { display: flex; align-items: flex-end; justify-content: center; position: relative }
-.dpos-ch .c .col i { display: block; width: min(30px, 70%); border-radius: 8px 8px 3px 3px; background: var(--d-ink); min-height: 4px }
+.dpos-ch .c .col i { display: block; width: min(30px, 70%); border-radius: 8px 8px 3px 3px; background: var(--d-acc, #330533); min-height: 4px }
 .dpos-ch .c .col em { position: absolute; top: -18px; font-style: normal; font-size: 10px; white-space: nowrap }
 .dpos-ch.cap .c .col { background: #f3f3f5; border-radius: 999px; width: 26px; margin: 0 auto } .dpos-ch.cap .c .col i { width: 100%; border-radius: 999px }
 .dpos-bars2 { display: grid; gap: 14px }
-.dpos-b2 { display: grid; grid-template-columns: 74px 1fr 40px; gap: 12px; align-items: center; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase } .dpos-b2 .tr { height: 12px; border-radius: 99px; background: #eef0f3; overflow: hidden } .dpos-b2 .tr i { display: block; height: 100%; border-radius: 99px; background: var(--d-ink) } .dpos-b2 .n { text-align: right }
-.dpos-rank { display: grid; gap: 16px } .dpos-rk { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center } .dpos-rk .tr { height: 8px; border-radius: 99px; background: #eef0f3; margin-top: 6px; overflow: hidden } .dpos-rk .tr i { display: block; height: 100%; background: var(--d-ink); border-radius: 99px }
+.dpos-b2 { display: grid; grid-template-columns: 74px 1fr 40px; gap: 12px; align-items: center; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase } .dpos-b2 .tr { height: 12px; border-radius: 99px; background: #eef0f3; overflow: hidden } .dpos-b2 .tr i { display: block; height: 100%; border-radius: 99px; background: var(--d-acc, #330533) } .dpos-b2 .n { text-align: right }
+.dpos-rank { display: grid; gap: 16px } .dpos-rk { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center } .dpos-rk .tr { height: 8px; border-radius: 99px; background: #eef0f3; margin-top: 6px; overflow: hidden } .dpos-rk .tr i { display: block; height: 100%; background: var(--d-acc, #330533); border-radius: 99px }
 
 /* ---- modal extras ---- */
 .dpos-sheet.wide { width: min(640px, 100%) } .dpos-sheet h2.mh { margin-bottom: 14px }
-.dpos-mhead { background: var(--d-ink); color: #fff; margin: -22px -22px 18px; padding: 18px 22px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px } .dpos-mhead small { opacity: .7; display: block; font-size: 12px; margin-top: 2px }
+.dpos-mhead { background: var(--d-acc, #330533); color: #fff; margin: -22px -22px 18px; padding: 18px 22px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px } .dpos-mhead small { opacity: .7; display: block; font-size: 12px; margin-top: 2px }
 .dpos-mhead button { color: #fff; width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, .15); font-size: 16px }
 .dpos-box { background: #f6f4f0; border: 1px solid var(--d-line); border-radius: 16px; padding: 14px 16px }
 .dpos-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px }
@@ -56,9 +56,9 @@
 .dpos-quick { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--d-mut) } .dpos-quick button { background: #fff; border: 1px solid var(--d-line); border-radius: 10px; padding: 6px 12px; color: var(--d-ink); font-size: 12px }
 
 /* ---- inventory rows ---- */
-.dpos-prod { border-bottom: 1px solid #f0ece4 } .dpos-prod:last-child { border-bottom: 0 }
+.dpos-prod { border-bottom: 1px solid #e5e4f0 } .dpos-prod:last-child { border-bottom: 0 }
 .dpos-prow { display: grid; grid-template-columns: 36px minmax(160px, 2.2fr) 110px 90px 110px auto; gap: 10px; align-items: center; padding: 12px 6px }
-.dpos-prow .chev { width: 32px; height: 32px; border-radius: 10px; background: #f1efe9; display: grid; place-items: center; transition: transform .15s } .dpos-prow .chev.open { transform: rotate(180deg); background: var(--d-ink); color: #fff }
+.dpos-prow .chev { width: 32px; height: 32px; border-radius: 10px; background: #f1efe9; display: grid; place-items: center; transition: transform .15s } .dpos-prow .chev.open { transform: rotate(180deg); background: var(--d-acc, #330533); color: #fff }
 .dpos-prow .nm b { display: block } .dpos-prow .nm small { color: var(--d-mut); font-size: 11px; font-weight: 700 }
 .dpos-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end }
 .dpos-detail { margin: 0 6px 14px 48px; background: #fff; border: 1px solid var(--d-line); border-radius: 18px; padding: 16px; box-shadow: 0 4px 18px rgba(0, 0, 0, .05); display: grid; gap: 12px }
@@ -82,6 +82,3 @@
 /* the "sample" pill sits under the product name instead of being squeezed into the 52px photo column */
 .dpos .adm-list button .adm-sample { grid-column: 2 / -1; justify-self: start; white-space: nowrap }
 
-.dpos-linkrow { display: flex; gap: 10px; margin: 6px 0 16px; flex-wrap: wrap }
-.dpos-linkrow input { flex: 1; min-width: 240px; padding: 12px 14px; border: 1px solid var(--d-line); border-radius: 12px; background: #fff; font: inherit }
-.dpos-reel .media iframe { width: 100%; height: 100%; border: 0; margin: -10px }
