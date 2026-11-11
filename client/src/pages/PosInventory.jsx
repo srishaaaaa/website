@@ -442,8 +442,8 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
                 </div>))}
             </div>)}
         </section>
-        <SuggestPicker selfId={start?.id} picked={picked} setPicked={setPicked} />
         <div className="pe2-foot"><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn lg" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save Changes' : 'Add to Catalog'}</button></div>
+        <SuggestPicker selfId={start?.id} picked={picked} setPicked={setPicked} />
       </form>
     </div>
   );
