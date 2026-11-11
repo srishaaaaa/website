@@ -100,6 +100,9 @@ export function AdminCategories() {
       <div className="dpos-tx">
         <div>
           <h2><Icon n="layers" size={20} />Departments <button className="dpos-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setModal('collection')}>+ Add category</button></h2>
+          {d?.shelves && <>
+            <div className="dpos-txc"><div><b>Trending collections</b><small>{d.shelves.trending} products · Featured pieces on the home page · Live on the site</small></div><Link className="dpos-btn ghost sm" to="/admin/trending">Edit pieces</Link></div>
+            <div className="dpos-txc"><div><b>Best Sellers</b><small>{d.shelves.best} products · Products marked best seller · Up to 10 · Live on the site</small></div><Link className="dpos-btn ghost sm" to="/admin/billing/inventory">Edit in products</Link></div></>}
           {!d ? <p className="dpos-empty">Loading…</p> : !cols.length ? <p className="dpos-empty">No departments found.</p> : cols.map(c => (
             <div className="dpos-txc" key={c.id}>
               <div><b>{c.name}</b><small>{c.products} products · {c.status === 'published' ? 'Live on the site' : 'Hidden'}</small></div>

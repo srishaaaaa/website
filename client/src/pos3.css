@@ -232,3 +232,58 @@
 .dpos-view { border-radius: 999px; background: #fff; border: 1px solid #e7e1d6; padding: 10px 18px; font-weight: 600 }
 .dpos-nav { border-radius: 16px }
 .dpos-pg { background: #fff; border-radius: 999px; box-shadow: 0 1px 0 rgba(0, 0, 0, .04) }
+
+/* ================= admin spacing + type, matched to the reference screenshots ================= */
+.dpos { font-family: Poppins, system-ui, sans-serif; font-size: 14.5px; --d-gap: 24px; color: #1a1420 }
+.dpos { grid-template-columns: 262px minmax(0, 1fr); gap: 22px; padding: 20px; max-width: 1760px; margin-inline: auto; align-items: start }
+.dpos-side { padding: 16px; gap: 4px }
+.dpos-brand { padding: 8px 12px 14px; border-bottom: 1px solid #ece6dd; margin-bottom: 8px } .dpos-brand img { max-width: 190px; display: block } .dpos-brand i { font-style: normal; font-size: 11px; letter-spacing: .2em; color: #6f6b66 }
+.dpos-grp { margin: 18px 0 6px; padding: 0 14px; font-size: 11px; font-weight: 800; letter-spacing: .22em; color: #8a8580 }
+.dpos-nav { display: flex; align-items: center; gap: 14px; padding: 15px 16px; font-size: 16px; font-weight: 600; line-height: 1.2 }
+.dpos-nav svg { flex: none; opacity: .85 }
+.dpos-main { gap: var(--d-gap); display: flex; flex-direction: column; min-width: 0 }
+.dpos-head { align-items: flex-start; gap: 16px } .dpos-head h1 { margin: 0; font-size: 30px; line-height: 1.15; font-weight: 700 } .dpos-head .sub { margin: 4px 0 0; font-size: 16px; color: #4a4450 }
+.dpos-card { padding: 22px 24px } .dpos-card h2 { margin: 0 0 16px; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px }
+.dpos .f, .dpos label.f { display: grid; gap: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #3a3238 }
+.dpos input:not([type=checkbox]):not([type=radio]), .dpos select, .dpos textarea, .dpos-modal input:not([type=checkbox]):not([type=radio]), .dpos-modal select, .dpos-modal textarea { font-size: 15px; padding: 14px 16px; border-radius: 14px; border: 1px solid #e9e2d8; background: #fff; text-transform: none; letter-spacing: 0; font-weight: 400; width: 100% }
+.dpos-btn { font-size: 14px; font-weight: 600; padding: 12px 20px; border-radius: 999px; letter-spacing: .08em }
+.dpos-btn.sm { padding: 8px 14px; font-size: 12.5px }
+.dpos-tw table, .dpos-table { font-size: 15px } .dpos-tw th, .dpos-table th { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; padding: 16px 20px; color: #6f6b66 } .dpos-tw td, .dpos-table td { padding: 18px 20px }
+.dpos-tabs { gap: 28px } .dpos-tabs button { font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase }
+.dpos-k4 { gap: 10px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) } .dpos-card2 { padding: 12px 15px; border-radius: 16px } .dpos-card2 b { font-size: 22px }
+.dpos-pg { padding: 6px 8px; gap: 2px } .dpos-pg button { padding: 10px 16px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase } .dpos-pg .lab { font-size: 11px; font-weight: 800; letter-spacing: .16em; padding: 0 14px 0 12px }
+@media (max-width: 899px) { .dpos { grid-template-columns: 1fr; padding: 12px } }
+
+/* ---- Add / Edit Product window ---- */
+.pe2 { width: min(1040px, 96vw); max-height: 94vh; overflow: auto; padding: 0; border-radius: 26px; background: #fff }
+.pe2 .dpos-mhead { padding: 22px 28px; background: #330533; color: #fff }
+.pe2 h3 { margin: 0 0 14px; font-size: 18px; font-weight: 700 }
+.pe2-top { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); border-bottom: 1px solid #ece6dd }
+.pe2-l, .pe2-r { padding: 28px; display: grid; gap: 16px; align-content: start } .pe2-r { background: #faf7f2; border-left: 1px solid #ece6dd }
+.pe2-f { display: grid; gap: 8px; font-size: 11.5px; font-weight: 600; letter-spacing: .12em; color: #6f6b66; text-transform: uppercase } .pe2 textarea { resize: vertical }
+.pe2-g { display: grid; grid-template-columns: 1fr 1fr; gap: 16px }
+.pe2-c { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin: 4px 0 } .pe2-c input { width: 18px; height: 18px; accent-color: #330533 }
+.pe2-hint { margin: 0; font-size: 12px; letter-spacing: .1em; color: #8a8580; text-transform: uppercase }
+.pe2-gh { display: flex; justify-content: space-between; align-items: center; margin-top: 6px } .pe2-gh h3 { margin: 0 } .pe2-up { font-weight: 700; font-size: 15px }
+.pe2-ph { display: flex; gap: 12px; flex-wrap: wrap } .pe2-plus { width: 116px; height: 116px; border-radius: 18px; border: 1.5px dashed #cdb9cd; background: #faf7f2; font-size: 28px; color: #8a7a8a }
+.pe2-th { position: relative; width: 116px; height: 116px; border-radius: 18px; overflow: hidden } .pe2-th img { width: 100%; height: 100%; object-fit: cover } .pe2-th button { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .92) }
+.pe2-var { padding: 24px 28px; background: #f3f1ec; display: grid; gap: 14px } .pe2-vh { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px } .pe2-vh h3 { margin: 0 }
+.pe2-rows { display: grid; gap: 10px } .pe2-rh, .pe2-row { display: grid; grid-template-columns: 1.1fr 1.1fr 1fr 1fr 1fr 40px; gap: 12px; align-items: center } .pe2-rh { font-size: 11.5px; font-weight: 800; letter-spacing: .14em; color: #6f6b66; padding: 0 14px }
+.pe2-row { background: #fff; padding: 10px 14px; border-radius: 16px } .pe2-row input { border-radius: 12px } .pe2-row button { color: #b3261e; display: grid; place-items: center } .pe2-row button:disabled { opacity: .3 }
+.pe2-sug { padding: 24px 28px; display: grid; gap: 10px } .pe2-sug h3 { margin: 0 } .pe2-sug > input { max-width: 470px }
+.pe2-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px } .pe2-two > div { border: 1px solid #ece6dd; border-radius: 16px; overflow: hidden; background: #fff } .pe2-two h4 { margin: 0; padding: 14px 18px; font-size: 11.5px; letter-spacing: .14em; background: #faf7f2; border-bottom: 1px solid #ece6dd }
+.pe2-two ul { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow: auto } .pe2-two li { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #f1ece4 }
+.pe2-two li img, .pe2-two li i { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; background: #ecdfca; flex: none } .pe2-two li span { display: grid; flex: 1; min-width: 0 } .pe2-two li em { font-style: normal; font-size: 13px; color: #6f6b66 } .pe2-two li button { font-size: 20px; color: #5a1560; width: 32px } .pe2-two li button:disabled { opacity: .3 }
+.pe2-empty { margin: 0; padding: 40px 16px; text-align: center; color: #6f6b66 }
+.pe2-foot { display: flex; justify-content: flex-end; gap: 12px; padding: 18px 28px 26px; border-top: 1px solid #ece6dd } .dpos-btn.lg { padding: 16px 34px; font-size: 15px }
+@media (max-width: 800px) { .pe2-top, .pe2-two { grid-template-columns: 1fr } .pe2-r { border-left: 0 } .pe2-rh { display: none } .pe2-row { grid-template-columns: 1fr 1fr } }
+
+/* ---- taxonomy, site text, storefront images, enquiries: reference spacing ---- */
+.dpos-tx { gap: 28px } .dpos-tx h2 { font-size: 22px; font-weight: 700; margin: 6px 0 18px }
+.dpos-txc { padding: 22px 26px; border-radius: 24px; margin-bottom: 14px; min-height: 92px } .dpos-txc b { display: block; font-size: 24px; font-weight: 700; line-height: 1.2 } .dpos-txc small { display: block; margin-top: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6f6b66 }
+.dpos-txc .dpos-btn { padding: 10px 18px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; background: #fff; color: #1a1420; border: 1px solid #e0dad0 }
+.adm-card, .adm-block, .adm-grid > section { background: #fff; border-radius: 24px; padding: 24px 26px }
+.adm-card h3, .adm-block h2, .adm-h2 { font-size: 20px; font-weight: 700; margin: 0 0 6px } .adm-card p.muted, .adm-block p.muted { font-size: 15px; line-height: 1.5 }
+.adm-card label span, .adm-block label span { font-size: 11.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase }
+.adm-enq { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px } .adm-enq li { border-radius: 24px; padding: 22px 26px; font-size: 16px; line-height: 1.5; border-left: 0 }
+@media (min-width: 1100px) { .dpos-main > .adm-grid, .dpos-main .adm { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start } }

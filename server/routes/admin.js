@@ -95,6 +95,9 @@ export default function admin({ db, auth }) {
   r.get('/taxonomy', staff, wrap(async (_req, res) => res.json({
     categories: await rows(db, `SELECT c.id, c.name, c.slug, c.description, c.active, (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id) AS products FROM categories c ORDER BY c.display_order, lower(c.name)`),
     collections: await rows(db, `SELECT c.id, c.name, c.slug, c.description, c.status, (SELECT COUNT(*)::int FROM collection_products cp WHERE cp.collection_id = c.id) AS products FROM collections c ORDER BY c.display_order, lower(c.name)`),
+    // the two built-in home-page shelves, with live counts (Best Sellers needs migration 028)
+    shelves: { trending: (await one(db, "SELECT COUNT(*)::int AS n FROM products WHERE featured AND status = 'active'")).n,
+      best: await one(db, "SELECT COUNT(*)::int AS n FROM products WHERE best_seller AND status = 'active'").then(r => r.n).catch(() => 0) },
   })));
   const nameBody = z.object({ name: z.string().trim().min(1).max(80) });
   r.post('/categories', staff, wrap(async (req, res) => {
