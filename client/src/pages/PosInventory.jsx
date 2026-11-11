@@ -210,7 +210,6 @@ function ProductsStock({ manager, stocker }) {
   const needs = useMemo(() => (list || []).filter(p => p.stock < 1 || p.stock <= lowOf(p) || p.variants.some(v => v.active && v.stock < 1)), [list]);
   useEffect(() => {
     if (!list || !needs.length) return;
-    try { if (sessionStorage.getItem('dhanya.stock.alerted')) return; sessionStorage.setItem('dhanya.stock.alerted', '1') } catch { return }
     setAlerts(true);
   }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
   const counts = useMemo(() => ({ out: (list || []).filter(p => p.stock < 1).length, low: (list || []).filter(p => p.stock >= 1 && p.stock <= lowOf(p)).length, size: (list || []).filter(p => p.stock >= 1 && p.stock > lowOf(p) && p.variants.some(v => v.active && v.stock < 1)).length }), [list]);

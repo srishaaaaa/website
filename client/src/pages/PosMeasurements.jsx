@@ -34,6 +34,7 @@ export default function PosMeasurements() {
         <label>Search order ID<input value={f.q} onChange={e => setF({ ...f, q: e.target.value })} placeholder="INV-…" /></label>
         <label>Customer name<input value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></label>
         <label>Customer phone<input inputMode="tel" value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} /></label>
+        <label>Status<select value={status} onChange={e => setStatus(e.target.value)}><option value="all">All statuses</option><option value="pending">Pending</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
       </div>
       {!data ? <p className="muted">Loading…</p> : !bills.length ? <p className="dpos-empty">No bills with measurements yet. Add a service line with measurements in Billing.</p> : (
         <div className="msp-list">{bills.map(b => (

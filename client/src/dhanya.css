@@ -576,3 +576,10 @@
 .invprev-bar button { padding: 11px 18px; border-radius: 12px; background: rgba(255, 255, 255, .14); color: #fff; font-weight: 700; font-size: 14px }
 .dpos-modal .dpos-sheet.invprev iframe { display: block; width: 100%; height: min(78vh, 900px); border: 0; background: #f3f1ec }
 .dpos-modal .dpos-sheet.invprev { background: #f3f1ec }
+/* Measurements tiles: white cards, coloured numbers; the chosen one gets a plum outline */
+.dpos .msp-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px } @media (max-width: 800px) { .dpos .msp-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.dpos .msp-tile { background: #fff; color: #1a1420; border: 2px solid transparent; border-radius: 20px; padding: 22px 24px 20px; min-height: 112px; box-shadow: 0 6px 20px -14px rgba(0, 0, 0, .35); gap: 10px }
+.dpos .msp-tile span { font-size: 11px; font-weight: 800; letter-spacing: .14em; opacity: 1; color: #1a1420 } .dpos .msp-tile b { font-size: 34px; font-weight: 800; line-height: 1 }
+.dpos .msp-tile.plum b { color: #1a1420 } .dpos .msp-tile.amber b { color: #d97706 } .dpos .msp-tile.green b { color: #16a34a } .dpos .msp-tile.red b { color: #dc2626 }
+.dpos .msp-tile.plum, .dpos .msp-tile.amber, .dpos .msp-tile.green, .dpos .msp-tile.red { background: #fff }
+.dpos .msp-tile.on { border-color: var(--d-acc, #330533); transform: none }
