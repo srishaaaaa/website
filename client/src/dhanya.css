@@ -485,3 +485,40 @@
 .dpos .inv-filters select { min-width: 0; width: 170px; padding: 11px 14px; font-size: 13.5px } .dpos .inv-search { flex: 1 1 160px; max-width: 260px; min-width: 150px } .dpos .inv-vt button { padding: 9px 14px; font-size: 13px }
 .dpos .inv-top-r .dpos-btn { text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 700; padding: 12px 20px; border-radius: 14px } .dpos .inv-top-r .dpos-count { font-size: 11px; min-width: 20px; height: 20px }
 @media (max-width: 1250px) { .dpos .inv-filters, .dpos .inv-chips { flex-wrap: wrap } }
+/* ===== Billing panel like the reference ===== */
+.dpos-bill > .dpos-col:first-child > .dpos-card:first-child .dpos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+.dpos-bill .dpos-card > h2, .dpos-bill .dpos-card > .dpos-head h2 { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; margin: 0 0 12px }
+.dpos-bill .dpos-card > .dpos-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px }
+.dpos-bill .dpos-card > .dpos-head .dpos-btn { text-transform: uppercase; letter-spacing: .05em; font-size: 11.5px; font-weight: 700; padding: 10px 14px; display: inline-flex; align-items: center; gap: 6px }
+.dpos-bill .dpos-src { flex: none; padding: 4px } .dpos-bill .dpos-src button { padding: 9px 14px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; white-space: nowrap }
+.dpos-bill .dpos-sum .dpos-pill { padding: 3px 10px; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; background: #ececec; color: #55505a; text-transform: uppercase }
+.dpos-bill .dpos-sum { font-size: 14px }
+.dpos-bill .dpos-paybox label, .dpos-bill .dpos-paybox .f { text-transform: none; letter-spacing: .02em; font-size: 13px; font-weight: 700 }
+.bp-wa { background: #25a85f; border-color: #25a85f; box-shadow: 0 12px 24px -12px rgba(37, 168, 95, .6) } .bp-wa:disabled { opacity: .5 }
+.bp-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px }
+.bp-pair button { padding: 15px; border-radius: 999px; border: 1px solid var(--d-line, #dfdfec); background: #fff; font-size: 12.5px; font-weight: 800; letter-spacing: .1em; color: #1a1420 } .bp-pair button:disabled { color: #a9a5b0; cursor: not-allowed }
+.dpos .bp-cust .dpos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+@media (max-width: 899px) { .dpos .bp-cust .dpos-grid { grid-template-columns: 1fr } }
+.dpos .dpos-bill .dpos-card > .dpos-head .dpos-btn { padding: 8px 11px; font-size: 11px; letter-spacing: .04em }
+.dpos .dpos-bill .dpos-card > .dpos-head > div[style] { gap: 6px !important; flex-wrap: nowrap !important }
+.dpos .dpos-bill .dpos-src button { padding: 8px 10px; font-size: 10.5px; letter-spacing: .05em }
+.dpos .dpos-bill .dpos-sum .dpos-pill { padding: 3px 10px; font-size: 10.5px; font-weight: 800; background: #ececec; color: #55505a; border-radius: 999px }
+.dpos .dpos-cta.bp-wa:not(.amber) { background: #25a85f; border-color: #25a85f; box-shadow: 0 12px 24px -12px rgba(37, 168, 95, .6) }
+/* coupons page alignment: two equal columns, same card padding, new-coupon form rows aligned */
+.dpos .cp-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start }
+.dpos .cp-card { padding: 24px 26px 26px; border-radius: 22px }
+.dpos .cp-card .cp-h, .dpos .cp-lh h3 { font-size: 20px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px }
+.dpos .cp-lh { padding-bottom: 12px; margin-bottom: 14px } .dpos .cp-lh h3 { margin: 0 }
+.dpos .cp-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; align-items: start }
+.dpos .cp-card .cp-l { margin: 0 0 14px } .dpos .cp-g2 .cp-l { margin: 0 }
+.dpos .cp-card input:not([type=checkbox]), .dpos .cp-card select { padding: 12px 14px; font-size: 14px; border-radius: 12px }
+.dpos .cp-code { margin: 6px 0 14px } .dpos .cp-search { margin-bottom: 14px } .dpos .cp-filt { margin-bottom: 12px }
+.dpos .cp-go { padding: 15px; font-size: 14px; border-radius: 14px }
+@media (max-width: 1100px) { .dpos .cp-two { grid-template-columns: 1fr } }
+/* Mahana places the cart icons tight against the titles of the two billing cards */
+.dpos .dpos-bill .dpos-card > .dpos-head h2 { gap: 2px; align-items: flex-start }
+.dpos .dpos-bill .dpos-card > .dpos-head h2 svg { margin-top: 2px }
+.dpos .dpos-bill .dpos-card > .dpos-head .dpos-src { margin-left: auto; flex-wrap: nowrap }
+.dpos .dpos-bill .dpos-card > .dpos-head { flex-wrap: nowrap; align-items: center }
+.dpos .dpos-bill .dpos-card > .dpos-head > div[style] { margin-left: auto }
+.dpos .cp-card > form > .cp-l, .dpos .cp-card > .cp-l { margin-bottom: 4px } .dpos .cp-code { margin: 0 0 14px }

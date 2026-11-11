@@ -263,11 +263,11 @@ function Billing({ channel, shop, onSale, onAdvance }) {
     </div>));
 
   return (
-    <div className="bp">
+    <div className="bpw">
     <div className="dpos-bill">
       {added && <div className="dpos-added" role="status">✓ {added.t}</div>}
       <div className="dpos-col">
-        <section className="dpos-card"><h2><Icon n="user" size={20} />Customer Details</h2>
+        <section className="dpos-card bp-cust"><h2><Icon n="user" size={20} />Customer details</h2>
           <div className="dpos-grid">
             <label className="f">Customer name<input value={cust.name} onChange={e => setCust({ ...cust, name: e.target.value })} placeholder="Walk-in customer" autoComplete="off" /></label>
             <label className="f">Mobile number (WhatsApp)<input value={cust.phone} inputMode="tel" onChange={e => setCust({ ...cust, phone: e.target.value })} onBlur={lookup} placeholder="Enter 10-digit number" autoComplete="off" /></label>
@@ -278,14 +278,14 @@ function Billing({ channel, shop, onSale, onAdvance }) {
         </section>
 
         <section className="dpos-card">
-          <div className="dpos-head" style={{ marginBottom: 6 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" size={20} />Order Items</h2>
+          <div className="dpos-head" style={{ marginBottom: 6 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" size={20} />Order items</h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="dpos-btn ghost sm" onClick={clearOrder}>Clear Order</button>
+              <button className="dpos-btn ghost sm" onClick={clearOrder}><Icon n="trash" size={14} /> Clear Order</button>
               {!ws && <button className="dpos-btn sm" onClick={() => setCatOpen(true)}>☰ Catalog</button>}
               {!ws && <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom(true)])}>✂ Add Service</button>}
               <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom()])}>+ Add {ws ? 'Item' : 'Custom Item'}</button></div></div>
           {ws && <datalist id="dpos-ws-list">{wsItems.map(i => <option key={i.id} value={[i.code, i.company, i.colour].filter(Boolean).join(' · ')} />)}</datalist>}
-          {lines.length ? lineEls : <Empty>{ws ? 'No items yet.' : 'No items yet. Open the Catalog to add products.'}</Empty>}
+          {lines.length ? lineEls : <Empty>{ws ? 'No items yet.' : 'No items yet. Press Catalog to pick products, or add a service or custom item.'}</Empty>}
           {catOpen && <CatalogPicker onClose={() => setCatOpen(false)} onPick={addMany} />}
           {measureLine && <MeasureModal value={measureLine.measure} onClose={() => setMeasureFor(null)} onSave={m => patch(measureLine.key, { measure: m || undefined })} />}
         </section>
@@ -345,8 +345,8 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           <p className="sub" style={{ margin: '8px 2px 14px' }}>GPay / UPI and card are confirmed by the cashier at the counter; no payment gateway is attached.</p>
           <Err>{err}</Err>
           {problem && priced.length > 0 && <p className="sub" role="status" style={{ marginBottom: 10 }}>{problem}</p>}
-          <button className="dpos-cta" disabled={!!problem || busy} onClick={() => submit('wa')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /></svg> {busy ? 'SAVING…' : 'COMPLETE SALE & WHATSAPP'}</button>
-          <div className="dpos-two" style={{ marginTop: 10 }}><button type="button" disabled={!!problem || busy} onClick={() => submit('print')}>PRINT</button><button type="button" disabled={!!problem || busy} onClick={() => submit('save')}>SAVE ONLY</button></div>
+          <button className="dpos-cta bp-wa" disabled={!!problem || busy} onClick={() => submit('wa')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /></svg> {busy ? 'SAVING…' : 'COMPLETE SALE & WHATSAPP'}</button>
+          <div className="bp-pair"><button type="button" disabled={!!problem || busy} onClick={() => submit('print')}>PRINT</button><button type="button" disabled={!!problem || busy} onClick={() => submit('save')}>SAVE ONLY</button></div>
           {!ws && <button className="dpos-cta amber" disabled={!priced.length || busy} onClick={() => setAdvOpen(true)}><ClockI /> SAVE AS ADVANCE ORDER</button>}
         </section>
       </div>
