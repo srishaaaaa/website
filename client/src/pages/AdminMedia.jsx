@@ -88,13 +88,27 @@ function HomePicks({ onSaved, toast, only }) {
 }
 
 // Admin → Trending: just the four "Trending collections" pieces on the homepage.
+function BestSellersBlock() {
+  const [items, setItems] = useState(null);
+  useEffect(() => { api('/products?flag=best&limit=10').then(d => setItems(d.items)).catch(() => setItems([])) }, []);
+  return (
+    <section className="adm-block">
+      <h3 className="adm-h3">Best Sellers ({items ? items.length : '…'} of 10)</h3>
+      <p className="sub">Pieces flagged “Show in Best Sellers” show on the homepage right after Trending collections.</p>
+      <ul className="adm-picks">{(items || []).map(p => <li key={p.slug} className="adm-pick"><b>{p.name}</b></li>)}</ul>
+      {items && !items.length && <p className="sub">None flagged yet, so the homepage shows the newest pieces.</p>}
+      <Link className="dpos-btn outline" to="/admin/billing/inventory">Edit in products</Link>
+    </section>
+  );
+}
+
 export function AdminTrending() {
   const state = useStaff();
   const { loadSite, loadCatalog, toast } = useApp();
   return (
     <Gate state={state}>
       <AdminShell title="Trending collections" sub="The 4 pieces shown in “Trending collections” on the homepage, in this order">
-        <div className="adm"><HomePicks only="trending" onSaved={() => { loadSite(); loadCatalog() }} toast={toast} /></div>
+        <div className="adm"><HomePicks only="trending" onSaved={() => { loadSite(); loadCatalog() }} toast={toast} /><BestSellersBlock /></div>
       </AdminShell>
     </Gate>
   );

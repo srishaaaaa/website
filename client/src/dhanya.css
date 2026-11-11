@@ -449,3 +449,8 @@
 .dpos .cp-list li > div:first-child { min-width: 0 }
 .dpos-bill > * { min-width: 0 }
 @media (min-width: 900px) and (max-width: 1180px) { .dpos .dpos-bill { grid-template-columns: minmax(0, 1fr) } }
+@media (max-width: 899px) {
+  .dpos .dpos-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100% } .dpos .dpos-tabs button { white-space: nowrap }
+  .dpos .an-all .an-pay { max-width: 100%; overflow-x: auto; scrollbar-width: none } .dpos .an-all .an-pay button { white-space: nowrap }
+  .dpos .an-all .an-grp { max-width: 100%; overflow-x: auto; scrollbar-width: none } .dpos .an-all .an-grp button { white-space: nowrap }
+}

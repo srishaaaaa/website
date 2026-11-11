@@ -108,10 +108,9 @@ export function AdminUsers() {
   const shown = (list || []).filter(u => (!q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase())) && inPeriod(u.created_at, per) && (role === 'all' || (role === 'admins' ? ['owner', 'admin'].includes(u.role) : role === 'staff' ? ['cashier', 'inventory'].includes(u.role) : u.role === 'customer')));
   const setRole = async (u, r) => { try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role: r } }); setList(l => l.map(x => x.id === u.id ? { ...x, role: r } : x)); toast(`${u.email} is now ${r}`) } catch (x) { setE(x.message) } };
   return (
-    <AdminShell title="Users & Roles" sub="Staff with access to this admin. Cashiers can bill; admins manage the store; only the owner adds users and changes roles."
-      actions={<div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}><input type="search" style={{ maxWidth: 260 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" />{isOwner && <button className="dpos-btn" onClick={() => setAdd(true)}><Icon n="plus" size={16} />Add user</button>}</div>}>
+    <AdminShell title="Users & Roles" sub="Staff with access to this admin. Cashiers can bill; admins manage the store; only the owner adds users and changes roles.">
       {e && <p role="alert" className="dpos-err">{e}</p>}
-      <div className="dpos-bar-tools"><Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
+      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" />{isOwner && <button className="dpos-btn" onClick={() => setAdd(true)}><Icon n="plus" size={16} />Add user</button>}<Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
       <Card>
         {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No users found.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
