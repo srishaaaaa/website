@@ -5,7 +5,7 @@ import { useState } from 'react';
 export const todayStr = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 export const istDay = iso => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(iso));
 
-const PERIODS = [['all', 'All time'], ['today', 'Today'], ['week', 'This week'], ['month', 'This month'], ['year', 'This year']];
+const PERIODS = [['all', 'All time'], ['today', 'Today'], ['week', 'This week'], ['month', 'This month'], ['year', 'This year'], ['custom', 'Custom']];
 
 function chipRange(p) {
   const t = todayStr(), d = new Date(t + 'T00:00:00Z'), iso = x => x.toISOString().slice(0, 10);

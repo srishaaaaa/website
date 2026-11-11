@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
+import { waLink } from '../lib/contact';
 import { useApp } from '../context/App';
 import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
@@ -102,6 +103,7 @@ function Browse({ onAdd }) {
 }
 
 function Billing({ channel, shop, onSale, onAdvance }) {
+  const { toast } = useApp();
   const ws = channel === 'wholesale';
   const [q, setQ] = useState(''); const [results, setResults] = useState(null); const [searching, setSearching] = useState(false);
   const [lines, setLines] = useState(ws ? [blankCustom()] : []);
@@ -212,14 +214,21 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const problem = !priced.length ? 'Add at least one item.' : mode === 'split' && !splitOk ? (splitSum < bill.total ? `Received ${inr(splitSum)}; the bill is ${inr(bill.total)}.` : 'The extra can only be returned out of the cash amount.')
     : mode === 'cash' && tenderedP < bill.total ? 'Cash received is less than the total.' : lines.some(l => l.custom && (l.name.trim() || l.priceStr) && !(l.name.trim() && toPaise(l.priceStr) > 0)) ? 'Finish or remove the incomplete item.' : null;
 
-  const submit = async () => {
+  // kind: 'wa' = save, then open WhatsApp with the invoice link; 'print' = save, then open the invoice to print; 'save' = just save the bill.
+  // The new tab is opened inside the click (so pop-up blockers allow it) and pointed at its address once the bill is saved.
+  const submit = async (kind = 'save') => {
     if (problem || busy) return;
+    if (kind === 'wa' && cust.phone.replace(/\D/g, '').length < 8) return setErr("Enter the customer's mobile number to send the bill on WhatsApp.");
+    const tab = kind === 'save' ? null : window.open('', '_blank');
     setBusy(true); setErr();
     try {
       const sale = await api('/admin/pos/sales', { method: 'POST', body: { ...body, idempotencyKey: (key.current ??= uuid()) } });
-      onSale(sale); clearOrder();
+      const link = `${location.origin}/invoice/${sale.shareToken}`;
+      const to = kind === 'print' ? `${link}?print=1` : kind === 'wa' ? waLink(sale.customerPhone, `Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop?.name || 'DHANYA BOUTIQUE'} for ${inr(sale.total)}: ${link}`) : null;
+      if (to) { if (tab) tab.location.href = to; else window.open(to, '_blank') }
+      toast(`Bill ${sale.invoiceNo} saved.`); onSale(sale, true); clearOrder();
       if (!ws) { setQ(''); api('/admin/pos/catalog').then(setResults).catch(() => {}) }
-    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+    } catch (e) { tab?.close(); setErr(e.message) } finally { setBusy(false) }
   };
 
   // Save as advance order: books the items at today's prices with a deposit; stock is taken and the bill is made when the customer collects.
@@ -249,15 +258,18 @@ function Billing({ channel, shop, onSale, onAdvance }) {
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifySelf: 'end' }}>
         <div className="dpos-qty"><button aria-label="Decrease quantity" onClick={() => setQty(l, l.qty - 1)}>−</button>
           <input aria-label="Quantity" inputMode="numeric" value={l.qty} onChange={e => setQty(l, +e.target.value)} /><button aria-label="Increase quantity" onClick={() => setQty(l, l.qty + 1)}>+</button></div>
-        <button className="dpos-btn ghost sm" aria-label="Remove item" onClick={() => ws && lines.length === 1 ? setLines([blankCustom()]) : drop(l.key)}>✕</button>
+        <button className="bp-trash" aria-label="Remove item" onClick={() => ws && lines.length === 1 ? setLines([blankCustom()]) : drop(l.key)}><Icon n="trash" size={20} /></button>
       </div>
     </div>));
 
   return (
+    <div className="bp">
+    <div className="bp-head"><div className="bp-title"><i /><div><h1>POS Billing Panel</h1><p>Quick invoice generator · stock synced with the online store · for in-store (offline) and online-order billing</p></div></div>
+      {!ws && <div className="dpos-src" role="radiogroup" aria-label="Order source"><button role="radio" aria-checked={source === 'offline'} className={source === 'offline' ? 'on' : ''} onClick={() => setSource('offline')}><i className="or" />Offline (POS)</button><button role="radio" aria-checked={source === 'online'} className={source === 'online' ? 'on' : ''} onClick={() => setSource('online')}><i />Online order</button></div>}</div>
     <div className="dpos-bill">
       {added && <div className="dpos-added" role="status">✓ {added.t}</div>}
       <div className="dpos-col">
-        <section className="dpos-card"><h2><Icon n="user" />Customer details</h2>
+        <section className="dpos-card"><h2><Icon n="user" size={20} />Customer Details</h2>
           <div className="dpos-grid">
             <label className="f">Customer name<input value={cust.name} onChange={e => setCust({ ...cust, name: e.target.value })} placeholder="Walk-in customer" autoComplete="off" /></label>
             <label className="f">Mobile number (WhatsApp)<input value={cust.phone} inputMode="tel" onChange={e => setCust({ ...cust, phone: e.target.value })} onBlur={lookup} placeholder="Enter 10-digit number" autoComplete="off" /></label>
@@ -268,12 +280,12 @@ function Billing({ channel, shop, onSale, onAdvance }) {
         </section>
 
         <section className="dpos-card">
-          <div className="dpos-head" style={{ marginBottom: 6 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" />Order items</h2>
+          <div className="dpos-head" style={{ marginBottom: 6 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" size={20} />Order Items</h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="dpos-btn ghost sm" onClick={clearOrder}><Icon n="trash" size={14} />Clear order</button>
+              <button className="dpos-btn ghost sm" onClick={clearOrder}>Clear Order</button>
               {!ws && <button className="dpos-btn sm" onClick={() => setCatOpen(true)}>☰ Catalog</button>}
-              {!ws && <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom(true)])}>✂ Add service</button>}
-              <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom()])}>+ Add {ws ? 'item' : 'custom item'}</button></div></div>
+              {!ws && <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom(true)])}>✂ Add Service</button>}
+              <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom()])}>+ Add {ws ? 'Item' : 'Custom Item'}</button></div></div>
           {ws && <datalist id="dpos-ws-list">{wsItems.map(i => <option key={i.id} value={[i.code, i.company, i.colour].filter(Boolean).join(' · ')} />)}</datalist>}
           {lines.length ? lineEls : <Empty>{ws ? 'No items yet.' : 'No items yet. Open the Catalog to add products.'}</Empty>}
           {catOpen && <CatalogPicker onClose={() => setCatOpen(false)} onPick={addMany} />}
@@ -282,25 +294,24 @@ function Billing({ channel, shop, onSale, onAdvance }) {
       </div>
 
       <div className="dpos-col dpos-sticky">
-        <section className="dpos-card"><div className="dpos-head" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" />Current order{lines.length > 0 && <b key={added?.id ?? 0} className="dpos-count">{lines.reduce((a, l) => a + l.qty, 0)}</b>}</h2>
-          {!ws && <div className="dpos-src" role="radiogroup" aria-label="Order source"><button role="radio" aria-checked={source === 'offline'} className={source === 'offline' ? 'on' : ''} onClick={() => setSource('offline')}>Offline (POS)</button><button role="radio" aria-checked={source === 'online'} className={source === 'online' ? 'on' : ''} onClick={() => setSource('online')}><i />Online order</button></div>}</div>
+        <section className="dpos-card bp-sum">
           <div className="dpos-box dpos-sum" style={{ marginBottom: 14 }}>
             <div><span>SOURCE</span><span className="dpos-pill">{ws ? 'Wholesale' : source === 'online' ? 'Online' : 'Offline'}</span></div>
             <div><span>CUSTOMER</span><span>{cust.name || '-'}</span></div><div><span>PHONE</span><span>{cust.phone || '-'}</span></div>
-            <div><span>DATE</span><span>{dmy(billDate)}</span></div>
             <hr style={{ border: 0, borderTop: '1px solid var(--d-line)', width: '100%' }} />
             {priced.length ? priced.map(l => <div key={l.key}><span>{l.name} × {l.qty}</span><span>{inr(l.price * l.qty)}</span></div>) : <em className="muted" style={{ textAlign: 'center', display: 'block' }}>No items added yet</em>}
           </div>
-          <p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: '0 0 6px' }}>MANUAL DISCOUNT</p>
-          <div className="dpos-grid" style={{ gridTemplateColumns: '110px 1fr', marginBottom: 12 }}>
-            <select aria-label="Discount type" value={disc.type} disabled={!!coupon} onChange={e => setDisc({ ...disc, type: e.target.value })}><option value="fixed">₹</option><option value="percent">%</option></select>
-            <input inputMode="decimal" disabled={!!coupon} value={disc.value} onChange={e => setDisc({ ...disc, value: e.target.value })} placeholder="0" aria-label="Discount value" style={{ textAlign: 'right' }} />
-          </div>
-          {!ws && <div style={{ marginBottom: 12 }}>
+          {!ws && <div style={{ marginBottom: 4 }}>
+            <p className="bp-l">APPLY COUPON</p>
             <div style={{ display: 'flex', gap: 8 }}><input value={couponIn} onChange={e => setCouponIn(e.target.value.toUpperCase())} placeholder="Coupon code" aria-label="Coupon code" disabled={!!coupon} />
               {coupon ? <button className="dpos-btn ghost sm" onClick={() => { setCoupon(null); setCouponMsg(); setCouponIn('') }}>Remove</button> : <button className="dpos-btn sm" disabled={!couponIn.trim()} onClick={applyCoupon}>Apply</button>}</div>
             {couponMsg && <p className={couponMsg.ok ? 'dpos-ok' : 'dpos-err'} style={{ marginTop: 8 }}>{couponMsg.t}</p>}
           </div>}
+          <p className="bp-l">MANUAL DISCOUNT</p>
+          <div className="dpos-grid" style={{ gridTemplateColumns: '110px 1fr', marginBottom: 12 }}>
+            <select aria-label="Discount type" value={disc.type} disabled={!!coupon} onChange={e => setDisc({ ...disc, type: e.target.value })}><option value="fixed">₹</option><option value="percent">%</option></select>
+            <input inputMode="decimal" disabled={!!coupon} value={disc.value} onChange={e => setDisc({ ...disc, value: e.target.value })} placeholder="0" aria-label="Discount value" style={{ textAlign: 'right' }} />
+          </div>
           <label className="f" style={{ marginBottom: 16 }}>Note (optional)<input value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} placeholder="Shown on the bill" /></label>
           <div className="dpos-ledger">
             <div className="dpos-lrow"><span>Subtotal ({priced.reduce((t, l) => t + l.qty, 0)} items) <small className="dpos-excl">EXCL. GST</small></span><b>{inr(bill.subtotal)}</b></div>
@@ -335,13 +346,15 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           <p className="sub" style={{ margin: '8px 2px 14px' }}>GPay / UPI and card are confirmed by the cashier at the counter; no payment gateway is attached.</p>
           <Err>{err}</Err>
           {problem && priced.length > 0 && <p className="sub" role="status" style={{ marginBottom: 10 }}>{problem}</p>}
-          <button className="dpos-cta" disabled={!!problem || busy} onClick={submit}><CheckI /> {busy ? 'SAVING…' : 'COMPLETE SALE'}</button>
+          <button className="bp-wa" disabled={!!problem || busy} onClick={() => submit('wa')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /></svg> {busy ? 'SAVING…' : 'COMPLETE SALE & WHATSAPP'}</button>
+          <div className="bp-two2"><button type="button" disabled={!!problem || busy} onClick={() => submit('print')}>PRINT</button><button type="button" disabled={!!problem || busy} onClick={() => submit('save')}>SAVE ONLY</button></div>
           {!ws && <button className="dpos-cta amber" disabled={!priced.length || busy} onClick={() => setAdvOpen(true)}><ClockI /> SAVE AS ADVANCE ORDER</button>}
         </section>
       </div>
       <div className="dpos-mbar"><span>{priced.reduce((t, l) => t + l.qty, 0)} items<b>{inr(bill.total)}</b></span>
         <button className="dpos-cta" onClick={() => document.getElementById('dpos-pay')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Review &amp; pay</button></div>
       {advOpen && <AdvanceModal total={bill.total} onClose={() => setAdvOpen(false)} onSave={saveAdvance} />}
+    </div>
     </div>
   );
 }
@@ -484,15 +497,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
           <Stat cls="nong" icon="trend" label="Non-GST sales" value={v(r => `+ ${inr(r.nonGstSales)}`)} sub={v(r => `${r.nonGstBills} ${ws ? 'wholesale' : 'retail'} bills`, ' ')} />
           {!ws && <Stat cls="exp" icon="wallet" label="Total expenses" value={v(r => `− ${inr(r.expenses)}`)} sub={v(r => r.expenseByCategory?.length ? `${r.expenseByCategory.length} categor${r.expenseByCategory.length === 1 ? 'y' : 'ies'} · top: ${r.expenseByCategory[0].category}` : 'No expenses yet', ' ')} onOpen={rep ? () => setDetail('expenses') : undefined} />}
         </div>
-        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;Sales ({inr(rep.revenue)}){rep.costs?.enabled ? ` − Cost of goods (${inr(rep.cogs)})` : ''} − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{rep.net < 0 ? `− ${inr(-rep.net)}` : inr(rep.net)}</span></span></div>}
-        {!ws && rep && (
-          <div className="cost-row">
-            <div className="cost-card teal"><div className="cc-t"><span>TOTAL COST PRICE (STOCK IN HAND)</span><i><Icon n="box" size={22} /></i></div>
-              <b>{inr(rep.costs.stockCost)}</b><small>{rep.costs.enabled ? `Cost price × current stock · ${rep.costs.stockProducts} product${rep.costs.stockProducts === 1 ? '' : 's'} in stock` : 'Add each product’s cost price in Inventory → Edit'}</small></div>
-            <div className="cost-card amber"><div className="cc-t"><span>COST PRICE OF PRODUCTS SOLD</span><i><Icon n="swap" size={22} /></i></div>
-              <b>{inr(rep.costs.soldCost)}</b><small>{rep.costs.enabled ? <>Cost price × qty sold · {rep.costs.soldUnits} unit{rep.costs.soldUnits === 1 ? '' : 's'} · Margin <em className={rep.costs.margin < 0 ? 'neg' : ''}>{inr(rep.costs.margin)}</em></> : 'Cost prices are not set up yet'}</small></div>
-          </div>)}
-        <div className="dpos-k4">
+        <div className="dpos-k6">
           <Stat icon="wallet" label="Total revenue" value={v(r => inr(r.revenue))} sub={v(r => `GST (${inr(r.gstSales)}) + Non-GST (${inr(r.nonGstSales)})`, ' ')} />
           <Stat icon="doc" label="Completed bills" value={v(r => r.bills)} sub="POS + manual bills" />
           <Stat icon="shop" label="Offline bills" value={v(r => inr(r.offlineSales))} sub="Walk-in POS sales" />
@@ -502,6 +507,14 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
           <Stat icon="box" label="Total items sold" value={v(r => r.units)} sub="From completed bills" />
           <Stat icon="star" label="Top product" txt value={v(r => r.topProduct || '—')} sub="Most sold item" />
         </div>
+        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;Sales ({inr(rep.revenue)}){rep.costs?.enabled ? ` − Cost of goods (${inr(rep.cogs)})` : ''} − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{rep.net < 0 ? `− ${inr(-rep.net)}` : inr(rep.net)}</span></span></div>}
+        {!ws && rep && (
+          <div className="cost-row">
+            <div className="cost-card teal"><div className="cc-t"><span>TOTAL COST PRICE (STOCK IN HAND)</span><i><Icon n="box" size={22} /></i></div>
+              <b>{inr(rep.costs.stockCost)}</b><small>{rep.costs.enabled ? `Cost price × current stock · ${rep.costs.stockProducts} product${rep.costs.stockProducts === 1 ? '' : 's'} in stock` : 'Add each product’s cost price in Inventory → Edit'}</small></div>
+            <div className="cost-card amber"><div className="cc-t"><span>COST PRICE OF PRODUCTS SOLD</span><i><Icon n="swap" size={22} /></i></div>
+              <b>{inr(rep.costs.soldCost)}</b><small>{rep.costs.enabled ? <>Cost price × qty sold · {rep.costs.soldUnits} unit{rep.costs.soldUnits === 1 ? '' : 's'} · Margin <em className={rep.costs.margin < 0 ? 'neg' : ''}>{inr(rep.costs.margin)}</em></> : 'Cost prices are not set up yet'}</small></div>
+          </div>)}
       </>}
 
       {tab === 'revenue' && rep && <>
@@ -689,7 +702,7 @@ export default function AdminPos() {
   if (!allowed) return <StaffOnly />;
   if (!(tab in TABS) || (TABS[tab] && !manager)) return <Navigate to="/admin/billing" replace />;
 
-  const onSale = sale => { setDone(sale); setTick(t => t + 1) };
+  const onSale = (sale, quiet) => { if (!quiet) setDone(sale); setTick(t => t + 1) }; // quiet = the bill was already sent / printed from Billing
   const onAdvance = adv => { setTick(t => t + 1); setAdvDone(adv) }; // the saved advance order is kept in Advance Orders; its receipt shows first
   const onBilled = (sale, invoiceNo) => { setTick(t => t + 1); if (sale) setDone(sale); else if (invoiceNo) openInvoice(invoiceNo) };
   const goExpenses = () => { window.location.assign('/admin/billing/expenses') };
@@ -710,7 +723,7 @@ export default function AdminPos() {
   }[tab];
   const title = { billing: 'POS Billing Panel', analytics: 'POS Analytics', orders: 'Order History', measurements: 'Measurements', inventory: 'Inventory', advance: 'Advance Orders', customers: 'Customers', coupons: 'Coupon Management', birthdays: 'Date of Birth', expenses: 'Expense Tracker', settings: 'Settings' }[tab];
   return (
-    <AdminShell title={title} sub={sub}>
+    <AdminShell title={title} sub={sub} bare={tab === 'billing'}>
       <Err>{err}</Err>
       {body}
       {allowed && <LowStockAlert />}

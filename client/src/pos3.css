@@ -394,3 +394,121 @@
 .dpos-modal .cpm .req { display: inline }
 /* billing: customer details as 3 columns like Mahana (date of birth drops to the second row) */
 .dpos-bill > .dpos-col:first-child > .dpos-card:first-child .dpos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+
+/* ================= Admin frame v2 + Billing panel (matched to the reference at 1917px; plum for black) ================= */
+.dpos.ash { display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: 0; margin: 0; max-width: none; gap: 0; background: #f4f2ed; overflow: hidden; grid-template-columns: none }
+.ash-top { display: flex; flex: none; height: 97px; border-bottom: 1px solid #e6e2da; background: #f4f2ed; position: relative; z-index: 30 }
+.ash-brand { flex: none; width: 320px; display: flex; align-items: center; padding: 0 25px; background: #fff; border-right: 1px solid #e6e2da }
+.ash-wm { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit }
+.ash-wm .wm-text { gap: 6px } .ash-wm .wm-text b { font-size: 24px; letter-spacing: .1em; color: #330533 } .ash-wm .wm-text i { font-size: 10px; letter-spacing: .5em; color: #C6A052 }
+.ash-wm em { font-style: normal; font-size: 12px; font-weight: 700; letter-spacing: .22em; color: #9a968f; align-self: flex-end; margin-bottom: 4px }
+.ash-bar { flex: 1; display: flex; align-items: center; gap: 18px; padding: 0 36px 0 41px; min-width: 0 }
+.ash-tog { flex: none; width: 43px; height: 43px; border-radius: 11px; background: #fff; border: 1px solid #e6e2da; display: grid; place-items: center; color: #1a1420 } .ash-tog .t-menu { display: none }
+.ash-ttl { font-size: 24px; font-weight: 700; letter-spacing: -.01em }
+.ash-right { margin-left: auto; display: flex; align-items: center; gap: 22px }
+.ash-view { display: inline-flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 500; color: #55524d; white-space: nowrap }
+.ash-av { flex: none; width: 46px; height: 46px; border-radius: 50%; background: #330533; color: #fff; display: grid; place-items: center; font: 800 18px Poppins, sans-serif }
+.ash-body { flex: 1; min-height: 0; display: flex; position: relative }
+.ash-side { flex: none; width: 320px; overflow-y: auto; background: #fff; border-right: 1px solid #e6e2da; padding: 15px 15px 28px; display: block; position: static; max-height: none; border-radius: 0; box-shadow: none; scrollbar-width: thin }
+.ash-sbrand, .ash-scrim { display: none }
+.ash-side .dpos-nav { display: flex; align-items: center; gap: 15px; height: 55px; margin: 0 0 5px; padding: 0 20px 0 19px; border-radius: 16px; font-size: 18px; font-weight: 600; line-height: 1.2; color: #4a4741; letter-spacing: 0 }
+.ash-side .dpos-nav svg { flex: none; width: 22px; height: 22px; opacity: .85 } .ash-side .dpos-nav.on { background: #330533; color: #fff } .ash-side .dpos-nav.on svg { opacity: 1 }
+.ash-side .dpos-grp { margin: 22px 0 8px; padding: 0 19px; font-size: 11.5px; font-weight: 700; letter-spacing: .25em; color: #a5a19a }
+.ash-main { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding: 31px 31px 0; display: flex; flex-direction: column; gap: 24px }
+.ash-main > .dpos-foot { position: sticky; bottom: 0; flex: none; margin: auto -31px 0; height: 70px; padding: 0 31px; background: #f4f2ed; border-top: 1px solid #e6e2da; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 14px; font-weight: 500; letter-spacing: .1em; color: #8a867f; text-transform: uppercase; z-index: 5 }
+.ash-main > .dpos-foot b { color: #1a1420; font-weight: 700 } .ash-main > .dpos-foot i { font-style: italic; font-weight: 700; letter-spacing: .02em; text-transform: none; font-size: 15px }
+.ash-main > .dpos-head { margin: 0 }
+@media (min-width: 1024px) { .ash.is-shut .ash-side { display: none } }
+
+/* ---- Billing panel ---- */
+.bp { background: #fff; border: 1px solid #ebe7df; border-radius: 28px; padding: 36px 36px 44px }
+.bp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 30px }
+.bp-title { display: flex; gap: 16px; min-width: 0 } .bp-title > i { flex: none; width: 6px; height: 34px; border-radius: 3px; background: #330533; margin-top: 10px }
+.bp-title h1 { margin: 0; font-size: 32px; line-height: 1.2; font-weight: 700; letter-spacing: -.015em } .bp-title p { margin: 2px 0 0; font-size: 18px; line-height: 1.4; color: #55524d }
+.bp .dpos-src { display: inline-flex; flex: none; gap: 4px; padding: 5px; background: #f6f4ef; border: 1px solid #e8e4dc; border-radius: 16px }
+.bp .dpos-src button { display: inline-flex; align-items: center; gap: 9px; height: 42px; padding: 0 18px; border-radius: 12px; font-size: 15.5px; font-weight: 700; letter-spacing: 0; text-transform: uppercase; color: #55524d; background: transparent; white-space: nowrap } .bp .dpos-src button.on { background: #330533; color: #fff }
+.bp .dpos-src i { width: 8px; height: 8px; border-radius: 50%; background: #22a06b; display: inline-block } .bp .dpos-src i.or { background: #f5a524 }
+.bp .dpos-bill { display: grid; grid-template-columns: minmax(0, 1fr) 450px; gap: 26px; align-items: start; padding: 0; background: none }
+.bp .dpos-col { display: grid; gap: 26px; align-content: start; min-width: 0 }
+.bp .dpos-card { border: 1px solid #ece8e0; border-radius: 22px; padding: 26px 26px 28px; background: #fff; box-shadow: none; margin: 0 }
+.bp .dpos-card h2 { display: flex; align-items: center; gap: 12px; margin: 0 0 22px; font-size: 20px; font-weight: 600; letter-spacing: -.005em }
+.bp .dpos-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 18px !important }
+.bp .dpos-head h2 { margin: 0 !important }
+.bp label.f, .bp .f { display: grid; gap: 10px; font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #3b3a37 }
+.bp input:not([type=checkbox]):not([type=radio]), .bp select { height: 52px; padding: 0 18px; font-size: 17.5px; border: 1px solid #e8e4dc; border-radius: 14px; background: #fff; text-transform: none; letter-spacing: 0; font-weight: 400; box-shadow: none }
+.bp .dpos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 22px }
+.bp .dpos-bill > .dpos-col:first-child > .dpos-card:first-child .dpos-grid { grid-template-columns: 1fr 1fr }
+.bp .dpos-btn.sm { height: 38px; padding: 0 16px; border-radius: 12px; font-size: 15px; font-weight: 600; letter-spacing: 0; text-transform: none; border: 1px solid #e8e4dc; background: #fff; color: #1a1420 } .bp .dpos-btn.sm:not(.ghost):not(.outline) { background: #330533; border-color: #330533; color: #fff }
+.bp .dpos-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px; margin-top: 16px; border: 1px solid #ece8e0; border-radius: 18px; background: #faf9f6 }
+.bp .dpos-line .dpos-grid { grid-template-columns: minmax(150px, 2fr) minmax(90px, 1fr) 110px !important; gap: 12px }
+.bp .dpos-qty { display: inline-flex; align-items: center; height: 52px; border: 1px solid #e8e4dc; border-radius: 14px; background: #fff } .bp .dpos-qty input { width: 44px; height: 44px; border: 0; text-align: center; font-weight: 700; padding: 0 } .bp .dpos-qty button { width: 40px; height: 44px; font-size: 20px }
+.bp-trash { display: grid; place-items: center; width: 44px; height: 44px; color: #d92d20 }
+.bp-sum { position: relative }
+.bp .dpos-sum { background: none; border: 0; padding: 0; margin: 0 0 6px !important; display: block }
+.bp .dpos-sum > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 0; font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #6f6b66 }
+.bp .dpos-sum > div > span:last-child { font-size: 16px; font-weight: 700; letter-spacing: 0; text-transform: none; color: #1a1420 } .bp .dpos-sum .dpos-pill { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; background: #fff0cc; color: #b45309; padding: 4px 10px; border-radius: 8px }
+.bp .dpos-sum hr { border: 0 !important; border-top: 1px dashed #e0dbd2 !important; margin: 14px 0 !important }
+.bp .dpos-sum em { padding: 26px 0 8px; font-size: 15px; color: #6f6b66; text-transform: none; letter-spacing: 0; font-weight: 400 }
+.bp .bp-l { display: block; margin: 20px 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .14em; color: #3b3a37 }
+.bp .dpos-ledger { display: grid; gap: 4px; margin: 14px 0 }
+.bp .dpos-lrow { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 18px; color: #4a4741 } .bp .dpos-lrow b { font-weight: 800; color: #1a1420 } .bp .dpos-lrow input { width: 130px; height: 40px; text-align: right; font-size: 16px; background: #faf9f6 }
+.bp .dpos-grand { display: flex; justify-content: space-between; align-items: baseline } .bp .dpos-grand span { font-size: 20px; font-weight: 800; letter-spacing: .06em } .bp .dpos-grand b { font-size: 36px; font-weight: 800; color: #330533 }
+.bp .dpos-two { height: 56px } .bp .dpos-two button { font-size: 15px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase }
+.bp .dpos-pills button { height: 48px; font-size: 14.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase }
+
+/* ---- phones and tablets: sidebar becomes a drawer ---- */
+@media (max-width: 1023px) {
+  .ash-brand { display: none } .ash-top { height: 82px } .ash-bar { padding: 0 16px 0 16px; gap: 16px }
+  .ash-tog { width: 52px; height: 52px; border: 0; border-radius: 14px } .ash-tog .t-panel { display: none } .ash-tog .t-menu { display: grid }
+  .ash-ttl { font-size: 22px } .ash-view span { display: none } .ash-right { gap: 16px } .ash-av { width: 46px; height: 46px }
+  .ash-side { position: fixed; z-index: 90; left: 0; top: 0; bottom: 0; width: min(352px, 86vw); transform: translateX(-104%); transition: transform .3s cubic-bezier(.22, 1, .36, 1); padding: 0 14px 24px; box-shadow: 0 0 44px rgba(0, 0, 0, .22); border-right: 0 }
+  .ash.is-open .ash-side { transform: none }
+  .ash-sbrand { display: flex; align-items: center; justify-content: space-between; height: 90px; margin: 0 -14px 10px; padding: 0 12px 0 24px; border-bottom: 1px solid #ece8e0 } .ash-sbrand > button { width: 44px; height: 44px; display: grid; place-items: center; color: #6f6b66 }
+  .ash-side .dpos-nav { height: 52px; font-size: 17px; margin-bottom: 4px } .ash-side .dpos-grp { margin-top: 16px }
+  .ash-scrim { display: block; position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, .4); opacity: 0; pointer-events: none; transition: opacity .3s } .ash.is-open .ash-scrim { opacity: 1; pointer-events: auto }
+  .ash-main { padding: 18px 16px 0; gap: 18px }
+  .ash-main > .dpos-foot { flex-direction: column; justify-content: center; height: auto; padding: 18px 16px; margin: auto -16px 0; gap: 10px; text-align: center; font-size: 13px }
+  .bp { padding: 22px 16px 28px; border-radius: 24px } .bp-head { flex-direction: column; gap: 18px } .bp-title h1 { font-size: 28px } .bp-title p { font-size: 16px }
+  .bp .dpos-bill { grid-template-columns: 1fr } .bp .dpos-grid, .bp .dpos-bill > .dpos-col:first-child > .dpos-card:first-child .dpos-grid { grid-template-columns: 1fr } .bp .dpos-card { padding: 22px 18px }
+  .bp .dpos-line { grid-template-columns: 1fr } .bp .dpos-line .dpos-grid { grid-template-columns: 1fr 1fr !important }
+}
+.dpos.ash { align-items: stretch; justify-items: stretch; width: 100%; min-width: 0 }
+.bp .dpos-sum > div > span.dpos-pill { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: #fff0cc; color: #b45309; padding: 4px 10px; border-radius: 8px }
+.bp .dpos-pills button, .bp .dpos-two button { white-space: nowrap; padding-left: 8px; padding-right: 8px; font-size: 13.5px }
+.bp .dpos-grand { align-items: center }
+@media (max-width: 1023px) {
+  .ash-main { padding-bottom: 0 } .ash-main > .dpos-foot { position: static; margin-top: 24px }
+  .ash-main > .dpos-mbar, .dpos-mbar { z-index: 40 }
+  .ash-main::after { content: ''; flex: none; height: 78px }
+  .an-ch { flex-wrap: wrap } .an-ch button, .an-pay button { white-space: nowrap; padding: 10px 12px; font-size: 14px } .an-pay { margin-left: 0; width: 100%; overflow-x: auto; flex-wrap: nowrap }
+  .an-fb .dpos-pg { height: auto; flex-wrap: wrap; border-radius: 24px }
+}
+
+/* ---- sale buttons: WhatsApp, Print / Save only, Advance order (reference) ---- */
+.bp .bp-wa { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; height: 60px; border-radius: 16px; background: #25a85f; color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .08em; border: 2px solid #1f9254; box-shadow: 0 10px 22px -12px rgba(37, 168, 95, .6) } .bp .bp-wa:disabled { opacity: .5; box-shadow: none }
+.bp .bp-two2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px } .bp .bp-two2 button { height: 54px; border-radius: 999px; border: 1px solid #ddd8e0; background: #fff; font-size: 15px; font-weight: 800; letter-spacing: .1em; color: #330533 } .bp .bp-two2 button:disabled { color: #a9a6ae }
+.bp .dpos-cta.amber { height: 60px; border-radius: 16px; font-size: 15px; letter-spacing: .1em; margin-top: 12px }
+/* sidebar: the first group needs no heading, so Billing sits right under the top bar like the reference */
+.ash-side > div:first-of-type > .dpos-grp:first-child { display: none }
+.ash-side { padding-top: 15px }
+@media (max-width: 1023px) { .ash-side > div:first-of-type > .dpos-grp:first-child { display: none } }
+
+/* ===== POS Analytics: filters and cards laid out as in the reference ===== */
+.dpos .dpos-k4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px }
+.dpos .dpos-k6 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px }
+.dpos .dpos-k4 .dpos-card2, .dpos .dpos-k6 .dpos-card2 { min-height: 143px; padding: 22px 24px; border-radius: 22px; display: grid; align-content: space-between; gap: 6px }
+.dpos .dpos-card2 .v { font-size: 30px; line-height: 1.1; font-weight: 800 } .dpos .dpos-card2 .v.txt { font-size: 26px } .dpos .dpos-card2 .t span:first-child { font-size: 13px; font-weight: 800; letter-spacing: .1em } .dpos .dpos-card2 small, .dpos .dpos-card2 .s { font-size: 14px }
+.dpos .dpos-k6 .dpos-card2 .v { font-size: 28px }
+.dpos-pf { display: flex; flex-wrap: wrap; gap: 12px; align-items: center } .dpos-pf .dpos-pg { height: 50px }
+.an-fb { gap: 22px } .an-fb .dpos-pg { height: 46px } .an-ch button { padding: 9px 16px; font-size: 16px } .an-pay { height: 44px; padding: 0 10px }
+.dpos-formula { margin: 0 } .cost-row { gap: 15px }
+@media (max-width: 1400px) { .dpos .dpos-k6 { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+@media (max-width: 1100px) { .dpos .dpos-k4 { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (max-width: 700px) { .dpos .dpos-k6, .dpos .dpos-k4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px } .dpos .dpos-card2 .v { font-size: 24px } }
+.ash-sbrand + div > .dpos-grp:first-child { display: none }
+.ash-side .ash-sbrand + div { margin-top: 0 }
+
+/* ===== Mahana scale: the admin renders at 90% on desktop (nav rows 54px apart, 28px titles, compact cards) ===== */
+@media (min-width: 1024px) {
+  .dpos.ash { zoom: .9; height: 100vh; height: calc(100vh / .9); height: calc(100dvh / .9) }
+}
