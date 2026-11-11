@@ -233,14 +233,14 @@ function ProductsStock({ manager, stocker }) {
 {manager && <button className="dpos-btn" onClick={() => setModal({ t: 'add' })}><Icon n="plus" size={16} />Add product</button>}
         </div>
       </div>
+      {(counts.out + counts.low + counts.size) > 0 && <p className="inv-warn">⚠ {counts.out > 0 && `${counts.out} out of stock`}{counts.out > 0 && counts.low > 0 && ' · '}{counts.low > 0 && `${counts.low} running low`}{(counts.out + counts.low) > 0 && counts.size > 0 && ' · '}{counts.size > 0 && `${counts.size} with a size sold out`} — restock soon.</p>}
       <div className="dpos-bar-tools inv-filters">
-        <input type="search" style={{ maxWidth: 360 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Search products, SKU or category…" aria-label="Search products" />
-        <Chips label="Stock" value={stock} onChange={setStock} options={[['all', 'All'], ['best', `Best Sellers (${(list || []).filter(p => p.bestSeller).length})`], ['low', 'Low Stock'], ['out', 'Out of Stock']]} />
+        <div className="inv-chips" role="radiogroup" aria-label="Stock">{[['all', 'All'], ['best', `Best Sellers (${(list || []).filter(p => p.bestSeller).length})`], ['low', 'Low Stock'], ['out', 'Out of Stock']].map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={stock === k} className={`${stock === k ? 'on' : ''} ${k === 'best' && stock !== k ? 'hl' : ''}`} onClick={() => setStock(k)}>{l}</button>)}</div>
         <select aria-label="Category" value={catF} onChange={e => setCatF(e.target.value)}><option value="all">All categories</option>{cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select>
         <select aria-label="Sort" value={sortBy} onChange={e => setSortBy(e.target.value)}><option value="name">Name A–Z</option><option value="stock-asc">Stock low → high</option><option value="stock-desc">Stock high → low</option><option value="price-asc">Price low → high</option><option value="price-desc">Price high → low</option></select>
         <div className="inv-vt" role="group" aria-label="View">{[['grid', 'Grid'], ['list', 'List']].map(([k, l]) => <button key={k} type="button" className={view === k ? 'on' : ''} aria-pressed={view === k} onClick={() => setView(k)}>{l}</button>)}</div>
+        <label className="inv-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4-4" /></svg><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search products…" aria-label="Search products" /></label>
       </div>
-      {(counts.out + counts.low + counts.size) > 0 && <p className="inv-warn">⚠ {counts.out > 0 && `${counts.out} out of stock`}{counts.out > 0 && counts.low > 0 && ' · '}{counts.low > 0 && `${counts.low} running low`}{(counts.out + counts.low) > 0 && counts.size > 0 && ' · '}{counts.size > 0 && `${counts.size} with a size sold out`} — restock soon.</p>}
       <Err>{err}</Err>
       {view === 'grid' && (!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No products found.</p> : (
         <div className="inv-grid">{shown.map(p => { const st = p.stock < 1 ? 'out' : p.stock <= lowOf(p) ? 'low' : 'in'; return (
