@@ -22,7 +22,10 @@ export function BagTotals() {
   return (
     <div className="bag-totals">
       <div className="row between"><span>Subtotal (incl. GST)</span><span>{inr(cartInfo.subtotal)}</span></div>
-      <div className="row between"><span>Shipping{ship.note ? ` · ${ship.note}` : ''}</span><span>{ship.amount === 0 ? 'Free' : inr(ship.amount)}</span></div>
+      <div className="row between"><span>Delivery{ship.km != null ? <small> ({ship.km} km)</small> : null}</span><span>{ship.blocked ? '—' : ship.amount === 0 ? 'Free' : inr(ship.amount)}</span></div>
+      {ship.note && <p className="muted small" role="status" style={{ margin: '0 0 6px' }}>{ship.note}</p>}
+      {ship.policy && <p className="muted small" style={{ margin: '0 0 6px' }}>{ship.policy}</p>}
+      {!ship.note && ship.km == null && ship.freeOver ? <p className="muted small" style={{ margin: '0 0 6px' }}>Delivery is priced by distance. Enter your PIN code at checkout. Free over {inr(ship.freeOver)}.</p> : null}
       <div className="row between bt-total"><strong>Total</strong><strong>{inr(total)}</strong></div>
       {gst.length > 0 && (
         <div className="bt-gst"><p>GST included in your total</p>

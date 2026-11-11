@@ -60,7 +60,7 @@ export function Checkout() {
   const [err, setErr] = useState(); const [busy, setBusy] = useState(false); const [done, setDone] = useState(); const [test, setTest] = useState(false); const [ask, setAsk] = useState(false);
   const set = k => e => setF({ ...f, [k]: e.target.value });
   // Delivery is priced by PIN code: re-price the bag once a full PIN is typed.
-  useEffect(() => { if (/^\d{6}$/.test(f.pin.trim())) loadCart(f.pin.trim()) }, [f.pin]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (/^\d{6}$/.test(f.pin.trim())) loadCart(f.pin.trim()) }, [f.pin, cartInfo.subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
   // Signed-in customers get their saved details filled in (only into fields they have not typed in yet).
   useEffect(() => {
     if (!user) return;

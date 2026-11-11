@@ -549,3 +549,11 @@
 .dpos table tbody td.oid { font: 600 13px/1.35 ui-monospace, 'SF Mono', Consolas, monospace; letter-spacing: 0 }
 .dpos table tbody td.due, .dpos table tbody td.due b { font-size: 14px; font-weight: 700 }
 .dpos table tbody td .small, .dpos table tbody td small { font-size: 12px; font-weight: 400 }
+/* Pop-up windows keep their normal opening size on every screen (no stretching to the full width on narrower windows) */
+@media (max-width: 899px) {
+  .dpos-modal { padding: 24px 14px; place-items: start center }
+  .dpos-modal .dpos-sheet:not(.wide):not(.pe2):not(.cpk):not(.sa) { width: min(520px, 92%) !important; padding: 20px; border-radius: 22px }
+  .dpos-modal .dpos-sheet.wide { width: min(800px, 94%) !important; padding: 20px; border-radius: 22px }
+  .dpos-modal .dpos-sheet.pe2, .dpos-modal .dpos-sheet.pe-wide { width: min(900px, 96%) !important }
+}
+@media (min-width: 900px) { .dpos-modal .dpos-sheet.wide { width: min(900px, 94vw) } }

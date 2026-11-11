@@ -86,8 +86,9 @@ export async function cartView(db, cart, pin) {
   const lines = cart ? await cartLines(db, cart.id) : [];
   const items = lines.map(l => ({ variantId: l.variantId, slug: l.slug, name: l.name, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate, stock: l.stock, image: l.image, issue: issueFor(l) }));
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const ship = await shippingFor(db, subtotal, pin);
-  const shipping = { amount: items.length ? ship.amount : 0, freeOver: ship.freeOver ?? null, note: ship.note ?? null, zone: ship.zone ?? null };
+  // An out-of-range PIN never breaks the bag: it is shown as "blocked" with the reason, and checkout refuses it.
+  const ship = await shippingFor(db, subtotal, pin).catch(e => e.code === 'out_of_range' || e.status === 400 ? { amount: 0, freeOver: null, note: e.message, blocked: true, policy: '' } : Promise.reject(e));
+  const shipping = { amount: items.length ? ship.amount : 0, freeOver: ship.freeOver ?? null, km: ship.km ?? null, note: ship.note ?? null, zone: ship.zone ?? null, policy: ship.policy ?? '', blocked: !!ship.blocked };
   return { items, count: items.reduce((s, i) => s + i.qty, 0), subtotal, shipping, gst: gstSplit(items), total: subtotal + shipping.amount, hasIssues: items.some(i => i.issue) };
 }
 

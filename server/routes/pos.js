@@ -299,7 +299,9 @@ export default function pos({ db, auth }) {
   r.get('/pos/delivery-rules', manager, wrap(async (_req, res) => res.json(await loadRules(db))));
   r.put('/pos/delivery-rules', manager, wrap(async (req, res) => {
     const v = z.object({
-      enabled: z.boolean(), defaultFee: paise, freeOver: paise.nullable(),
+      enabled: z.boolean(), note: text(300).default(''), storePin: z.string().regex(/^(\d{6})?$/, 'Shop PIN code must be 6 digits').default(''),
+      defaultFee: paise, freeOver: paise.nullable(), maxKm: z.number().min(0).max(5000).default(0), perKmBeyond: paise.default(0),
+      bands: z.array(z.object({ upToKm: z.number().positive().max(5000), fee: paise })).max(12).default([]),
       zones: z.array(z.object({ name: text(60).min(1), prefixes: z.array(z.string().regex(/^\d{1,6}$/)).min(1).max(30), fee: paise })).max(30).default([]),
       orderTiers: z.array(z.object({ minOrder: paise, fee: paise })).max(20).default([]),
       blockedPrefixes: z.array(z.string().regex(/^\d{1,6}$/)).max(50).default([]),
