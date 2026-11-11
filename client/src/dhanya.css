@@ -45,7 +45,7 @@
 .cpk-foot{ display: flex; align-items: center; justify-content: space-between; gap: 9.5px; margin-top: 11px; padding-top: 9.5px; border-top: 1px solid #eadfea; font-weight: 700 }
 .cpk-foot > div{ display: flex; gap: 6px }
 .dpos-added{ position: fixed; z-index: 400; left: 50%; top: 18px; transform: translateX(-50%); padding: 11px 20px; border-radius: 999px; background: #1c7a4b; color: #fff; font-weight: 700; font-size: 13.5px; box-shadow: 0 12px 30px rgba(0, 0, 0, .22); animation: dposToast .35s var(--ease, ease) }
-.dpos-line.flash{ animation: dposFlash 1.6s ease }
+.dpos-line.dpos-flash{ animation: dposFlash 1.6s ease }
 @media (prefers-reduced-motion: reduce){
 .dpos-added, .dpos-count, .dpos-line.flash{ animation: none }
 }
@@ -531,3 +531,5 @@
 .dpos-modal .dpos-sheet.cpk > .cpk-foot { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 22px; border-top: 1px solid #e8e8dc; background: #fff }
 .dpos-modal .dpos-sheet.cpk > .cpk-foot > div { display: inline-flex; gap: 10px }
 .dpos-modal .dpos-sheet.cpk .cpk-foot .dpos-btn { padding: 12px 28px; font-size: 14px }
+.dpos .dpos-bill .dpos-card > .dpos-head h2 { white-space: nowrap } .dpos .dpos-bill .dpos-head .dpos-count { margin-left: 8px; min-width: 22px; height: 22px; font-size: 12px }
+.dpos .dpos-line.dpos-flash { border-radius: 12px }

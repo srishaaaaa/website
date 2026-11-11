@@ -241,7 +241,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
   const measureLine = lines.find(l => l.key === measureFor);
   const lineEls = lines.map(l => (
-    <div className={`dpos-line ${pulse.includes(l.variantId) ? 'flash' : ''}`} key={l.key}>
+    <div className={`dpos-line ${pulse.includes(l.variantId) ? 'dpos-flash' : ''}`} key={l.key}>
       {l.custom ? (
         <div className="dpos-grid" style={{ gridTemplateColumns: 'minmax(150px,2fr) minmax(90px,1fr) 90px' }}>
           <input aria-label="Item name or description" placeholder={l.service ? 'Service (alteration, stitching…)' : 'Item name / description…'} list={ws ? 'dpos-ws-list' : undefined} value={l.name} onChange={e => patch(l.key, { name: e.target.value })} />
