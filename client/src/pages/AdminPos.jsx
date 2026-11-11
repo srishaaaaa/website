@@ -119,6 +119,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const [catOpen, setCatOpen] = useState(false); const [added, setAdded] = useState(null); const [pulse, setPulse] = useState([]);
 
   useEffect(() => { if (shop?.gstin && !gstTouched.current) setIsGst(true) }, [shop]);
+  useEffect(() => { if (!ws && new URLSearchParams(location.search).get('new') === 'stitching') setLines(ls => ls.length ? ls : [blankCustom(true)]) }, []); // eslint-disable-line -- "+ New stitching order" opens Billing with a service line ready
   useEffect(() => { if (ws) api('/admin/pos/ws/items').then(setWsItems).catch(() => {}) }, [ws]);
   useEffect(() => {
     if (ws) return;

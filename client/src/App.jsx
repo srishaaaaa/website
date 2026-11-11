@@ -23,6 +23,7 @@ import { About, Journal, NotFound, Policy } from './pages/Static';
 const lazyEl = (load, name) => { const C = lazy(() => load().then(m => ({ default: name ? m[name] : m.default }))); return <Suspense fallback={<div className="page-pad"><p className="muted">Loading…</p></div>}><C /></Suspense> };
 const store = () => import('./pages/AdminStore'), media = () => import('./pages/AdminMedia'), more = () => import('./pages/AdminMore');
 const A = {
+  stitchDash: lazyEl(() => import('./pages/StitchPages').then(m => ({ default: m.StitchDashboard }))), stitchOrders: lazyEl(() => import('./pages/StitchPages').then(m => ({ default: m.StitchOrders }))), stitchReports: lazyEl(() => import('./pages/StitchPages').then(m => ({ default: m.StitchReports }))),
   stitch: lazyEl(() => import('./pages/AdminStitching')), stitchNew: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="new" /> }))), stitchDetail: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="detail" /> }))), stitchPrint: lazyEl(() => import('./pages/stitching/Print')),
   pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')), coupon: lazyEl(() => import('./pages/CouponCard')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
@@ -76,7 +77,9 @@ export default function App() {
           <Route path="/admin/sample" element={A.sample} />
           <Route path="/invoice/:token" element={A.invoice} />
           <Route path="/coupon/:code" element={A.coupon} />
-          <Route path="/admin/stitching" element={A.stitch} />
+          <Route path="/admin/stitching" element={A.stitchDash} />
+          <Route path="/admin/stitching/orders" element={A.stitchOrders} />
+          <Route path="/admin/stitching/reports" element={A.stitchReports} />
           <Route path="/admin/stitching/print/:id" element={A.stitchPrint} />
           <Route path="/admin/stitching/orders/new" element={A.stitchNew} />
           <Route path="/admin/stitching/orders/:id" element={A.stitchDetail} />

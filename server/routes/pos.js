@@ -5,7 +5,7 @@ import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
 import { hasCostColumns } from '../lib/cost.js';
 import { createReturn, getReturn } from '../lib/returns.js';
-import { listMeasurements, setTailoring } from '../lib/measurements.js';
+import { listMeasurements, setTailoring, stitchingOrders, stitchingOverview } from '../lib/measurements.js';
 import { DEFAULT_RULES, loadRules } from '../lib/delivery.js';
 import { stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, PHONE_SQL, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
@@ -160,6 +160,14 @@ export default function pos({ db, auth }) {
   r.get('/pos/measurements', biller, wrap(async (req, res) => {
     const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), status: z.enum(['all', 'pending', 'completed', 'cancelled']).default('all'), from: date.optional(), to: date.optional() }).parse(req.query);
     res.json(await listMeasurements(db, f));
+  }));
+  r.get('/pos/stitching/orders', biller, wrap(async (req, res) => {
+    const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), status: z.enum(['all', 'pending', 'completed', 'cancelled']).default('all'), from: date.optional(), to: date.optional() }).parse(req.query);
+    res.json(await stitchingOrders(db, f));
+  }));
+  r.get('/pos/stitching/overview', biller, wrap(async (req, res) => {
+    const f = z.object({ from: date.optional(), to: date.optional() }).parse(req.query);
+    res.json(await stitchingOverview(db, f));
   }));
   r.patch('/pos/sales/:invoice/tailoring', biller, wrap(async (req, res) => {
     const { status } = z.object({ status: z.enum(['pending', 'completed']) }).parse(req.body);

@@ -87,3 +87,23 @@ test('per-size cost price: a sale line remembers the size cost, falling back to 
   const back = (await o('GET', `/admin/pos/products/${p.id}`)).body.variants.find(x => x.id === v.id);
   assert.equal(back.costOverride, 25000); assert.equal(back.cost, 25000);
 });
+
+test('stitching: overview and orders count bills and open advance orders with measurements', async () => {
+  const o = await login();
+  const day = n => { const d = new Date(); d.setDate(d.getDate() + n); return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d) };
+  const line = (name, price, due) => ({ name, price, qty: 1, taxRate: 0, measure: { dueDate: due, cm: { chest: 90 } } });
+  const mk = (items, who) => o('POST', '/admin/pos/sales', { idempotencyKey: 'st-' + Math.random().toString(36).slice(2), channel: 'retail', items, customerName: who, customerPhone: '90000 77777', isGst: false, paymentMode: 'cash' });
+  const before = (await o('GET', '/admin/pos/stitching/overview')).body;
+  const late = (await mk([line('Blouse', 80000, day(-3))], 'Late Lata')).body, today = (await mk([line('Salwar', 90000, day(0))], 'Today Tara')).body;
+  await o('POST', '/admin/pos/advances', { items: [line('Bridal blouse', 200000, day(2))], customerName: 'Adv Asha', customerPhone: '90000 88888', isGst: false, deposit: 50000, depositMode: 'cash' });
+  const ov = (await o('GET', '/admin/pos/stitching/overview')).body;
+  assert.equal(ov.activeOrders - before.activeOrders, 3); assert.equal(ov.overdue - before.overdue, 1); assert.equal(ov.dueToday - before.dueToday, 1);
+  assert.equal(ov.openAdvances - before.openAdvances, 1); assert.equal(ov.balanceToCollect - before.balanceToCollect, 150000);
+  assert.ok(ov.dueSoon.some(x => x.customerName === 'Adv Asha') && ov.overdueList.some(x => x.customerName === 'Late Lata'));
+  await o('PATCH', `/admin/pos/sales/${late.invoiceNo}/tailoring`, { status: 'completed' });
+  const ov2 = (await o('GET', `/admin/pos/stitching/overview?from=${day(-1)}&to=${day(0)}`)).body;
+  assert.equal(ov2.completed, 1); assert.equal(ov2.stitchingRevenue, 80000); assert.equal(ov2.byGarment[0].name, 'Blouse');
+  const list = (await o('GET', '/admin/pos/stitching/orders?name=Today')).body;
+  assert.deepEqual(list.orders.map(x => x.ref), [today.invoiceNo]); assert.equal(list.orders[0].status, 'pending');
+  assert.ok((await o('GET', '/admin/pos/stitching/orders?status=completed')).body.orders.some(x => x.ref === late.invoiceNo));
+});

@@ -302,3 +302,28 @@
 .inv-filters input[type=search] { order: 0; margin-left: auto }
 .inv-filters input[type=search] { order: 9; margin-left: auto; flex: 0 1 230px; width: 230px; max-width: none }
 .dpos-sheet:has(.inv-al) { border-radius: 26px } .dpos-sheet:has(.inv-al) .dpos-mhead { background: #fff; color: #1a1420; border-bottom: 0; margin: 0 0 8px; padding: 6px 4px 10px } .dpos-sheet:has(.inv-al) .dpos-mhead b::before { content: '⚠'; display: inline-grid; place-items: center; width: 44px; height: 44px; margin-right: 12px; border-radius: 50%; background: #fff0cc; color: #c46a00; font-size: 20px; vertical-align: middle } .dpos-sheet:has(.inv-al) .dpos-mhead button { background: #f1efea; color: #1a1420 }
+
+/* ================= Stitching dashboard, orders, reports (reference look) ================= */
+.sd-grid6 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px } .sd-grid6.two { grid-template-columns: repeat(6, minmax(0, 1fr)) } .sd-grid6.two > * { grid-column: span 1 } .sd-grid6.four { grid-template-columns: repeat(4, minmax(0, 1fr)) }
+.sd-card { display: grid; gap: 6px; padding: 20px 22px; border-radius: 22px; background: #fff; border: 1px solid #ece6dd; align-content: start }
+.sd-card span { font-size: 11.5px; font-weight: 800; letter-spacing: .14em; color: #1a1420 } .sd-card b { font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -.01em } .sd-card small { font-size: 13.5px; color: #6f6b66 }
+.sd-card.green { border-color: #b9e3cc } .sd-card.green b { color: #1c7a4b }
+.sd-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px } .sd-two.wide { grid-template-columns: 1.1fr 1fr }
+.sd-panel { background: #fff; border: 1px solid #ece6dd; border-radius: 24px; padding: 24px 26px; min-height: 150px } .sd-panel h2 { margin: 0 0 14px; font-size: 22px; font-weight: 700; letter-spacing: -.01em }
+.sd-ph { display: flex; justify-content: space-between; align-items: center; gap: 12px } .sd-ph h2 { margin: 0 }
+.sd-va { padding: 10px 18px; border-radius: 999px; border: 1px solid #e0dad0; background: #fff; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #1a1420 }
+.sd-empty { margin: 40px 0 28px; text-align: center; color: #6f6b66; font-size: 16px }
+.sd-list { display: grid; gap: 8px } .sd-row { display: grid; grid-template-columns: 190px minmax(0, 1fr) 130px 110px 110px; gap: 14px; align-items: center; text-align: left; padding: 14px 18px; border-radius: 16px; background: #faf7f2; border: 1px solid #f0ebe3; transition: border-color .2s, transform .2s } .sd-row:hover { border-color: #C6A052; transform: translateY(-1px) }
+.sd-ref { font: 700 12px/1.6 ui-monospace, monospace; background: #f3e8f4; color: #330533; padding: 3px 10px; border-radius: 999px; width: fit-content } .sd-who { display: grid } .sd-who small { color: #6f6b66; font-size: 13px } .sd-due { font-size: 13px; color: #4a4450 } .sd-amt { text-align: right }
+.sd-pill { padding: 5px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 800; text-align: center; background: #eee; color: #4a4450 } .sd-pill.pending { background: #fff0cc; color: #8a5a00 } .sd-pill.completed { background: #e4f5ea; color: #1c7a4b } .sd-pill.cancelled { background: #fdecea; color: #b3261e }
+.sd-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px } .sd-tile { display: grid; gap: 8px; padding: 20px 24px; border-radius: 22px; background: #fff; border: 2px solid transparent; box-shadow: 0 6px 24px -16px rgba(51, 5, 51, .25); text-align: left } .sd-tile.on { border-color: #330533 }
+.sd-tile span { font-size: 11.5px; font-weight: 800; letter-spacing: .16em } .sd-tile b { font-size: 34px; line-height: 1 } .sd-tile.amber b { color: #c46a00 } .sd-tile.green b { color: #1c9a56 } .sd-tile.red b { color: #d12a2a }
+.sd-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 22px 24px; background: #fff; border-radius: 24px; border: 1px solid #ece6dd }
+.sd-filters label { display: grid; gap: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase } .sd-filters input, .sd-filters select { text-transform: none; letter-spacing: 0; font-weight: 400 }
+.sd-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px } .sd-bars li { display: grid; grid-template-columns: 170px minmax(0, 1fr) 110px; gap: 14px; align-items: center; font-size: 15px } .sd-bars small { color: #6f6b66 } .sd-bars i { height: 12px; border-radius: 999px; background: #f1ece4; overflow: hidden; display: block } .sd-bars u { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #330533, #C6A052) } .sd-bars b { text-align: right }
+.sd-st { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #f1ece4; font-size: 16px } .sd-foot { margin: 14px 0 0; font-size: 13.5px; color: #6f6b66 }
+@media (max-width: 1300px) { .sd-grid6 { grid-template-columns: repeat(3, minmax(0, 1fr)) } .sd-row { grid-template-columns: 150px minmax(0, 1fr) 100px 100px } .sd-row .sd-amt { display: none } }
+@media (max-width: 800px) { .sd-grid6, .sd-grid6.four, .sd-tiles, .sd-filters, .sd-two, .sd-two.wide { grid-template-columns: 1fr 1fr } .sd-row { grid-template-columns: 1fr } .sd-bars li { grid-template-columns: 1fr } }
+.dpos { grid-template-columns: 278px minmax(0, 1fr) }
+.sd-two .sd-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px } .sd-two .sd-ref, .sd-two .sd-who, .sd-two .sd-due { grid-column: 1 } .sd-two .sd-pill { grid-column: 2; grid-row: 1 } .sd-two .sd-amt { grid-column: 2; grid-row: 2 }
+.dpos-nav { font-size: 15.5px }
