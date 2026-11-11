@@ -583,3 +583,17 @@
 .dpos .msp-tile.plum b { color: #1a1420 } .dpos .msp-tile.amber b { color: #d97706 } .dpos .msp-tile.green b { color: #16a34a } .dpos .msp-tile.red b { color: #dc2626 }
 .dpos .msp-tile.plum, .dpos .msp-tile.amber, .dpos .msp-tile.green, .dpos .msp-tile.red { background: #fff }
 .dpos .msp-tile.on { border-color: var(--d-acc, #330533); transform: none }
+/* ---- Trending page: Trending collections + Best Sellers boards ---- */
+.dpos .adm-block.tb { display: grid; gap: 12px; align-content: start; padding: 22px 24px }
+.tb-h { margin: 0; font-size: 19px; font-weight: 800 } .tb .sub { margin: 0 }
+.tb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px }
+.tb-row { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border: 1px solid #e8e2da; border-radius: 16px; background: #fff } .tb-row > b { flex: 1; min-width: 0; font-size: 15px }
+.tb-row > span:not(.tb-act):not(.tb-ph) { flex: 1; min-width: 0; display: grid } .tb-row > span b { font-size: 15px } .tb-row small { color: #6f6b66; font-size: 12.5px; font-weight: 600 }
+.tb-row img, .tb-ph { width: 44px; height: 52px; border-radius: 10px; object-fit: cover; background: #ece8e1; flex: none; display: block }
+.tb-act { display: inline-flex; gap: 8px; align-items: center } .tb-act > button:not(.tb-btn) { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #d8d2da; background: #fff; font-size: 14px } .tb-act > button:disabled { opacity: .3 }
+.tb-btn { padding: 8px 16px; border-radius: 999px; border: 1px solid #d8d2da; background: #fff; font-size: 13px; font-weight: 600; white-space: nowrap } .tb-btn:disabled { opacity: .4 }
+.tb-none { padding: 18px; text-align: center; color: #6f6b66; font-size: 14px }
+.tb-pick { display: grid; gap: 14px; margin-top: 6px }
+.tb-pick > input { width: 100%; padding: 15px 18px; border: 1px solid #e5e2dd; border-radius: 14px; font-size: 15px }
+.tb-cats { display: flex; flex-wrap: wrap; gap: 10px } .tb-cats button { padding: 13px 22px; border-radius: 999px; background: #f1efe9; font-size: 14px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase } .tb-cats button.on { background: var(--d-acc, #330533); color: #fff }
+.tb-pick .tb-list { max-height: 520px; overflow: auto; padding-right: 4px }

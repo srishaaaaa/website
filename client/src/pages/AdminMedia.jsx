@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import TrendingBoard from '../components/TrendingBoard';
 import ExportCsv from '../components/ExportCsv';
 import { Link, Navigate } from 'react-router-dom';
 import { api, uploadImage } from '../lib/api';
@@ -108,8 +109,8 @@ export function AdminTrending() {
   const { loadSite, loadCatalog, toast } = useApp();
   return (
     <Gate state={state}>
-      <AdminShell title="Trending collections" sub="The 4 pieces shown in “Trending collections” on the homepage, in this order">
-        <div className="adm"><HomePicks only="trending" onSaved={() => { loadSite(); loadCatalog() }} toast={toast} /><BestSellersBlock /></div>
+      <AdminShell title="Trending collections" sub="Trending collections and Best Sellers shown on the homepage">
+        <div className="adm"><TrendingBoard /></div>
       </AdminShell>
     </Gate>
   );

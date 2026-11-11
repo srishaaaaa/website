@@ -22,7 +22,7 @@ function MegaMenu({ kind, x, onNavigate }) {
   const ordered = (list, slugs) => slugs?.length ? slugs.map(s => list.find(x => x.slug === s)).filter(Boolean) : list;
   const rows = kind === 'collections'
     ? [{ name: 'All collections', to: '/collections' }, ...ordered(catalog.collections, hp.collections).map(c => ({ name: c.name, to: `/collections/${c.slug}` }))]
-    : [{ name: 'All pieces', to: '/shop' }, { name: 'New arrivals', to: catalog.collections.some(c => c.slug === 'new-arrivals') ? '/collections/new-arrivals' : '/shop?sort=newest' }, ...ordered(catalog.categories, hp.categories).map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
+    : [...ordered(catalog.categories, hp.categories).map(c => ({ name: c.name, to: `/shop?category=${c.slug}` }))];
   const label = kind === 'collections' ? 'Collections' : 'Categories';
   return (
     <motion.div className={`mega mega-sm mega-${kind}`} style={x != null ? { left: `clamp(12px, ${Math.round(x - 220)}px, calc(100vw - 452px))` } : undefined} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>

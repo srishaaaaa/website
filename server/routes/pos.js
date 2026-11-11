@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
-import { hasCostColumns } from '../lib/cost.js';
+import { hasCostColumns, hasBestSeller } from '../lib/cost.js';
 import { createReturn, getReturn } from '../lib/returns.js';
 import { listMeasurements, setTailoring, stitchingOrders, stitchingOverview } from '../lib/measurements.js';
 import { DEFAULT_RULES, loadRules } from '../lib/delivery.js';
@@ -168,6 +168,15 @@ export default function pos({ db, auth }) {
   r.get('/pos/stitching/overview', biller, wrap(async (req, res) => {
     const f = z.object({ from: date.optional(), to: date.optional() }).parse(req.query);
     res.json(await stitchingOverview(db, f));
+  }));
+  // Best Sellers shelf: flag / unflag one product (the shelf keeps the 10 newest flagged pieces).
+  r.patch('/pos/products/:id/best-seller', manager, wrap(async (req, res) => {
+    const { value } = z.object({ value: z.boolean() }).parse(req.body); const pid = id.parse(req.params.id);
+    if (!(await hasBestSeller(db))) throw new HttpError(409, 'Best Sellers need a one-time database update first (migration 028).', 'best_not_ready');
+    const u = await db.query('UPDATE products SET best_seller = $2, updated_at = now() WHERE id = $1 RETURNING id', [pid, value]);
+    if (!u.rows.length) throw new HttpError(404, 'Product not found');
+    await db.query('UPDATE products SET best_seller = false WHERE best_seller AND id NOT IN (SELECT id FROM products WHERE best_seller ORDER BY updated_at DESC, id DESC LIMIT 10)');
+    res.json({ ok: true });
   }));
   r.patch('/pos/sales/:invoice', manager, wrap(async (req, res) => {
     const d = z.object({ customerName: text(120).optional(), customerPhone: text(20).optional(), customerAddress: text(300).optional(), billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), notes: text(300).optional() }).parse(req.body);
