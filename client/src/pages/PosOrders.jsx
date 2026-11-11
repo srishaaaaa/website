@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import ExportCsv from '../components/ExportCsv';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
@@ -234,7 +235,7 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
         <label className="adv-search"><Ico size={17}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Ico><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search by ID, customer, phone, product or status" aria-label="Search advance orders" /></label>
         <div className="adv-chips" role="group" aria-label="Status">{[['all', 'ALL'], ['pending', 'PENDING'], ['ready', 'READY'], ['completed', 'COMPLETED'], ['cancelled', 'CANCELLED']].map(([v, l]) => <button key={v} type="button" className={st === v ? 'on' : ''} aria-pressed={st === v} onClick={() => setSt(v)}>{l}</button>)}</div>
       </div>
-      <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /></div>
+      <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="advance-orders" header={['Order', 'Customer', 'Mobile', 'Delivery date', 'Items', 'Total (₹)', 'Advance (₹)', 'Balance (₹)', 'Status']} rows={shown.map(r => [r.code, r.customerName || '', r.customerPhone || '', r.deliveryDate || '', r.itemCount, (r.total / 100).toFixed(2), (r.deposit / 100).toFixed(2), (r.balance / 100).toFixed(2), r.status])} /></div>
       <Err>{err}</Err>
       <section className="dpos-card">
         {!rows ? <Empty>Loading…</Empty> : !shown.length ? <Empty>No advance orders here. Add items in Billing and press “Save as advance order”.</Empty> : (

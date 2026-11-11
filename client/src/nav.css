@@ -785,7 +785,7 @@ html.lenis, html.lenis body { height: auto }
 .auth.auth2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr); place-items: stretch; width: min(980px, calc(100% - 32px)); min-height: 680px; margin: 120px auto 60px; padding: 0; border-radius: 30px; overflow: hidden; background: #fff; border: 1px solid #eadfea; box-shadow: 0 30px 70px -30px rgba(51, 5, 51, .35) }
 .auth.auth2 .auth-side { padding: 48px 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 30px; color: #fff; background: radial-gradient(120% 90% at 20% 0%, #5a1560 0%, #330533 55%, #1d031d 100%) }
 .auth-mark { display: grid; gap: 8px; justify-items: center }
-.auth-brand { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 600; font-size: clamp(56px, 7vw, 84px); letter-spacing: .01em; line-height: 1; background: linear-gradient(135deg, #f0d594, #C6A052 55%, #a8843a); -webkit-background-clip: text; background-clip: text; color: transparent }
+.auth-brand { margin: 0; font-family: 'Great Vibes', cursive; font-style: normal; font-weight: 400; font-size: clamp(64px, 8vw, 96px); letter-spacing: 0; line-height: 1.05; text-transform: none; padding: 0 .06em; background: linear-gradient(135deg, #f0d594, #C6A052 55%, #a8843a); -webkit-background-clip: text; background-clip: text; color: transparent }
 .auth-sub { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 11px; letter-spacing: .42em; color: #C6A052 } .auth-sub i { display: block; width: 38px; height: 1px; background: #C6A052 }
 .auth.auth2 .auth-tag { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 500; font-size: clamp(26px, 3vw, 34px); color: #f0d594; line-height: 1.1 }
 .auth.auth2 .auth-side ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; font-size: 15px; opacity: .92 } .auth.auth2 .auth-side li::before { content: '✓'; color: #fff; margin-right: 8px }
@@ -797,3 +797,14 @@ html.lenis, html.lenis body { height: auto }
 .auth.auth2 .muted.small { margin-top: 18px; color: #6f6270 } .auth.auth2 .link-u { color: #330533; text-decoration: underline; text-underline-offset: 3px }
 @media (max-width: 800px) { .auth.auth2 { grid-template-columns: 1fr; min-height: 0; margin-top: 96px } .auth.auth2 .auth-side { padding: 30px 22px; gap: 16px } .auth.auth2 .auth-side ul { display: none } .auth.auth2 form { padding: 32px 24px } .auth-brand { font-size: 52px } }
 html:has(.auth2) { background: #f3e9dd }
+
+/* ---- splash on load: plum sky, stars, script wordmark ---- */
+.splash { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: radial-gradient(70% 60% at 50% 42%, #4a0f52 0%, #2a0630 55%, #12021a 100%); color: #fff; overflow: hidden }
+.splash-sky i { position: absolute; border-radius: 50%; background: #f6dfb0; box-shadow: 0 0 10px 2px rgba(246, 223, 176, .55); opacity: .15; animation: splashTwinkle ease-in-out infinite alternate }
+@keyframes splashTwinkle { from { opacity: .1; transform: translateY(0) } to { opacity: .95; transform: translateY(-10px) } }
+.splash-skip { position: absolute; top: 22px; right: 28px; z-index: 2; font-size: 11px; letter-spacing: .3em; color: rgba(255, 255, 255, .6) }
+.splash-mid { position: relative; display: grid; justify-items: center; gap: 22px; text-align: center }
+.splash-sq { position: relative; width: 38px; height: 38px; margin-bottom: 18px } .splash-sq b { position: absolute; inset: 0; border: 1px solid rgba(198, 160, 82, .7) } .splash-sq b:nth-child(2) { inset: 6px; transform: rotate(6deg) } .splash-sq b:nth-child(3) { inset: 13px; background: rgba(198, 160, 82, .5) }
+.splash-mark { margin: 0; text-transform: none; font-family: 'Great Vibes', 'Pinyon Script', cursive; font-style: normal; font-weight: 400; font-size: clamp(96px, 19vw, 240px); line-height: 1.2; letter-spacing: 0; padding: .05em .1em .22em; background: linear-gradient(135deg, #f6dfb0, #C6A052 55%, #a8843a); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 24px rgba(198, 160, 82, .3)) }
+.splash-rule { display: flex; align-items: center; gap: 16px } .splash-rule i { display: block; width: clamp(60px, 10vw, 130px); height: 1px; background: linear-gradient(90deg, transparent, rgba(198, 160, 82, .75)) } .splash-rule i:last-child { transform: scaleX(-1) } .splash-rule em { width: 10px; height: 10px; background: #C6A052; transform: rotate(45deg) }
+.splash-sub { margin: 0; font-size: clamp(11px, 1.3vw, 15px); letter-spacing: .5em; font-weight: 700; color: #f1e2c4 }

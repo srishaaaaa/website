@@ -67,7 +67,7 @@ export function StitchDashboard() {
         <section className="sd-panel"><h2>Overdue</h2>
           {!d ? <Empty>Loading…</Empty> : !d.overdueList.length ? <Empty>No overdue orders. 🎉</Empty> : <OrderList list={d.overdueList} nav={nav} />}</section>
       </div>
-      <section className="sd-panel"><div className="sd-ph"><h2>Recent stitching orders</h2><Link className="sd-va" to="/admin/stitching/orders">View all →</Link></div>
+      <section className="sd-panel"><div className="sd-ph"><h2>Recent stitching orders</h2><span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}><ExportCsv name="recent-stitching-orders" header={['Order', 'Customer', 'Status', 'Due']} rows={(d?.recent || []).map(o => [o.ref, o.customer || o.name || '', o.status || '', o.due || o.dueDate || ''])} /><Link className="sd-va" to="/admin/stitching/orders">View all →</Link></span></div>
         {!d ? <Empty>Loading…</Empty> : !d.recent.length ? <Empty>No stitching orders yet. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.recent} nav={nav} />}</section>
     </AdminShell>
   );

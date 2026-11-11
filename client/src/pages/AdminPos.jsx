@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ExportCsv from '../components/ExportCsv';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
@@ -432,7 +433,8 @@ function ProductsBoard({ rep }) {
   return (
     <section className="dpos-card">
       <div className="an-head"><h2>Product Sales Leaderboard</h2>
-        <label className="an-search"><SearchGlyph /><span className="sr">Search product</span><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search product…" /></label></div>
+        <label className="an-search"><SearchGlyph /><span className="sr">Search product</span><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search product…" /></label>
+        <ExportCsv name="product-sales" header={['Rank', 'Product', 'Qty sold', 'Revenue (₹)', 'Market share %']} rows={rows.map(p => [p.rank, p.name, p.qty, (p.revenue / 100).toFixed(2), (p.revenue / total * 100).toFixed(1)])} /></div>
       {!rep ? <Empty>Loading…</Empty> : !all.length ? <Empty>No sales in this period.</Empty> : !rows.length ? <Empty>No product matches.</Empty> : (
         <div className="dpos-tw"><table><thead><tr><th>Rank</th><th>Product name</th><th className="r">Qty sold</th><th className="r">Revenue</th><th>Market share</th></tr></thead>
           <tbody>{rows.map(p => { const pct = p.revenue / total * 100; return (
@@ -480,7 +482,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const v = (f, d = '…') => rep ? f(rep) : d;
   return (
     <>
-      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /></div>}
+      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="analytics-summary" header={['Measure', 'Value (₹ / count)']} rows={rep ? [['Total revenue', (rep.revenue / 100).toFixed(2)], ['GST sales', (rep.gstSales / 100).toFixed(2)], ['Non-GST sales', (rep.nonGstSales / 100).toFixed(2)], ['Expenses', (rep.expenses / 100).toFixed(2)], ['Net profit', (rep.net / 100).toFixed(2)], ['Completed bills', rep.bills], ['Offline sales', (rep.offlineSales / 100).toFixed(2)], ['Online sales', (rep.onlineSales / 100).toFixed(2)], ['Items sold', rep.units]] : []} /></div>}
       <div className="an-top">
         <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
       </div>
@@ -598,7 +600,7 @@ function Customers({ manager }) {
   return (
     <>
       <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 320 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Search name or mobile…" aria-label="Search customers" />
-        {manager && <PeriodFilter value={per} onChange={setPer} />}<button className="dpos-btn" onClick={() => setModal({})}><Icon n="plus" size={16} />Add customer</button></div>
+        {manager && <PeriodFilter value={per} onChange={setPer} />}<ExportCsv name="customers" header={['Name', 'Mobile', 'Date of birth', 'Bills', 'Spent (₹)']} rows={shown.map(c => [c.name || '', c.phone, c.dob || '', c.bills, (c.spent / 100).toFixed(2)])} /><button className="dpos-btn" onClick={() => setModal({})}><Icon n="plus" size={16} />Add customer</button></div>
       <Err>{err}</Err>
       <section className="dpos-card">
         {!rows ? <Empty>Loading…</Empty> : !shown.length ? <Empty>No customers yet. They are added automatically when you bill with a mobile number.</Empty> : (

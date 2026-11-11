@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import ExportCsv from '../components/ExportCsv';
 import { Link, Navigate } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { api } from '../lib/api';
@@ -36,7 +37,7 @@ export function AdminOrders() {
         <div className="dpos-kpi"><span>Gross sales</span><b>{s ? inr(s.gross) : '…'}</b></div>
         <div className="dpos-kpi"><span>Average order</span><b>{s ? inr(s.averageOrder) : '…'}</b></div>
       </div>
-      <div className="dpos-bar-tools"><Chips label="Payment" value={pay} onChange={setPay} options={[['all', 'All'], ['paid', 'Paid'], ['unpaid', 'Unpaid']]} /><PeriodFilter value={per} onChange={setPer} /></div>
+      <div className="dpos-bar-tools"><Chips label="Payment" value={pay} onChange={setPay} options={[['all', 'All'], ['paid', 'Paid'], ['unpaid', 'Unpaid']]} /><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="online-orders" header={['Order', 'Email', 'Total (₹)', 'Payment', 'Status', 'Date']} rows={shownO.map(x => [x.order_number, x.email, (x.total / 100).toFixed(2), x.payment_status, x.status, x.created_at ? String(x.created_at).slice(0, 10) : ''])} /></div>
       <Card>
         {!o ? <p className="dpos-empty">Loading…</p> : !shownO.length ? <p className="dpos-empty">No online orders here.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Email</th><th className="r">Total</th><th>Payment</th><th>Status</th></tr></thead>
@@ -58,7 +59,7 @@ export function AdminReviews() {
   return (
     <AdminShell title="Customer Reviews" sub="Approve, hide or delete a review before it appears on the storefront."
       actions={<Chips value={f} onChange={setF} options={[['pending', 'Pending'], ['approved', 'Approved'], ['all', 'All']]} />}>
-      <PeriodFilter value={per} onChange={setPer} />
+      <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="reviews" header={['Product', 'Rating', 'Review', 'Email', 'Status']} rows={shown.map(r => [r.product_name || '', r.rating, r.body || '', r.email || '', r.status])} /></div>
       {e && <p role="alert" className="dpos-err">{e}</p>}
       <Card>
         {!rv ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No reviews here yet.</p> : shown.map(r => (
@@ -110,7 +111,7 @@ export function AdminUsers() {
   return (
     <AdminShell title="Users & Roles" sub="Staff with access to this admin. Cashiers can bill; admins manage the store; only the owner adds users and changes roles.">
       {e && <p role="alert" className="dpos-err">{e}</p>}
-      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" />{isOwner && <button className="dpos-btn" onClick={() => setAdd(true)}><Icon n="plus" size={16} />Add user</button>}<Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
+      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" /><ExportCsv name="users" header={['Name', 'Email', 'Role', 'Joined']} rows={shown.map(u => [u.name || '', u.email, ROLE_L[u.role] || u.role, u.created_at ? String(u.created_at).slice(0, 10) : ''])} />{isOwner && <button className="dpos-btn" onClick={() => setAdd(true)}><Icon n="plus" size={16} />Add user</button>}<Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
       <Card>
         {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No users found.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>

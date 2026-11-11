@@ -1,71 +1,34 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { hasWebGL, useModal, useQuality, useReduced } from '../lib/hooks';
-import { Emblem } from './Wordmark';
+import { useModal, useReduced } from '../lib/hooks';
+import { useRef } from 'react';
 
-const PortalCanvas = lazy(() => import('../three/canvases').then(m => ({ default: m.PortalCanvas })));
+// Short splash on every load of the customer site: deep plum sky, drifting stars, the script wordmark.
+// It runs by itself (about 2.6 s) and fades out; Skip / Esc end it at once.
+const STARS = 26;
 
-const ENTER_MS = 2300;
-
-// Skippable cinematic entrance. Never blocks the page: the skip control is available from the first frame.
 export default function Intro({ onDone }) {
   const reduced = useReduced();
-  const quality = useQuality();
-  const webgl = useMemo(hasWebGL, []);
-  const [phase, setPhase] = useState('idle'); // idle | entering
-  const [line2, setLine2] = useState(false);
   const ref = useRef();
-  const timer = useRef();
-  const finish = () => { clearTimeout(timer.current); onDone() };
-  useModal(true, finish, ref); // Esc skips
-
-  useEffect(() => { const t = setTimeout(() => setLine2(true), 1700); return () => clearTimeout(t) }, []);
-  // The splash runs by itself on every load; no tap needed. Skip / Esc still end it at once.
-  useEffect(() => { const t = setTimeout(() => { clearTimeout(timer.current); onDone() }, reduced ? 600 : 3300); return () => clearTimeout(t) }, []); // eslint-disable-line
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const enter = () => {
-    if (phase === 'entering') return;
-    setPhase('entering');
-    timer.current = setTimeout(onDone, reduced ? 200 : ENTER_MS);
-  };
-  const glass = e => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`); e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`) };
-  const entering = phase === 'entering';
+  useModal(true, onDone, ref);
+  useEffect(() => { const t = setTimeout(onDone, reduced ? 500 : 2600); return () => clearTimeout(t) }, []); // eslint-disable-line
+  const stars = useMemo(() => Array.from({ length: STARS }, (_, i) => ({
+    x: Math.random() * 100, y: Math.random() * 100, s: 2 + Math.random() * 3.5, d: Math.random() * 2.4, t: 2.2 + Math.random() * 2.4,
+  })), []);
 
   return (
-    <motion.div ref={ref} className="intro" role="dialog" aria-modal="true" aria-label="Welcome to DHANYA"
+    <motion.div ref={ref} className="splash" role="dialog" aria-modal="true" aria-label="Dhanya Boutique"
       initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
-      <div className="intro-bg" aria-hidden="true">
-        {webgl
-          ? <Suspense fallback={null}><PortalCanvas entering={entering} quality={quality} reduced={reduced} /></Suspense>
-          : null}
-        <div className="intro-fallback" />
-        <div className="intro-vignette" />
+      <div className="splash-sky" aria-hidden="true">
+        {stars.map((s, i) => <i key={i} style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.s, height: s.s, animationDelay: `${s.d}s`, animationDuration: `${s.t}s` }} />)}
       </div>
-
-      <button className="intro-skip" onClick={finish}>SKIP</button>
-
-      <motion.div className="intro-center" animate={entering ? { opacity: 0, scale: 0.9, y: -20 } : { opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
-        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}>
-          <Emblem size={96} glow className="intro-emblem" />
-        </motion.div>
-        <motion.p className="intro-k" initial={{ opacity: 0, y: 14, letterSpacing: '.7em' }} animate={{ opacity: 1, y: 0, letterSpacing: '.42em' }} transition={{ delay: 0.6, duration: 1.6, ease: [0.22, 1, 0.36, 1] }}>BEYOND THE ORDINARY.</motion.p>
-        <motion.h1 className="intro-h" initial={{ opacity: 0, y: 24 }} animate={line2 ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}>
-          ENTER THE WORLD<br />OF DHANYA.
-        </motion.h1>
-        <motion.div initial={{ opacity: 0 }} animate={line2 ? { opacity: 1 } : {}} transition={{ delay: 0.5, duration: 1 }}>
-          <button className="enter-btn" onClick={enter} onPointerMove={glass} data-autofocus data-cursor="ENTER"><span>ENTER</span></button>
-        </motion.div>
-      </motion.div>
-
-      {entering && !reduced && (
-        <div className="sweeps" aria-hidden="true">
-          {[0, 1, 2].map(i => (
-            <motion.div key={i} className="sweep" style={{ top: `${i * 34 - 2}%` }} initial={{ x: '-110%', skewX: -14 }} animate={{ x: '110%' }} transition={{ delay: 0.9 + i * 0.12, duration: 1.1, ease: [0.76, 0, 0.24, 1] }} />
-          ))}
-          <motion.div className="flash" initial={{ opacity: 0 }} animate={{ opacity: [0, 0, 0.85, 0] }} transition={{ duration: ENTER_MS / 1000, times: [0, 0.6, 0.9, 1] }} />
-        </div>
-      )}
+      <button className="splash-skip" onClick={onDone}>SKIP</button>
+      <div className="splash-mid">
+        <motion.span className="splash-sq" aria-hidden="true" initial={{ opacity: 0, rotate: -20, scale: .8 }} animate={{ opacity: 1, rotate: 8, scale: 1 }} transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}><b /><b /><b /></motion.span>
+        <motion.h1 className="splash-mark" initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 1.3, delay: .15, ease: [0.22, 1, 0.36, 1] }}>Dhanya</motion.h1>
+        <motion.div className="splash-rule" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: .9 }}><i /><em /><i /></motion.div>
+        <motion.p className="splash-sub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 1.1 }}>BOUTIQUE &amp; TAILORS</motion.p>
+      </div>
     </motion.div>
   );
 }
