@@ -37,21 +37,23 @@ export function AppProvider({ children }) {
       .then(([categories, collections, f]) => setCatalog({ categories, collections, featured: f.items, status: 'ready' }))
       .catch(() => setCatalog(c => ({ ...c, status: 'error' })));
   }, []);
-  useEffect(loadCatalog, [loadCatalog]);
+  const onAdmin = typeof location !== 'undefined' && location.pathname.startsWith('/admin'); // the admin never needs the storefront data until staff sign-in is confirmed (below), so it is not fetched twice
+  useEffect(() => { if (!onAdmin) loadCatalog() }, [loadCatalog]); // eslint-disable-line
 
   // --- admin-managed store content: boutique location + hours, social links ---
   const [site, setSite] = useState({ store: null, social: null, map: null, status: 'loading' });
   const loadSite = useCallback(() => {
     apiRetry('/store').then(d => setSite({ ...d, status: 'ready' })).catch(() => setSite(s => ({ ...s, status: 'error' })));
   }, []);
-  useEffect(loadSite, [loadSite]);
+  useEffect(() => { if (!onAdmin) loadSite() }, [loadSite]); // eslint-disable-line
 
   // --- auth (httpOnly cookie session; the browser only ever sees the public profile) ---
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   useEffect(() => { api('/auth/me').then(d => setUser(d.user)).catch(() => {}).finally(() => setAuthReady(true)) }, []);
   const staff = !!user && user.role !== 'customer';
-  useEffect(() => { window.__fresh = staff; if (staff) { loadSite(); loadCatalog() } }, [staff]); // eslint-disable-line react-hooks/exhaustive-deps
+  const adminLoaded = useRef(false);
+  useEffect(() => { window.__fresh = staff; if (staff && !onAdmin) { loadSite(); loadCatalog() } else if (authReady && onAdmin && !adminLoaded.current) { adminLoaded.current = true; loadSite(); loadCatalog() } }, [staff, authReady]); // eslint-disable-line react-hooks/exhaustive-deps
   const signIn = useCallback(u => setUser(u), []);
   const signOut = useCallback(async () => { await api('/auth/logout', { method: 'POST' }).catch(() => {}); setUser(null) }, []);
 
@@ -61,7 +63,8 @@ export function AppProvider({ children }) {
   const loadCart = useCallback(pin => api('/cart' + (typeof pin === 'string' && /^\d{6}$/.test(pin) ? `?pin=${pin}` : '')).then(setCart).catch(() => {}), []);
   useEffect(() => {
     if (!authReady) return;
-    (async () => {
+    let timer;
+    const run = () => (async () => {
       // One-time import of a Phase 2 browser-only bag, if present.
       const legacy = read('dhanya.cart', []);
       if (Array.isArray(legacy) && legacy.length) {
@@ -70,6 +73,8 @@ export function AppProvider({ children }) {
       }
       loadCart();
     })();
+    if (onAdmin) timer = setTimeout(run, 4000); else run(); // the bag is not needed on the admin; load it after the admin page is up
+    return () => clearTimeout(timer);
   }, [authReady, user?.id, loadCart]);
 
   const mutate = useCallback(async (fn, { open = false } = {}) => {

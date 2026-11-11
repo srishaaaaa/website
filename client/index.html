@@ -17,7 +17,7 @@
 <link rel="preload" as="image" href="/images/dhanya-logo.jpg" fetchpriority="high">
 <script>
 // Start the homepage data requests now, in parallel with the JS bundle. api() picks these up instead of fetching again.
-(function(){try{var H={"Content-Type":"application/json","X-Requested-With":"dhanya"},P={};["/store","/categories","/collections","/products?featured=1&limit=12"].forEach(function(p){P[p]=fetch("/api"+p,{credentials:"include",headers:H}).catch(function(){return null})});window.__pre=P}catch(e){}})();
+(function(){try{if(location.pathname.indexOf('/admin')===0)return;var H={"Content-Type":"application/json","X-Requested-With":"dhanya"},P={};["/store","/categories","/collections","/products?featured=1&limit=12"].forEach(function(p){P[p]=fetch("/api"+p,{credentials:"include",headers:H}).catch(function(){return null})});window.__pre=P}catch(e){}})();
 </script>
 <style>
 html,body{margin:0;background:#09090D}

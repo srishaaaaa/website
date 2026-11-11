@@ -124,7 +124,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   useEffect(() => { if (!ws && new URLSearchParams(location.search).get('new') === 'stitching') setLines(ls => ls.length ? ls : [blankCustom(true)]) }, []); // eslint-disable-line -- "+ New stitching order" opens Billing with a service line ready
   useEffect(() => { if (ws) api('/admin/pos/ws/items').then(setWsItems).catch(() => {}) }, [ws]);
   useEffect(() => {
-    if (ws) return;
+    if (ws || !q.trim()) return;
     const t = setTimeout(() => { setSearching(true); api('/admin/pos/catalog?q=' + encodeURIComponent(q)).then(r => { setResults(r); setErr() }).catch(e => setErr(e.message)).finally(() => setSearching(false)) }, 200);
     return () => clearTimeout(t);
   }, [q, ws]);
