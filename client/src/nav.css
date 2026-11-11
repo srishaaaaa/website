@@ -780,3 +780,20 @@ html.lenis, html.lenis body { height: auto }
 .catalog { padding-top: 92px } .catalog .cat-hero, .catalog .cat-hero.with-banner { margin: 0 var(--pad) }
 .catalog .cat-hero h1 { text-transform: none }
 .account > .acc-panel { background: #fff; border: 1px solid rgba(198, 160, 82, .4); border-radius: 24px; padding: 28px 32px; min-width: 0 }
+
+/* ---- sign in / register: split card (dark brand panel + form) ---- */
+.auth.auth2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr); place-items: stretch; width: min(980px, calc(100% - 32px)); min-height: 680px; margin: 120px auto 60px; padding: 0; border-radius: 30px; overflow: hidden; background: #fff; border: 1px solid #eadfea; box-shadow: 0 30px 70px -30px rgba(51, 5, 51, .35) }
+.auth.auth2 .auth-side { padding: 48px 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 30px; color: #fff; background: radial-gradient(120% 90% at 20% 0%, #5a1560 0%, #330533 55%, #1d031d 100%) }
+.auth-mark { display: grid; gap: 8px; justify-items: center }
+.auth-brand { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 600; font-size: clamp(56px, 7vw, 84px); letter-spacing: .01em; line-height: 1; background: linear-gradient(135deg, #f0d594, #C6A052 55%, #a8843a); -webkit-background-clip: text; background-clip: text; color: transparent }
+.auth-sub { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 11px; letter-spacing: .42em; color: #C6A052 } .auth-sub i { display: block; width: 38px; height: 1px; background: #C6A052 }
+.auth.auth2 .auth-tag { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 500; font-size: clamp(26px, 3vw, 34px); color: #f0d594; line-height: 1.1 }
+.auth.auth2 .auth-side ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; font-size: 15px; opacity: .92 } .auth.auth2 .auth-side li::before { content: '✓'; color: #fff; margin-right: 8px }
+.auth.auth2 form { width: auto; max-width: none; padding: 56px 62px; display: grid; align-content: center; gap: 0; background: #fff }
+.auth.auth2 form .eyebrow { margin: 0 0 4px; font-size: 11px; letter-spacing: .32em } .auth.auth2 form h1 { margin: 0 0 22px; font-size: clamp(40px, 4.6vw, 56px); text-transform: uppercase; line-height: 1; color: #1d031d }
+.auth.auth2 .field { margin: 12px 0 } .auth.auth2 .field > span:first-child { font-size: 11px; letter-spacing: .26em; opacity: .7 }
+.auth.auth2 .field input { height: 56px; padding: 0 18px; border-radius: 14px; border: 1px solid #d8d2da; background: #fcf9f8; font-size: 16px } .auth.auth2 .field input:focus { outline: 2px solid rgba(90, 21, 96, .35); border-color: #5a1560 }
+.auth.auth2 .btn.solid.wide { height: 56px; margin-top: 14px; border-radius: 999px; background: linear-gradient(135deg, #5a1560, #1d031d); color: #fff; letter-spacing: .24em; font-weight: 800; font-size: 12.5px } .auth.auth2 .btn.solid:hover { background: linear-gradient(135deg, #7a1d82, #330533) }
+.auth.auth2 .muted.small { margin-top: 18px; color: #6f6270 } .auth.auth2 .link-u { color: #330533; text-decoration: underline; text-underline-offset: 3px }
+@media (max-width: 800px) { .auth.auth2 { grid-template-columns: 1fr; min-height: 0; margin-top: 96px } .auth.auth2 .auth-side { padding: 30px 22px; gap: 16px } .auth.auth2 .auth-side ul { display: none } .auth.auth2 form { padding: 32px 24px } .auth-brand { font-size: 52px } }
+html:has(.auth2) { background: #f3e9dd }

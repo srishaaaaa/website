@@ -134,8 +134,8 @@ export function Auth({ mode }) {
   return (
     <div className="auth auth2">
       <aside className="auth-side" aria-hidden={false}>
-        <p className="auth-brand serif">DHANYA</p>
-        <p className="auth-tag serif">{reg ? 'Join the Dhanya family' : 'Welcome back'}</p>
+        <div className="auth-mark"><p className="auth-brand">Dhanya</p><p className="auth-sub"><i />BOUTIQUE &amp; TAILORS<i /></p></div>
+        <p className="auth-tag">{reg ? 'Join the Dhanya family' : 'Welcome back'}</p>
         <ul><li>Track your orders and bills</li><li>Save addresses for one-tap checkout</li><li>Keep a wishlist of pieces you love</li></ul>
       </aside>
       <form onSubmit={submit} noValidate>
