@@ -31,6 +31,13 @@ const A = {
   storefront: lazyEl(media, 'AdminStorefront'), trending: lazyEl(media, 'AdminTrending'), sitetext: lazyEl(media, 'AdminSiteText'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
 };
 
+// /admin opens Online orders (the first page of the sidebar) for the owner and admins, and Billing for cashiers and stock staff.
+function AdminHome() {
+  const { user, authReady } = useApp();
+  if (!authReady) return null;
+  return <Navigate to={user && ['owner', 'admin'].includes(user.role) ? '/admin/orders' : '/admin/billing'} replace />;
+}
+
 export default function App() {
   const { entered, enter, setBagOpen, setSearchOpen, setMenuOpen, setQuick } = useApp();
   const location = useLocation();
@@ -62,7 +69,7 @@ export default function App() {
           <Route path="/login" element={<Auth mode="login" />} />
           <Route path="/register" element={<Auth mode="register" />} />
           <Route path="/account" element={<Account />} />
-          <Route path="/admin" element={<Navigate to="/admin/billing" replace />} />
+          <Route path="/admin" element={<AdminHome />} />
           <Route path="/admin/orders" element={A.orders} />
           <Route path="/admin/reviews" element={A.reviews} />
           <Route path="/admin/users" element={A.users} />
