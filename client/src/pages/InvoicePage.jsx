@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ReturnWindow from '../components/ReturnWindow';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useApp } from '../context/App';
@@ -43,6 +44,8 @@ function A4Doc({ sale, shop }) {
           </dl>
         </div>
       </header>
+      {sale.returns?.length > 0 && <div className="inv-retbanner" role="note"><b>{sale.items.every(i => (i.returnedQty || 0) >= i.quantity) ? 'RETURNED: every item on this bill has been returned' : 'PARTLY RETURNED: some items on this bill have been returned'}</b>
+        <span>{sale.returns.map(r => <a key={r.returnNo} href={`/invoice/${r.shareToken}`}>{r.returnNo} · {money(r.total)}</a>)}</span></div>}
       <hr className="inv-rule" />
       <section className="inv-bill">
         <div><p className="inv-l">BILLED TO</p><b className="inv-who">{sale.customerName || 'Walk-in Customer'}</b>{sale.customerPhone && <p className="inv-sm">{phoneShown(sale.customerPhone)}</p>}{sale.customerAddress && <p className="inv-sm">{sale.customerAddress}</p>}</div>
@@ -116,6 +119,7 @@ function ReturnDoc({ ret, shop }) {
   const row = (label, v, cls = '') => <div className={cls}><span>{label}</span><b className="mono">{v}</b></div>;
   return (
     <article className="inv-doc">
+      <div className="inv-retbanner" role="note"><b>RETURN INVOICE for bill #{ret.invoiceNo}</b>{ret.origToken && <span><a href={`/invoice/${ret.origToken}`}>View the original bill #{ret.invoiceNo}</a>{ret.otherReturns?.map(o => <i key={o.returnNo}> · {o.returnNo}</i>)}</span>}</div>
       <header className="inv-head">
         <div className="inv-brand"><div className="inv-logo"><img src={shop.logo || DEFAULT_LOGO} alt="" /></div>
           <div><h1>{shop.name}</h1><p className="inv-addr">{(shop.address || []).join(', ')}</p>{shop.phone && <p>Phone: {phoneShown(shop.phone)}</p>}</div></div>
@@ -139,37 +143,11 @@ function ReturnDoc({ ret, shop }) {
           {ret.discount > 0 && row(ret.couponCode ? 'Coupon discount reversed' : 'Discount reversed', `- ${money(ret.discount)}`, 'inv-k-row')}
           {gst && <>{row('TAXABLE VALUE', money(ret.subtotal - ret.discount), 'inv-k-muted')}{row('CGST reversed', money(half), 'inv-k-row')}{row('SGST reversed', money(ret.tax - half), 'inv-k-row')}</>}
           <div className="inv-total"><span>REFUND TOTAL</span><b>{money(ret.total)}</b></div>
-          {row(`Refunded by ${MODE[ret.refundMode] || ret.refundMode}`, money(ret.total), 'inv-k-pay')}
-          <p className="inv-saved">Delivery fee is not refunded</p></div></section>
+          {ret.refundMode === 'split' ? <>{ret.refundCash > 0 && row('Refunded in cash', money(ret.refundCash), 'inv-k-pay')}{ret.refundUpi > 0 && row('Refunded by GPay / UPI', money(ret.refundUpi), 'inv-k-pay')}{ret.refundCard > 0 && row('Refunded by card', money(ret.refundCard), 'inv-k-pay')}</> : row(`Refunded by ${MODE[ret.refundMode] || ret.refundMode}`, money(ret.total), 'inv-k-pay')}
+          <p className="inv-saved">{ret.deliveryFee > 0 ? `Delivery charge ${money(ret.deliveryFee)} is never refunded` : 'Delivery charge is never refunded'}</p>{ret.approvedBy && <p className="inv-sm">Refund approved by {ret.approvedBy}</p>}</div></section>
       <hr className="inv-rule thin" />
       <footer className="inv-end"><p>This credit note is issued against invoice #{ret.invoiceNo}. • {shop.name}</p><div className="inv-sign"><span>Authorised Signatory</span><small>For {shop.name}</small></div></footer>
     </article>
-  );
-}
-
-// Return items: pick how many of each line come back, a reason and how the refund is paid.
-function ReturnModal({ invoiceNo, onClose, onDone }) {
-  const [full, setFull] = useState(null); const [qty, setQty] = useState({}); const [reason, setReason] = useState(''); const [mode, setMode] = useState('cash'); const [err, setErr] = useState(); const [busy, setBusy] = useState(false);
-  useEffect(() => { api('/admin/pos/sales/' + encodeURIComponent(invoiceNo)).then(setFull).catch(e => setErr(e.message)) }, [invoiceNo]);
-  const left = i => i.quantity - (i.returnedQty || 0);
-  const picked = Object.entries(qty).filter(([, n]) => n > 0);
-  const go = async () => {
-    setBusy(true); setErr();
-    try { const r = await api(`/admin/pos/sales/${encodeURIComponent(invoiceNo)}/returns`, { method: 'POST', body: { items: picked.map(([itemId, n]) => ({ itemId: +itemId, qty: n })), reason, refundMode: mode } }); onDone(r) }
-    catch (e) { setErr(e.message) } finally { setBusy(false) }
-  };
-  return (
-    <Modal title="Return items" sub={`Against invoice ${invoiceNo}`} wide onClose={onClose} footer={<><button className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={!picked.length || busy} onClick={go}>{busy ? 'Saving…' : 'Create return invoice'}</button></>}>
-      {err && <p className="dpos-err" role="alert">{err}</p>}
-      {!full ? <p className="muted">Loading…</p> : (
-        <table className="inv-rt"><thead><tr><th>Item</th><th>Sold</th><th>Already returned</th><th>Return now</th></tr></thead>
-          <tbody>{full.items.map(i => (
-            <tr key={i.id}><td>{i.name}</td><td>{i.quantity}</td><td>{i.returnedQty || 0}</td>
-              <td>{left(i) > 0 ? <span className="inv-rq"><input type="number" min="0" max={left(i)} value={qty[i.id] ?? ''} placeholder="0" aria-label={`Quantity of ${i.name} to return`} onChange={e => setQty(q => ({ ...q, [i.id]: Math.max(0, Math.min(left(i), +e.target.value || 0)) }))} /><button type="button" onClick={() => setQty(q => ({ ...q, [i.id]: left(i) }))}>All</button></span> : <em>Returned</em>}</td></tr>))}</tbody></table>)}
-      <label className="f" style={{ marginTop: 14 }}>Reason<input value={reason} maxLength={300} onChange={e => setReason(e.target.value)} placeholder="Wrong size, defect…" /></label>
-      <p className="inv-l" style={{ margin: '14px 0 6px' }}>REFUND PAID BY</p>
-      <div className="dpos-two">{[['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card']].map(([k, l]) => <button key={k} type="button" className={mode === k ? 'on' : ''} onClick={() => setMode(k)}>{l}</button>)}</div>
-    </Modal>
   );
 }
 
@@ -223,7 +201,7 @@ export default function InvoicePage() {
         <button className="inv-btn dark" onClick={() => setPs(true)}><PrintIcon size={15} /> Print</button>
       </div>}
       {fmt === 'thermal' ? <Thermal sale={sale} shop={shop} paper={paper} /> : <A4Doc sale={sale} shop={shop} />}
-      {ret && <ReturnModal invoiceNo={sale.invoiceNo} onClose={() => setRet(false)} onDone={r => { setRet(false); nav('/invoice/' + r.shareToken) }} />}
+      {ret && <ReturnWindow invoiceNo={sale.invoiceNo} onClose={() => setRet(false)} onDone={r => { setRet(false); nav('/invoice/' + r.shareToken) }} />}
       {ps && <PrintSettings onClose={() => setPs(false)} onPrint={printNow} />}
     </div>
   );

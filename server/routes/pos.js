@@ -148,8 +148,9 @@ export default function pos({ db, auth }) {
   }));
 
   // ---- return invoices (credit notes) ----
-  r.post('/pos/sales/:invoice/returns', manager, wrap(async (req, res) => {
-    const d = z.object({ items: z.array(z.object({ itemId: z.number().int().positive(), qty: z.number().int().min(1).max(99999) })).min(1).max(100), reason: text(300).default(''), refundMode: z.enum(['cash', 'upi', 'card']).default('cash') }).parse(req.body);
+  r.post('/pos/sales/:invoice/returns', biller, wrap(async (req, res) => {
+    const d = z.object({ items: z.array(z.object({ itemId: z.number().int().positive(), qty: z.number().int().min(1).max(99999), restock: z.boolean().default(true) })).min(1).max(100), reason: text(300).default(''), refundMode: z.enum(['cash', 'upi', 'card', 'split']).default('cash'),
+      refundSplit: z.object({ cash: paise.default(0), upi: paise.default(0), card: paise.default(0) }).optional(), approval: z.object({ approved: z.boolean().optional(), adminPassword: z.string().max(200).optional() }).default({}) }).parse(req.body);
     res.status(201).json(await createReturn(db, req.user, req.params.invoice, d));
   }));
   r.get('/pos/returns/:no', biller, wrap(async (req, res) => {

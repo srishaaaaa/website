@@ -29,7 +29,7 @@ test('reports: a return comes off revenue, GST, payments and units; the bill cou
   const s = (await mk()).body;
   const mid = (await o('GET', `/admin/pos/reports?${range}`)).body;
   assert.equal(mid.revenue - before.revenue, s.total);
-  const ret = (await o('POST', `/admin/pos/sales/${s.invoiceNo}/returns`, { items: [{ itemId: s.items[0].id, qty: 1 }], refundMode: 'cash' })).body;
+  const ret = (await o('POST', `/admin/pos/sales/${s.invoiceNo}/returns`, { items: [{ itemId: s.items[0].id, qty: 1 }], refundMode: 'cash', approval: { approved: true } })).body;
   const after = (await o('GET', `/admin/pos/reports?${range}`)).body;
   assert.equal(after.revenue, mid.revenue - ret.total, 'revenue is after returns');
   assert.equal(after.grossRevenue, mid.revenue); assert.equal(after.returned.total - before.returned.total, ret.total);

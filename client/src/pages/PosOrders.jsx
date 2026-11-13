@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ExportCsv from '../components/ExportCsv';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -10,6 +10,7 @@ import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from 
 import { MODE, clock, longDate, money } from '../lib/invoiceFormat';
 import PayPicker, { blankPay, payParts } from '../components/PayPicker';
 import BillSummary from '../components/BillSummary';
+import ReturnWindow from '../components/ReturnWindow';
 
 // "Cash ₹500 · QR / GPay ₹500" for a {cash, upi, card} split.
 const SPLIT_L = [['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']];
@@ -26,13 +27,16 @@ const Ico = ({ children, size = 17 }) => <svg width={size} height={size} viewBox
 const WaIcon = () => <Ico><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.2-1.7-1-.8.6a3.5 3.5 0 0 1-1.6-1.6l.6-.8-1-1.7Z" /></Ico>;
 const DocIcon = () => <Ico><path d="M6 3h9l4 4v14H6z" /><path d="M9 13h7M9 17h7" /></Ico>;
 const EyeIcon = () => <Ico><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></Ico>;
+const RetIcon = () => <Ico><path d="M9 7 4 12l5 5" /><path d="M4 12h10a6 6 0 0 1 0 12h-2" transform="translate(0 -5)" /></Ico>;
+const EditIcon = () => <Ico><path d="M4 20h4L19 9l-4-4L4 16z" /></Ico>;
 const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14 11v6" /></Ico>;
 
 // ============================ order history ============================
 export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
   const [tab, setTab] = useState('all'); const [f, setF] = useState({ q: '', name: '', phone: '', gst: 'all', payment: 'all' }); const [per, setPer] = usePeriod('all'); const [preview, setPreview] = useState(null);
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [n, setN] = useState(0);
-  const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null); const [editing, setEditing] = useState(null);
+  const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null); const [editing, setEditing] = useState(null); const [returning, setReturning] = useState(null);
+  const openEdit = r => api('/admin/pos/sales/' + encodeURIComponent(r.invoiceNo)).then(d => setEditing(d.sale || d)).catch(e => setErr(e.message));
   const toggle = no => { if (openNo === no) { setOpenNo(null); return } setOpenNo(no); setDetail(null); api('/admin/pos/sales/' + encodeURIComponent(no)).then(d => setDetail(d.sale || d)).catch(e => setErr(e.message)) };
   const [from, to] = periodRange(per);
   useEffect(() => {
@@ -84,7 +88,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
       {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No website orders match.</Empty> : (
         <ul className="ol-list">{onlineRows.slice(0, shown).map(r => { const dt = dtShort(r.createdAt); return (
           <li key={r.invoiceNo} className="ol-card">
-            <div className="ol-top"><div><b className="ol-no">{r.invoiceNo}</b><span className={`ol-tag ${r.isWeb ? '' : 'in'}`}>{r.isWeb ? 'ONLINE' : 'IN-STORE'}</span>
+            <div className="ol-top"><div><b className="ol-no">{r.invoiceNo}</b><span className={`ol-tag ${r.isWeb ? '' : 'in'}`}>{r.isWeb ? 'ONLINE' : 'IN-STORE'}</span>{r.returnCount > 0 && <span className="ret-badge">{r.fullyReturned ? 'RETURNED' : 'PART RETURN'}</span>}
               <p className="ol-who">{r.customerName || 'Customer'}</p><p className="ol-meta">{[r.customerPhone, `${dt.d} · ${dt.t}`].filter(Boolean).join(' · ')}</p></div>
               <div className="ol-amt"><b>{inr(r.total)}</b><span className={`ol-st ${r.status === 'voided' ? 'bad' : ''}`}>{r.status === 'voided' ? 'VOID' : 'COMPLETED'}</span></div></div>
             <div className="ol-foot">
@@ -93,6 +97,8 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                 <a className="ol-b wa" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /> WHATSAPP</a>
                 <button type="button" className="ol-b inv" onClick={() => setPreview(r)}><DocIcon /> INVOICE</button>
                 <button type="button" className="ol-b" onClick={() => toggle(r.invoiceNo)}>DETAILS</button>
+                {r.status !== 'voided' && <button type="button" className="ol-b" onClick={() => setReturning(r.invoiceNo)}>RETURN</button>}
+                {manager && r.status !== 'voided' && <button type="button" className="ol-b" onClick={() => openEdit(r)}>EDIT</button>}
                 {manager && !r.isWeb && r.status !== 'voided' && <button type="button" className="ol-b del" aria-label={`Void ${r.invoiceNo}`} onClick={() => voidIt(r)}><TrashIcon /></button>}</span></div>
           </li>) })}</ul>)}
       {onlineRows.length > shown && <button type="button" className="ol-more" onClick={() => setShown(n => n + 20)}>Show more ({onlineRows.length - shown} remaining)</button>}
@@ -121,7 +127,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
           <div className="dpos-tw"><table className="dpos-ord"><thead><tr><th>Order ID</th><th>Date &amp; time</th><th>Customer name</th><th>Mobile number</th><th>Source</th><th>Total due</th><th className="r">Status</th></tr></thead>
             <tbody>{rows.map(r => { const dt = dtShort(r.createdAt); return (
               <Fragment key={r.invoiceNo}><tr className={`${r.status === 'voided' ? 'voided' : ''} click`} onClick={e => { if (!e.target.closest('a,button')) toggle(r.invoiceNo) }} title="Show the invoice details">
-                <td className="oid">{r.invoiceNo}</td>
+                <td className="oid">{r.invoiceNo}{r.returnCount > 0 && <span className="ret-badge" title={`${r.returnCount} return bill${r.returnCount > 1 ? 's' : ''}`}>{r.fullyReturned ? 'RETURNED' : 'PART RETURN'}</span>}</td>
                 <td><b>{longDate(r.billDate)}</b><div className="muted small">{dt.t}</div></td>
                 <td><b>{r.customerName || 'Guest'}</b></td>
                 <td>{r.customerPhone || <span className="muted">—</span>}</td>
@@ -132,11 +138,14 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                   <a className="ra wa" title="Send invoice on WhatsApp" aria-label="Send on WhatsApp" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>
                   <button className="ra doc" title="Invoice preview" aria-label="Invoice preview" onClick={() => setPreview(r)}><DocIcon /></button>
                   <button className="ra eye" title="Quick details" aria-label="Quick details" onClick={() => toggle(r.invoiceNo)}><EyeIcon /></button>
+                  <button className="ra ret" title="Return items" aria-label="Return items" disabled={r.status === 'voided'} onClick={() => setReturning(r.invoiceNo)}><RetIcon /></button>
+                  {manager && <button className="ra edit" title="Edit invoice" aria-label="Edit invoice" disabled={r.status === 'voided'} onClick={() => openEdit(r)}><EditIcon /></button>}
                   {manager && <button className="ra del" title="Void this invoice" aria-label="Void invoice" disabled={r.status === 'voided'} onClick={() => voidIt(r)}><TrashIcon /></button>}
                 </div></td></tr>
 </Fragment>) })}</tbody></table></div>)}
       </section>}
       {openNo && <QuickDetails row={rows?.find(x => x.invoiceNo === openNo)} sale={detail} manager={manager} onClose={() => setOpenNo(null)} onView={r => { setOpenNo(null); setPreview(r) }} onEdit={() => setEditing(detail)} />}
+      {returning && <ReturnWindow invoiceNo={returning} onClose={() => setReturning(null)} onDone={r => { setReturning(null); setN(x => x + 1); onChanged?.(); setPreview({ invoiceNo: r.invoiceNo, shareToken: r.shareToken, tab: r.returnNo }) }} />}
       {editing && <EditInvoice sale={editing} onClose={() => setEditing(null)} onSaved={sale => { setEditing(null); setDetail(sale); setN(x => x + 1); onChanged?.() }} />}
       {preview && <InvoicePreview row={preview} onClose={() => setPreview(null)} />}
     </>
@@ -155,7 +164,7 @@ function QuickDetails({ row, sale, manager, onClose, onView, onEdit }) {
         {!sale ? <p className="muted" style={{ padding: 24 }}>Loading…</p> : <>
           <div className="qd-grid">
             <div><small>CUSTOMER</small><b>{sale.customerName || 'Walk-in Customer'}</b></div><div><small>PHONE</small><b>{sale.customerPhone || '—'}</b></div>
-            <div><small>DATE</small><b>{longDate(sale.billDate)}</b></div><div><small>STATUS</small><b>{sale.status === 'voided' ? 'Void' : 'Completed'}{sale.editedAt ? ' · Edited' : ''}</b></div>
+            <div><small>DATE</small><b>{longDate(sale.billDate)}</b></div><div><small>STATUS</small><b>{sale.status === 'voided' ? 'Void' : sale.returns?.length ? (sale.items.every(i => (i.returnedQty || 0) >= i.quantity) ? 'Returned' : 'Part returned') : 'Completed'}{sale.editedAt ? ' · Edited' : ''}</b></div>
           </div>
           <div className="qd-box">
             {sale.items.map(i => <div className="qd-line" key={i.id}><span>{i.name}{varText(i) ? ` · ${varText(i)}` : ''} <em>× {i.quantity}</em></span><b>{inr(i.lineTotal)}</b></div>)}
@@ -164,6 +173,7 @@ function QuickDetails({ row, sale, manager, onClose, onView, onEdit }) {
             {sale.deliveryFee > 0 && <div className="qd-sum"><span>Delivery</span><span className="mono">{inr(sale.deliveryFee)}</span></div>}
             <div className="qd-sum qd-total"><b>TOTAL</b><span className="mono">{inr(sale.total)}</span></div>
             <div className="qd-sum qd-paid"><b>Paid by {MODE[sale.paymentMode] || sale.paymentMode}</b><span className="mono">{inr(paid || sale.total)}</span></div>
+            {sale.returns?.length > 0 && <div className="qd-ret"><b>Return bills</b>{sale.returns.map(x => <span key={x.returnNo}>{x.returnNo} · {inr(x.total)}</span>)}</div>}
             <div className="qd-sum qd-due"><b>Balance Due</b><span className="mono">{inr(Math.max(0, sale.total - (paid || sale.total)))}</span></div>
           </div>
           <div className="qd-foot"><button type="button" className="qd-b" onClick={onClose}>CLOSE</button>
@@ -198,14 +208,21 @@ function EditInvoice({ sale, onClose, onSaved }) {
   );
 }
 
-// In-page invoice preview: the real invoice page in a frame, so nothing navigates away. "Open Full Page" goes to /invoice/<token>.
+// In-page invoice preview: the real invoice page in a frame, so nothing navigates away. One tab for the original bill and one for each return invoice
+// (RTN-00000001 …); every tab can be printed or saved as a PDF. "Open Full Page" goes to /invoice/<token>.
 export function InvoicePreview({ row, onClose }) {
   const nav = useNavigate();
+  const [rets, setRets] = useState([]); const [tab, setTab] = useState(row.tab || 'orig'); const frame = useRef();
+  useEffect(() => { api('/admin/pos/sales/' + encodeURIComponent(row.invoiceNo)).then(d => setRets((d.sale || d).returns || [])).catch(() => {}) }, [row.invoiceNo, row.tab]);
+  const cur = tab === 'orig' ? { no: row.invoiceNo, token: row.shareToken } : rets.find(r => r.returnNo === tab) ? { no: tab, token: rets.find(r => r.returnNo === tab).shareToken } : { no: row.invoiceNo, token: row.shareToken };
+  const print = () => { const w = frame.current?.contentWindow; if (!w) return; try { w.document.title = cur.no } catch { /* cross-origin */ } w.focus(); w.print() };
   return (
     <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Invoice preview" onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="dpos-sheet invprev">
-        <div className="invprev-bar"><b>🖨 INVOICE PREVIEW • #{row.invoiceNo}</b><span><button type="button" onClick={() => nav('/invoice/' + row.shareToken)}>Open Full Page ↗</button><button type="button" aria-label="Close" onClick={onClose}>✕</button></span></div>
-        <iframe title={`Invoice ${row.invoiceNo}`} src={`/invoice/${row.shareToken}`} />
+        <div className="invprev-bar"><b>🖨 INVOICE PREVIEW • #{row.invoiceNo}</b><span><button type="button" onClick={print}>Print</button><button type="button" onClick={print} title="Choose Save as PDF in the print window">PDF</button><button type="button" onClick={() => nav('/invoice/' + cur.token)}>Open Full Page ↗</button><button type="button" aria-label="Close" onClick={onClose}>✕</button></span></div>
+        {rets.length > 0 && <div className="invprev-tabs" role="tablist"><button type="button" role="tab" aria-selected={tab === 'orig'} className={tab === 'orig' ? 'on' : ''} onClick={() => setTab('orig')}>Original bill</button>
+          {rets.map(r => <button key={r.returnNo} type="button" role="tab" aria-selected={tab === r.returnNo} className={tab === r.returnNo ? 'on' : ''} onClick={() => setTab(r.returnNo)}>{r.returnNo}</button>)}</div>}
+        <iframe ref={frame} key={cur.token} title={`Invoice ${cur.no}`} src={`/invoice/${cur.token}`} />
       </div>
     </div>
   );

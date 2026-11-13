@@ -25,7 +25,7 @@ export default function invoicePublic({ db }) {
         customerAddress: s.customerAddress, isGst: s.isGst, gstRate: s.gstRate, subtotal: s.subtotal, discount: s.discount, discountType: s.discountType, discountValue: s.discountValue,
         couponCode: s.couponCode, tax: s.tax, deliveryFee: s.deliveryFee, total: s.total, paymentMode: s.paymentMode, payCash: s.payCash, payUpi: s.payUpi, payCard: s.payCard,
         cashTendered: s.cashTendered, change: s.change, notes: s.notes, items: s.items.map(({ id, ...i }) => i),
-        returns: (s.returns ?? []).map(({ shareToken, ...x }) => x), ...(s.advance ? { advance: s.advance } : {}) },
+        returns: s.returns ?? [], ...(s.advance ? { advance: s.advance } : {}) },
     });
   }));
 

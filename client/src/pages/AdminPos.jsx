@@ -480,9 +480,13 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
     if (tab === 'today') api(`/admin/pos/sales?from=${from}&to=${to}&channel=${channel}&gst=${gst}&payment=${pay}`).then(setBills).catch(() => {});
   }, [from, to, channel, gst, pay, src, tab, tick]);
   const v = (f, d = '…') => rep ? f(rep) : d;
+  // Refunds come off Net Profit unless this is unticked; the choice is remembered between visits.
+  const [reduce, setReduce] = useState(() => { try { return localStorage.getItem('dhanya.reduceRefunds') !== '0' } catch { return true } });
+  const toggleReduce = on => { setReduce(on); try { localStorage.setItem('dhanya.reduceRefunds', on ? '1' : '0') } catch { /* ignore */ } };
+  const netOf = r => r.net + (reduce ? 0 : (r.returned?.total || 0));
   return (
     <>
-      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="analytics-summary" header={['Measure', 'Value (₹ / count)']} rows={rep ? [['Total revenue', (rep.revenue / 100).toFixed(2)], ['GST sales', (rep.gstSales / 100).toFixed(2)], ['Non-GST sales', (rep.nonGstSales / 100).toFixed(2)], ['Expenses', (rep.expenses / 100).toFixed(2)], ['Net profit', (rep.net / 100).toFixed(2)], ['Completed bills', rep.bills], ['Offline sales', (rep.offlineSales / 100).toFixed(2)], ['Online sales', (rep.onlineSales / 100).toFixed(2)], ['Items sold', rep.units]] : []} /></div>}
+      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="analytics-summary" header={['Measure', 'Value (₹ / count)']} rows={rep ? [['Total revenue', (rep.revenue / 100).toFixed(2)], ['GST sales', (rep.gstSales / 100).toFixed(2)], ['Non-GST sales', (rep.nonGstSales / 100).toFixed(2)], ['Expenses', (rep.expenses / 100).toFixed(2)], ['Net profit', (netOf(rep) / 100).toFixed(2)], ['Refunded amount', ((rep.returned?.total || 0) / 100).toFixed(2)], ['Refunded bills', rep.returned?.count || 0], ['Completed bills', rep.bills], ['Offline sales', (rep.offlineSales / 100).toFixed(2)], ['Online sales', (rep.onlineSales / 100).toFixed(2)], ['Items sold', rep.units]] : []} /></div>}
       <div className="an-top">
         <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
       </div>
@@ -495,12 +499,13 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
 
       {(tab === 'revenue' || tab === 'today') && <>
         <div className="dpos-k4">
-          <Stat cls="net" icon="wallet" label="Net profit" value={v(r => r.net < 0 ? `− ${inr(-r.net)}` : inr(r.net))} sub={ws ? 'Wholesale sales' : 'Sales − Expenses'} onOpen={!ws && rep ? () => setDetail('net') : undefined} />
+          <Stat cls="net" icon="wallet" label="Net profit" value={v(r => netOf(r) < 0 ? `− ${inr(-netOf(r))}` : inr(netOf(r)))} sub={ws ? 'Wholesale sales' : 'Sales − Expenses'} onOpen={!ws && rep ? () => setDetail('net') : undefined} />
           <Stat cls="gstc" icon="doc" label="GST sales" value={v(r => inr(r.gstSales))} sub={v(r => `${r.gstBills} GST invoices`, ' ')} />
           <Stat cls="nong" icon="trend" label="Non-GST sales" value={v(r => `+ ${inr(r.nonGstSales)}`)} sub={v(r => `${r.nonGstBills} ${ws ? 'wholesale' : 'retail'} bills`, ' ')} />
           {!ws && <Stat cls="exp" icon="wallet" label="Total expenses" value={v(r => `− ${inr(r.expenses)}`)} sub={v(r => r.expenseByCategory?.length ? `${r.expenseByCategory.length} categor${r.expenseByCategory.length === 1 ? 'y' : 'ies'} · top: ${r.expenseByCategory[0].category}` : 'No expenses yet', ' ')} onOpen={rep ? () => setDetail('expenses') : undefined} />}
         </div>
-        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;Sales ({inr(rep.revenue)}){rep.costs?.enabled ? ` − Cost of goods (${inr(rep.cogs)})` : ''} − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{rep.net < 0 ? `− ${inr(-rep.net)}` : inr(rep.net)}</span></span></div>}
+        {!ws && rep && <div className="dpos-formula"><span><b className="tag">Calculation formula</b> &nbsp;Sales ({inr(rep.revenue)}){rep.costs?.enabled ? ` − Cost of goods (${inr(rep.cogs)})` : ''} − Expenses ({inr(rep.expenses)})</span><span>= Net profit: <span className="np">{netOf(rep) < 0 ? `− ${inr(-netOf(rep))}` : inr(netOf(rep))}</span></span></div>}
+        {!ws && rep && <label className="an-reduce"><input type="checkbox" checked={reduce} onChange={e => toggleReduce(e.target.checked)} /> Reduce refunds from Net Profit <small>({inr(rep.returned?.total || 0)} refunded in this period)</small></label>}
         {!ws && rep && (
           <div className="cost-row">
             <div className="cost-card teal"><div className="cc-t"><span>TOTAL COST PRICE (STOCK IN HAND)</span><i><Icon n="box" size={22} /></i></div>
@@ -517,6 +522,8 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
           <Stat icon="orders" label="Total online bills" value={v(r => r.onlineBills)} sub="Website orders" />
           <Stat icon="box" label="Total items sold" value={v(r => r.units)} sub="From completed bills" />
           <Stat icon="star" label="Top product" txt value={v(r => r.topProduct || '—')} sub="Most sold item" />
+          {!ws && <Stat icon="swap" label="Refunded amount" value={v(r => inr(r.returned?.total || 0))} sub={v(r => `Cash ${inr(r.returnedBy?.cash || 0)} · GPay ${inr(r.returnedBy?.upi || 0)} · Card ${inr(r.returnedBy?.card || 0)}`, ' ')} />}
+          {!ws && <Stat icon="doc" label="Refunded bills" value={v(r => r.returned?.count || 0)} sub="Return invoices in this period" />}
         </div>
       </>}
 
@@ -543,7 +550,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
       {tab === 'products' && <ProductsBoard rep={rep} />}
 
       {tab === 'coupons' && <CouponPanel rep={rep} openInvoice={openInvoice} />}
-      {detail && rep && <MoneyDetail kind={detail} rep={rep} from={from} to={to} onClose={() => setDetail(null)} goExpenses={goExpenses} />}
+      {detail && rep && <MoneyDetail kind={detail} rep={{ ...rep, net: netOf(rep) }} from={from} to={to} onClose={() => setDetail(null)} goExpenses={goExpenses} />}
     </>
   );
 }

@@ -122,7 +122,7 @@ export async function getSale(q, invoice) {
   if (!sale) return null;
   sale.items = await rows(q, `
     SELECT id, name_snapshot AS name, sku_snapshot AS sku, variant_snapshot AS variant, unit_price AS "unitPrice", quantity,
-           line_total AS "lineTotal", discount_alloc AS discount, tax_rate AS "taxRate", tax_amount AS tax,
+           line_total AS "lineTotal", discount_alloc AS discount, tax_rate AS "taxRate", tax_amount AS tax, (variant_id IS NOT NULL) AS stocked,
            COALESCE((SELECT SUM(ri.quantity) FROM pos_return_items ri WHERE ri.sale_item_id = pos_sale_items.id), 0)::int AS "returnedQty"
     FROM pos_sale_items WHERE sale_id = $1 ORDER BY id`, [sale.id]);
   sale.returns = await returnsFor(q, sale.id);
@@ -259,7 +259,7 @@ export function listSales(db, { q = '', name = '', phone = '', source = 'all', f
   if (to) w.push(`${dayExpr} <= ${add(to)}::date`);
   return rows(db, `
     SELECT s.invoice_no AS "invoiceNo", s.status, s.customer_name AS "customerName", s.customer_phone AS "customerPhone", s.total_amount AS total,
-           s.payment_mode AS "paymentMode", s.web_order_id IS NOT NULL AS "isWeb", (SELECT o.status FROM orders o WHERE o.id = s.web_order_id) AS "fulfilment", (SELECT o.order_number FROM orders o WHERE o.id = s.web_order_id) AS "orderNumber", s.created_at AS "createdAt", s.bill_date::text AS "billDate", s.is_gst AS "isGst", s.source, s.share_token AS "shareToken", (SELECT COALESCE(SUM(quantity), 0)::int FROM pos_sale_items i WHERE i.sale_id = s.id) AS "itemCount"
+           s.payment_mode AS "paymentMode", s.web_order_id IS NOT NULL AS "isWeb", (SELECT COUNT(*) FROM pos_returns r WHERE r.sale_id = s.id)::int AS "returnCount", (SELECT COALESCE(SUM(r.total), 0) FROM pos_returns r WHERE r.sale_id = s.id)::int AS "returnedTotal", (EXISTS (SELECT 1 FROM pos_returns r WHERE r.sale_id = s.id) AND NOT EXISTS (SELECT 1 FROM pos_sale_items i WHERE i.sale_id = s.id AND i.quantity > COALESCE((SELECT SUM(ri.quantity) FROM pos_return_items ri WHERE ri.sale_item_id = i.id), 0))) AS "fullyReturned", (SELECT o.status FROM orders o WHERE o.id = s.web_order_id) AS "fulfilment", (SELECT o.order_number FROM orders o WHERE o.id = s.web_order_id) AS "orderNumber", s.created_at AS "createdAt", s.bill_date::text AS "billDate", s.is_gst AS "isGst", s.source, s.share_token AS "shareToken", (SELECT COALESCE(SUM(quantity), 0)::int FROM pos_sale_items i WHERE i.sale_id = s.id) AS "itemCount"
     FROM pos_sales s WHERE ${w.join(' AND ')} ORDER BY s.id DESC LIMIT ${Math.min(limit, 500)}`, a);
 }
 
@@ -294,12 +294,12 @@ export async function report(db, from, to, channel = 'retail', gst = 'all', sour
   }
   // Returns made in the period reduce revenue, GST, payments, units, cost of goods and the charts (by the date of the return).
   const rDay = "(r.created_at AT TIME ZONE 'Asia/Kolkata')::date";
-  const rPay = ['cash', 'upi', 'card'].includes(payment) ? ` AND r.refund_mode = '${payment}'` : payment === 'split' ? ' AND false' : '';
+  const rPay = ['cash', 'upi', 'card'].includes(payment) ? ` AND r.refund_${payment === 'upi' ? 'upi' : payment} > 0` : payment === 'split' ? " AND r.refund_mode = 'split'" : '';
   const rWhere = `FROM pos_returns r JOIN pos_sales s ON s.id = r.sale_id WHERE s.channel = $3 AND ${rDay} BETWEEN $1::date AND $2::date${g}${src}${rPay}`;
   let ret = { count: 0, total: 0, tax: 0 }, retBy = { cash: 0, upi: 0, card: 0, gst: 0, nonGst: 0, offline: 0, online: 0 }, retDaily = [], retProducts = [], retUnits = 0, retCost = 0, retRev = 0;
   try {
     ret = await one(db, `SELECT COUNT(*)::int AS count, COALESCE(SUM(r.total), 0)::int AS total, COALESCE(SUM(r.tax), 0)::int AS tax ${rWhere}`, p);
-    retBy = await one(db, `SELECT COALESCE(SUM(r.total) FILTER (WHERE r.refund_mode = 'cash'), 0)::int AS cash, COALESCE(SUM(r.total) FILTER (WHERE r.refund_mode = 'upi'), 0)::int AS upi, COALESCE(SUM(r.total) FILTER (WHERE r.refund_mode = 'card'), 0)::int AS card,
+    retBy = await one(db, `SELECT COALESCE(SUM(r.refund_cash), 0)::int AS cash, COALESCE(SUM(r.refund_upi), 0)::int AS upi, COALESCE(SUM(r.refund_card), 0)::int AS card,
       COALESCE(SUM(r.total) FILTER (WHERE s.is_gst), 0)::int AS gst, COALESCE(SUM(r.total) FILTER (WHERE NOT s.is_gst), 0)::int AS "nonGst",
       COALESCE(SUM(r.total) FILTER (WHERE s.source = 'offline'), 0)::int AS offline, COALESCE(SUM(r.total) FILTER (WHERE s.source = 'online'), 0)::int AS online ${rWhere}`, p);
     const it = await one(db, `SELECT COALESCE(SUM(ri.quantity), 0)::int AS units, COALESCE(SUM(ri.line_total - ri.discount), 0)::text AS rev, COALESCE(SUM(ri.quantity::bigint * COALESCE(i.cost_snapshot, 0)), 0)::text AS cost
@@ -347,7 +347,7 @@ export async function report(db, from, to, channel = 'retail', gst = 'all', sour
   const retWeek = await rows(db, `SELECT ${rDay}::text AS day, SUM(r.total)::int AS revenue FROM pos_returns r JOIN pos_sales s ON s.id = r.sale_id WHERE s.channel = $1 AND ${rDay} BETWEEN $2::date AND $3::date${g} GROUP BY 1`, [channel, iso(mon), iso(sun)]).catch(() => []);
   const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setUTCDate(mon.getUTCDate() + i); return (wk.find(r => r.day === iso(d))?.revenue ?? 0) - (retWeek.find(r => r.day === iso(d))?.revenue ?? 0) });
   const jan1 = new Date(Date.UTC(year, 0, 1)), weekNo = Math.ceil(((t - jan1) / 86400000 + ((jan1.getUTCDay() + 6) % 7) + 1) / 7);
-  return { from, to, channel, gst, source, payment, ...totals, grossRevenue, returned: ret, units: unitsNet, expenses, expenseByCategory, costs, cogs: costs.soldCost, gross: totals.revenue - costs.soldCost, net: totals.revenue - costs.soldCost - expenses, average: totals.bills ? Math.round(totals.revenue / totals.bills) : 0,
+  return { from, to, channel, gst, source, payment, ...totals, grossRevenue, returned: ret, returnedBy: retBy, units: unitsNet, expenses, expenseByCategory, costs, cogs: costs.soldCost, gross: totals.revenue - costs.soldCost, net: totals.revenue - costs.soldCost - expenses, average: totals.bills ? Math.round(totals.revenue / totals.bills) : 0,
     topProduct: products[0]?.name ?? null, daily, products, coupons, discountedList, year, monthly, week, weekNo };
 }
 

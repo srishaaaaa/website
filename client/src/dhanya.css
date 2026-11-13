@@ -662,3 +662,12 @@
 .ol-fs.in { background: #f3e8f4; border-color: #d8b4dc; color: #330533 }
 .ol-mark { background: #330533 }
 .ol-queue { border-color: #d9bd7a; background: linear-gradient(180deg, #fbf4e2, #fff) } .ol-qh { border-bottom-color: #ead9a8 } .ol-qr { border-bottom-color: #f1e5c2 }
+.an-reduce { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; margin: 2px 4px } .an-reduce input { width: 18px; height: 18px; accent-color: #330533 } .an-reduce small { color: #6f6b66; font-weight: 500 }
+.rw-note { margin: 8px 0 0; font-size: 12.5px; color: #6f6b66 } .rw-tick { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px } .rw-tick input { width: 18px; height: 18px; accent-color: #330533 }
+.rw-sum { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding: 12px 16px; border-radius: 14px; background: #f3e8f4; font-size: 15px } .rw-sum b { font-size: 20px; color: #330533 }
+.rw-split { margin-top: 10px; gap: 10px } .rw-ok { color: #1c7a4b; font-weight: 700; font-size: 13px; margin: 0 } .rw-bad { color: #b3261e; font-weight: 700; font-size: 13px; margin: 0 }
+.rw-admin { margin: 14px 0 0; padding: 12px 16px; border: 1px solid #d8b4dc; border-radius: 14px; display: grid; gap: 8px } .rw-admin legend { padding: 0 8px; font-size: 11.5px; font-weight: 800; letter-spacing: .12em; color: #330533; text-transform: uppercase } .rw-admin small { color: #6f6b66 }
+.invprev-tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 26px; background: #fff; border-bottom: 1px solid #eee7e0 } .invprev-tabs button { padding: 8px 16px; border-radius: 999px; border: 1px solid #d8d2da; font-size: 13px; font-weight: 700; background: #fff } .invprev-tabs button.on { background: #330533; border-color: #330533; color: #fff }
+.ra.ret, .ra.edit { background: #f3f1f4; color: #1a1420 } .ra.ret:disabled, .ra.edit:disabled { opacity: .4 }
+.ret-badge { margin-left: 8px; padding: 3px 9px; border-radius: 6px; background: #fdecec; color: #b3261e; font: 800 10.5px 'Poppins', sans-serif; letter-spacing: .06em; vertical-align: middle; white-space: nowrap }
+.qd-ret { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 0; border-top: 1px solid #e5dfd8; font-size: 13px; color: #b3261e } .qd-ret span { font-weight: 700 }
