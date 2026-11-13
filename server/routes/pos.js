@@ -74,7 +74,7 @@ const customerBody = z.object({ name: text(120).default(''), phone: text(20).reg
 const expenseBody = z.object({ title: text(120).min(1), category: text(60).default('General'), amount: z.number().int().min(1).max(100_000_000), paymentMode: z.enum(['cash', 'upi', 'card']).default('cash'), notes: text(300).nullable().default(null), date: date.optional() });
 const productPatch = z.object({ name: text(160).min(1), price: paise, costPrice: paise.optional(), taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']),
   description: text(4000).optional(), material: text(80).optional(), featured: z.boolean().optional(), bestSeller: z.boolean().optional(), lowAlert: z.number().int().min(0).max(100000).optional(), weightGrams: z.number().int().min(0).max(1_000_000).optional(), collections: z.array(text(120).min(1)).max(50).optional() });
-const variantPatch = z.object({ size: text(40).min(1), color: text(40).min(1), sku: text(80).min(1), price: paise.nullable(), cost: paise.nullable(), active: z.boolean() }).partial();
+const variantPatch = z.object({ size: text(40).min(1), color: text(40).min(1), sku: text(80).min(1), price: paise.nullable(), cost: paise.nullable(), weight: z.number().int().min(0).max(1_000_000).nullable(), active: z.boolean() }).partial();
 const variantBody = z.object({ size: text(40).min(1), color: text(40).default('Default'), sku: text(80).min(1), stock: z.number().int().min(0).max(1_000_000).default(0) });
 const colourBody = z.object({ color: text(40).min(1), price: paise.nullable().default(null),
   sizes: z.array(z.object({ size: text(40).min(1), stock: z.number().int().min(0).max(1_000_000).default(0), sku: text(80).optional() })).min(1).max(30) });
@@ -314,7 +314,7 @@ export default function pos({ db, auth }) {
     const v = z.object({
       enabled: z.boolean(), note: text(300).default(''), storePin: z.string().regex(/^(\d{6})?$/, 'Shop PIN code must be 6 digits').default(''),
       defaultFee: paise, freeOver: paise.nullable(), maxKm: z.number().min(0).max(5000).default(0), perKmBeyond: paise.default(0),
-      weightMode: z.boolean().default(false),
+      weightMode: z.boolean().default(false), productLines: z.array(text(300)).max(20).default([]),
       weightRegions: z.array(z.object({ name: text(60).min(1), active: z.boolean().default(true), prefixes: z.array(z.string().regex(/^\d{1,6}$/)).max(40).default([]),
         tiers: z.array(z.object({ minGrams: z.number().int().min(0).max(1_000_000), maxGrams: z.number().int().min(1).max(1_000_000).nullable(), fee: paise })).max(20).default([]) })).max(30).default([]),
       bands: z.array(z.object({ upToKm: z.number().positive().max(5000), fee: paise })).max(12).default([]),
@@ -384,8 +384,8 @@ export default function pos({ db, auth }) {
     const d = variantPatch.parse(req.body); const pid = id.parse(req.params.id), vid = id.parse(req.params.vid);
     const u = await db.query(`UPDATE product_variants SET size = COALESCE($3, size), color = COALESCE($4, color), sku = COALESCE($5, sku),
         price_override = CASE WHEN $6 THEN $7::int ELSE price_override END, active = COALESCE($8, active),
-        cost_override = CASE WHEN $9 THEN $10::int ELSE cost_override END WHERE id = $2 AND product_id = $1 RETURNING id`,
-      [pid, vid, d.size ?? null, d.color ?? null, d.sku ?? null, d.price !== undefined, d.price ?? null, d.active ?? null, d.cost !== undefined, d.cost ?? null])
+        cost_override = CASE WHEN $9 THEN $10::int ELSE cost_override END, weight_grams = CASE WHEN $11 THEN $12::int ELSE weight_grams END WHERE id = $2 AND product_id = $1 RETURNING id`,
+      [pid, vid, d.size ?? null, d.color ?? null, d.sku ?? null, d.price !== undefined, d.price ?? null, d.active ?? null, d.cost !== undefined, d.cost ?? null, d.weight !== undefined, d.weight ?? null])
       .catch(e => { if (e.code === '23505') throw new HttpError(409, 'That SKU or size/colour already exists for this product'); throw e });
     if (!u.rows.length) throw new HttpError(404, 'Size not found');
     await audit(db, req.user.id, 'pos.variant.edit', 'product', pid, { variant: vid, ...d });

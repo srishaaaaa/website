@@ -44,3 +44,19 @@ test('product weight is saved, and the bag is priced by its total weight through
   assert.equal(c.shipping.weightGrams, 1400); assert.equal(c.shipping.amount, 14000, 'two pieces weigh over 1 kg');
   await o('PUT', '/admin/pos/delivery-rules', { ...rules, enabled: false, weightMode: false });
 });
+
+test('a size can carry its own weight (blank = the product weight) and the product pages get the delivery lines', async () => {
+  const o = await login();
+  const p = (await o('GET', '/admin/pos/products')).body.find(x => x.stock >= 3);
+  const vr = p.variants[0];
+  assert.equal(vr.weightGrams, null, 'blank by default');
+  assert.equal((await o('PATCH', `/admin/pos/products/${p.id}/variants/${vr.id}`, { weight: 1500 })).status, 200);
+  assert.equal((await o('GET', '/admin/pos/products')).body.find(x => x.id === p.id).variants.find(x => x.id === vr.id).weightGrams, 1500);
+  const rules = { enabled: true, note: 'Ships in 3 days', productLines: ['Delivery across India in 3 days'], storePin: '', defaultFee: 9900, freeOver: 500000, maxKm: 0, perKmBeyond: 0, bands: [], zones: [], orderTiers: [], blockedPrefixes: [], weightMode: false, weightRegions: [] };
+  assert.equal((await o('PUT', '/admin/pos/delivery-rules', rules)).status, 200);
+  const info = (await client()('GET', '/delivery-info')).body;
+  assert.deepEqual(info.lines, ['Delivery across India in 3 days']); assert.equal(info.note, 'Ships in 3 days'); assert.equal(info.freeOver, 500000);
+  const shop = client(); await shop('POST', '/cart/items', { variantId: vr.id, quantity: 1 });
+  assert.equal((await shop('GET', '/cart')).body.shipping.weightGrams, 1500, "the size's own weight is used");
+  await o('PUT', '/admin/pos/delivery-rules', { ...rules, enabled: false });
+});

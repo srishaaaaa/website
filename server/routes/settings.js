@@ -4,6 +4,7 @@ import { one } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
 import { sweepMedia } from './sample.js';
+import { loadRules } from '../lib/delivery.js';
 
 const text = n => z.string().trim().max(n);
 const nullableText = n => text(n).transform(v => v || null).nullable().default(null);
@@ -61,6 +62,13 @@ export async function readSetting(db, key) {
 
 export default function settingsRoutes({ db, cfg, auth }) {
   const r = Router();
+
+  // Public: what the product pages say about delivery (the owner's own lines, else the shipping note and the free-delivery threshold).
+  r.get('/delivery-info', wrap(async (_req, res) => {
+    const d = await loadRules(db).catch(() => ({}));
+    res.set('Cache-Control', 'public, max-age=30');
+    res.json({ note: d.note || '', lines: (d.productLines || []).filter(Boolean), freeOver: d.enabled && d.freeOver > 0 ? d.freeOver : null, byWeight: !!(d.enabled && d.weightMode) });
+  }));
 
   // Public: boutique location/hours/social. The map URL is only produced for a configured address.
   r.get('/store', wrap(async (_req, res) => {

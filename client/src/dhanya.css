@@ -173,7 +173,7 @@
 .pe2-vh{ display: flex; justify-content: space-between; align-items: flex-start; gap: 12px }
 .pe2-vh h3{ margin: 0 }
 .pe2-rows{ display: grid; gap: 10px }
-.pe2-rh, .pe2-row{ display: grid; grid-template-columns: 1.1fr 1.1fr 1fr 1fr 1fr 40px; gap: 12px; align-items: center }
+.pe2-rh, .pe2-row{ display: grid; grid-template-columns: 1.1fr 1.1fr 1fr 1fr .9fr 1fr 40px; gap: 12px; align-items: center }
 .pe2-rh{ font-size: 11.5px; font-weight: 800; letter-spacing: .14em; color: #6f6b66; padding: 0 14px }
 .pe2-row{ background: #fff; padding: 10px 14px; border-radius: 16px }
 .pe2-row input{ border-radius: 12px }

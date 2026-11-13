@@ -57,7 +57,7 @@ export default function admin({ db, auth }) {
     slug: z.string().regex(/^[a-z0-9-]+$/), name: z.string().min(1).max(160), description: z.string().max(5000).optional(),
     category: z.string().optional(), price: z.number().int().min(0), gst_rate: z.number().int().min(0).max(28).default(5),
     status: z.enum(['draft', 'active', 'archived']).default('draft'), featured: z.boolean().default(false), cost_price: z.number().int().min(0).optional(),
-    variants: z.array(z.object({ sku: z.string().min(1), size: z.string().min(1), color: z.string().default('Default'), stock: z.number().int().min(0).default(0), cost: z.number().int().min(0).optional() })).default([]),
+    variants: z.array(z.object({ sku: z.string().min(1), size: z.string().min(1), color: z.string().default('Default'), stock: z.number().int().min(0).default(0), cost: z.number().int().min(0).optional(), weight: z.number().int().min(0).max(1_000_000).optional() })).default([]),
   });
   r.post('/products', staff, wrap(async (req, res) => {
     const d = productBody.parse(req.body);
@@ -68,6 +68,7 @@ export default function admin({ db, auth }) {
       for (const v of d.variants) {
         const row = await one(t, 'INSERT INTO product_variants (product_id, sku, size, color, stock_quantity) VALUES ($1,$2,$3,$4,$5) RETURNING id', [p.id, v.sku, v.size, v.color, v.stock]);
         if (v.stock) await t.query('INSERT INTO inventory_movements (variant_id, quantity_change, reason) VALUES ($1,$2,$3)', [row.id, v.stock, 'initial_stock']);
+        if (v.weight != null) await t.query('UPDATE product_variants SET weight_grams = $2 WHERE id = $1', [row.id, v.weight]);
         if (v.cost != null && await hasVariantCost(t)) await t.query('UPDATE product_variants SET cost_override = $2 WHERE id = $1', [row.id, v.cost]);
       }
       if (d.cost_price && await hasCostColumns(t)) await t.query('UPDATE products SET cost_price = $2 WHERE id = $1', [p.id, d.cost_price]);

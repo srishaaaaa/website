@@ -48,7 +48,7 @@ export async function mergeCarts(db, fromId, toId) {
 export function cartLines(q, cartId) {
   return rows(q, `
     SELECT v.id AS "variantId", p.id AS "productId", p.slug, p.name, v.sku, v.size, v.color, ci.quantity AS qty,
-           v.stock_quantity AS stock, COALESCE(v.price_override, p.base_price) AS price, p.tax_rate AS "taxRate", p.weight_grams AS "weightGrams",
+           v.stock_quantity AS stock, COALESCE(v.price_override, p.base_price) AS price, p.tax_rate AS "taxRate", COALESCE(v.weight_grams, p.weight_grams) AS "weightGrams",
            (v.active AND p.status = 'active') AS available,
            (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image
     FROM cart_items ci

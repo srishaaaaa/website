@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { api } from '../lib/api';
-import { FREE_SHIPPING_AT, SHIPPING_FLAT, inr, sortSizes } from '../lib/format';
+import { inr, sortSizes } from '../lib/format';
 import { useApp } from '../context/App';
 import { useFinePointer, useModal, useReduced } from '../lib/hooks';
 import { ProductMedia } from '../components/ProductCard3D';
@@ -72,6 +72,9 @@ function Accordion({ title, children, open = false }) {
 }
 
 export default function Product() {
+  const [dinfo, setDinfo] = useState(null);
+  useEffect(() => { api('/delivery-info').then(setDinfo).catch(() => {}) }, []);
+  const deliveryLines = dinfo?.lines?.length ? dinfo.lines : [dinfo?.note, dinfo?.byWeight ? 'Delivery is charged by the weight of your bag.' : null, dinfo?.freeOver ? `Free delivery on orders of ${inr(dinfo.freeOver)} or more.` : null].filter(Boolean);
   const { slug } = useParams();
   const { addToBag, wish, toggleWish, toast } = useApp();
   const [p, setP] = useState(null);
@@ -139,7 +142,7 @@ export default function Product() {
           <div className="dr-box">
             <h3>DELIVERY &amp; RETURNS</h3>
             <ul>
-              <li>Delivery across India: {inr(SHIPPING_FLAT)}, free on bag totals above {inr(FREE_SHIPPING_AT)}</li>
+              {deliveryLines.map((t, i) => <li key={i}>{t}</li>)}
               <li>{p.gst_rate > 0 ? `Price includes ${p.gst_rate}% GST, itemised at checkout and on your bill` : 'This piece carries no GST'}</li>
               <li>Made-to-measure and altered garments are non-returnable</li>
               <li>Questions about fit or fabric? Message us on WhatsApp before you order</li>

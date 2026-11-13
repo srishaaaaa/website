@@ -16,7 +16,7 @@ const getSetting = async (db, key, fallback) => (await one(db, 'SELECT value FRO
 // All money is in paise. With `enabled: false` the shipping method's own flat fee and free-over amount apply, as before.
 export const DEFAULT_RULES = {
   enabled: false, note: 'Delivered within 5 to 7 working days across India. You will get a message when your order ships.',
-  storePin: '', weightMode: false, weightRegions: [], defaultFee: 9900, freeOver: 500000, maxKm: 0, perKmBeyond: 0, bands: [], zones: [], orderTiers: [], blockedPrefixes: [],
+  storePin: '', productLines: [], weightMode: false, weightRegions: [], defaultFee: 9900, freeOver: 500000, maxKm: 0, perKmBeyond: 0, bands: [], zones: [], orderTiers: [], blockedPrefixes: [],
 };
 
 export const loadRules = async db => ({ ...DEFAULT_RULES, ...(await getSetting(db, 'delivery_rules', {})) });

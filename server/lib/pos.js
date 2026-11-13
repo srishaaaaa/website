@@ -438,7 +438,7 @@ export const listProducts = async (db, q = '', onlyId = null) => {
            c.name AS category, c.slug AS "categorySlug",
            (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image,
            COALESCE((SELECT SUM(v.stock_quantity) FROM product_variants v WHERE v.product_id = p.id), 0)::int AS stock,
-           COALESCE((SELECT json_agg(json_build_object('id', v.id, 'sku', v.sku, 'size', v.size, 'color', v.color, 'stock', v.stock_quantity, 'price', COALESCE(v.price_override, p.base_price), 'priceOverride', v.price_override, ${vcSql}, 'active', v.active) ORDER BY v.id)
+           COALESCE((SELECT json_agg(json_build_object('id', v.id, 'sku', v.sku, 'size', v.size, 'color', v.color, 'stock', v.stock_quantity, 'price', COALESCE(v.price_override, p.base_price), 'priceOverride', v.price_override, 'weightGrams', v.weight_grams, ${vcSql}, 'active', v.active) ORDER BY v.id)
                      FROM product_variants v WHERE v.product_id = p.id), '[]'::json) AS variants
     FROM products p LEFT JOIN categories c ON c.id = p.category_id
     WHERE ($3::int IS NULL OR p.id = $3) AND ($1 = '' OR p.name ILIKE $2 OR c.name ILIKE $2 OR EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.sku ILIKE $2))

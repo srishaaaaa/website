@@ -53,8 +53,8 @@ function StockModal({ product, variantId, onClose, onDone }) {
 
 // Everything about one product in one window: details, website text, collections, sizes & colours, and photos.
 function VariantRow({ productId, v, basePrice, productCost, canCost, onChanged, setErr, onlyOne }) {
-  const [r, setR] = useState({ size: v.size, color: v.color, sku: v.sku, price: v.priceOverride != null ? rupees(v.priceOverride) : '', cost: v.costOverride != null ? rupees(v.costOverride) : '' });
-  const dirty = r.size !== v.size || r.color !== v.color || r.sku !== v.sku || (r.price ? toPaise(r.price) : null) !== (v.priceOverride ?? null) || (r.cost ? toPaise(r.cost) : null) !== (v.costOverride ?? null);
+  const [r, setR] = useState({ size: v.size, color: v.color, sku: v.sku, price: v.priceOverride != null ? rupees(v.priceOverride) : '', cost: v.costOverride != null ? rupees(v.costOverride) : '', weight: v.weightGrams != null ? String(v.weightGrams) : '' });
+  const dirty = r.size !== v.size || r.color !== v.color || r.sku !== v.sku || (r.price ? toPaise(r.price) : null) !== (v.priceOverride ?? null) || (r.cost ? toPaise(r.cost) : null) !== (v.costOverride ?? null) || (r.weight === '' ? null : +r.weight) !== (v.weightGrams ?? null);
   const call = async (body, method = 'PATCH') => {
     setErr();
     try { await api(`/admin/pos/products/${productId}/variants/${v.id}`, { method, ...(body ? { body } : {}) }); onChanged() }
@@ -67,9 +67,10 @@ function VariantRow({ productId, v, basePrice, productCost, canCost, onChanged, 
       <td><input aria-label="SKU" value={r.sku} maxLength={80} onChange={e => setR({ ...r, sku: e.target.value.toUpperCase() })} /></td>
       <td><input aria-label="Own price in rupees" inputMode="decimal" value={r.price} placeholder={rupees(basePrice)} onChange={e => setR({ ...r, price: e.target.value })} /></td>
       {canCost && <td><input aria-label="Own cost price in rupees" inputMode="decimal" value={r.cost} placeholder={productCost ? rupees(productCost) : 'product cost'} onChange={e => setR({ ...r, cost: e.target.value })} /></td>}
+      <td><input aria-label="Own weight in grams" inputMode="numeric" value={r.weight} placeholder="Base" onChange={e => setR({ ...r, weight: e.target.value.replace(/\D/g, '') })} /></td>
       <td className="r"><b>{v.stock}</b></td>
       <td className="r pe-acts">
-        {dirty && <button type="button" className="dpos-btn sm" onClick={() => call({ size: r.size.trim(), color: r.color.trim() || 'Default', sku: r.sku.trim(), price: r.price ? toPaise(r.price) : null, cost: r.cost ? toPaise(r.cost) : null })}>Save</button>}
+        {dirty && <button type="button" className="dpos-btn sm" onClick={() => call({ size: r.size.trim(), color: r.color.trim() || 'Default', sku: r.sku.trim(), price: r.price ? toPaise(r.price) : null, cost: r.cost ? toPaise(r.cost) : null, weight: r.weight === '' ? null : +r.weight })}>Save</button>}
         <button type="button" className="dpos-btn ghost sm" title={v.active ? 'Hide this size from the website and billing' : 'Show this size again'} onClick={() => call({ active: !v.active })}>{v.active ? 'Hide' : 'Show'}</button>
         <button type="button" className="dpos-btn ghost sm" disabled={onlyOne} aria-label={`Delete ${v.size} ${v.color}`} onClick={() => confirm(`Delete size ${v.size} (${v.color})? Past bills keep their own copy.`) && call(null, 'DELETE')}>✕</button>
       </td>
@@ -329,7 +330,7 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
   const [product, setProduct] = useState(start);
   const [f, setF] = useState(() => ({ name: start?.name || '', description: start?.description || '', cat: start?.categorySlug || '', status: start?.status || 'active', price: start ? rupees(start.price) : '', cost: start?.costPrice ? rupees(start.costPrice) : '',
     tax: start?.taxRate ?? 5, material: start?.material || '', featured: !!start?.featured, best: !!start?.bestSeller, low: start?.lowAlert ?? 3, weight: String(start?.weightGrams ?? 500), defStock: '0' }));
-  const [vars, setVars] = useState([{ size: '', color: '', sku: '', price: '', cost: '', stock: '' }]); // new product only
+  const [vars, setVars] = useState([{ size: '', color: '', sku: '', price: '', cost: '', weight: '', stock: '' }]); // new product only
   const [nv, setNv] = useState({ size: '', color: '', sku: '', stock: '' }); // extra size on an existing product
   const [picked, setPicked] = useState([]); const [files, setFiles] = useState([]); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const fileIn = useRef();
@@ -356,7 +357,7 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
         const rowsOk = vars.filter(v => v.size.trim() || v.stock || v.price || v.cost);
         const list = (rowsOk.length ? rowsOk : [{ size: '', color: '', sku: '', stock: '' }]);
         const payload = slug => ({ slug, name: f.name.trim(), description: f.description.trim(), category: f.cat || undefined, price: toPaise(f.price), ...(toPaise(f.cost) ? { cost_price: toPaise(f.cost) } : {}), gst_rate: +f.tax, status: f.status, featured: f.featured,
-          variants: list.map(v => ({ size: v.size.trim() || 'Free Size', color: v.color.trim() || 'Default', sku: (v.sku.trim() || `${slug}-${slugify(v.size) || 'free'}-${slugify(v.color) || 'default'}`).toUpperCase(), stock: Math.max(0, parseInt(v.stock === '' ? f.defStock : v.stock, 10) || 0), ...(toPaise(v.cost) ? { cost: toPaise(v.cost) } : {}) })) });
+          variants: list.map(v => ({ size: v.size.trim() || 'Free Size', color: v.color.trim() || 'Default', sku: (v.sku.trim() || `${slug}-${slugify(v.size) || 'free'}-${slugify(v.color) || 'default'}`).toUpperCase(), stock: Math.max(0, parseInt(v.stock === '' ? f.defStock : v.stock, 10) || 0), ...(v.weight !== '' && v.weight != null ? { weight: +v.weight } : {}), ...(toPaise(v.cost) ? { cost: toPaise(v.cost) } : {}) })) });
         let made;
         try { made = await api('/admin/products', { method: 'POST', body: payload(base) }) }
         catch (x) { if (x.status !== 409) throw x; made = await api('/admin/products', { method: 'POST', body: payload(`${base}-${Math.random().toString(36).slice(2, 6)}`) }) }
@@ -414,11 +415,11 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
         </div>
         <section className="pe2-var">
           <div className="pe2-vh"><div><h3>Product Variants</h3><p className="pe2-hint">MANAGE SIZES, COLOURS AND SPECIFIC INVENTORY</p></div>
-            {!editing && <button type="button" className="dpos-btn" onClick={() => setVars(v => [...v, { size: '', color: '', sku: '', price: '', cost: '', stock: '' }])}>+ Add Row</button>}</div>
+            {!editing && <button type="button" className="dpos-btn" onClick={() => setVars(v => [...v, { size: '', color: '', sku: '', price: '', cost: '', weight: '', stock: '' }])}>+ Add Row</button>}</div>
           {editing ? (
             <>
               <div className="acc-scroll"><table className="dpos-table pe-vars">
-                <thead><tr><th>Size</th><th>Colour</th><th>SKU</th><th>Own price ₹</th>{start.costPrice !== undefined && <th>Cost price ₹</th>}<th className="r">Stock</th><th /></tr></thead>
+                <thead><tr><th>Size</th><th>Colour</th><th>SKU</th><th>Own price ₹</th>{start.costPrice !== undefined && <th>Cost price ₹</th>}<th>Weight g</th><th className="r">Stock</th><th /></tr></thead>
                 <tbody>{(product.variants || []).map(v => <VariantRow key={`${v.id}-${v.size}-${v.color}-${v.sku}-${v.priceOverride}-${v.costOverride}-${v.active}`} productId={product.id} v={v} basePrice={product.price} productCost={product.costPrice} canCost={start.costPrice !== undefined} onChanged={reload} setErr={setErr} onlyOne={product.variants.length <= 1} />)}</tbody>
               </table></div>
               <div className="pe-add">
@@ -431,13 +432,14 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
             </>
           ) : (
             <div className="pe2-rows">
-              <div className="pe2-rh"><span>SIZE</span><span>COLOUR</span><span>SELLING (₹)</span><span>COST (₹)</span><span>STOCK</span><span /></div>
+              <div className="pe2-rh"><span>SIZE</span><span>COLOUR</span><span>SELLING (₹)</span><span>COST (₹)</span><span>WEIGHT (G)</span><span>STOCK</span><span /></div>
               {vars.map((v, i) => (
                 <div className="pe2-row" key={i}>
                   <input aria-label="Size" placeholder="e.g. M" value={v.size} onChange={e => setV(i, { size: e.target.value })} />
                   <input aria-label="Colour" placeholder="e.g. Blue" value={v.color} onChange={e => setV(i, { color: e.target.value })} />
                   <input aria-label="Selling price" inputMode="decimal" placeholder="Same" value={v.price} onChange={e => setV(i, { price: e.target.value })} />
                   <input aria-label="Cost price" inputMode="decimal" placeholder="Same" value={v.cost} onChange={e => setV(i, { cost: e.target.value })} />
+                  <input aria-label="Weight in grams" inputMode="numeric" placeholder="Base" value={v.weight} onChange={e => setV(i, { weight: e.target.value.replace(/\D/g, '') })} />
                   <input aria-label="Stock" inputMode="numeric" placeholder="0" value={v.stock} onChange={e => setV(i, { stock: e.target.value.replace(/\D/g, '') })} />
                   <button type="button" aria-label="Remove row" disabled={vars.length === 1} onClick={() => setVars(vs => vs.filter((_, n) => n !== i))}><Icon n="trash" size={16} /></button>
                 </div>))}
