@@ -38,20 +38,23 @@ function ReviewModal() {
       {reviewOpen && (
         <div className="overlay-root">
           <motion.div className="scrim" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-          <motion.div ref={ref} className="review-modal glass" role="dialog" aria-modal="true" aria-label="Write a review" initial={{ opacity: 0, y: 40, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+          <motion.div ref={ref} className="review-modal" role="dialog" aria-modal="true" aria-labelledby="rvm-h" aria-describedby="rvm-d" initial={{ opacity: 0, y: 40, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
             <button className="icon-btn close" onClick={close} aria-label="Close">✕</button>
-            <h2 className="serif">Write a review</h2>
-            {!user && <><p className="muted">Please sign in with the account you ordered with.</p><Link className="btn solid" to="/login" onClick={close}>SIGN IN</Link></>}
-            {user && eligible === null && <p className="muted">Checking your orders…</p>}
-            {user && eligible?.length === 0 && <p className="muted">Reviews are open to customers who have purchased a piece and not yet reviewed it. Once your order is paid, it will appear here.</p>}
+            <h2 className="serif" id="rvm-h">Write a review</h2>
+            {!user && <><p className="rvm-p" id="rvm-d">Please sign in with the account you ordered with to review a piece you bought.</p>
+              <div className="rvm-actions"><Link className="btn solid" to="/login" onClick={close}>SIGN IN</Link><Link className="btn" to="/register" onClick={close}>CREATE AN ACCOUNT</Link><button type="button" className="btn ghost" onClick={close}>NOT NOW</button></div></>}
+            {user && eligible === null && <p className="rvm-p" id="rvm-d" role="status">Checking your orders…</p>}
+            {user && eligible?.length === 0 && <>
+              <p className="rvm-p" id="rvm-d">Reviews are open to customers who have bought a piece and not yet reviewed it. Once your order is paid, the piece will appear here.</p>
+              <div className="rvm-actions"><Link className="btn solid" to="/shop" onClick={close}>SHOP THE COLLECTION</Link><Link className="btn" to="/account" onClick={close}>MY ORDERS</Link><button type="button" className="btn ghost" onClick={close}>CLOSE</button></div></>}
             {user && eligible?.length > 0 && (
-              <form onSubmit={submit}>
+              <form onSubmit={submit} aria-describedby={err ? 'rvm-err' : undefined}>
                 <label className="field"><span>Piece</span><select value={f.slug} onChange={e => setF({ ...f, slug: e.target.value })}>{eligible.map(p => <option key={p.slug} value={p.slug}>{p.name}</option>)}</select></label>
                 <fieldset className="rate"><legend className="eyebrow">Rating</legend>
                   <div role="radiogroup" aria-label="Rating">{[1, 2, 3, 4, 5].map(n => <button type="button" key={n} role="radio" aria-checked={f.rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`} className={f.rating >= n ? 'on' : ''} onClick={() => setF({ ...f, rating: n })}>★</button>)}</div></fieldset>
                 <label className="field"><span>Your review</span><textarea rows="4" minLength="10" maxLength="600" required value={f.body} onChange={e => setF({ ...f, body: e.target.value })} /></label>
-                {err && <p role="alert" className="err">{err}</p>}
-                <button className="btn solid wide" disabled={busy}>{busy ? 'SENDING…' : 'SUBMIT REVIEW'}</button>
+                {err && <p role="alert" id="rvm-err" className="err">{err}</p>}
+                <div className="rvm-actions"><button className="btn solid" disabled={busy}>{busy ? 'SENDING…' : 'SUBMIT REVIEW'}</button><button type="button" className="btn ghost" onClick={close}>CANCEL</button></div>
               </form>
             )}
           </motion.div>
