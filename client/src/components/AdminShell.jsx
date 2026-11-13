@@ -54,6 +54,10 @@ export const Icon = ({ n, size = 18 }) => <svg width={size} height={size} viewBo
 
 // [path, label, icon, managerOnly]
 export const NAV = [
+  { group: 'Online store', items: [
+    ['/admin/orders', 'Online orders', 'orders', true], ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/site-text', 'Site text', 'edit', true],
+    ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
+    ['/admin/users', 'Users', 'users', true], ['/admin/sample', 'Sample data', 'flask', true]] },
   { group: 'Retail billing', items: [
     ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/advance', 'Advance Orders', 'clock'], ['/admin/billing/orders', 'Order History', 'orders'],
     ['/admin/billing/inventory', 'Inventory', 'box', true], ['/admin/billing/customers', 'Customers', 'user'], ['/admin/billing/coupons', 'Coupons', 'tag', true],
@@ -61,10 +65,6 @@ export const NAV = [
   { group: 'Stitching', roles: ['owner', 'admin', 'cashier'], items: [
     ['/admin/stitching', 'Stitching Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/billing/measurements', 'Measurements', 'ruler', false],
     ['/admin/stitching/reports', 'Stitching Reports', 'chart', true]] },
-  { group: 'Online store', items: [
-    ['/admin/orders', 'Online orders', 'orders', true], ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/site-text', 'Site text', 'edit', true],
-    ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
-    ['/admin/users', 'Users', 'users', true], ['/admin/sample', 'Sample data', 'flask', true]] },
   { group: 'Settings', items: [['/admin/billing/settings', 'POS Settings', 'gear', true], ['/admin/settings', 'Store Settings', 'gear', true]] },
 ];
 
