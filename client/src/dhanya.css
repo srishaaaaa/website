@@ -618,3 +618,10 @@
 .dpos-modal .pe2-r, .dpos-modal .pe2-l { gap: 8px }
 .dpos-modal .pe2 .dpos-btn { font-size: 12px; padding: 9px 18px; letter-spacing: .04em }
 .dpos-modal .pe2 h3, .dpos-modal .pe2-hint { font-size: 12.5px } .dpos-modal .pe2 .pe2-hint { font-size: 9.5px }
+/* delivery card: weight regions */
+.dlv-wt { display: grid; gap: 6px; padding: 14px; border: 1px solid #e8e2da; border-radius: 16px; background: #faf8f6 }
+.dlv-region { display: grid; gap: 8px; padding: 14px; border: 1px solid #e0d9cf; border-radius: 14px; background: #fff }
+.dlv-rh { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) auto auto; gap: 10px; align-items: center } .dlv-act { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; white-space: nowrap }
+.dlv-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap } .dlv-row input { max-width: 120px }
+@media (max-width: 700px) { .dlv-rh { grid-template-columns: 1fr } }
+.dlv .cp-sw, .dlv-wt .cp-sw { display: flex; gap: 12px; align-items: flex-start; justify-content: flex-start; background: none; padding: 0; margin: 0; text-align: left } .dlv .cp-sw > span, .dlv-wt .cp-sw > span { display: grid; gap: 3px } .dlv .cp-sw input { margin-top: 3px; flex: none }

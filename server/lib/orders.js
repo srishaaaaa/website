@@ -21,7 +21,7 @@ export async function createPendingOrder({ db, cfg }, { cartId, user, email, add
     let subtotal = 0, tax = 0;
     for (const l of lines) subtotal += l.price * l.qty;
     tax = gstSplit(lines).included; // prices include GST: the tax is shown, never added on top
-    const ship = await shippingFor(t, subtotal, address?.pin);
+    const ship = await shippingFor(t, subtotal, address?.pin, lines.reduce((g, l) => g + (l.weightGrams || 0) * l.qty, 0));
     const total = subtotal + ship.amount;
     const number = orderNumber();
     const order = await one(t, `INSERT INTO orders (user_id, order_number, email, subtotal, shipping_amount, tax_amount, total_amount, shipping_address_snapshot, shipping_method_id, reservation_expires_at)

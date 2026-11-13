@@ -73,7 +73,7 @@ const wsItem = z.object({ code: text(60).min(1), company: text(120).default(''),
 const customerBody = z.object({ name: text(120).default(''), phone: text(20).regex(/^[0-9+\-\s]*$/, 'Phone may only contain digits'), dob: date.nullable().default(null), notes: text(300).nullable().default(null) });
 const expenseBody = z.object({ title: text(120).min(1), category: text(60).default('General'), amount: z.number().int().min(1).max(100_000_000), paymentMode: z.enum(['cash', 'upi', 'card']).default('cash'), notes: text(300).nullable().default(null), date: date.optional() });
 const productPatch = z.object({ name: text(160).min(1), price: paise, costPrice: paise.optional(), taxRate: z.number().int().min(0).max(28), categorySlug: text(80).nullable().default(null), status: z.enum(['draft', 'active', 'archived']),
-  description: text(4000).optional(), material: text(80).optional(), featured: z.boolean().optional(), bestSeller: z.boolean().optional(), lowAlert: z.number().int().min(0).max(100000).optional(), collections: z.array(text(120).min(1)).max(50).optional() });
+  description: text(4000).optional(), material: text(80).optional(), featured: z.boolean().optional(), bestSeller: z.boolean().optional(), lowAlert: z.number().int().min(0).max(100000).optional(), weightGrams: z.number().int().min(0).max(1_000_000).optional(), collections: z.array(text(120).min(1)).max(50).optional() });
 const variantPatch = z.object({ size: text(40).min(1), color: text(40).min(1), sku: text(80).min(1), price: paise.nullable(), cost: paise.nullable(), active: z.boolean() }).partial();
 const variantBody = z.object({ size: text(40).min(1), color: text(40).default('Default'), sku: text(80).min(1), stock: z.number().int().min(0).max(1_000_000).default(0) });
 const colourBody = z.object({ color: text(40).min(1), price: paise.nullable().default(null),
@@ -314,6 +314,9 @@ export default function pos({ db, auth }) {
     const v = z.object({
       enabled: z.boolean(), note: text(300).default(''), storePin: z.string().regex(/^(\d{6})?$/, 'Shop PIN code must be 6 digits').default(''),
       defaultFee: paise, freeOver: paise.nullable(), maxKm: z.number().min(0).max(5000).default(0), perKmBeyond: paise.default(0),
+      weightMode: z.boolean().default(false),
+      weightRegions: z.array(z.object({ name: text(60).min(1), active: z.boolean().default(true), prefixes: z.array(z.string().regex(/^\d{1,6}$/)).max(40).default([]),
+        tiers: z.array(z.object({ minGrams: z.number().int().min(0).max(1_000_000), maxGrams: z.number().int().min(1).max(1_000_000).nullable(), fee: paise })).max(20).default([]) })).max(30).default([]),
       bands: z.array(z.object({ upToKm: z.number().positive().max(5000), fee: paise })).max(12).default([]),
       zones: z.array(z.object({ name: text(60).min(1), prefixes: z.array(z.string().regex(/^\d{1,6}$/)).min(1).max(30), fee: paise })).max(30).default([]),
       orderTiers: z.array(z.object({ minOrder: paise, fee: paise })).max(20).default([]),
@@ -365,6 +368,7 @@ export default function pos({ db, auth }) {
       await db.query('UPDATE products SET best_seller = false WHERE best_seller AND id NOT IN (SELECT id FROM products WHERE best_seller ORDER BY updated_at DESC, id DESC LIMIT 10)');
     }
     if (d.lowAlert !== undefined) await db.query('UPDATE products SET low_stock_alert = $2 WHERE id = $1', [pid, d.lowAlert]);
+    if (d.weightGrams !== undefined) await db.query('UPDATE products SET weight_grams = $2 WHERE id = $1', [pid, d.weightGrams]);
     // Collections this piece belongs to: added at the end of a new collection, kept in place in ones it was already in.
     if (d.collections) await db.tx(async t => {
       const ids = (await rows(t, 'SELECT id FROM collections WHERE slug = ANY($1)', [d.collections])).map(r => r.id);

@@ -11,7 +11,7 @@ const list = s => String(s || '').split(/[,\s]+/).map(x => x.replace(/\D/g, ''))
 export default function DeliveryRulesCard() {
   const [r, setR] = useState(null); const [err, setErr] = useState(); const [ok, setOk] = useState(false); const [busy, setBusy] = useState(false);
   useEffect(() => {
-    api('/admin/pos/delivery-rules').then(d => setR({ enabled: d.enabled, note: d.note || '', storePin: d.storePin || '', maxKm: String(d.maxKm || 0), perKm: rs(d.perKmBeyond || 0), bands: (d.bands || []).map(b => ({ km: String(b.upToKm), fee: rs(b.fee) })), defaultFee: rs(d.defaultFee), freeOver: d.freeOver == null ? '' : rs(d.freeOver),
+    api('/admin/pos/delivery-rules').then(d => setR({ enabled: d.enabled, weightMode: !!d.weightMode, regions: (d.weightRegions || []).map(g => ({ name: g.name, active: g.active !== false, prefixes: (g.prefixes || []).join(', '), tiers: (g.tiers || []).map(t => ({ min: String(t.minGrams), max: t.maxGrams == null ? '' : String(t.maxGrams), fee: rs(t.fee) })) })), note: d.note || '', storePin: d.storePin || '', maxKm: String(d.maxKm || 0), perKm: rs(d.perKmBeyond || 0), bands: (d.bands || []).map(b => ({ km: String(b.upToKm), fee: rs(b.fee) })), defaultFee: rs(d.defaultFee), freeOver: d.freeOver == null ? '' : rs(d.freeOver),
       zones: (d.zones || []).map(z => ({ name: z.name, prefixes: z.prefixes.join(', '), fee: rs(z.fee) })), tiers: (d.orderTiers || []).map(t => ({ min: rs(t.minOrder), fee: rs(t.fee) })), blocked: (d.blockedPrefixes || []).join(', ') })).catch(e => setErr(e.message));
   }, []);
   if (!r) return err ? <p className="dpos-err" role="alert">{err}</p> : null;
@@ -19,7 +19,7 @@ export default function DeliveryRulesCard() {
   const save = async () => {
     setBusy(true); setErr(); setOk(false);
     try {
-      await api('/admin/pos/delivery-rules', { method: 'PUT', body: { enabled: r.enabled, note: (r.note || '').trim(), storePin: r.storePin.trim(), maxKm: Math.max(0, +r.maxKm || 0), perKmBeyond: toPaise(r.perKm), bands: r.bands.filter(b => +b.km > 0).map(b => ({ upToKm: +b.km, fee: toPaise(b.fee) })), defaultFee: toPaise(r.defaultFee), freeOver: r.freeOver === '' ? null : toPaise(r.freeOver),
+      await api('/admin/pos/delivery-rules', { method: 'PUT', body: { enabled: r.enabled, weightMode: r.weightMode, weightRegions: r.regions.filter(g => g.name.trim()).map(g => ({ name: g.name.trim(), active: g.active, prefixes: list(g.prefixes), tiers: g.tiers.filter(t => t.min !== '').map(t => ({ minGrams: Math.max(0, parseInt(t.min, 10) || 0), maxGrams: t.max === '' ? null : Math.max(1, parseInt(t.max, 10) || 1), fee: toPaise(t.fee) })) })), note: (r.note || '').trim(), storePin: r.storePin.trim(), maxKm: Math.max(0, +r.maxKm || 0), perKmBeyond: toPaise(r.perKm), bands: r.bands.filter(b => +b.km > 0).map(b => ({ upToKm: +b.km, fee: toPaise(b.fee) })), defaultFee: toPaise(r.defaultFee), freeOver: r.freeOver === '' ? null : toPaise(r.freeOver),
         zones: r.zones.filter(z => z.name.trim() && list(z.prefixes).length).map(z => ({ name: z.name.trim(), prefixes: list(z.prefixes), fee: toPaise(z.fee) })),
         orderTiers: r.tiers.filter(t => t.min !== '').map(t => ({ minOrder: toPaise(t.min), fee: toPaise(t.fee) })), blockedPrefixes: list(r.blocked) } });
       setOk(true);
@@ -31,6 +31,34 @@ export default function DeliveryRulesCard() {
       <label className="cp-sw"><input type="checkbox" checked={r.enabled} onChange={e => up({ enabled: e.target.checked })} /><span><b>Use these delivery rules at checkout</b><small>Off: the shipping method's flat fee and free-over amount are used.</small></span></label>
       <div style={{ opacity: r.enabled ? 1 : .55, display: 'grid', gap: 14, marginTop: 12 }}>
         <label className="f">Shipping note shown to customers (bag and checkout)<textarea rows={2} maxLength={300} value={r.note} onChange={e => up({ note: e.target.value })} placeholder="e.g. Delivered within 5 to 7 working days across India." /></label>
+        <div className="dlv-wt">
+          <label className="cp-sw"><input type="checkbox" checked={r.weightMode} onChange={e => up({ weightMode: e.target.checked })} /><span><b>Charge by product weight</b><small>The bag's total weight (each product's weight × quantity) is priced by the customer's region. Free-over, order tiers and blocked PINs still apply. Off: the distance bands and zones below are used.</small></span></label>
+          <div style={{ opacity: r.weightMode ? 1 : .55, display: 'grid', gap: 12, marginTop: 10 }}>
+            {r.regions.map((g, gi) => {
+              const setG = p => up({ regions: r.regions.map((x, n) => n === gi ? { ...x, ...p } : x) });
+              const setT = (ti, p) => setG({ tiers: g.tiers.map((x, n) => n === ti ? { ...x, ...p } : x) });
+              return (
+                <div className="dlv-region" key={gi}>
+                  <div className="dlv-rh">
+                    <input aria-label="Region name" placeholder="Region name, e.g. Tamil Nadu or All India" value={g.name} onChange={e => setG({ name: e.target.value })} />
+                    <input aria-label="PIN prefixes" placeholder="PIN prefixes: 6, 56 (empty = everywhere else)" value={g.prefixes} onChange={e => setG({ prefixes: e.target.value })} />
+                    <label className="dlv-act"><input type="checkbox" checked={g.active} onChange={e => setG({ active: e.target.checked })} /> Active</label>
+                    <button type="button" className="dpos-btn ghost sm" aria-label="Remove region" onClick={() => up({ regions: r.regions.filter((_, n) => n !== gi) })}>✕</button>
+                  </div>
+                  <p className="dlv-h">Weight tiers <small>grams: from (included) to (not included); leave "to" empty for no limit; no tiers = free delivery</small></p>
+                  {g.tiers.map((t, ti) => (
+                    <div className="dlv-row" key={ti}>
+                      <span className="muted small">From</span><input aria-label="From grams" inputMode="numeric" value={t.min} onChange={e => setT(ti, { min: e.target.value })} /><span className="muted small">g to</span>
+                      <input aria-label="To grams" inputMode="numeric" placeholder="no limit" value={t.max} onChange={e => setT(ti, { max: e.target.value })} /><span className="muted small">g → ₹</span>
+                      <input aria-label="Charge in rupees" inputMode="decimal" value={t.fee} onChange={e => setT(ti, { fee: e.target.value })} />
+                      <button type="button" className="dpos-btn ghost sm" aria-label="Remove tier" onClick={() => setG({ tiers: g.tiers.filter((_, n) => n !== ti) })}>✕</button>
+                    </div>))}
+                  <button type="button" className="dpos-btn ghost sm" onClick={() => setG({ tiers: [...g.tiers, { min: g.tiers.length ? g.tiers.at(-1).max : '0', max: '', fee: '' }] })}>+ Add tier</button>
+                </div>);
+            })}
+            <div><button type="button" className="dpos-btn ghost sm" onClick={() => up({ regions: [...r.regions, { name: '', active: true, prefixes: '', tiers: [{ min: '0', max: '', fee: '' }] }] })}>+ Add region</button></div>
+          </div>
+        </div>
         <div className="dpos-grid">
           <label className="f">Shop PIN code (distance starts here)<input inputMode="numeric" maxLength={6} value={r.storePin} onChange={e => up({ storePin: e.target.value.replace(/\D/g, '') })} placeholder="6 digits" /></label>
           <label className="f">Do not deliver beyond (km, 0 = no limit)<input inputMode="decimal" value={r.maxKm} onChange={e => up({ maxKm: e.target.value })} /></label>
