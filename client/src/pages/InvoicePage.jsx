@@ -166,14 +166,14 @@ export default function InvoicePage() {
     el.textContent = `@page { size: ${PAGE[paper] || PAGE.a4} }`;
   }, [paper]);
   useEffect(() => { if (d && qs.get('print') === '1') { const t = setTimeout(() => window.print(), 700); return () => clearTimeout(t) } }, [d]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { document.title = d ? `Invoice ${d.sale.invoiceNo} · ${d.shop.name}` : 'Invoice' }, [d]);
+  useEffect(() => { document.title = d ? (d.kind === 'return' ? `Return ${d.ret.returnNo} · ${d.shop.name}` : `Invoice ${d.sale.invoiceNo} · ${d.shop.name}`) : 'Invoice' }, [d]);
 
   if (err) return <div className="inv-page"><p className="inv-err">{err}</p></div>;
   if (!d) return <div className="inv-page"><p className="inv-err">Loading invoice…</p></div>;
   const { shop } = d;
   if (d.kind === 'return') return (
     <div className="inv-page">
-      <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" /><button className="inv-btn dark" onClick={() => window.print()}><PrintIcon size={15} /> Print</button></div>
+      {window.self === window.top && <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" /><button className="inv-btn dark" onClick={() => window.print()}><PrintIcon size={15} /> Print</button></div>}
       <ReturnDoc ret={d.ret} shop={shop} />
     </div>
   );
