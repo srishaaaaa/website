@@ -30,18 +30,18 @@ const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14
 
 // ============================ order history ============================
 export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
-  const [f, setF] = useState({ q: '', name: '', phone: '', source: 'all', gst: 'all', payment: 'all' }); const [per, setPer] = usePeriod('all'); const [preview, setPreview] = useState(null);
+  const [tab, setTab] = useState('all'); const [f, setF] = useState({ q: '', name: '', phone: '', gst: 'all', payment: 'all' }); const [per, setPer] = usePeriod('all'); const [preview, setPreview] = useState(null);
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [n, setN] = useState(0);
   const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null); const [editing, setEditing] = useState(null);
   const toggle = no => { if (openNo === no) { setOpenNo(null); return } setOpenNo(no); setDetail(null); api('/admin/pos/sales/' + encodeURIComponent(no)).then(d => setDetail(d.sale || d)).catch(e => setErr(e.message)) };
   const [from, to] = periodRange(per);
   useEffect(() => {
     const t = setTimeout(() => {
-      const p = new URLSearchParams({ q: f.q, name: f.name, phone: f.phone, source: f.source, gst: f.gst, payment: f.payment, channel: 'retail' }); if (manager) { p.set('from', from); p.set('to', to) }
+      const p = new URLSearchParams({ q: f.q, name: f.name, phone: f.phone, source: tab, gst: f.gst, payment: f.payment, channel: 'retail' }); if (manager) { p.set('from', from); p.set('to', to) }
       api('/admin/pos/sales?' + p).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message));
     }, 220);
     return () => clearTimeout(t);
-  }, [f, from, to, tick, n, manager]);
+  }, [f, from, to, tick, n, manager, tab]);
   const set = k => e => setF({ ...f, [k]: e.target.value });
   const voidIt = async r => {
     const reason = window.prompt(`Void ${r.invoiceNo}? Its stock goes back. Reason?`); if (!reason) return;
@@ -53,9 +53,55 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
       .concat((rows || []).map(r => [r.invoiceNo, r.billDate, clock(r.createdAt), r.customerName || 'Guest', r.customerPhone, r.source, r.isGst ? 'GST' : 'NON-GST', MODE[r.paymentMode], (r.total / 100).toFixed(2), r.status].map(esc).join(',')));
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = `order-history-${todayStr()}.csv`; a.click(); URL.revokeObjectURL(a.href);
   };
+
+  // Website orders: card list (customer, total, status, WhatsApp, Invoice, Details), newest first by default.
+  const [sort, setSort] = useState('new'); const [shown, setShown] = useState(20); useEffect(() => setShown(20), [tab, f, from, to, sort]);
+  const stageOf = r => ({ confirmed: 'pending', pending: 'pending', packed: 'packed', shipped: 'shipped', delivered: 'shipped', cancelled: 'cancelled' })[r.fulfilment || 'pending'] || 'pending';
+  const NEXT = { pending: 'packed', packed: 'shipped' };
+  const FulfilControl = ({ r }) => { const st = stageOf(r); const next = NEXT[st]; return (
+    <span className="ol-fc"><span className={`ol-fs fs-${st}`}>{st === 'shipped' ? '✓' : '▣'} {st}</span>
+      {next && manager && <button type="button" className="ol-mark" onClick={() => setFulfilment(r, next)}>Mark {next}</button>}</span>); };
+  const setFulfilment = async (r, status) => {
+    try { await api('/admin/orders/' + encodeURIComponent(r.orderNumber), { method: 'PATCH', body: { status } }); setRows(l => l.map(x => x.invoiceNo === r.invoiceNo ? { ...x, fulfilment: status } : x)); onChanged?.() } catch (e) { setErr(e.message) }
+  };
+  const onlineRows = useMemo(() => [...(rows || [])].sort((a, b) => sort === 'old' ? a.createdAt.localeCompare(b.createdAt) : sort === 'high' ? b.total - a.total : sort === 'low' ? a.total - b.total : b.createdAt.localeCompare(a.createdAt)), [rows, sort]);
+  const toProcess = (rows || []).filter(r => r.isWeb && r.status !== 'voided' && ['pending', 'packed'].includes(stageOf(r))).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const onlineList = (
+    <>
+      {toProcess.length > 0 && (
+        <section className="ol-queue" aria-label="Website orders to process">
+          <div className="ol-qh"><b>Online orders to process</b><span>{toProcess.length} order{toProcess.length === 1 ? '' : 's'} waiting to be packed or shipped</span></div>
+          {toProcess.map(r => (
+            <div className="ol-qr" key={r.invoiceNo}><span className="ol-qi"><b>{r.customerName || 'Customer'}</b> <small>{r.invoiceNo}</small><em>{[r.customerPhone, `${dtShort(r.createdAt).d}, ${dtShort(r.createdAt).t}`].filter(Boolean).join(' · ')} · <i>{inr(r.total)}</i></em></span>
+              <span className="ol-btns"><FulfilControl r={r} />
+                <a className="ol-ic wa" aria-label="Send on WhatsApp" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>
+                <button type="button" className="ol-ic inv" aria-label="Invoice" onClick={() => setPreview(r)}><DocIcon /></button>
+                <button type="button" className="ol-b" onClick={() => toggle(r.invoiceNo)}>DETAILS</button></span></div>))}
+        </section>)}
+      <div className="ol-head"><span className="muted">{rows ? `${rows.length} order${rows.length === 1 ? '' : 's'}` : '…'}</span>
+        <span className="ol-tools"><select aria-label="Sort orders" value={sort} onChange={e => setSort(e.target.value)}><option value="new">Newest First</option><option value="old">Oldest First</option><option value="high">Total: High → Low</option><option value="low">Total: Low → High</option></select>
+          <button type="button" className="ol-export" onClick={exportCsv} disabled={!rows?.length}><Ico size={16}><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></Ico> Export CSV</button></span></div>
+      {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No website orders match.</Empty> : (
+        <ul className="ol-list">{onlineRows.slice(0, shown).map(r => { const dt = dtShort(r.createdAt); return (
+          <li key={r.invoiceNo} className="ol-card">
+            <div className="ol-top"><div><b className="ol-no">{r.invoiceNo}</b><span className={`ol-tag ${r.isWeb ? '' : 'in'}`}>{r.isWeb ? 'ONLINE' : 'IN-STORE'}</span>
+              <p className="ol-who">{r.customerName || 'Customer'}</p><p className="ol-meta">{[r.customerPhone, `${dt.d} · ${dt.t}`].filter(Boolean).join(' · ')}</p></div>
+              <div className="ol-amt"><b>{inr(r.total)}</b><span className={`ol-st ${r.status === 'voided' ? 'bad' : ''}`}>{r.status === 'voided' ? 'VOID' : 'COMPLETED'}</span></div></div>
+            <div className="ol-foot">
+              {r.isWeb ? <FulfilControl r={r} /> : <span className="ol-fs in">{MODE[r.paymentMode] || r.paymentMode}</span>}
+              <span className="ol-btns">
+                <a className="ol-b wa" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /> WHATSAPP</a>
+                <button type="button" className="ol-b inv" onClick={() => setPreview(r)}><DocIcon /> INVOICE</button>
+                <button type="button" className="ol-b" onClick={() => toggle(r.invoiceNo)}>DETAILS</button>
+                {manager && !r.isWeb && r.status !== 'voided' && <button type="button" className="ol-b del" aria-label={`Void ${r.invoiceNo}`} onClick={() => voidIt(r)}><TrashIcon /></button>}</span></div>
+          </li>) })}</ul>)}
+      {onlineRows.length > shown && <button type="button" className="ol-more" onClick={() => setShown(n => n + 20)}>Show more ({onlineRows.length - shown} remaining)</button>}
+    </>
+  );
   return (
     <>
       <div className="dpos-bar-tools">
+        <Chips label="Type" value={tab} onChange={t => { setTab(t); setRows(null) }} options={[['all', 'All bills'], ['online', 'Online (website)'], ['offline', 'In-store (billing)']]} />
         {manager ? <PeriodFilter value={per} onChange={setPer} /> : <span className="sub">Cashiers see today’s bills. Owners and admins can search the full history.</span>}
         <button className="dpos-btn outline" onClick={exportCsv} disabled={!rows?.length}><Ico size={15}><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></Ico>Export CSV</button>
       </div>
@@ -63,14 +109,14 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
         <label className="f">Search order ID<input type="search" value={f.q} onChange={set('q')} placeholder="e.g. DP-2026-…" /></label>
         <label className="f">Customer name<input value={f.name} onChange={set('name')} placeholder="Search name…" /></label>
         <label className="f">Customer phone<input value={f.phone} inputMode="tel" onChange={set('phone')} placeholder="Search phone…" /></label>
-        <label className="f">Order source<select value={f.source} onChange={set('source')}><option value="all">All Sources</option><option value="offline">Offline</option><option value="online">Online</option></select></label>
       </section>
       <div className="dpos-filterbar">
         <Chips label="Bills" value={f.gst} onChange={v => setF({ ...f, gst: v })} options={[['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']]} />
-        <Chips label="Payment" value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} />
+        {tab === 'offline' && <Chips label="Payment" value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} />}
       </div>
       <Err>{err}</Err>
-      <section className="dpos-card dpos-ordcard">
+      {tab !== 'offline' ? onlineList : null}
+      {tab === 'offline' && <section className="dpos-card dpos-ordcard">
         {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No orders match.</Empty> : (
           <div className="dpos-tw"><table className="dpos-ord"><thead><tr><th>Order ID</th><th>Date &amp; time</th><th>Customer name</th><th>Mobile number</th><th>Source</th><th>Total due</th><th className="r">Status</th></tr></thead>
             <tbody>{rows.map(r => { const dt = dtShort(r.createdAt); return (
@@ -89,7 +135,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                   {manager && <button className="ra del" title="Void this invoice" aria-label="Void invoice" disabled={r.status === 'voided'} onClick={() => voidIt(r)}><TrashIcon /></button>}
                 </div></td></tr>
 </Fragment>) })}</tbody></table></div>)}
-      </section>
+      </section>}
       {openNo && <QuickDetails row={rows?.find(x => x.invoiceNo === openNo)} sale={detail} manager={manager} onClose={() => setOpenNo(null)} onView={r => { setOpenNo(null); setPreview(r) }} onEdit={() => setEditing(detail)} />}
       {editing && <EditInvoice sale={editing} onClose={() => setEditing(null)} onSaved={sale => { setEditing(null); setDetail(sale); setN(x => x + 1); onChanged?.() }} />}
       {preview && <InvoicePreview row={preview} onClose={() => setPreview(null)} />}

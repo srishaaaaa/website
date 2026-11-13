@@ -249,7 +249,7 @@ function ProductsStock({ manager, stocker }) {
               <em className={`inv-badge ${st}`}>{st === 'out' ? 'OUT OF STOCK' : st === 'low' ? 'LOW STOCK' : 'IN STOCK'}</em>
               <span className="inv-ph-act">{manager && <button type="button" aria-label={`Edit ${p.name}`} onClick={() => setModal({ t: 'edit', p })}><Icon n="edit" size={14} /></button>}{manager && <button type="button" aria-label={`Delete ${p.name}`} onClick={() => del(p)}><Icon n="trash" size={14} /></button>}</span></div>
             <div className="inv-info"><div className="inv-nm"><b>{p.name}</b></div><small>{p.category || 'Uncategorised'}{p.bestSeller ? ' · Best seller' : ''}</small>
-              <div className="inv-cs"><span><em>Cost</em><b>{manager && p.costPrice ? inr(p.costPrice) : '—'}</b></span><span><em>Selling</em><b>{inr(p.price)}</b></span></div>
+              <div className="inv-cs"><span><em>Cost</em><b>{manager && p.costPrice ? inr(p.costPrice) : '—'}</b></span><span><em>Selling</em><b>{inr(p.price)}</b></span><span><em>Weight</em><b>{p.weightGrams ? `${p.weightGrams} g` : '—'}</b></span></div>
               <button type="button" className="inv-units" disabled={!stocker} onClick={() => setModal({ t: 'stock', p })}><b>{p.stock}</b> Total Units</button>
               <small className={`inv-note ${st}`}>{st === 'out' ? 'Sold out' : st === 'low' ? `Low · reorder at ${lowOf(p)}` : 'In stock'}</small></div>
           </article>) })}</div>))}

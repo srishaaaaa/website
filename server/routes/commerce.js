@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { one } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import { resolveCart } from '../lib/cart.js';
+import { invoiceForOrder } from '../lib/webInvoices.js';
 import { createPendingOrder, markPaid, ordersForUser, releaseOrder, releaseExpired } from '../lib/orders.js';
 
 const address = z.object({
@@ -42,6 +43,8 @@ export function commerceRoutes(ctx) {
     if (!payments.verifySignature({ orderId: d.razorpay_order_id, paymentId: d.razorpay_payment_id, signature: d.razorpay_signature })) throw new HttpError(400, 'Payment signature could not be verified', 'bad_signature');
     const result = await markPaid(db, { provider: payments.name, providerOrderId: d.razorpay_order_id, providerPaymentId: d.razorpay_payment_id });
     if (result.status === 'paid') {
+      const placed = await one(db, 'SELECT id FROM orders WHERE order_number = $1', [result.orderNumber]);
+      if (placed) await invoiceForOrder(db, placed.id).catch(() => {}); // the order's invoice (it is also created later if this step fails)
       const cart = await resolveCart(ctx, req, res);
       if (cart) await db.query('DELETE FROM cart_items WHERE cart_id = $1', [cart.id]);
     }
@@ -62,7 +65,11 @@ export function webhookRoute({ db, payments }) {
   const r = Router();
   r.post('/payments/webhook', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
     const ev = payments.parseWebhook(req.body, req.get('x-razorpay-signature'));
-    if (ev?.type === 'captured') await markPaid(db, { provider: payments.name, providerOrderId: ev.providerOrderId, providerPaymentId: ev.providerPaymentId });
+    if (ev?.type === 'captured') {
+      const done = await markPaid(db, { provider: payments.name, providerOrderId: ev.providerOrderId, providerPaymentId: ev.providerPaymentId });
+      const placed = done?.orderNumber && await one(db, 'SELECT id FROM orders WHERE order_number = $1', [done.orderNumber]);
+      if (placed) await invoiceForOrder(db, placed.id).catch(() => {});
+    }
     if (ev?.type === 'failed') {
       const o = await one(db, `SELECT o.order_number FROM payments p JOIN orders o ON o.id = p.order_id WHERE p.provider = $1 AND p.provider_order_id = $2`, [payments.name, ev.providerOrderId]);
       if (o) await releaseOrder(db, o.order_number, 'failed');

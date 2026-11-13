@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeFor, haversineKm, DEFAULT_RULES } from '../lib/delivery.js';
 
-const D = { ...DEFAULT_RULES, enabled: true, freeOver: 1500000, defaultFee: 9900, storePin: '600001', bands: [{ upToKm: 5, fee: 8000 }, { upToKm: 10, fee: 12000 }, { upToKm: 20, fee: 18000 }] };
+const D = { ...DEFAULT_RULES, enabled: true, weightMode: false, freeOver: 1500000, defaultFee: 9900, storePin: '600001', bands: [{ upToKm: 5, fee: 8000 }, { upToKm: 10, fee: 12000 }, { upToKm: 20, fee: 18000 }] };
 const fee = (rules, km, sub = 500000, pin = '600028') => feeFor(rules, sub, pin, km)?.amount;
 
 test('delivery fee follows distance bands, free threshold, order tiers and the max distance', () => {

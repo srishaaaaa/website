@@ -119,6 +119,25 @@ test('payments: totals computed server-side; only a valid signature marks an ord
   assert.equal(again.body.already, true, 'verification is idempotent');
 });
 
+test('website orders: a paid order gets one invoice in Order History → Online, with the exact total and no stock change', async () => {
+  const c = client(); const v = await variantOf('banarasi-silk-saree', 'L');
+  const before = (await db.query('SELECT stock_quantity s FROM product_variants WHERE id = $1', [v])).rows[0].s;
+  await c('POST', '/cart/items', { variantId: v });
+  const co = await c('POST', '/checkout', { email: 'web@test.dev', address });
+  const sign = (o, p) => crypto.createHmac('sha256', SECRET).update(`${o}|${p}`).digest('hex');
+  assert.equal((await c('POST', '/payments/verify', { razorpay_order_id: co.body.providerOrderId, razorpay_payment_id: 'pay_web', razorpay_signature: sign(co.body.providerOrderId, 'pay_web') })).body.ok, true);
+  const staff = client(); await staff('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const list = (await staff('GET', '/admin/pos/sales?source=online')).body.filter(x => x.orderNumber === co.body.orderNumber);
+  assert.equal(list.length, 1, 'exactly one invoice for the order'); assert.equal(list[0].isWeb, true);
+  assert.equal(list[0].total, co.body.total, 'the invoice total is what the customer paid');
+  assert.equal((await staff('GET', '/admin/pos/sales?source=offline')).body.some(x => x.orderNumber === co.body.orderNumber), false, 'not in offline billing');
+  const sale = (await staff('GET', `/admin/pos/sales/${list[0].invoiceNo}`)).body;
+  assert.equal(sale.total, sale.subtotal - sale.discount + sale.tax + sale.deliveryFee, 'taxable value + GST + delivery adds up'); assert.ok(sale.tax > 0);
+  assert.equal((await staff('POST', `/admin/pos/sales/${list[0].invoiceNo}/void`, { reason: 'website order' })).status, 409, 'cancel the order instead of voiding');
+  assert.equal((await staff('GET', '/admin/pos/sales?source=online')).body.filter(x => x.orderNumber === co.body.orderNumber).length, 1, 'syncing again adds nothing');
+  assert.equal((await db.query('SELECT stock_quantity s FROM product_variants WHERE id = $1', [v])).rows[0].s, before - 1, 'stock moved once, by the order');
+});
+
 test('orders and reviews are scoped to the owner and gated by purchase', async () => {
   const buyer = client(); await buyer('POST', '/auth/register', { email: 'rev@test.dev', password: 'Password123!', name: 'Asha Rao' });
   const v = await variantOf('gold-thread-co-ord', 'M');

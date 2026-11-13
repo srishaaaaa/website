@@ -15,8 +15,10 @@ const getSetting = async (db, key, fallback) => (await one(db, 'SELECT value FRO
 // PINs are looked up with OpenStreetMap Nominatim (public, no key) and cached; if either lookup fails the first band applies.
 // All money is in paise. With `enabled: false` the shipping method's own flat fee and free-over amount apply, as before.
 export const DEFAULT_RULES = {
-  enabled: false, note: 'Delivered within 5 to 7 working days across India. You will get a message when your order ships.',
-  storePin: '', productLines: [], weightMode: false, weightRegions: [], defaultFee: 9900, freeOver: 500000, maxKm: 0, perKmBeyond: 0, bands: [], zones: [], orderTiers: [], blockedPrefixes: [],
+  enabled: true, note: 'Delivered within 5 to 7 working days across India. You will get a message when your order ships.',
+  storePin: '', productLines: [], weightMode: true, defaultFee: 9900,
+  // Until the owner sets their own: one "All India" region priced by the bag's weight.
+  weightRegions: [{ name: 'All India', active: true, prefixes: [], tiers: [{ minGrams: 0, maxGrams: 500, fee: 6000 }, { minGrams: 500, maxGrams: 1000, fee: 9000 }, { minGrams: 1000, maxGrams: 2000, fee: 13000 }, { minGrams: 2000, maxGrams: null, fee: 18000 }] }], freeOver: 500000, maxKm: 0, perKmBeyond: 0, bands: [], zones: [], orderTiers: [], blockedPrefixes: [],
 };
 
 export const loadRules = async db => ({ ...DEFAULT_RULES, ...(await getSetting(db, 'delivery_rules', {})) });

@@ -627,3 +627,38 @@
 .dlv .cp-sw, .dlv-wt .cp-sw { display: flex; gap: 12px; align-items: flex-start; justify-content: flex-start; background: none; padding: 0; margin: 0; text-align: left } .dlv .cp-sw > span, .dlv-wt .cp-sw > span { display: grid; gap: 3px } .dlv .cp-sw input { margin-top: 3px; flex: none }
 /* Admin text and boxes at 80% of the reference size (the reference CSS' own --z scale; phones stay at full size) */
 .dpos { --z: .8 }
+/* ---- Order History → Online orders (website): card list ---- */
+.ol-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 2px } .ol-head .muted { font-size: 17px }
+.ol-tools { display: inline-flex; gap: 14px; align-items: center } .ol-tools select { width: auto; padding: 10px 40px 10px 16px; border-radius: 12px; background: #fff; border: 1px solid #eee7e0 }
+.ol-export { display: inline-flex; gap: 8px; align-items: center; font-weight: 800; font-size: 15px; padding: 8px 4px }
+.ol-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px }
+.ol-card { background: #fff; border-radius: 22px; padding: 20px 24px 16px; box-shadow: 0 8px 22px -18px rgba(0, 0, 0, .35) }
+.ol-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px } .ol-no { font-size: 17px; font-weight: 800; letter-spacing: .01em }
+.ol-tag { margin-left: 10px; padding: 3px 12px; border-radius: 999px; border: 1px solid #9fe3c4; background: #effcf6; color: #0c8a5a; font-size: 11.5px; font-weight: 800; letter-spacing: .06em }
+.ol-who { margin: 8px 0 0; font-size: 17px; font-weight: 700 } .ol-meta { margin: 2px 0 0; color: #8a867f; font-size: 14px }
+.ol-amt { display: grid; justify-items: end; gap: 10px } .ol-amt b { font-size: 24px; color: #0d8a72; font-weight: 800 } .ol-st { padding: 5px 14px; border-radius: 8px; background: #effcf6; color: #0c8a5a; font-size: 12px; font-weight: 800; letter-spacing: .06em } .ol-st.bad { background: #fdecec; color: #b3261e }
+.ol-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid #eee }
+.ol-fs { width: auto; padding: 8px 34px 8px 14px; border-radius: 10px; border: 1px solid #a6e6c7; background: #e9fbf2; color: #0c8a5a; font-size: 12.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase }
+.ol-fs.fs-pending, .ol-fs.fs-confirmed { background: #f3f5fb; border-color: #cfd6e6; color: #2d3e76 } .ol-fs.fs-packed { background: #fff7e0; border-color: #f4d58b; color: #a16207 } .ol-fs.fs-cancelled { background: #fdecec; border-color: #f3b8b8; color: #b91c1c }
+.ol-btns { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: center }
+.ol-b { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 12px; border: 1px solid #d9d2da; background: #fff; font-size: 12.5px; font-weight: 800; letter-spacing: .06em; color: #1a1420 }
+.ol-b.wa { background: #0cb27a; border-color: #0cb27a; color: #fff } .ol-b.inv { background: #0a9bf0; border-color: #0a9bf0; color: #fff }
+.ol-tag.in { border-color: #f3b3bd; background: #fff4f5; color: #d8445a } .ol-fs.in { background: #f3f5fb; border-color: #d9d2da; color: #3a2a38 } .ol-b.del { color: #b3261e; border-color: #f3b8b8; padding: 11px 13px }
+.ol-queue { border: 1px solid #f4d58b; border-radius: 22px; background: linear-gradient(180deg, #fff8e6, #fff); overflow: hidden }
+.ol-qh { display: grid; gap: 2px; padding: 14px 20px; border-bottom: 1px solid #f4d58b } .ol-qh b { font-size: 15px } .ol-qh span { font-size: 12px; color: #6f6b66 }
+.ol-qr { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid #fbe9b6 } .ol-qr:last-child { border-bottom: 0 }
+.ol-fc { display: inline-flex; align-items: center; gap: 8px } .ol-fs { text-transform: uppercase; display: inline-flex; gap: 6px; align-items: center; padding: 7px 12px; border-radius: 8px; border: 1px solid; font-size: 11.5px; font-weight: 800; letter-spacing: .06em }
+.ol-fs.fs-pending { background: #fff8e6; border-color: #f4d58b; color: #a16207 } .ol-fs.fs-packed { background: #eef7ff; border-color: #b6dcf7; color: #0b6aa8 } .ol-fs.fs-shipped { background: #e9fbf2; border-color: #a6e6c7; color: #0c8a5a } .ol-fs.fs-cancelled { background: #fdecec; border-color: #f3b8b8; color: #b91c1c }
+.ol-mark { padding: 8px 14px; border-radius: 10px; background: #1a1420; color: #fff; font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase }
+.ol-ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: #fff } .ol-ic.wa { background: #0cb27a } .ol-ic.inv { background: #0a9bf0 }
+.ol-qi { display: grid; gap: 2px } .ol-qi b { font-size: 15px } .ol-qi small { color: #8a867f; font-weight: 700; margin-left: 8px } .ol-qi em { font-style: normal; font-size: 12.5px; color: #6f6b66 } .ol-qi i { font-style: normal; font-weight: 800; color: #0d8a72 }
+.ol-more { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid #e5dfd8; background: #fff; font-weight: 800; font-size: 14px }
+/* Order cards in the website's own colours: plum text and buttons, gold accents (WhatsApp stays green) */
+.ol-amt b, .ol-qi i { color: #330533 }
+.ol-tag { border-color: #d9bd7a; background: #fbf4e2; color: #7a5a14 } .ol-tag.in { border-color: #d8b4dc; background: #f6eaf7; color: #5a1560 }
+.ol-b.inv, .ol-ic.inv { background: #330533; border-color: #330533; color: #fff } .ol-b.wa, .ol-ic.wa { background: #1f9d57; border-color: #1f9d57 }
+.ol-st { background: #f3e8f4; color: #330533 } .ol-st.bad { background: #fdecec; color: #b3261e }
+.ol-fs.fs-pending { background: #fbf4e2; border-color: #d9bd7a; color: #7a5a14 } .ol-fs.fs-packed { background: #f3e8f4; border-color: #d8b4dc; color: #5a1560 } .ol-fs.fs-shipped { background: #e7f5ec; border-color: #a9d8bb; color: #1c7a4b }
+.ol-fs.in { background: #f3e8f4; border-color: #d8b4dc; color: #330533 }
+.ol-mark { background: #330533 }
+.ol-queue { border-color: #d9bd7a; background: linear-gradient(180deg, #fbf4e2, #fff) } .ol-qh { border-bottom-color: #ead9a8 } .ol-qr { border-bottom-color: #f1e5c2 }

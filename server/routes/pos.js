@@ -7,6 +7,7 @@ import { hasCostColumns, hasBestSeller } from '../lib/cost.js';
 import { createReturn, getReturn } from '../lib/returns.js';
 import { listMeasurements, setTailoring, stitchingOrders, stitchingOverview } from '../lib/measurements.js';
 import { DEFAULT_RULES, loadRules } from '../lib/delivery.js';
+import { syncWebInvoices } from '../lib/webInvoices.js';
 import { editSale, stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, PHONE_SQL, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
@@ -128,6 +129,7 @@ export default function pos({ db, auth }) {
     const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), source: z.enum(['all', 'offline', 'online']).default('all'), from: date.optional(), to: date.optional(), channel, gst: gstFilter, payment: payFilter }).parse(req.query);
     // Cashiers only see today's bills; owner/admin can search the full history.
     if (req.user.role === 'cashier') f.from = f.to = today();
+    if (f.source !== 'offline') await syncWebInvoices(db).catch(() => {}); // paid website orders always have an invoice
     res.json(await listSales(db, f));
   }));
   r.get('/pos/sales/:invoice', biller, wrap(async (req, res) => {

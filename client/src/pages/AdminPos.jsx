@@ -294,9 +294,9 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
       <div className="dpos-col dpos-sticky">
         <section className="dpos-card bp-sum"><div className="dpos-head" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" size={20} />Current order{lines.length > 0 && <b key={added?.id ?? 0} className="dpos-count">{lines.reduce((a, l) => a + l.qty, 0)}</b>}</h2>
-          {!ws && <div className="dpos-src" role="radiogroup" aria-label="Order source"><button role="radio" aria-checked={source === 'offline'} className={source === 'offline' ? 'on' : ''} onClick={() => setSource('offline')}><i className="or" />Offline (POS)</button><button role="radio" aria-checked={source === 'online'} className={source === 'online' ? 'on' : ''} onClick={() => setSource('online')}><i />Online order</button></div>}</div>
+</div>
           <div className="dpos-box dpos-sum" style={{ marginBottom: 14 }}>
-            <div><span>SOURCE</span><span className="dpos-pill">{ws ? 'Wholesale' : source === 'online' ? 'Online' : 'Offline'}</span></div>
+            <div><span>SOURCE</span><span className="dpos-pill">{ws ? 'Wholesale' : 'Offline'}</span></div>
             <div><span>CUSTOMER</span><span>{cust.name || '-'}</span></div><div><span>PHONE</span><span>{cust.phone || '-'}</span></div>
             <div><span>DATE</span><span>{dmy(billDate)}</span></div>
             <hr style={{ border: 0, borderTop: '1px solid var(--d-line)', width: '100%' }} />
@@ -511,10 +511,10 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
         <div className="dpos-k6">
           <Stat icon="wallet" label="Total revenue" value={v(r => inr(r.revenue))} sub={v(r => `GST (${inr(r.gstSales)}) + Non-GST (${inr(r.nonGstSales)})`, ' ')} />
           <Stat icon="doc" label="Completed bills" value={v(r => r.bills)} sub="POS + manual bills" />
-          <Stat icon="shop" label="Offline bills" value={v(r => inr(r.offlineSales))} sub="Walk-in POS sales" />
-          <Stat icon="trend" label="Online bills" value={v(r => inr(r.onlineSales))} sub="Online POS sales" />
-          <Stat icon="shop" label="Total offline bills" value={v(r => r.offlineBills)} sub="Walk-in POS orders" />
-          <Stat icon="orders" label="Total online bills" value={v(r => r.onlineBills)} sub="Online channel orders" />
+          <Stat icon="shop" label="Offline bills" value={v(r => inr(r.offlineSales))} sub="Billing-panel sales" />
+          <Stat icon="trend" label="Online bills" value={v(r => inr(r.onlineSales))} sub="Website orders" />
+          <Stat icon="shop" label="Total offline bills" value={v(r => r.offlineBills)} sub="Billing-panel bills" />
+          <Stat icon="orders" label="Total online bills" value={v(r => r.onlineBills)} sub="Website orders" />
           <Stat icon="box" label="Total items sold" value={v(r => r.units)} sub="From completed bills" />
           <Stat icon="star" label="Top product" txt value={v(r => r.topProduct || '—')} sub="Most sold item" />
         </div>

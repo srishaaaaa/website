@@ -64,7 +64,7 @@ export async function couponAccessProblem(q, c, phone) {
 // Short, easy-to-read references: INV-2026-G3AKL for bills, DEP-20261026-8207 for advance orders. Look-alike characters (0/O, 1/I) are left out.
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const randCode = n => Array.from(crypto.randomBytes(n), b => CODE_CHARS[b % CODE_CHARS.length]).join('');
-const invoiceNo = async (t, channel) => {
+export const invoiceNo = async (t, channel) => {
   const y = istYear();
   if (channel === 'wholesale') { // older wholesale bills keep their numbered series
     const { last } = await one(t, 'INSERT INTO pos_counters (year, channel, last) VALUES ($1, $2, 1) ON CONFLICT (year, channel) DO UPDATE SET last = pos_counters.last + 1 RETURNING last', [y, channel]);
@@ -227,8 +227,9 @@ export async function createSale(db, user, d) {
 // Voids a completed bill, returns its stock and frees its coupon use. Safe to call twice.
 export async function voidSale(db, user, invoice, reason) {
   await db.tx(async t => {
-    const s = await one(t, 'SELECT id, status, coupon_code FROM pos_sales WHERE invoice_no = $1 FOR UPDATE', [invoice]);
+    const s = await one(t, 'SELECT id, status, coupon_code, web_order_id FROM pos_sales WHERE invoice_no = $1 FOR UPDATE', [invoice]);
     if (!s) throw new HttpError(404, 'Invoice not found');
+    if (s.web_order_id) throw new HttpError(409, 'This is a website order. Change its status to Cancelled instead of voiding the invoice.', 'web_order');
     if (s.status === 'voided') throw new HttpError(409, 'This invoice is already voided', 'already_voided');
     if (await one(t, 'SELECT 1 AS x FROM pos_returns WHERE sale_id = $1 LIMIT 1', [s.id])) throw new HttpError(409, 'This bill has returns against it, so it cannot be voided', 'has_returns');
     for (const i of await rows(t, 'SELECT variant_id, quantity FROM pos_sale_items WHERE sale_id = $1 AND variant_id IS NOT NULL ORDER BY variant_id', [s.id])) {
@@ -258,7 +259,7 @@ export function listSales(db, { q = '', name = '', phone = '', source = 'all', f
   if (to) w.push(`${dayExpr} <= ${add(to)}::date`);
   return rows(db, `
     SELECT s.invoice_no AS "invoiceNo", s.status, s.customer_name AS "customerName", s.customer_phone AS "customerPhone", s.total_amount AS total,
-           s.payment_mode AS "paymentMode", s.created_at AS "createdAt", s.bill_date::text AS "billDate", s.is_gst AS "isGst", s.source, s.share_token AS "shareToken", (SELECT COALESCE(SUM(quantity), 0)::int FROM pos_sale_items i WHERE i.sale_id = s.id) AS "itemCount"
+           s.payment_mode AS "paymentMode", s.web_order_id IS NOT NULL AS "isWeb", (SELECT o.status FROM orders o WHERE o.id = s.web_order_id) AS "fulfilment", (SELECT o.order_number FROM orders o WHERE o.id = s.web_order_id) AS "orderNumber", s.created_at AS "createdAt", s.bill_date::text AS "billDate", s.is_gst AS "isGst", s.source, s.share_token AS "shareToken", (SELECT COALESCE(SUM(quantity), 0)::int FROM pos_sale_items i WHERE i.sale_id = s.id) AS "itemCount"
     FROM pos_sales s WHERE ${w.join(' AND ')} ORDER BY s.id DESC LIMIT ${Math.min(limit, 500)}`, a);
 }
 
