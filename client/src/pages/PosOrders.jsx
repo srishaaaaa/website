@@ -72,7 +72,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
   const toProcess = (rows || []).filter(r => r.isWeb && r.status !== 'voided' && ['pending', 'packed'].includes(stageOf(r))).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const onlineList = (
     <>
-      {toProcess.length > 0 && (
+      {tab !== 'offline' && toProcess.length > 0 && (
         <section className="ol-queue" aria-label="Website orders to process">
           <div className="ol-qh"><b>Online orders to process</b><span>{toProcess.length} order{toProcess.length === 1 ? '' : 's'} waiting to be packed or shipped</span></div>
           {toProcess.map(r => (
@@ -83,31 +83,12 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                 <button type="button" className="ol-b" onClick={() => toggle(r.invoiceNo)}>DETAILS</button></span></div>))}
         </section>)}
       <div className="ol-head"><span className="muted">{rows ? `${rows.length} order${rows.length === 1 ? '' : 's'}` : '…'}</span>
-        <span className="ol-tools"><select aria-label="Sort orders" value={sort} onChange={e => setSort(e.target.value)}><option value="new">Newest First</option><option value="old">Oldest First</option><option value="high">Total: High → Low</option><option value="low">Total: Low → High</option></select>
-          <button type="button" className="ol-export" onClick={exportCsv} disabled={!rows?.length}><Ico size={16}><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></Ico> Export CSV</button></span></div>
-      {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No website orders match.</Empty> : (
-        <ul className="ol-list">{onlineRows.slice(0, shown).map(r => { const dt = dtShort(r.createdAt); return (
-          <li key={r.invoiceNo} className="ol-card">
-            <div className="ol-top"><div><b className="ol-no">{r.invoiceNo}</b><span className={`ol-tag ${r.isWeb ? '' : 'in'}`}>{r.isWeb ? 'ONLINE' : 'IN-STORE'}</span>{r.returnCount > 0 && <span className="ret-badge">{r.fullyReturned ? 'RETURNED' : 'PART RETURN'}</span>}
-              <p className="ol-who">{r.customerName || 'Customer'}</p><p className="ol-meta">{[r.customerPhone, `${dt.d} · ${dt.t}`].filter(Boolean).join(' · ')}</p></div>
-              <div className="ol-amt"><b>{inr(r.total)}</b><span className={`ol-st ${r.status === 'voided' ? 'bad' : ''}`}>{r.status === 'voided' ? 'VOID' : 'COMPLETED'}</span></div></div>
-            <div className="ol-foot">
-              {r.isWeb ? <FulfilControl r={r} /> : <span className="ol-fs in">{MODE[r.paymentMode] || r.paymentMode}</span>}
-              <span className="ol-btns">
-                <a className="ol-b wa" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /> WHATSAPP</a>
-                <button type="button" className="ol-b inv" onClick={() => setPreview(r)}><DocIcon /> INVOICE</button>
-                <button type="button" className="ol-b" onClick={() => toggle(r.invoiceNo)}>DETAILS</button>
-                {r.status !== 'voided' && <button type="button" className="ol-b" onClick={() => setReturning(r.invoiceNo)}>RETURN</button>}
-                {manager && r.status !== 'voided' && <button type="button" className="ol-b" onClick={() => openEdit(r)}>EDIT</button>}
-                {manager && !r.isWeb && r.status !== 'voided' && <button type="button" className="ol-b del" aria-label={`Void ${r.invoiceNo}`} onClick={() => voidIt(r)}><TrashIcon /></button>}</span></div>
-          </li>) })}</ul>)}
-      {onlineRows.length > shown && <button type="button" className="ol-more" onClick={() => setShown(n => n + 20)}>Show more ({onlineRows.length - shown} remaining)</button>}
+        <label className="ol-sort"><small>SORT</small><select aria-label="Sort orders" value={sort} onChange={e => setSort(e.target.value)}><option value="new">Newest first</option><option value="old">Oldest first</option><option value="high">Total: High → Low</option><option value="low">Total: Low → High</option></select></label></div>
     </>
   );
   return (
     <>
       <div className="dpos-bar-tools">
-        <Chips label="Type" value={tab} onChange={t => { setTab(t); setRows(null) }} options={[['all', 'All bills'], ['online', 'Online (website)'], ['offline', 'In-store (billing)']]} />
         {manager ? <PeriodFilter value={per} onChange={setPer} /> : <span className="sub">Cashiers see today’s bills. Owners and admins can search the full history.</span>}
         <button className="dpos-btn outline" onClick={exportCsv} disabled={!rows?.length}><Ico size={15}><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></Ico>Export CSV</button>
       </div>
@@ -117,15 +98,16 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
         <label className="f">Customer phone<input value={f.phone} inputMode="tel" onChange={set('phone')} placeholder="Search phone…" /></label>
       </section>
       <div className="dpos-filterbar">
+        <Chips label="Type" value={tab} onChange={t => { setTab(t); setRows(null) }} options={[['all', 'All bills'], ['online', 'Online (website)'], ['offline', 'In-store (billing)']]} />
         <Chips label="Bills" value={f.gst} onChange={v => setF({ ...f, gst: v })} options={[['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']]} />
-        {tab === 'offline' && <Chips label="Payment" value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} />}
+        {tab !== 'online' && <Chips label="Payment" value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} />}
       </div>
       <Err>{err}</Err>
-      {tab !== 'offline' ? onlineList : null}
-      {tab === 'offline' && <section className="dpos-card dpos-ordcard">
+      {onlineList}
+      <section className="dpos-card dpos-ordcard">
         {!rows ? <Empty>Loading…</Empty> : !rows.length ? <Empty>No orders match.</Empty> : (
           <div className="dpos-tw"><table className="dpos-ord"><thead><tr><th>Order ID</th><th>Date &amp; time</th><th>Customer name</th><th>Mobile number</th><th>Source</th><th>Total due</th><th className="r">Status</th></tr></thead>
-            <tbody>{rows.map(r => { const dt = dtShort(r.createdAt); return (
+            <tbody>{onlineRows.slice(0, shown).map(r => { const dt = dtShort(r.createdAt); return (
               <Fragment key={r.invoiceNo}><tr className={`${r.status === 'voided' ? 'voided' : ''} click`} onClick={e => { if (!e.target.closest('a,button')) toggle(r.invoiceNo) }} title="Show the invoice details">
                 <td className="oid">{r.invoiceNo}{r.returnCount > 0 && <span className="ret-badge" title={`${r.returnCount} return bill${r.returnCount > 1 ? 's' : ''}`}>{r.fullyReturned ? 'RETURNED' : 'PART RETURN'}</span>}</td>
                 <td><b>{longDate(r.billDate)}</b><div className="muted small">{dt.t}</div></td>
@@ -134,16 +116,17 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                 <td><span className="ord-tags"><span className="dpos-tag">{r.source}</span><span className="dpos-tag solid">{r.isGst ? 'GST' : 'NON-GST'}</span></span></td>
                 <td className="due">{inr(r.total)}</td>
                 <td className="r"><div className="dpos-rowact">
-                  <span className={`dpos-pill ${r.status === 'voided' ? 'bad' : 'ok'}`}>{r.status === 'voided' ? 'Void' : 'Completed'}</span>
+                  <span className={`dpos-pill ${r.status === 'voided' ? 'bad' : 'ok'}`}>{r.status === 'voided' ? 'Void' : 'Completed'}</span>{r.isWeb && r.status !== 'voided' && <FulfilControl r={r} />}
                   <a className="ra wa" title="Send invoice on WhatsApp" aria-label="Send on WhatsApp" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>
                   <button className="ra doc" title="Invoice preview" aria-label="Invoice preview" onClick={() => setPreview(r)}><DocIcon /></button>
                   <button className="ra eye" title="Quick details" aria-label="Quick details" onClick={() => toggle(r.invoiceNo)}><EyeIcon /></button>
                   <button className="ra ret" title="Return items" aria-label="Return items" disabled={r.status === 'voided'} onClick={() => setReturning(r.invoiceNo)}><RetIcon /></button>
                   {manager && <button className="ra edit" title="Edit invoice" aria-label="Edit invoice" disabled={r.status === 'voided'} onClick={() => openEdit(r)}><EditIcon /></button>}
-                  {manager && <button className="ra del" title="Void this invoice" aria-label="Void invoice" disabled={r.status === 'voided'} onClick={() => voidIt(r)}><TrashIcon /></button>}
+                  {manager && !r.isWeb && <button className="ra del" title="Void this invoice" aria-label="Void invoice" disabled={r.status === 'voided'} onClick={() => voidIt(r)}><TrashIcon /></button>}
                 </div></td></tr>
 </Fragment>) })}</tbody></table></div>)}
-      </section>}
+      {onlineRows.length > shown && <button type="button" className="ol-more" onClick={() => setShown(n => n + 20)}>Show more ({onlineRows.length - shown} remaining)</button>}
+      </section>
       {openNo && <QuickDetails row={rows?.find(x => x.invoiceNo === openNo)} sale={detail} manager={manager} onClose={() => setOpenNo(null)} onView={r => { setOpenNo(null); setPreview(r) }} onEdit={() => setEditing(detail)} />}
       {returning && <ReturnWindow invoiceNo={returning} onClose={() => setReturning(null)} onDone={r => { setReturning(null); setN(x => x + 1); onChanged?.(); setPreview({ invoiceNo: r.invoiceNo, shareToken: r.shareToken, tab: r.returnNo }) }} />}
       {editing && <EditInvoice sale={editing} onClose={() => setEditing(null)} onSaved={sale => { setEditing(null); setDetail(sale); setN(x => x + 1); onChanged?.() }} />}
