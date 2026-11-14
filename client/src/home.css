@@ -640,3 +640,6 @@ h1, h2 { text-wrap: balance }
 .ab4-cat { display: grid; gap: 4px; padding-top: 6px } .ab4-cat strong { font-size: 14px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--red) } .ab4-cat span { font-size: 13px; opacity: .65 } .ab4-cat:hover strong { text-decoration: underline; text-underline-offset: 4px }
 @media (max-width: 859px) { .ab4-in { grid-template-columns: 1fr } .ab4-left { padding: 0 0 22px; border-right: 0; border-bottom: 1px solid rgba(66, 8, 64, .22) } .ab4-photo { aspect-ratio: 4 / 3 } .ab4-right { padding: 22px 0 0 } }
 @media (max-width: 520px) { .ab4-cols { grid-template-columns: 1fr; gap: 18px } .ab4-cols li { border-left: 0 } .ab4-cols::before { display: none } }
+
+/* Featured categories: plain rectangular photo cards (no arch) */
+.cc-card { border-radius: 22px; box-shadow: 0 16px 36px rgba(110, 70, 60, .16); margin: 0 } .cc-card .cc-photo, .cc-card .cc-photo > * { border-radius: 0 }
