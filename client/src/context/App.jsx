@@ -10,13 +10,8 @@ const EMPTY_CART = { items: [], count: 0, subtotal: 0, shipping: { amount: 0, fr
 
 export function AppProvider({ children }) {
   // --- entry preference: full cinematic intro only on a first visit -------------
-  const [entered, setEntered] = useState(() => {
-    try {
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-      if (/^\/(admin|invoice|coupon)(\/|$)/.test(location.pathname)) return true; // staff screens and shared documents never open with the splash
-      return false; // the splash plays on every load / reload of the customer site
-    } catch { return true }
-  });
+  // No splash on top of the loading screen: the site opens straight after the loader.
+  const [entered, setEntered] = useState(true);
   const enter = useCallback(() => { try { localStorage.setItem('dhanya.entered', String(Date.now())) } catch { /* ignore */ } setEntered(true) }, []);
   const replayIntro = useCallback(() => setEntered(false), []);
 
