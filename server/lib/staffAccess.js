@@ -11,6 +11,7 @@ export const PAGES = [
   ['/admin/stitching/reports', 'Stitching Reports'], ['/admin/billing/settings', 'POS Settings'], ['/admin/settings', 'Store Settings'],
 ];
 const ALL = PAGES.map(p => p[0]);
+const SETTINGS = '/admin/billing/settings';
 // What each role's server permissions can serve.
 export const CAN = {
   admin: ALL,
@@ -27,6 +28,7 @@ export async function loadAccess(db) {
   const saved = (await one(db, "SELECT value FROM pos_settings WHERE key = 'staff_access'"))?.value || {};
   const out = {};
   for (const role of Object.keys(CAN)) out[role] = (Array.isArray(saved[role]) ? saved[role] : DEFAULTS[role]).filter(p => CAN[role].includes(p));
+  if (!out.admin.includes(SETTINGS)) out.admin.push(SETTINGS); // an admin can never lock themselves (or the owner) out of the settings that control this
   return out;
 }
 export const pagesFor = (access, role) => role === 'owner' ? ALL : (access[role] || []);

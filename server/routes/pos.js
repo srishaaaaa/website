@@ -108,13 +108,13 @@ export default function pos({ db, auth }) {
   const stockers = auth.role('owner', 'admin', 'inventory');
   const reader = auth.role('owner', 'admin', 'cashier', 'inventory'); // may look products up (stock staff need the list to adjust stock)
 
-  // Staff access: which admin pages each kind of staff member sees. Everyone signed in as staff can read their own list; only the owner changes it.
+  // Staff access: which admin pages each kind of staff member sees. Everyone signed in as staff can read their own list; the owner and admins (who are equal here) change it.
   const anyStaff = auth.role('owner', 'admin', 'cashier', 'inventory');
   r.get('/pos/staff-access', anyStaff, wrap(async (req, res) => {
     const access = await loadAccess(db);
-    res.json({ role: req.user.role, pages: pagesFor(access, req.user.role), ...(req.user.role === 'owner' ? { config: access, can: CAN, all: PAGES } : {}) });
+    res.json({ role: req.user.role, pages: pagesFor(access, req.user.role), ...(['owner', 'admin'].includes(req.user.role) ? { config: access, can: CAN, all: PAGES } : {}) });
   }));
-  r.put('/pos/staff-access', auth.role('owner'), wrap(async (req, res) => {
+  r.put('/pos/staff-access', manager, wrap(async (req, res) => {
     const v = z.object({ admin: z.array(z.string()).max(60), cashier: z.array(z.string()).max(60), inventory: z.array(z.string()).max(60) }).parse(req.body);
     const clean = {}; for (const role of Object.keys(CAN)) clean[role] = [...new Set(v[role])].filter(x => CAN[role].includes(x));
     await putSetting(db, 'staff_access', clean); await audit(db, req.user.id, 'pos.staff_access', 'pos_settings', 'staff_access');

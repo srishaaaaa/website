@@ -234,7 +234,9 @@ test('staff access: each role gets its own page list, only the owner changes it,
   const mine = async c => (await c('GET', '/admin/pos/staff-access')).body;
   assert.deepEqual((await mine(stock)).pages, ['/admin/billing/inventory'], 'stock staff land on Inventory, not an error page');
   assert.ok((await mine(cash)).pages.includes('/admin/billing') && !(await mine(cash)).pages.includes('/admin/users'));
-  assert.equal((await cash('PUT', '/admin/pos/staff-access', { admin: [], cashier: ['/admin/billing'], inventory: [] })).status, 403, 'only the owner changes it');
+  assert.equal((await cash('PUT', '/admin/pos/staff-access', { admin: [], cashier: ['/admin/billing'], inventory: [] })).status, 403, 'cashiers cannot change it');
+  const adm = await mk('sa-admin@test.dev', 'admin'); assert.equal((await adm('PUT', '/admin/pos/staff-access', { admin: [], cashier: ['/admin/billing'], inventory: ['/admin/billing/inventory'] })).status, 200, 'an admin can change it too');
+  assert.deepEqual((await mine(adm)).pages, ['/admin/billing/settings'], 'an admin always keeps POS Settings');
   const all = (await mine(owner)).all.map(p => p[0]);
   const r = await owner('PUT', '/admin/pos/staff-access', { admin: all.filter(p => p !== '/admin/users'), cashier: ['/admin/billing', '/admin/users', '/admin/billing/inventory'], inventory: ['/admin/billing/inventory', '/admin/billing'] });
   assert.equal(r.status, 200);
