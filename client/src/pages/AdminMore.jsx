@@ -19,15 +19,16 @@ const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{c
 const Switch = ({ on, onChange, label }) => <button type="button" role="switch" aria-checked={on} aria-label={label} className={`dpos-switch ${on ? 'on' : ''}`} onClick={() => onChange(!on)} />;
 
 function AddModal({ kind, onClose, onDone }) {
-  const [name, setName] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const [name, setName] = useState(''); const [code, setCode] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState();
   const submit = async e => {
     e.preventDefault(); setBusy(true); setErr();
-    try { await api(kind === 'category' ? '/admin/categories' : '/admin/collections', { method: 'POST', body: { name: name.trim() } }); onDone(); onClose() }
+    try { await api(kind === 'category' ? '/admin/categories' : '/admin/collections', { method: 'POST', body: { name: name.trim(), ...(kind === 'category' ? { code } : {}) } }); onDone(); onClose() }
     catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
   };
   return (
     <Modal title={kind === 'category' ? 'Add category' : 'Add category'} sub={kind === 'category' ? 'A product category such as Sarees or Blouses' : 'A department / collection shown on the storefront (starts hidden)'} onClose={onClose}>
       <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
+        {kind === 'category' && <label className="f">Code (optional) <small className="muted">type it in any search to list this category</small><input value={code} maxLength={12} onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))} placeholder="e.g. SAR" /></label>}
         <label className="f">Name<input autoFocus required value={name} maxLength={80} onChange={e => setName(e.target.value)} placeholder={kind === 'category' ? 'e.g. Dupattas' : 'e.g. Festive 2026'} /></label>
         <Err>{err}</Err>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy || !name.trim()}>{busy ? 'Adding…' : 'Add'}</button></div>
@@ -108,8 +109,9 @@ export function AdminCategories() {
           <h2><Icon n="tag" size={20} />Categories</h2>
           {!d ? <p className="dpos-empty">Loading…</p> : !cats.length ? <p className="dpos-empty">No categories found.</p> : cats.map(c => (
             <div className="dpos-txc" key={c.id}>
-              <div><b>{c.name}</b><small>Product category · {c.products} products</small></div>
+              <div><b>{c.name}{c.code && <span className="cat-code">{c.code}</span>}</b><small>Product category · {c.products} products</small></div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button className="dpos-btn ghost sm" onClick={() => { const v = window.prompt(`Search code for ${c.name} (letters and digits, e.g. SAR). Leave empty to remove it.`, c.code || ''); if (v !== null) act(() => api(`/admin/categories/${c.id}`, { method: 'PATCH', body: { code: v.trim() } }), 'Code saved.') }}>{c.code ? 'Code' : '+ Code'}</button>
                 <button className="dpos-btn ghost sm" onClick={() => setEdit({ kind: 'category', item: c })}>Edit pieces</button>
                 <Switch on={c.active} label={`${c.name} active`} onChange={on => act(() => api(`/admin/categories/${c.id}`, { method: 'PATCH', body: { active: on } }))} />
                 <button className="dpos-trash" aria-label={`Delete ${c.name}`} onClick={() => confirm(`Delete the category “${c.name}”? ${c.products ? `${c.products} product(s) will become uncategorised (they are not deleted).` : ''}`) && act(() => api(`/admin/categories/${c.id}`, { method: 'DELETE' }), 'Category deleted.')}><Icon n="trash" size={18} /></button>

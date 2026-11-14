@@ -26,8 +26,13 @@ export default function QuickView() {
     return () => { dead = true };
   }, [quick]);
 
-  const order = full ? sortSizes(full.variants.map(v => v.size)) : [];
-  const variants = full ? [...full.variants].sort((a, b) => order.indexOf(a.size) - order.indexOf(b.size)) : [];
+  // Colours first, then the sizes of the chosen colour (a piece sold in two colours used to show its size twice).
+  const [col, setCol] = useState('');
+  const colours = full ? [...new Set(full.variants.map(v => v.color || 'Default'))] : [];
+  const activeCol = colours.includes(col) ? col : (colours.find(c => full.variants.some(v => (v.color || 'Default') === c && v.stock)) || colours[0] || '');
+  const inCol = full ? full.variants.filter(v => (v.color || 'Default') === activeCol) : [];
+  const order = full ? sortSizes(inCol.map(v => v.size)) : [];
+  const variants = [...inCol].sort((a, b) => order.indexOf(a.size) - order.indexOf(b.size));
   return (
     <AnimatePresence>
       {quick && (
@@ -47,6 +52,7 @@ export default function QuickView() {
               {state === 'error' && <p role="alert" className="err">Availability could not be loaded. Please try again.</p>}
               {full && (
                 <>
+                  {colours.length > 1 && <div className="chips" role="radiogroup" aria-label="Colour">{colours.map(c => <button key={c} type="button" role="radio" aria-checked={activeCol === c} className={`chip ${activeCol === c ? 'on' : ''}`} onClick={() => { setCol(c); setSel(null) }}>{c}</button>)}</div>}
                   <div className="chips" role="radiogroup" aria-label="Size">
                     {variants.map(v => (
                       <button key={v.id} role="radio" aria-checked={sel?.id === v.id} className={`chip ${sel?.id === v.id ? 'on' : ''}`} disabled={!v.stock} onClick={() => setSel(v)}>{v.size}{!v.stock && <span className="sr"> sold out</span>}</button>

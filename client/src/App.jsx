@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from './context/App';
+import { useStaffAccess, ADMIN_ORDER } from './lib/staffAccess';
+import { NAV } from './components/AdminShell';
 import FloatingNavbar from './components/FloatingNavbar';
 import LuxuryFooter from './components/LuxuryFooter';
 import Intro from './components/Intro';
@@ -41,11 +43,16 @@ const A = {
   storefront: lazyEl(media, 'AdminStorefront'), trending: lazyEl(media, 'AdminTrending'), sitetext: lazyEl(media, 'AdminSiteText'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
 };
 
-// /admin opens Online orders (the first page of the sidebar) for the owner and admins, and Billing for cashiers and stock staff.
+// /admin opens the first page of the sidebar that this staff member is allowed to see (set by the owner in POS Settings → Staff access).
 function AdminHome() {
   const { user, authReady } = useApp();
+  const pages = useStaffAccess(user);
   if (!authReady) return null;
-  return <Navigate to={user && ['owner', 'admin'].includes(user.role) ? '/admin/orders' : '/admin/billing'} replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'customer') return <Navigate to="/account" replace />;
+  if (!pages) return null;
+  const order = ADMIN_ORDER;
+  return <Navigate to={order.find(p => pages.includes(p)) || '/account'} replace />;
 }
 
 export default function App() {

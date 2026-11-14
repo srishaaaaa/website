@@ -459,3 +459,6 @@ a.insta-tile:hover { transform: translateY(-6px) } .insta-tile img { width: 100%
 
 /* The whole customer site renders at 90% (the size it was designed to be seen at on a 100% browser); the admin has its own scale. */
 @media (min-width: 900px) { body:not(:has(.dpos)) { zoom: .9 } }
+
+/* Shop toolbar (count, sort, view): plain row in the page flow, not a see-through bar that sticks over the product photos */
+.toolbar { position: static; top: auto; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; z-index: auto }

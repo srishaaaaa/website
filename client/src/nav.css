@@ -827,3 +827,15 @@ html:has(.auth2) { background: #f3e9dd }
 .review-modal .err { color: #b3261e; font-weight: 600 }
 /* any other dark glass window: muted text must stay readable */
 .glass .muted, .glass .sub, .glass small { color: rgba(255, 249, 240, .86); opacity: 1 }
+
+/* Pop-ups and panels in a light cream with plum text instead of dark purple (quick view, choose size, review window, menus) */
+.glass, .quick.glass { background: #fbf4ea; color: #2a1230; border: 1px solid rgba(198, 160, 82, .45); --ink: #2a1230; --paper: #fbf4ea; box-shadow: 0 30px 70px -30px rgba(51, 5, 51, .4) }
+.quick.glass .close, .glass .icon-btn { color: #330533; background: #f3e8f4 }
+.quick.glass .eyebrow, .quick.glass small, .quick.glass .muted { color: #6a4a6e; opacity: 1 }
+.quick.glass h2 { color: #2a1230 } .quick.glass p { color: #4a2f4d }
+.glass .btn { border-color: #330533; color: #330533 } .glass .btn.solid { background: #330533; color: #fff; border-color: #330533 } .glass .btn:hover:not(:disabled) { background: #5a1560; color: #fff }
+.quick.glass .sizes button, .quick.glass .size-btn, .quick.glass [role=radio] { border-color: #bfa7c2; color: #2a1230; background: #fff } .quick.glass [aria-checked=true], .quick.glass .on { background: #330533; color: #fff; border-color: #330533 }
+.quick.glass .btn:disabled { background: #e6d9e8; color: #8a7390; border-color: #e6d9e8 }
+.mega { background: rgba(251, 244, 234, .98); color: #2a1230 } .mega a, .mega .t { color: #2a1230 }
+.toast { background: rgba(90, 21, 96, .96); color: #fff }
+.glass .muted, .glass .sub, .glass small { color: #6a4a6e }

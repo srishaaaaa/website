@@ -87,7 +87,7 @@ export const searchVariants = (db, q = '', limit = 40) => {
            (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image
     FROM product_variants v JOIN products p ON p.id = v.product_id LEFT JOIN categories c ON c.id = p.category_id
     WHERE v.active AND p.status = 'active'
-      AND ($1 = '' OR p.name ILIKE $2 OR v.sku ILIKE $2 OR v.size ILIKE $2 OR v.color ILIKE $2 OR c.name ILIKE $2)
+      AND ($1 = '' OR p.name ILIKE $2 OR v.sku ILIKE $2 OR v.size ILIKE $2 OR v.color ILIKE $2 OR c.name ILIKE $2 OR upper(c.code) = upper($1))
     ORDER BY p.name, v.size, v.color LIMIT $3`, [q.trim(), like, limit]);
 };
 
@@ -442,7 +442,7 @@ export const listProducts = async (db, q = '', onlyId = null) => {
            COALESCE((SELECT json_agg(json_build_object('id', v.id, 'sku', v.sku, 'size', v.size, 'color', v.color, 'stock', v.stock_quantity, 'price', COALESCE(v.price_override, p.base_price), 'priceOverride', v.price_override, 'weightGrams', v.weight_grams, ${vcSql}, 'active', v.active) ORDER BY v.id)
                      FROM product_variants v WHERE v.product_id = p.id), '[]'::json) AS variants
     FROM products p LEFT JOIN categories c ON c.id = p.category_id
-    WHERE ($3::int IS NULL OR p.id = $3) AND ($1 = '' OR p.name ILIKE $2 OR c.name ILIKE $2 OR EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.sku ILIKE $2))
+    WHERE ($3::int IS NULL OR p.id = $3) AND ($1 = '' OR p.name ILIKE $2 OR c.name ILIKE $2 OR upper(c.code) = upper($1) OR EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.id AND v.sku ILIKE $2))
     ORDER BY p.name, p.id LIMIT 400`, [q.trim(), like, onlyId]);
 };
 

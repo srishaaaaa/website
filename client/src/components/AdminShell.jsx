@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { useStaffAccess } from '../lib/staffAccess';
 import { useApp } from '../context/App';
 import '../adminbase.css';
 import '../pos.css';
@@ -87,13 +88,17 @@ export default function AdminShell({ title, sub, actions, children }) {
   const { user, site } = useApp();
   const nm = site?.store?.name || 'Dhanyas Boutique';
   const manager = !!user && ['owner', 'admin'].includes(user.role);
+  const pages = useStaffAccess(user); const { pathname } = useLocation();
+  const allNav = NAV.flatMap(g => g.items.map(i => i[0]));
+  const here = pages && allNav.filter(p => pathname === p || pathname.startsWith(p + '/')).sort((a, b) => b.length - a.length)[0];
+  if (pages && here && !pages.includes(here)) return <Navigate to={pages.find(p => allNav.includes(p)) || '/'} replace />;
   const initial = (user?.name || user?.email || 'A').trim()[0].toUpperCase();
   return (
     <div className="dpos">
       <nav className="dpos-side" aria-label="Admin sections" ref={side} onScroll={e => { sideScroll.top = e.currentTarget.scrollTop; sideScroll.left = e.currentTarget.scrollLeft }}>
-        <Link to="/admin/billing" className="dpos-brand" aria-label={nm}><span className="wm-text"><b>{nm.split(' ')[0]}</b><i>{nm.split(' ').slice(1).join(' ') || 'Boutique'}</i></span><i className="dpos-role">{manager ? 'ADMIN' : 'CASHIER'}</i></Link>
+        <Link to="/admin/billing" className="dpos-brand" aria-label={nm}><span className="wm-text"><b>{nm.split(' ')[0]}</b><i>{nm.split(' ').slice(1).join(' ') || 'Boutique'}</i></span><i className="dpos-role">{user?.role === 'inventory' ? 'STOCK' : manager ? 'ADMIN' : 'CASHIER'}</i></Link>
         {NAV.map(g => {
-          const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => !i[3] || manager);
+          const items = g.roles && !g.roles.includes(user?.role) ? [] : g.items.filter(i => pages ? pages.includes(i[0]) : (!i[3] || manager));
           return items.length ? (
             <div key={g.group} style={{ display: 'contents' }}>
               <p className="dpos-grp">{g.group.toUpperCase()}</p>

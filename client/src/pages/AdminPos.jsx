@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ExportCsv from '../components/ExportCsv';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -16,6 +16,7 @@ import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
 import PosMeasurements from './PosMeasurements';
 import DeliveryRulesCard from '../components/DeliveryRulesCard';
+import PageAccessCard from '../components/PageAccessCard';
 import PosBirthdays from './PosBirthdays';
 import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
@@ -38,9 +39,9 @@ const TABS = { billing: false, analytics: true, advance: false, orders: false, m
 function preview(lines, { isGst, gstRate, discountType, discountValue, deliveryFee }) {
   const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const discount = Math.min(subtotal, discountType === 'percent' ? Math.round(subtotal * Math.min(discountValue, 100) / 100) : discountValue);
-  let tax = 0;
-  if (isGst && subtotal) for (const l of lines) { const lt = l.price * l.qty; tax += Math.round((lt - Math.floor(discount * lt / subtotal)) * (gstRate ?? l.taxRate) / 100) }
-  return { subtotal, discount, tax, total: subtotal - discount + tax + deliveryFee };
+  let tax = 0; const by = new Map();
+  if (isGst && subtotal) for (const l of lines) { const lt = l.price * l.qty, rate = gstRate ?? l.taxRate, base = lt - Math.floor(discount * lt / subtotal), t = Math.round(base * rate / 100); tax += t; const g = by.get(rate) || { rate, base: 0, tax: 0 }; g.base += base; g.tax += t; by.set(rate, g) }
+  return { subtotal, discount, tax, byRate: [...by.values()].filter(g => g.rate > 0).sort((x, y) => x.rate - y.rate), deliveryFee, total: subtotal - discount + tax + deliveryFee };
 }
 
 const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{children}</p> : null;
@@ -327,6 +328,15 @@ function Billing({ channel, shop, onSale, onAdvance }) {
               <label className="dpos-pct"><input aria-label="GST percentage for the whole bill" inputMode="numeric" value={gstRate === 'item' ? '' : gstRate} placeholder="item" onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 2); setGstRate(v === '' ? 'item' : String(Math.min(28, +v))) }} /> %</label>
               <b className="acc">{inr(bill.tax)}</b></div>
             <p className="sub" style={{ margin: '6px 0 0' }}>{gstRate === 'item' ? 'Each item uses its own GST rate. Type a % to charge one rate on the whole bill.' : `${gstRate}% GST on the whole bill. Clear the box to use each item’s own rate.`}{shop?.gstin ? '' : ' Add your GSTIN in Delivery & GST to print it on invoices.'}</p></>}
+          {priced.length > 0 && <div className="dpos-bsplit" aria-label="Bill split-up">
+            <div><span>Subtotal {isGst ? '(excl. GST)' : ''}</span><b>{inr(bill.subtotal)}</b></div>
+            {bill.discount > 0 && <div><span>Discount</span><b>− {inr(bill.discount)}</b></div>}
+            {isGst && <div><span>Taxable value</span><b>{inr(bill.subtotal - bill.discount)}</b></div>}
+            {isGst && bill.byRate.map(g => { const c = Math.floor(g.tax / 2); return <Fragment key={g.rate}><div className="sub"><span>CGST ({g.rate / 2}%)</span><b>{inr(c)}</b></div><div className="sub"><span>SGST ({g.rate / 2}%)</span><b>{inr(g.tax - c)}</b></div></Fragment> })}
+            {isGst && <div><span>Total GST</span><b>{inr(bill.tax)}</b></div>}
+            <div><span>Delivery charge</span><b>{bill.deliveryFee > 0 ? inr(bill.deliveryFee) : 'Free / none'}</b></div>
+            <div className="tot"><span>Grand total</span><b>{inr(bill.total)}</b></div>
+          </div>}
           <p className="dpos-flabel">FINANCIAL OPTION</p>
           <div className="dpos-pills" role="radiogroup" aria-label="Payment method">{MODES.map(([v, l]) => <button key={v} role="radio" aria-checked={mode === v} className={mode === v ? 'on' : ''} onClick={() => setMode(v)}>{l.replace('GPay / UPI', 'QR / GPay')}</button>)}</div>
           <hr className="dpos-hr" />
@@ -688,6 +698,7 @@ function Settings({ onSaved }) {
       </form>
       <LoginPasswordCard />
       <StaffAccessCard />
+      <PageAccessCard />
     </div>
   );
 }
@@ -698,7 +709,8 @@ export default function AdminPos() {
   const { tab = 'billing' } = useParams();
   const nav = useNavigate();
   const [shop, setShop] = useState(null); const [done, setDone] = useState(null); const [advDone, setAdvDone] = useState(null); const [tick, setTick] = useState(0); const [err, setErr] = useState();
-  const allowed = user && ['owner', 'admin', 'cashier'].includes(user.role);
+  const allowed = user && ['owner', 'admin', 'cashier'].includes(user.role); // may bill
+  const staff = user && ['owner', 'admin', 'cashier', 'inventory'].includes(user.role);
   const manager = !!user && ['owner', 'admin'].includes(user.role);
   const stocker = !!user && ['owner', 'admin', 'inventory'].includes(user.role);
   const loadShop = useCallback(() => api('/admin/pos/shop').then(setShop).catch(e => setErr(e.message)), []);
@@ -709,8 +721,8 @@ export default function AdminPos() {
 
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!allowed) return <StaffOnly />;
-  if (!(tab in TABS) || (TABS[tab] && !manager)) return <Navigate to="/admin/billing" replace />;
+  if (!staff) return <StaffOnly />;
+  if (!(tab in TABS) || (TABS[tab] && !manager && !(tab === 'inventory' && stocker))) return <Navigate to="/admin" replace />;
 
   const onSale = (sale, quiet) => { if (!quiet) setDone(sale); setTick(t => t + 1) }; // quiet = the bill was already sent / printed from Billing
   const onAdvance = adv => { setTick(t => t + 1); setAdvDone(adv) }; // the saved advance order is kept in Advance Orders; its receipt shows first

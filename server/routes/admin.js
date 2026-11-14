@@ -91,10 +91,12 @@ export default function admin({ db, auth }) {
     res.json({ ok: true, stock: left });
   }));
   // ---- categories & collections ("taxonomy") ----
+  // A category code is letters and digits only, kept in capitals (e.g. SAR). Empty clears it.
+  const codeOf = v => { const c = String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); return c || null };
   const slugOf = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'item';
   const freeSlug = async (table, name) => { const base = slugOf(name); for (let i = 0; ; i++) { const slug = i ? `${base}-${i + 1}` : base; if (!(await one(db, `SELECT 1 AS x FROM ${table} WHERE slug = $1`, [slug]))) return slug } };
   r.get('/taxonomy', staff, wrap(async (_req, res) => res.json({
-    categories: await rows(db, `SELECT c.id, c.name, c.slug, c.description, c.active, (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id) AS products FROM categories c ORDER BY c.display_order, lower(c.name)`),
+    categories: await rows(db, `SELECT c.id, c.name, c.slug, c.code, c.description, c.active, (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id) AS products FROM categories c ORDER BY c.display_order, lower(c.name)`),
     collections: await rows(db, `SELECT c.id, c.name, c.slug, c.description, c.status, (SELECT COUNT(*)::int FROM collection_products cp WHERE cp.collection_id = c.id) AS products FROM collections c ORDER BY c.display_order, lower(c.name)`),
     // the two built-in home-page shelves, with live counts (Best Sellers needs migration 028)
     shelves: { trending: (await one(db, "SELECT COUNT(*)::int AS n FROM products WHERE featured AND status = 'active'")).n,
@@ -102,16 +104,19 @@ export default function admin({ db, auth }) {
   })));
   const nameBody = z.object({ name: z.string().trim().min(1).max(80) });
   r.post('/categories', staff, wrap(async (req, res) => {
-    const { name } = nameBody.parse(req.body);
+    const { name } = nameBody.parse(req.body); const code = codeOf(req.body?.code);
     if (await one(db, 'SELECT 1 AS x FROM categories WHERE lower(name) = lower($1)', [name])) throw new HttpError(409, 'A category with that name already exists');
-    const row = await one(db, 'INSERT INTO categories (name, slug, active, display_order) VALUES ($1,$2,true,(SELECT COALESCE(MAX(display_order), 0) + 1 FROM categories)) RETURNING id', [name, await freeSlug('categories', name)]);
+    if (code && await one(db, 'SELECT 1 AS x FROM categories WHERE upper(code) = $1', [code])) throw new HttpError(409, `The code ${code} is already used by another category`);
+    const row = await one(db, 'INSERT INTO categories (name, slug, code, active, display_order) VALUES ($1,$2,$3,true,(SELECT COALESCE(MAX(display_order), 0) + 1 FROM categories)) RETURNING id', [name, await freeSlug('categories', name), code]);
     await audit(db, req.user.id, 'category.create', 'category', row.id, { name });
     res.status(201).json({ id: row.id });
   }));
   r.patch('/categories/:id', staff, wrap(async (req, res) => {
-    const b = z.object({ active: z.boolean().optional(), name: z.string().trim().min(1).max(80).optional(), description: z.string().trim().max(300).optional() }).parse(req.body);
+    const b = z.object({ active: z.boolean().optional(), name: z.string().trim().min(1).max(80).optional(), description: z.string().trim().max(300).optional(), code: z.string().trim().max(20).nullable().optional() }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
-    const u = await db.query('UPDATE categories SET active = COALESCE($2, active), name = COALESCE($3, name), description = COALESCE($4, description) WHERE id = $1 RETURNING id', [id, b.active ?? null, b.name ?? null, b.description ?? null]);
+    const setCode = b.code !== undefined, code = codeOf(b.code);
+    if (setCode && code && await one(db, 'SELECT 1 AS x FROM categories WHERE upper(code) = $1 AND id <> $2', [code, id])) throw new HttpError(409, `The code ${code} is already used by another category`);
+    const u = await db.query('UPDATE categories SET active = COALESCE($2, active), name = COALESCE($3, name), description = COALESCE($4, description), code = CASE WHEN $5 THEN $6 ELSE code END WHERE id = $1 RETURNING id', [id, b.active ?? null, b.name ?? null, b.description ?? null, setCode, code]);
     if (!u.rows.length) throw new HttpError(404, 'Category not found');
     await audit(db, req.user.id, 'category.update', 'category', id, b);
     res.json({ ok: true });

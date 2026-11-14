@@ -7,6 +7,7 @@ import { hasCostColumns, hasBestSeller } from '../lib/cost.js';
 import { createReturn, getReturn } from '../lib/returns.js';
 import { listMeasurements, setTailoring, stitchingOrders, stitchingOverview } from '../lib/measurements.js';
 import { DEFAULT_RULES, loadRules } from '../lib/delivery.js';
+import { loadAccess, pagesFor, CAN, PAGES } from '../lib/staffAccess.js';
 import { syncWebInvoices } from '../lib/webInvoices.js';
 import { editSale, stockMovements, adjustStock, createAdvance, finalizeAdvance, getAdvance, listAdvances, setAdvanceStatus, shopInfo, birthdays, couponProblem, couponAccessProblem, createSale, getSale, getSetting, listCustomers, listExpenses, listProducts, listSales, normPhone, PHONE_SQL, putSetting, report, searchVariants, voidSale } from '../lib/pos.js';
 
@@ -105,6 +106,20 @@ export default function pos({ db, auth }) {
   const biller = auth.role('owner', 'admin', 'cashier');
   const manager = auth.role('owner', 'admin');
   const stockers = auth.role('owner', 'admin', 'inventory');
+  const reader = auth.role('owner', 'admin', 'cashier', 'inventory'); // may look products up (stock staff need the list to adjust stock)
+
+  // Staff access: which admin pages each kind of staff member sees. Everyone signed in as staff can read their own list; only the owner changes it.
+  const anyStaff = auth.role('owner', 'admin', 'cashier', 'inventory');
+  r.get('/pos/staff-access', anyStaff, wrap(async (req, res) => {
+    const access = await loadAccess(db);
+    res.json({ role: req.user.role, pages: pagesFor(access, req.user.role), ...(req.user.role === 'owner' ? { config: access, can: CAN, all: PAGES } : {}) });
+  }));
+  r.put('/pos/staff-access', auth.role('owner'), wrap(async (req, res) => {
+    const v = z.object({ admin: z.array(z.string()).max(60), cashier: z.array(z.string()).max(60), inventory: z.array(z.string()).max(60) }).parse(req.body);
+    const clean = {}; for (const role of Object.keys(CAN)) clean[role] = [...new Set(v[role])].filter(x => CAN[role].includes(x));
+    await putSetting(db, 'staff_access', clean); await audit(db, req.user.id, 'pos.staff_access', 'pos_settings', 'staff_access');
+    res.json(await loadAccess(db));
+  }));
 
   r.get('/pos/shop', biller, wrap(async (_req, res) => res.json(await shopInfo(db))));
   r.get('/pos/settings', manager, wrap(async (_req, res) => res.json({ ...SETTINGS_DEFAULT, ...(await getSetting(db, 'invoice', {})) })));
@@ -344,9 +359,9 @@ export default function pos({ db, auth }) {
   }));
 
   // ---- inventory: products with variants, stock adjustments (new products use the existing POST /admin/products) ----
-  r.get('/pos/categories', biller, wrap(async (_req, res) => res.json(await rows(db, 'SELECT id, name, slug FROM categories WHERE active ORDER BY display_order, name'))));
-  r.get('/pos/products', biller, wrap(async (req, res) => res.json(await listProducts(db, z.object({ q: text(80).default('') }).parse(req.query).q))));
-  r.get('/pos/products/:id', biller, wrap(async (req, res) => {
+  r.get('/pos/categories', reader, wrap(async (_req, res) => res.json(await rows(db, 'SELECT id, name, slug FROM categories WHERE active ORDER BY display_order, name'))));
+  r.get('/pos/products', reader, wrap(async (req, res) => res.json(await listProducts(db, z.object({ q: text(80).default('') }).parse(req.query).q))));
+  r.get('/pos/products/:id', reader, wrap(async (req, res) => {
     const p = (await listProducts(db, '', id.parse(req.params.id)))[0];
     if (!p) throw new HttpError(404, 'Product not found');
     res.json(p);
@@ -446,7 +461,7 @@ export default function pos({ db, auth }) {
     res.json({ ok: true });
   }));
   // "Complete the look": up to 4 suggested pieces per product, in order.
-  r.get('/pos/products/:id/suggested', biller, wrap(async (req, res) => res.json(await rows(db, `
+  r.get('/pos/products/:id/suggested', reader, wrap(async (req, res) => res.json(await rows(db, `
     SELECT p.id, p.slug, p.name, (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image
     FROM product_suggestions s JOIN products p ON p.id = s.suggested_id WHERE s.product_id = $1 ORDER BY s.display_order`, [id.parse(req.params.id)]))));
   r.put('/pos/products/:id/suggested', manager, wrap(async (req, res) => {

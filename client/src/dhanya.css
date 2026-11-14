@@ -722,3 +722,24 @@ div.dpos { --z: .9; zoom: .9 }
 .dpos-ord .dpos-tag { font-size: 8.5px; padding: 2px 6px }
 .dpos-ord td.r, .dpos-ord th.r { padding-right: 6px }
 @media (max-width: 899px) { div.dpos { --z: 1; zoom: 1 } }
+.dpos-bsplit { display: grid; gap: 6px; padding: 12px 14px; margin: 10px 0 4px; border: 1px solid #e5dfd8; border-radius: 14px; background: #faf8f6; font-size: 13px } .dpos-bsplit > div { display: flex; justify-content: space-between; gap: 10px } .dpos-bsplit .sub { padding-left: 14px; color: #6f6b66; font-size: 12.5px } .dpos-bsplit b { font-weight: 700 }
+.dpos-bsplit .tot { border-top: 1px solid #d9d2da; margin-top: 4px; padding-top: 8px; font-size: 15px; color: #330533 }
+/* ---- Admin-wide type and spacing: one family, one scale, one rhythm ---- */
+.dpos, .dpos-modal, .dpos :is(h1, h2, h3, h4, p, span, div, a, label, li, td, th, small, b, strong, em, input, select, textarea, button, option, legend, dt, dd, table), .dpos-modal :is(input, select, textarea, button, option, legend, label, td, th) { font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif }
+.dpos .mono, .dpos td.oid, .dpos .cp-c, .dpos .sd-n, .dpos .qd-sum .mono, .dpos-modal .mono { font-family: ui-monospace, 'SF Mono', Consolas, monospace }
+.dpos-main { gap: 16px }
+.dpos-main > * { margin-top: 0; margin-bottom: 0 }
+.dpos h1 { font-size: 27px; font-weight: 700; letter-spacing: -.015em } .dpos .sub { font-size: 14px; font-weight: 400; color: #6f6b66 }
+.dpos h2 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin: 0 0 12px } .dpos h3 { font-size: 15px; font-weight: 700 }
+.dpos input, .dpos select, .dpos textarea { font-size: 14px; font-weight: 500; line-height: 1.35 }
+.dpos input::placeholder, .dpos textarea::placeholder { font-weight: 400; color: #9a95a0 }
+.dpos label.f, .dpos .cp-l, .dpos .pe-l, .dpos .pe2-f { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #3a3238 }
+.dpos .dpos-card { padding: 20px 24px; margin: 0 } .dpos .dpos-card + .dpos-card { margin-top: 0 }
+.dpos table { font-size: 13.5px } .dpos th { font-size: 10.5px; font-weight: 800; letter-spacing: .12em } .dpos td { font-weight: 500 }
+.dpos .dpos-btn, .dpos button { font-weight: 700 }
+.dpos .dpos-bar-tools, .dpos .dpos-filterbar { margin: 0 }
+.dpos-modal h2, .dpos-modal h3 { font-weight: 700 } .dpos-modal label.f { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase }
+.cat-code { margin-left: 8px; padding: 2px 8px; border-radius: 6px; background: #f3e8f4; color: #330533; font: 800 10.5px 'Poppins', sans-serif; letter-spacing: .1em; vertical-align: middle }
+.sa-grid { display: grid; margin-top: 8px; border: 1px solid #e8e2da; border-radius: 14px; overflow: hidden } .sa-head, .sa-row { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(3, minmax(90px, 1fr)); align-items: center; padding: 9px 16px; gap: 8px }
+.sa-head { background: #faf8f6; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #6f6b66 } .sa-row { border-top: 1px solid #eee7e0; font-size: 13.5px }
+.sa-head span:not(:first-child), .sa-row > :not(:first-child) { text-align: center; justify-self: center } .sa-tick input { width: 18px; height: 18px; accent-color: #330533 } .sa-na { color: #c9c3cc }

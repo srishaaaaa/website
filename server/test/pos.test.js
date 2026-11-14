@@ -212,3 +212,41 @@ test('users & roles: staff can list, only an owner can change a role (not their 
   assert.equal((await owner('GET', '/admin/users')).body.find(u => u.id === them.id).role, 'cashier');
   assert.equal((await shopper('GET', '/admin/pos/catalog')).status, 200, 'new cashier gets POS access immediately');
 });
+
+test('category codes: the owner sets a code; typing it in billing, inventory and the shop search lists that category', async () => {
+  const o = client(); await o('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const tax = (await o('GET', '/admin/taxonomy')).body, cat = tax.categories.find(c => c.products > 0);
+  assert.equal((await o('PATCH', `/admin/categories/${cat.id}`, { code: 'zq-9' })).status, 200);
+  assert.equal((await o('GET', '/admin/taxonomy')).body.categories.find(c => c.id === cat.id).code, 'ZQ9', 'saved in capitals, symbols dropped');
+  const other = tax.categories.find(c => c.id !== cat.id);
+  assert.equal((await o('PATCH', `/admin/categories/${other.id}`, { code: 'ZQ9' })).status, 409, 'a code belongs to one category');
+  const billing = (await o('GET', '/admin/pos/catalog?q=zq9')).body; assert.ok(billing.length && billing.every(v => v.category === cat.name), 'billing search by code');
+  const inv = (await o('GET', '/admin/pos/products?q=zq9')).body; assert.ok(inv.length && inv.every(p => p.category === cat.name), 'inventory search by code');
+  const shop = (await client()('GET', '/products?q=zq9&limit=48')).body; assert.ok(shop.items.length && shop.items.every(p => p.category === cat.name), 'shop search by code');
+  assert.equal((await o('PATCH', `/admin/categories/${cat.id}`, { code: '' })).status, 200);
+  assert.equal((await o('GET', '/admin/pos/catalog?q=zq9')).body.length, 0, 'removed code finds nothing');
+});
+
+test('staff access: each role gets its own page list, only the owner changes it, and a page a role cannot serve is never granted', async () => {
+  const owner = client(); await owner('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const mk = async (email, role) => { const c = client(); await c('POST', '/auth/register', { email, password: 'Password123!' }); await db.query('UPDATE profiles SET role = $2 WHERE email = $1', [email, role]); return c };
+  const stock = await mk('sa-stock@test.dev', 'inventory'), cash = await mk('sa-cash@test.dev', 'cashier');
+  const mine = async c => (await c('GET', '/admin/pos/staff-access')).body;
+  assert.deepEqual((await mine(stock)).pages, ['/admin/billing/inventory'], 'stock staff land on Inventory, not an error page');
+  assert.ok((await mine(cash)).pages.includes('/admin/billing') && !(await mine(cash)).pages.includes('/admin/users'));
+  assert.equal((await cash('PUT', '/admin/pos/staff-access', { admin: [], cashier: ['/admin/billing'], inventory: [] })).status, 403, 'only the owner changes it');
+  const all = (await mine(owner)).all.map(p => p[0]);
+  const r = await owner('PUT', '/admin/pos/staff-access', { admin: all.filter(p => p !== '/admin/users'), cashier: ['/admin/billing', '/admin/users', '/admin/billing/inventory'], inventory: ['/admin/billing/inventory', '/admin/billing'] });
+  assert.equal(r.status, 200);
+  assert.deepEqual((await mine(cash)).pages, ['/admin/billing'], 'pages a cashier cannot serve are dropped');
+  assert.deepEqual((await mine(stock)).pages, ['/admin/billing/inventory']);
+  assert.ok(!(await mine(owner)).pages.includes('/admin/nothing') && (await mine(owner)).pages.includes('/admin/users'), 'the owner always sees everything');
+});
+
+test('stock staff can list products and categories to adjust stock, but cannot edit a product', async () => {
+  const c = client(); await c('POST', '/auth/register', { email: 'sa-stock2@test.dev', password: 'Password123!' });
+  await db.query("UPDATE profiles SET role = 'inventory' WHERE email = 'sa-stock2@test.dev'");
+  const list = await c('GET', '/admin/pos/products'); assert.equal(list.status, 200); assert.ok(list.body.length);
+  assert.equal((await c('GET', '/admin/pos/categories')).status, 200);
+  assert.equal((await c('PATCH', `/admin/pos/products/${list.body[0].id}`, { name: 'x', price: 100, taxRate: 5, status: 'active' })).status, 403);
+});

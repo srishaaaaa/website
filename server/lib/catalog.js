@@ -34,7 +34,7 @@ function where(f, { baseOnly = false } = {}) {
   const add = v => { a.push(v); return '$' + a.length };
   if (f.collection) w.push(`EXISTS (SELECT 1 FROM collection_products cp JOIN collections col ON col.id = cp.collection_id WHERE cp.product_id = p.id AND col.slug = ${add(f.collection)} AND col.status = 'published')`);
   if (f.slugs?.length) w.push(`p.slug = ANY(${add(f.slugs)})`);
-  if (f.q) { const p = add(like(f.q)); w.push(`(p.name ILIKE ${p} OR p.description ILIKE ${p} OR c.name ILIKE ${p} OR p.material ILIKE ${p})`) }
+  if (f.q) { const p = add(like(f.q)); const exact = add(String(f.q).trim()); w.push(`(p.name ILIKE ${p} OR p.description ILIKE ${p} OR c.name ILIKE ${p} OR p.material ILIKE ${p} OR upper(c.code) = upper(${exact}))`) }
   if (f.featured) w.push('p.featured');
   if (f.flag === 'best') {
     const top = "p.id IN (SELECT product_id FROM pos_sale_items WHERE product_id IS NOT NULL GROUP BY product_id ORDER BY SUM(quantity) DESC LIMIT 10)";
