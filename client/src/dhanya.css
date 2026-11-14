@@ -740,6 +740,10 @@ div.dpos { --z: .9; zoom: .9 }
 .dpos .dpos-bar-tools, .dpos .dpos-filterbar { margin: 0 }
 .dpos-modal h2, .dpos-modal h3 { font-weight: 700 } .dpos-modal label.f { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase }
 .cat-code { margin-left: 8px; padding: 2px 8px; border-radius: 6px; background: #f3e8f4; color: #330533; font: 800 10.5px 'Poppins', sans-serif; letter-spacing: .1em; vertical-align: middle }
-.sa-grid { display: grid; margin-top: 8px; border: 1px solid #e8e2da; border-radius: 14px; overflow: hidden } .sa-head, .sa-row { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(3, minmax(90px, 1fr)); align-items: center; padding: 9px 16px; gap: 8px }
+.sa-grid { display: grid; margin-top: 8px; border: 1px solid #e8e2da; border-radius: 14px; overflow: hidden } .sa-head, .sa-row { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(110px, 1fr)); align-items: center; padding: 9px 16px; gap: 8px }
 .sa-head { background: #faf8f6; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #6f6b66 } .sa-row { border-top: 1px solid #eee7e0; font-size: 13.5px }
 .sa-head span:not(:first-child), .sa-row > :not(:first-child) { text-align: center; justify-self: center } .sa-tick input { width: 18px; height: 18px; accent-color: #330533 } .sa-na { color: #c9c3cc }
+/* Analytics: tabs row, and the stat grid */
+.an-tabrow { display: flex; justify-content: space-between; align-items: center; gap: 10px 18px; flex-wrap: wrap; border-bottom: 1px solid #e5e4e0 } .an-tabrow .dpos-tabs { border-bottom: 0; flex: 1 1 auto }
+.dpos .dpos-k6 { grid-template-columns: repeat(5, minmax(0, 1fr)) } @media (max-width: 1250px) { .dpos .dpos-k6 { grid-template-columns: repeat(3, minmax(0, 1fr)) } } @media (max-width: 640px) { .dpos .dpos-k6 { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.dpos .an-all { margin: 2px 0 }

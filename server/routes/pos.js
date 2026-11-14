@@ -110,13 +110,20 @@ export default function pos({ db, auth }) {
 
   // Staff access: which admin pages each kind of staff member sees. Everyone signed in as staff can read their own list; the owner and admins (who are equal here) change it.
   const anyStaff = auth.role('owner', 'admin', 'cashier', 'inventory');
+  // Page-based access: owner/admin always pass; a cashier or stock staff member passes when the admin ticked that page for their role (POS Settings → Staff dashboard).
+  const area = (page, { not = [] } = {}) => [anyStaff, wrap(async (req, _res, next) => {
+    if (not.includes(req.user.role)) throw new HttpError(403, 'Not allowed for your role');
+    if (['owner', 'admin'].includes(req.user.role)) return next();
+    if ((await loadAccess(db))[req.user.role]?.includes(page)) return next();
+    throw new HttpError(403, 'Not allowed for your role');
+  })];
   r.get('/pos/staff-access', anyStaff, wrap(async (req, res) => {
     const access = await loadAccess(db);
     res.json({ role: req.user.role, pages: pagesFor(access, req.user.role), ...(['owner', 'admin'].includes(req.user.role) ? { config: access, can: CAN, all: PAGES } : {}) });
   }));
   r.put('/pos/staff-access', manager, wrap(async (req, res) => {
-    const v = z.object({ admin: z.array(z.string()).max(60), cashier: z.array(z.string()).max(60), inventory: z.array(z.string()).max(60) }).parse(req.body);
-    const clean = {}; for (const role of Object.keys(CAN)) clean[role] = [...new Set(v[role])].filter(x => CAN[role].includes(x));
+    const v = z.object({ admin: z.array(z.string()).max(60).optional(), cashier: z.array(z.string()).max(60), inventory: z.array(z.string()).max(60) }).parse(req.body);
+    const clean = {}; for (const role of Object.keys(CAN)) clean[role] = [...new Set(v[role] || [])].filter(x => CAN[role].includes(x));
     await putSetting(db, 'staff_access', clean); await audit(db, req.user.id, 'pos.staff_access', 'pos_settings', 'staff_access');
     res.json(await loadAccess(db));
   }));
@@ -156,7 +163,7 @@ export default function pos({ db, auth }) {
     const { reason } = z.object({ reason: text(200).min(3, 'Give a reason') }).parse(req.body);
     res.json(await voidSale(db, req.user, req.params.invoice, reason));
   }));
-  r.get('/pos/reports', manager, wrap(async (req, res) => {
+  r.get('/pos/reports', area('/admin/billing/analytics'), wrap(async (req, res) => {
     const { from, to, channel: ch, gst, source, payment } = z.object({ from: date, to: date, channel, gst: gstFilter, source: z.enum(['all', 'offline', 'online']).default('all'), payment: payFilter }).parse(req.query);
     if (from > to) throw new HttpError(400, 'From date is after To date');
     res.json(await report(db, from, to, ch, gst, source, payment));
@@ -188,7 +195,7 @@ export default function pos({ db, auth }) {
     res.json(await stitchingOverview(db, f));
   }));
   // Best Sellers shelf: flag / unflag one product (the shelf keeps the 10 newest flagged pieces).
-  r.patch('/pos/products/:id/best-seller', manager, wrap(async (req, res) => {
+  r.patch('/pos/products/:id/best-seller', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const { value } = z.object({ value: z.boolean() }).parse(req.body); const pid = id.parse(req.params.id);
     if (!(await hasBestSeller(db))) throw new HttpError(409, 'Best Sellers need a one-time database update first (migration 028).', 'best_not_ready');
     const u = await db.query('UPDATE products SET best_seller = $2, updated_at = now() WHERE id = $1 RETURNING id', [pid, value]);
@@ -224,11 +231,11 @@ export default function pos({ db, auth }) {
   }));
 
   // ---- coupons ----
-  r.get('/pos/coupons', manager, wrap(async (_req, res) => res.json(await rows(db, `
+  r.get('/pos/coupons', area('/admin/billing/coupons'), wrap(async (_req, res) => res.json(await rows(db, `
     SELECT c.id, c.code, c.discount_type AS "discountType", c.discount_value AS "discountValue", c.min_order AS "minOrder", c.expires_on::text AS "expiresOn",
            c.usage_limit AS "usageLimit", c.used_count AS "usedCount", c.active, c.sent_only AS "sentOnly",
            (SELECT COUNT(*) FROM pos_coupon_sends s WHERE s.coupon_id = c.id)::int AS "sentCount" FROM pos_coupons c ORDER BY c.id DESC`))));
-  r.get('/pos/coupons/export', manager, wrap(async (_req, res) => {
+  r.get('/pos/coupons/export', area('/admin/billing/coupons'), wrap(async (_req, res) => {
     const list = await rows(db, 'SELECT code, discount_type, discount_value, min_order, expires_on::text AS expires_on, usage_limit, used_count, active, sent_only FROM pos_coupons ORDER BY id DESC');
     const head = ['Code', 'Discount', 'Minimum order', 'Expires', 'Usage limit', 'Used', 'Status', 'Only sent customers'];
     const lines = list.map(c => [c.code, c.discount_type === 'percent' ? `${c.discount_value}%` : (c.discount_value / 100).toFixed(2), (c.min_order / 100).toFixed(2), c.expires_on ?? '', c.usage_limit ?? '', c.used_count, c.active ? 'Active' : 'Inactive', c.sent_only ? 'Yes' : 'No']);
@@ -242,7 +249,7 @@ export default function pos({ db, auth }) {
     if (problem) throw new HttpError(400, problem, 'bad_coupon');
     res.json({ code: c.code, discountType: c.discount_type, discountValue: c.discount_value });
   }));
-  r.post('/pos/coupons', manager, wrap(async (req, res) => {
+  r.post('/pos/coupons', area('/admin/billing/coupons'), wrap(async (req, res) => {
     const c = couponBody.parse(req.body);
     const row = await one(db, `INSERT INTO pos_coupons (code, discount_type, discount_value, min_order, expires_on, usage_limit, sent_only) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
       [c.code, c.discountType, c.discountValue, c.minOrder, c.expiresOn, c.usageLimit, c.sentOnly]).catch(e => { if (e.code === '23505') throw new HttpError(409, 'That coupon code already exists'); throw e });
@@ -250,7 +257,7 @@ export default function pos({ db, auth }) {
     res.status(201).json({ id: row.id });
   }));
   // Either switch it on/off ({ active }) or edit it (everything except the code).
-  r.patch('/pos/coupons/:id', manager, wrap(async (req, res) => {
+  r.patch('/pos/coupons/:id', area('/admin/billing/coupons'), wrap(async (req, res) => {
     const cid = id.parse(req.params.id);
     if (Object.keys(req.body ?? {}).length === 1 && 'active' in req.body) {
       const { active } = z.object({ active: z.boolean() }).parse(req.body);
@@ -265,7 +272,7 @@ export default function pos({ db, auth }) {
     res.json({ ok: true });
   }));
   // Record that a coupon was sent to a customer (the WhatsApp message itself is opened by the browser). onlyThis = make the coupon sent-only.
-  r.post('/pos/coupons/:id/sends', manager, wrap(async (req, res) => {
+  r.post('/pos/coupons/:id/sends', area('/admin/billing/coupons'), wrap(async (req, res) => {
     const d = z.object({ phone: text(20).min(1), name: text(120).default(''), onlyThis: z.boolean().default(false) }).parse(req.body);
     const cid = id.parse(req.params.id), ph = normPhone(d.phone);
     if (!ph) throw new HttpError(400, 'Enter a valid mobile number');
@@ -275,13 +282,13 @@ export default function pos({ db, auth }) {
     res.status(201).json({ ok: true, sentOnly: !!(await one(db, 'SELECT 1 AS x FROM pos_coupons WHERE id = $1 AND sent_only', [cid])) });
   }));
   // Every customer with a phone number, and whether this coupon was already sent to them.
-  r.get('/pos/coupons/:id/recipients', manager, wrap(async (req, res) => {
+  r.get('/pos/coupons/:id/recipients', area('/admin/billing/coupons'), wrap(async (req, res) => {
     const cid = id.parse(req.params.id);
     res.json(await rows(db, `
       SELECT c.name, c.phone, EXISTS (SELECT 1 FROM pos_coupon_sends s WHERE s.coupon_id = $1 AND s.phone = c.phone) AS sent
       FROM pos_customers c ORDER BY sent DESC, c.name, c.id LIMIT 1000`, [cid]));
   }));
-  r.delete('/pos/coupons/:id', manager, wrap(async (req, res) => {
+  r.delete('/pos/coupons/:id', area('/admin/billing/coupons'), wrap(async (req, res) => {
     const d = await db.query('DELETE FROM pos_coupons WHERE id = $1 RETURNING code', [id.parse(req.params.id)]);
     if (!d.rows.length) throw new HttpError(404, 'Coupon not found');
     await audit(db, req.user.id, 'pos.coupon.delete', 'pos_coupon', req.params.id, { code: d.rows[0].code });
@@ -343,17 +350,17 @@ export default function pos({ db, auth }) {
     await putSetting(db, 'delivery_rules', { ...DEFAULT_RULES, ...v }); await audit(db, req.user.id, 'pos.delivery_rules', 'pos_settings', 'delivery_rules');
     res.json(await loadRules(db));
   }));
-  r.get('/pos/birthday-offer', manager, wrap(async (_req, res) => res.json({ ...DEFAULT_BDAY, ...(await getSetting(db, 'birthday_offer', {})) })));
-  r.put('/pos/birthday-offer', manager, wrap(async (req, res) => {
+  r.get('/pos/birthday-offer', area('/admin/billing/birthdays'), wrap(async (_req, res) => res.json({ ...DEFAULT_BDAY, ...(await getSetting(db, 'birthday_offer', {})) })));
+  r.put('/pos/birthday-offer', area('/admin/billing/birthdays'), wrap(async (req, res) => {
     const v = bdayBody.parse(req.body); if (v.selected && !v.offers.some(o => o.id === v.selected)) v.selected = v.offers[0]?.id ?? '';
     await putSetting(db, 'birthday_offer', v); await audit(db, req.user.id, 'pos.birthday_offer', 'pos_settings', 'birthday_offer'); res.json(v);
   }));
-  r.get('/pos/birthdays', manager, wrap(async (req, res) => {
+  r.get('/pos/birthdays', area('/admin/billing/birthdays'), wrap(async (req, res) => {
     const { days } = z.object({ days: z.coerce.number().int().min(1).max(366).default(30) }).parse(req.query);
     res.json(await birthdays(db, days));
   }));
 
-  r.get('/pos/stock/movements', stockers, wrap(async (req, res) => {
+  r.get('/pos/stock/movements', area('/admin/billing/inventory'), wrap(async (req, res) => {
     const f = z.object({ from: date.default(() => today()), to: date.default(() => today()), q: text(80).default(''), type: z.enum(['all', 'opening', 'sale', 'online', 'restock', 'loss', 'count', 'manual']).default('all') }).parse(req.query);
     res.json(await stockMovements(db, f));
   }));
@@ -366,7 +373,7 @@ export default function pos({ db, auth }) {
     if (!p) throw new HttpError(404, 'Product not found');
     res.json(p);
   }));
-  r.patch('/pos/products/:id', manager, wrap(async (req, res) => {
+  r.patch('/pos/products/:id', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const d = productPatch.parse(req.body);
     const cat = d.categorySlug ? await one(db, 'SELECT id FROM categories WHERE slug = $1', [d.categorySlug]) : null;
     if (d.categorySlug && !cat) throw new HttpError(400, 'Unknown category');
@@ -398,7 +405,7 @@ export default function pos({ db, auth }) {
     res.json({ ok: true });
   }));
   // One size / colour row: rename it, change its SKU or its own price (null = the product price), hide or show it.
-  r.patch('/pos/products/:id/variants/:vid', manager, wrap(async (req, res) => {
+  r.patch('/pos/products/:id/variants/:vid', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const d = variantPatch.parse(req.body); const pid = id.parse(req.params.id), vid = id.parse(req.params.vid);
     const u = await db.query(`UPDATE product_variants SET size = COALESCE($3, size), color = COALESCE($4, color), sku = COALESCE($5, sku),
         price_override = CASE WHEN $6 THEN $7::int ELSE price_override END, active = COALESCE($8, active),
@@ -409,7 +416,7 @@ export default function pos({ db, auth }) {
     await audit(db, req.user.id, 'pos.variant.edit', 'product', pid, { variant: vid, ...d });
     res.json({ ok: true });
   }));
-  r.delete('/pos/products/:id/variants/:vid', manager, wrap(async (req, res) => {
+  r.delete('/pos/products/:id/variants/:vid', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const pid = id.parse(req.params.id), vid = id.parse(req.params.vid);
     const n = await one(db, 'SELECT COUNT(*)::int AS n FROM product_variants WHERE product_id = $1', [pid]);
     if (n.n <= 1) throw new HttpError(400, 'A product needs at least one size. Add another before removing this one.', 'last_variant');
@@ -418,7 +425,7 @@ export default function pos({ db, auth }) {
     await audit(db, req.user.id, 'pos.variant.delete', 'product', pid, { sku: d.rows[0].sku });
     res.json({ ok: true });
   }));
-  r.post('/pos/products/:id/variants', manager, wrap(async (req, res) => {
+  r.post('/pos/products/:id/variants', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const v = variantBody.parse(req.body); const pid = id.parse(req.params.id);
     const out = await db.tx(async t => {
       if (!(await one(t, 'SELECT 1 AS x FROM products WHERE id = $1', [pid]))) throw new HttpError(404, 'Product not found');
@@ -430,7 +437,7 @@ export default function pos({ db, auth }) {
     res.status(201).json(out);
   }));
   // A colour option = one new variant per size, all in one transaction, optionally with its own price.
-  r.post('/pos/products/:id/colours', manager, wrap(async (req, res) => {
+  r.post('/pos/products/:id/colours', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const d = colourBody.parse(req.body); const pid = id.parse(req.params.id);
     if (new Set(d.sizes.map(x => x.size.toLowerCase())).size !== d.sizes.length) throw new HttpError(400, 'Each size can only be listed once');
     const out = await db.tx(async t => {
@@ -447,7 +454,7 @@ export default function pos({ db, auth }) {
     }).catch(e => { if (e.code === '23505') throw new HttpError(409, 'A SKU for that colour / size already exists'); throw e });
     res.status(201).json(out);
   }));
-  r.delete('/pos/products/:id/colours', manager, wrap(async (req, res) => {
+  r.delete('/pos/products/:id/colours', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const { color } = z.object({ color: text(40).min(1) }).parse(req.query); const pid = id.parse(req.params.id);
     await db.tx(async t => {
       const all = await rows(t, 'SELECT id, color FROM product_variants WHERE product_id = $1', [pid]);
@@ -464,7 +471,7 @@ export default function pos({ db, auth }) {
   r.get('/pos/products/:id/suggested', reader, wrap(async (req, res) => res.json(await rows(db, `
     SELECT p.id, p.slug, p.name, (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image
     FROM product_suggestions s JOIN products p ON p.id = s.suggested_id WHERE s.product_id = $1 ORDER BY s.display_order`, [id.parse(req.params.id)]))));
-  r.put('/pos/products/:id/suggested', manager, wrap(async (req, res) => {
+  r.put('/pos/products/:id/suggested', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {
     const pid = id.parse(req.params.id);
     const { ids } = z.object({ ids: z.array(id).max(4) }).parse(req.body);
     if (new Set(ids).size !== ids.length || ids.includes(pid)) throw new HttpError(400, 'Pick each suggested piece once, and not the product itself');
@@ -474,14 +481,14 @@ export default function pos({ db, auth }) {
     }).catch(e => { if (e.code === '23503') throw new HttpError(400, 'One of those products does not exist'); throw e });
     res.json({ ok: true });
   }));
-  r.post('/pos/stock', stockers, wrap(async (req, res) => res.json(await adjustStock(db, req.user, stockBody.parse(req.body)))));
+  r.post('/pos/stock', area('/admin/billing/inventory'), wrap(async (req, res) => res.json(await adjustStock(db, req.user, stockBody.parse(req.body)))));
 
   // ---- expenses (money out, subtracted in analytics) ----
-  r.get('/pos/expenses', manager, wrap(async (req, res) => {
+  r.get('/pos/expenses', area('/admin/billing/expenses'), wrap(async (req, res) => {
     const { from, to } = z.object({ from: date, to: date }).parse(req.query);
     res.json(await listExpenses(db, from, to));
   }));
-  r.post('/pos/expenses', manager, wrap(async (req, res) => {
+  r.post('/pos/expenses', area('/admin/billing/expenses'), wrap(async (req, res) => {
     const e = expenseBody.parse(req.body);
     if (e.date && e.date > today()) throw new HttpError(400, 'Expense date cannot be in the future');
     const row = await one(db, 'INSERT INTO pos_expenses (title, category, amount, payment_mode, notes, expense_date, created_by) VALUES ($1,$2,$3,$4,$5,COALESCE($6::date, (now() AT TIME ZONE \'Asia/Kolkata\')::date),$7) RETURNING id',
@@ -492,21 +499,21 @@ export default function pos({ db, auth }) {
   // expense categories live in the POS settings (no database change needed). Existing expenses keep the name they were saved with.
   const catName = z.object({ name: text(60).min(1) });
   const loadCats = async () => { const c = await getSetting(db, 'expense_categories', null); return Array.isArray(c) ? c : DEFAULT_EXPENSE_CATEGORIES };
-  r.get('/pos/expense-categories', manager, wrap(async (_req, res) => res.json(await loadCats())));
-  r.post('/pos/expense-categories', manager, wrap(async (req, res) => {
+  r.get('/pos/expense-categories', area('/admin/billing/expenses'), wrap(async (_req, res) => res.json(await loadCats())));
+  r.post('/pos/expense-categories', area('/admin/billing/expenses'), wrap(async (req, res) => {
     const { name } = catName.parse(req.body); const cats = await loadCats();
     if (cats.some(c => c.toLowerCase() === name.toLowerCase())) throw new HttpError(409, 'That category already exists');
     if (cats.length >= 60) throw new HttpError(400, 'You can keep up to 60 categories');
     const next = [...cats, name].sort((a, b) => a.localeCompare(b)); await putSetting(db, 'expense_categories', next);
     await audit(db, req.user.id, 'pos.expense_category.add', 'pos_settings', name); res.status(201).json(next);
   }));
-  r.delete('/pos/expense-categories', manager, wrap(async (req, res) => {
+  r.delete('/pos/expense-categories', area('/admin/billing/expenses'), wrap(async (req, res) => {
     const { name } = catName.parse(req.query); const cats = await loadCats();
     if (!cats.includes(name)) throw new HttpError(404, 'Category not found');
     const next = cats.filter(c => c !== name); await putSetting(db, 'expense_categories', next);
     await audit(db, req.user.id, 'pos.expense_category.remove', 'pos_settings', name); res.json(next);
   }));
-  r.delete('/pos/expenses/:id', manager, wrap(async (req, res) => {
+  r.delete('/pos/expenses/:id', area('/admin/billing/expenses'), wrap(async (req, res) => {
     const d = await db.query('DELETE FROM pos_expenses WHERE id = $1 RETURNING id', [id.parse(req.params.id)]);
     if (!d.rows.length) throw new HttpError(404, 'Expense not found');
     await audit(db, req.user.id, 'pos.expense.delete', 'pos_expense', req.params.id);

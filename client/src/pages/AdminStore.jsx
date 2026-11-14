@@ -104,8 +104,8 @@ export function AdminUsers() {
   const load = () => api('/admin/users').then(setList).catch(x => setE(x.message));
   useEffect(() => { if (!gate) load() }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
   if (gate) return gate;
-  const isOwner = user.role === 'owner';
-  const ROLE_L = { owner: 'Owner', admin: 'Admin', cashier: 'Staff · Billing', inventory: 'Staff · Stock', customer: 'Customer' };
+  const isOwner = ['owner', 'admin'].includes(user.role); // admins and the owner are the same
+  const ROLE_L = { owner: 'Admin', admin: 'Admin', cashier: 'Staff · Billing', inventory: 'Staff · Stock', customer: 'Customer' };
   const shown = (list || []).filter(u => (!q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase())) && inPeriod(u.created_at, per) && (role === 'all' || (role === 'admins' ? ['owner', 'admin'].includes(u.role) : role === 'staff' ? ['cashier', 'inventory'].includes(u.role) : u.role === 'customer')));
   const setRole = async (u, r) => { try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role: r } }); setList(l => l.map(x => x.id === u.id ? { ...x, role: r } : x)); toast(`${u.email} is now ${r}`) } catch (x) { setE(x.message) } };
   return (

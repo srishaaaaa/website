@@ -95,7 +95,7 @@ const ROLES = [['admin', 'Admin', 'Everything, including settings and reports'],
 // Staff accounts for the POS. Only the owner can add staff or change a role.
 export function StaffAccessCard() {
   const { user, toast } = useApp();
-  const owner = user?.role === 'owner';
+  const owner = ['owner', 'admin'].includes(user?.role); // owner and admin are the same
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [nw, setNw] = useState({ name: '', email: '', password: '', role: 'cashier' }); const [busy, setBusy] = useState(false);
   const load = useCallback(() => api('/admin/users').then(r => setRows(r.filter(u => u.role !== 'customer'))).catch(e => setErr(e.message)), []);
   useEffect(() => { load() }, [load]);
@@ -112,7 +112,7 @@ export function StaffAccessCard() {
       {!rows ? <p className="dpos-empty">Loading…</p> : (
         <ul className="pset-staff">{rows.map(u => (
           <li key={u.id}><span><b>{u.name || u.email}</b><em>{u.email}</em></span>
-            {u.role === 'owner' || !owner || u.id === user.id ? <span className="dpos-pill">{u.role === 'owner' ? 'Owner' : (ROLES.find(r => r[0] === u.role)?.[1] || u.role)}</span>
+            {u.role === 'owner' || !owner || u.id === user.id ? <span className="dpos-pill">{u.role === 'owner' ? 'Admin' : (ROLES.find(r => r[0] === u.role)?.[1] || u.role)}</span>
               : <select aria-label={`Role for ${u.email}`} value={u.role} onChange={e => setRole(u, e.target.value)}>{ROLES.map(r => <option key={r[0]} value={r[0]}>{r[1]}</option>)}</select>}</li>))}</ul>)}
       {owner && (
         <form onSubmit={add} className="pset-add"><p className="pset-l">ADD A STAFF MEMBER</p>

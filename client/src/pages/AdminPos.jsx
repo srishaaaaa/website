@@ -22,6 +22,7 @@ import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderH
 import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
 import StaffOnly from '../components/StaffOnly';
+import { useStaffAccess } from '../lib/staffAccess';
 
 // Dhanya POS: the in-store billing module of the admin. Everything the screen shows comes from the API; prices, stock,
 // totals and invoice numbers are decided on the server (the totals here are only a live preview).
@@ -497,7 +498,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
   return (
     <>
       {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="analytics-summary" header={['Measure', 'Value (₹ / count)']} rows={rep ? [['Total revenue', (rep.revenue / 100).toFixed(2)], ['GST sales', (rep.gstSales / 100).toFixed(2)], ['Non-GST sales', (rep.nonGstSales / 100).toFixed(2)], ['Expenses', (rep.expenses / 100).toFixed(2)], ['Net profit', (netOf(rep) / 100).toFixed(2)], ['Refunded amount', ((rep.returned?.total || 0) / 100).toFixed(2)], ['Refunded bills', rep.returned?.count || 0], ['Completed bills', rep.bills], ['Offline sales', (rep.offlineSales / 100).toFixed(2)], ['Online sales', (rep.onlineSales / 100).toFixed(2)], ['Items sold', rep.units]] : []} /></div>}
-      <div className="an-top">
+      <div className="an-tabrow">
         <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
       </div>
       <div className="an-all">
@@ -713,6 +714,8 @@ export default function AdminPos() {
   const staff = user && ['owner', 'admin', 'cashier', 'inventory'].includes(user.role);
   const manager = !!user && ['owner', 'admin'].includes(user.role);
   const stocker = !!user && ['owner', 'admin', 'inventory'].includes(user.role);
+  const pages = useStaffAccess(user);
+  const may = path => manager || !!pages?.includes(path); // the admin ticked this page for this staff member
   const loadShop = useCallback(() => api('/admin/pos/shop').then(setShop).catch(e => setErr(e.message)), []);
   useEffect(() => { if (allowed) loadShop() }, [allowed, loadShop]);
   useEffect(() => { document.documentElement.style.setProperty('--pos-accent', shop?.accent || ''); return () => document.documentElement.style.removeProperty('--pos-accent') }, [shop?.accent]);
@@ -722,7 +725,8 @@ export default function AdminPos() {
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (!staff) return <StaffOnly />;
-  if (!(tab in TABS) || (TABS[tab] && !manager && !(tab === 'inventory' && stocker))) return <Navigate to="/admin" replace />;
+  if (!(tab in TABS) || (!manager && pages && !pages.includes(tab === 'billing' ? '/admin/billing' : `/admin/billing/${tab}`))) return <Navigate to="/admin" replace />;
+  if (!manager && !pages) return <div className="page-pad"><p className="muted">Loading…</p></div>;
 
   const onSale = (sale, quiet) => { if (!quiet) setDone(sale); setTick(t => t + 1) }; // quiet = the bill was already sent / printed from Billing
   const onAdvance = adv => { setTick(t => t + 1); setAdvDone(adv) }; // the saved advance order is kept in Advance Orders; its receipt shows first
@@ -734,7 +738,7 @@ export default function AdminPos() {
     advance: <AdvanceOrders manager={manager} tick={tick} onBilled={onBilled} />,
     measurements: <PosMeasurements />,
     orders: <OrderHistory manager={manager} tick={tick} openInvoice={openInvoice} onChanged={() => setTick(t => t + 1)} />,
-    inventory: <PosInventory manager={manager} stocker={stocker} />, customers: <Customers manager={manager} />, coupons: <PosCoupons shop={shop} />, birthdays: <PosBirthdays shop={shop} CustomerModal={CustomerModal} />,
+    inventory: <PosInventory manager={may('/admin/billing/inventory')} stocker={stocker || may('/admin/billing/inventory')} />, customers: <Customers manager={manager} />, coupons: <PosCoupons shop={shop} />, birthdays: <PosBirthdays shop={shop} CustomerModal={CustomerModal} />,
     expenses: <PosExpenses />, settings: <Settings onSaved={loadShop} />,
   }[tab];
   const sub = {

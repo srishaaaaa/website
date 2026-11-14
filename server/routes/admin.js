@@ -191,7 +191,7 @@ export default function admin({ db, auth }) {
   // Users & roles. Everyone staff can see accounts; only an owner can change a role (never their own, never another owner's).
   r.get('/users', staff, wrap(async (_req, res) => res.json(await rows(db,
     `SELECT id, email, full_name AS name, role, created_at FROM profiles ORDER BY (role = 'customer'), id LIMIT 500`))));
-  r.post('/users', auth.role('owner'), wrap(async (req, res) => {
+  r.post('/users', staff, wrap(async (req, res) => {
     const d = z.object({ name: z.string().trim().max(120).default(''), email: z.string().trim().email().max(200), password: z.string().min(8).max(200),
       role: z.enum(['customer', 'cashier', 'inventory', 'admin']) }).parse(req.body);
     if (await one(db, 'SELECT 1 AS x FROM profiles WHERE lower(email) = lower($1)', [d.email])) throw new HttpError(409, 'That email is already registered', 'email_taken');
@@ -199,13 +199,13 @@ export default function admin({ db, auth }) {
     await audit(db, req.user.id, 'user.create', 'user', u.id, { role: d.role });
     res.status(201).json({ id: u.id });
   }));
-  r.patch('/users/:id/role', auth.role('owner'), wrap(async (req, res) => {
+  r.patch('/users/:id/role', staff, wrap(async (req, res) => {
     const { role } = z.object({ role: z.enum(['customer', 'cashier', 'inventory', 'admin']) }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
     if (id === req.user.id) throw new HttpError(400, 'You cannot change your own role');
     const u = await one(db, 'SELECT role FROM profiles WHERE id = $1', [id]);
     if (!u) throw new HttpError(404, 'User not found');
-    if (u.role === 'owner') throw new HttpError(403, 'An owner account cannot be changed here');
+    if (u.role === 'owner') throw new HttpError(403, 'The first admin account cannot be changed here');
     await db.query('UPDATE profiles SET role = $2, updated_at = now() WHERE id = $1', [id, role]);
     await audit(db, req.user.id, 'user.role', 'user', id, { from: u.role, to: role });
     res.json({ ok: true });

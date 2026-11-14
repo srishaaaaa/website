@@ -11,13 +11,11 @@ export const PAGES = [
   ['/admin/stitching/reports', 'Stitching Reports'], ['/admin/billing/settings', 'POS Settings'], ['/admin/settings', 'Store Settings'],
 ];
 const ALL = PAGES.map(p => p[0]);
-const SETTINGS = '/admin/billing/settings';
 // What each role's server permissions can serve.
-export const CAN = {
-  admin: ALL,
-  cashier: ['/admin/billing', '/admin/billing/advance', '/admin/billing/orders', '/admin/billing/customers', '/admin/stitching', '/admin/stitching/orders', '/admin/billing/measurements'],
-  inventory: ['/admin/billing/inventory'],
-};
+// Pages whose server routes follow this list (so a ticked page always works for that role).
+const STAFFABLE = ['/admin/billing', '/admin/billing/analytics', '/admin/billing/advance', '/admin/billing/orders', '/admin/billing/inventory', '/admin/billing/customers', '/admin/billing/coupons',
+  '/admin/billing/birthdays', '/admin/billing/expenses', '/admin/stitching', '/admin/stitching/orders', '/admin/billing/measurements'];
+export const CAN = { admin: ALL, cashier: STAFFABLE, inventory: ['/admin/billing/inventory', '/admin/billing/analytics', '/admin/billing/coupons', '/admin/billing/birthdays', '/admin/billing/expenses'] };
 export const DEFAULTS = {
   admin: ALL,
   cashier: ['/admin/billing', '/admin/billing/advance', '/admin/billing/orders', '/admin/billing/customers', '/admin/stitching', '/admin/stitching/orders', '/admin/billing/measurements'],
@@ -28,7 +26,7 @@ export async function loadAccess(db) {
   const saved = (await one(db, "SELECT value FROM pos_settings WHERE key = 'staff_access'"))?.value || {};
   const out = {};
   for (const role of Object.keys(CAN)) out[role] = (Array.isArray(saved[role]) ? saved[role] : DEFAULTS[role]).filter(p => CAN[role].includes(p));
-  if (!out.admin.includes(SETTINGS)) out.admin.push(SETTINGS); // an admin can never lock themselves (or the owner) out of the settings that control this
+  out.admin = ALL; // owner and admin are the same: admins always see every page
   return out;
 }
-export const pagesFor = (access, role) => role === 'owner' ? ALL : (access[role] || []);
+export const pagesFor = (access, role) => role === 'owner' || role === 'admin' ? ALL : (access[role] || []);

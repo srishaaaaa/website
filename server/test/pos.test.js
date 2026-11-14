@@ -235,12 +235,12 @@ test('staff access: each role gets its own page list, only the owner changes it,
   assert.deepEqual((await mine(stock)).pages, ['/admin/billing/inventory'], 'stock staff land on Inventory, not an error page');
   assert.ok((await mine(cash)).pages.includes('/admin/billing') && !(await mine(cash)).pages.includes('/admin/users'));
   assert.equal((await cash('PUT', '/admin/pos/staff-access', { admin: [], cashier: ['/admin/billing'], inventory: [] })).status, 403, 'cashiers cannot change it');
-  const adm = await mk('sa-admin@test.dev', 'admin'); assert.equal((await adm('PUT', '/admin/pos/staff-access', { admin: [], cashier: ['/admin/billing'], inventory: ['/admin/billing/inventory'] })).status, 200, 'an admin can change it too');
-  assert.deepEqual((await mine(adm)).pages, ['/admin/billing/settings'], 'an admin always keeps POS Settings');
+  const adm = await mk('sa-admin@test.dev', 'admin'); assert.equal((await adm('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing'], inventory: ['/admin/billing/inventory'] })).status, 200, 'an admin can change it too');
+  assert.ok((await mine(adm)).pages.length >= 25 && (await mine(adm)).pages.includes('/admin/users'), 'admin and owner are the same: every page');
   const all = (await mine(owner)).all.map(p => p[0]);
-  const r = await owner('PUT', '/admin/pos/staff-access', { admin: all.filter(p => p !== '/admin/users'), cashier: ['/admin/billing', '/admin/users', '/admin/billing/inventory'], inventory: ['/admin/billing/inventory', '/admin/billing'] });
+  const r = await owner('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing', '/admin/users', '/admin/billing/inventory'], inventory: ['/admin/billing/inventory', '/admin/billing'] });
   assert.equal(r.status, 200);
-  assert.deepEqual((await mine(cash)).pages, ['/admin/billing'], 'pages a cashier cannot serve are dropped');
+  assert.deepEqual((await mine(cash)).pages, ['/admin/billing', '/admin/billing/inventory'], 'pages a cashier cannot serve (Users) are dropped, the rest kept');
   assert.deepEqual((await mine(stock)).pages, ['/admin/billing/inventory']);
   assert.ok(!(await mine(owner)).pages.includes('/admin/nothing') && (await mine(owner)).pages.includes('/admin/users'), 'the owner always sees everything');
 });
@@ -251,4 +251,20 @@ test('stock staff can list products and categories to adjust stock, but cannot e
   const list = await c('GET', '/admin/pos/products'); assert.equal(list.status, 200); assert.ok(list.body.length);
   assert.equal((await c('GET', '/admin/pos/categories')).status, 200);
   assert.equal((await c('PATCH', `/admin/pos/products/${list.body[0].id}`, { name: 'x', price: 100, taxRate: 5, status: 'active' })).status, 403);
+});
+
+
+test('staff access is enforced on the server: a page the admin ticks for cashiers opens its routes, otherwise 403', async () => {
+  const owner = client(); await owner('POST', '/auth/login', { email: 'owner@test.dev', password: 'OwnerPass123!' });
+  const c = client(); await c('POST', '/auth/register', { email: 'sa-cash3@test.dev', password: 'Password123!' });
+  await db.query("UPDATE profiles SET role = 'cashier' WHERE email = 'sa-cash3@test.dev'");
+  await owner('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing'], inventory: ['/admin/billing/inventory'] });
+  assert.equal((await c('GET', '/admin/pos/coupons')).status, 403, 'coupons not granted');
+  assert.equal((await c('GET', '/admin/pos/expenses?from=2020-01-01&to=2030-01-01')).status, 403);
+  await owner('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing', '/admin/billing/coupons', '/admin/billing/expenses'], inventory: ['/admin/billing/inventory'] });
+  assert.equal((await c('GET', '/admin/pos/coupons')).status, 200, 'granted');
+  assert.equal((await c('GET', '/admin/pos/expenses?from=2020-01-01&to=2030-01-01')).status, 200);
+  assert.equal((await c('GET', '/admin/pos/reports?from=2020-01-01&to=2030-01-01')).status, 403, 'analytics still off');
+  assert.equal((await c('PUT', '/admin/pos/staff-access', { cashier: [], inventory: [] })).status, 200 === 0 ? 0 : 403, 'a cashier can never change access');
+  await owner('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing'], inventory: ['/admin/billing/inventory'] });
 });

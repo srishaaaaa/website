@@ -126,9 +126,9 @@ test('categories & collections: staff create / toggle / delete; cashiers refused
   assert.equal((await o('DELETE', `/admin/categories/${c.body.id}`)).status, 404);
 });
 
-test('add user: only the owner; duplicate email refused; the new cashier can sign in and use the POS', async () => {
+test('add user: owner and admin alike; duplicate email refused; the new cashier can sign in and use the POS', async () => {
   const o = await owner(), admin = await asRole('plain-admin@test.dev', 'admin');
-  assert.equal((await admin('POST', '/admin/users', { email: 'x@test.dev', password: 'Password123!', role: 'cashier' })).status, 403);
+  assert.equal((await admin('POST', '/admin/users', { email: 'x@test.dev', password: 'Password123!', role: 'cashier' })).status, 201, 'an admin can add staff just like the owner');
   assert.equal((await o('POST', '/admin/users', { email: 'short@test.dev', password: 'short', role: 'cashier' })).status, 400);
   assert.equal((await o('POST', '/admin/users', { email: 'boss@test.dev', password: 'Password123!', role: 'owner' })).status, 400, 'cannot create owners');
   const made = await o('POST', '/admin/users', { name: 'Counter Staff', email: 'counter@test.dev', password: 'Password123!', role: 'cashier' });
