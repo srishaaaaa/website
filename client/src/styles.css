@@ -456,3 +456,6 @@ a.insta-tile:hover { transform: translateY(-6px) } .insta-tile img { width: 100%
 .map-here span::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 12px; height: 12px; background: #09090D; transform: translateX(-50%) rotate(45deg); border-radius: 2px }
 @keyframes map-hop { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-9px) } }
 @media (prefers-reduced-motion: reduce) { .map-here span { animation: none } }
+
+/* The whole customer site renders at 90% (the size it was designed to be seen at on a 100% browser); the admin has its own scale. */
+@media (min-width: 900px) { body:not(:has(.dpos)) { zoom: .9 } }
