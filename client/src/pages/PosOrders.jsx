@@ -74,13 +74,11 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
     <>
       {tab !== 'offline' && toProcess.length > 0 && (
         <section className="ol-queue" aria-label="Website orders to process">
-          <div className="ol-qh"><b>Online orders to process</b><span>{toProcess.length} order{toProcess.length === 1 ? '' : 's'} waiting to be packed or shipped</span></div>
+          <div className="ol-qh"><i className="ol-qz" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg></i><div><b>Online orders to process</b><span>{toProcess.length} order{toProcess.length === 1 ? '' : 's'} waiting to be packed or shipped</span></div></div>
           {toProcess.map(r => (
-            <div className="ol-qr" key={r.invoiceNo}><span className="ol-qi"><b>{r.customerName || 'Customer'}</b> <small>{r.invoiceNo}</small><em>{[r.customerPhone, `${dtShort(r.createdAt).d}, ${dtShort(r.createdAt).t}`].filter(Boolean).join(' · ')} · <i>{inr(r.total)}</i></em></span>
+            <div className="ol-qr" key={r.invoiceNo}><span className="ol-qi"><b>{r.invoiceNo}</b><em>{r.customerName || 'Customer'} · {inr(r.total)}</em></span>
               <span className="ol-btns"><FulfilControl r={r} />
-                <a className="ol-ic wa" aria-label="Send on WhatsApp" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>
-                <button type="button" className="ol-ic inv" aria-label="Invoice" onClick={() => setPreview(r)}><DocIcon /></button>
-                <button type="button" className="ol-b" onClick={() => toggle(r.invoiceNo)}>DETAILS</button></span></div>))}
+                <button type="button" className="ol-b inv" onClick={() => setPreview(r)}>INVOICE</button></span></div>))}
         </section>)}
       <div className="ol-head"><span className="muted">{rows ? `${rows.length} order${rows.length === 1 ? '' : 's'}` : '…'}</span>
         <label className="ol-sort"><small>SORT</small><select aria-label="Sort orders" value={sort} onChange={e => setSort(e.target.value)}><option value="new">Newest first</option><option value="old">Oldest first</option><option value="high">Total: High → Low</option><option value="low">Total: Low → High</option></select></label></div>
@@ -98,9 +96,9 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
         <label className="f">Customer phone<input value={f.phone} inputMode="tel" onChange={set('phone')} placeholder="Search phone…" /></label>
       </section>
       <div className="dpos-filterbar">
-        <Chips label="Type" value={tab} onChange={t => { setTab(t); setRows(null) }} options={[['all', 'All bills'], ['online', 'Online (website)'], ['offline', 'In-store (billing)']]} />
-        <Chips label="Bills" value={f.gst} onChange={v => setF({ ...f, gst: v })} options={[['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']]} />
-        {tab !== 'online' && <Chips label="Payment" value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} />}
+        <span className="of-l">TYPE</span><Chips value={tab} onChange={t => { setTab(t); setRows(null) }} options={[['all', 'All bills'], ['online', 'Online (website)'], ['offline', 'In-store (billing)']]} />
+        <Chips value={f.gst} onChange={v => setF({ ...f, gst: v })} options={[['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']]} />
+        {tab !== 'online' && <><span className="of-l">PAYMENT</span><Chips value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} /></>}
       </div>
       <Err>{err}</Err>
       {onlineList}
@@ -113,7 +111,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                 <td><b>{longDate(r.billDate)}</b><div className="muted small">{dt.t}</div></td>
                 <td><b>{r.customerName || 'Guest'}</b></td>
                 <td>{r.customerPhone || <span className="muted">—</span>}</td>
-                <td><span className="ord-tags"><span className="dpos-tag">{r.source}</span><span className="dpos-tag solid">{r.isGst ? 'GST' : 'NON-GST'}</span></span></td>
+                <td><span className="ord-tags"><span className="dpos-tag">{r.isWeb ? 'online' : 'offline'}</span><span className="dpos-tag solid">{r.isGst ? 'GST' : 'NON-GST'}</span></span></td>
                 <td className="due">{inr(r.total)}</td>
                 <td className="r"><div className="dpos-rowact">
                   <span className={`dpos-pill ${r.status === 'voided' ? 'bad' : 'ok'}`}>{r.status === 'voided' ? 'Void' : 'Completed'}</span>{r.isWeb && r.status !== 'voided' && <FulfilControl r={r} />}
