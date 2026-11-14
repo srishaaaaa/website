@@ -27,8 +27,8 @@ const Ico = ({ children, size = 17 }) => <svg width={size} height={size} viewBox
 const WaIcon = () => <Ico><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.2-1.7-1-.8.6a3.5 3.5 0 0 1-1.6-1.6l.6-.8-1-1.7Z" /></Ico>;
 const DocIcon = () => <Ico><path d="M6 3h9l4 4v14H6z" /><path d="M9 13h7M9 17h7" /></Ico>;
 const EyeIcon = () => <Ico><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></Ico>;
-const RetIcon = () => <Ico><path d="M9 7 4 12l5 5" /><path d="M4 12h10a6 6 0 0 1 0 12h-2" transform="translate(0 -5)" /></Ico>;
-const EditIcon = () => <Ico><path d="M4 20h4L19 9l-4-4L4 16z" /></Ico>;
+const RetIcon = () => <Ico><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></Ico>;
+const EditIcon = () => <Ico><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></Ico>;
 const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14 11v6" /></Ico>;
 
 // ============================ order history ============================
@@ -131,7 +131,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                 <td><b>{longDate(r.billDate)}</b><div className="muted small">{dt.t}</div></td>
                 <td><b>{r.customerName || 'Guest'}</b></td>
                 <td>{r.customerPhone || <span className="muted">—</span>}</td>
-                <td><span className="dpos-tag">{r.source}</span><br /><span className="dpos-tag solid">{r.isGst ? 'GST' : 'NON-GST'}</span></td>
+                <td><span className="ord-tags"><span className="dpos-tag">{r.source}</span><span className="dpos-tag solid">{r.isGst ? 'GST' : 'NON-GST'}</span></span></td>
                 <td className="due">{inr(r.total)}</td>
                 <td className="r"><div className="dpos-rowact">
                   <span className={`dpos-pill ${r.status === 'voided' ? 'bad' : 'ok'}`}>{r.status === 'voided' ? 'Void' : 'Completed'}</span>

@@ -625,8 +625,8 @@
 .dlv-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap } .dlv-row input { max-width: 120px }
 @media (max-width: 700px) { .dlv-rh { grid-template-columns: 1fr } }
 .dlv .cp-sw, .dlv-wt .cp-sw { display: flex; gap: 12px; align-items: flex-start; justify-content: flex-start; background: none; padding: 0; margin: 0; text-align: left } .dlv .cp-sw > span, .dlv-wt .cp-sw > span { display: grid; gap: 3px } .dlv .cp-sw input { margin-top: 3px; flex: none }
-/* Admin text and boxes at 80% of the reference size (the reference CSS' own --z scale; phones stay at full size) */
-.dpos { --z: .8 }
+/* Admin text and boxes at the reference size (100%) (the reference CSS' own --z scale; phones stay at full size) */
+.dpos { --z: 1 }
 /* ---- Order History → Online orders (website): card list ---- */
 .ol-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 2px } .ol-head .muted { font-size: 17px }
 .ol-tools { display: inline-flex; gap: 14px; align-items: center } .ol-tools select { width: auto; padding: 10px 40px 10px 16px; border-radius: 12px; background: #fff; border: 1px solid #eee7e0 }
@@ -671,3 +671,23 @@
 .ra.ret, .ra.edit { background: #f3f1f4; color: #1a1420 } .ra.ret:disabled, .ra.edit:disabled { opacity: .4 }
 .ret-badge { margin-left: 8px; padding: 3px 9px; border-radius: 6px; background: #fdecec; color: #b3261e; font: 800 10.5px 'Poppins', sans-serif; letter-spacing: .06em; vertical-align: middle; white-space: nowrap }
 .qd-ret { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 0; border-top: 1px solid #e5dfd8; font-size: 13px; color: #b3261e } .qd-ret span { font-weight: 700 }
+/* Order History table: one font, tidy columns, icons in one row */
+.dpos-ord th, .dpos-ord td { font-family: 'Poppins', system-ui, sans-serif }
+.dpos-ord td { font-size: 13.5px; font-weight: 500; vertical-align: middle } .dpos-ord td b { font-size: 13.5px; font-weight: 600 }
+.dpos-ord td.oid { display: table-cell; white-space: nowrap } .dpos-ord td.oid .ret-badge { display: block; margin: 4px 0 0; width: fit-content }
+.ord-tags { display: inline-flex; gap: 6px; flex-wrap: nowrap; align-items: center } .dpos-ord .dpos-tag { font: 800 10.5px 'Poppins', sans-serif; letter-spacing: .06em; padding: 4px 9px; white-space: nowrap }
+.dpos-ord .due { font-size: 14px; font-weight: 700; color: #330533 }
+.dpos-ord td.r { white-space: nowrap } .dpos-rowact { flex-wrap: nowrap; gap: 6px } .dpos-rowact .dpos-pill { margin-right: 6px; white-space: nowrap }
+.dpos-rowact .ra { width: 34px; height: 34px; border-radius: 10px } .dpos-rowact .ra svg { width: 17px; height: 17px }
+.ra.ret { background: #fff4e5; color: #b45309 } .ra.edit { background: #eaf0ff; color: #2d4aa8 } .ra.edit, .ra.ret { border: 0 }
+/* Stock Alert: small warning icon next to the title */
+.dpos-modal .sa .sa-ic { width: 34px; height: 34px; flex: none } .dpos-modal .sa .sa-ic svg { width: 17px; height: 17px }
+.dpos-modal .sa .sa-head { gap: 12px; margin-bottom: 14px } .dpos-modal .sa .sa-head h2 { font-size: 18px }
+.dpos-ord th, .dpos-ord td { padding-left: 7px; padding-right: 7px } .dpos-ord th:last-child, .dpos-ord td:last-child { padding-right: 14px }
+.dpos-rowact { gap: 4px } .dpos-rowact .ra { width: 30px; height: 30px; border-radius: 8px } .dpos-rowact .ra svg { width: 15px; height: 15px } .dpos-rowact .dpos-pill { margin-right: 2px; padding: 4px 9px; font-size: 10px }
+.dpos-ord .dpos-tag { padding: 3px 7px; font-size: 10px } .ord-tags { gap: 4px }
+.dpos-ord td.oid { font-size: 12px }
+/* Order History rows: one typeface, one size, one colour for every detail (only the total is bolder) */
+.dpos-ord tbody td, .dpos-ord tbody td b, .dpos-ord tbody td .small, .dpos-ord tbody td .muted, .dpos-ord td.oid { font-family: 'Poppins', system-ui, sans-serif !important; font-size: 13px; font-weight: 500; letter-spacing: 0; color: #1a1420; line-height: 1.4 }
+.dpos-ord tbody td.oid { font-weight: 600 } .dpos-ord tbody td .small, .dpos-ord tbody td .muted { color: #6f6b66; font-size: 12px }
+.dpos-ord tbody td.due, .dpos-ord tbody td.due b { font-weight: 700; font-size: 13px; color: #1a1420 }
