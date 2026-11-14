@@ -626,7 +626,7 @@
 @media (max-width: 700px) { .dlv-rh { grid-template-columns: 1fr } }
 .dlv .cp-sw, .dlv-wt .cp-sw { display: flex; gap: 12px; align-items: flex-start; justify-content: flex-start; background: none; padding: 0; margin: 0; text-align: left } .dlv .cp-sw > span, .dlv-wt .cp-sw > span { display: grid; gap: 3px } .dlv .cp-sw input { margin-top: 3px; flex: none }
 /* Admin text and boxes at the reference size (100%) (the reference CSS' own --z scale; phones stay at full size) */
-.dpos { --z: 1 }
+.dpos { --z: .85 }
 /* ---- Order History → Online orders (website): card list ---- */
 .ol-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 2px } .ol-head .muted { font-size: 17px }
 .ol-tools { display: inline-flex; gap: 14px; align-items: center } .ol-tools select { width: auto; padding: 10px 40px 10px 16px; border-radius: 12px; background: #fff; border: 1px solid #eee7e0 }
