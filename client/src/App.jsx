@@ -24,7 +24,7 @@ import { About, Journal, NotFound, Policy } from './pages/Static';
 // Each lazy element is created once at module level (never inside render).
 // The one loading screen of the website (same as the one shown while the site starts). Admin pages get no full-screen loader.
 function PageLoader() {
-  if (location.pathname.startsWith('/admin')) return <div className="page-pad" />;
+  if (location.pathname.startsWith('/admin') || window.self !== window.top) return <div className="page-pad" />;
   return (
     <div className="boot" role="status" aria-label="Loading DHANYA">
       <svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#C6A46A" strokeWidth="1.5"><ellipse cx="32" cy="32" rx="9" ry="26" /><ellipse cx="32" cy="32" rx="9" ry="26" transform="rotate(45 32 32)" /><ellipse cx="32" cy="32" rx="9" ry="26" transform="rotate(90 32 32)" /><ellipse cx="32" cy="32" rx="9" ry="26" transform="rotate(135 32 32)" /></g></svg>

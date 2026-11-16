@@ -169,7 +169,7 @@ export default function InvoicePage() {
   useEffect(() => { document.title = d ? (d.kind === 'return' ? `Return ${d.ret.returnNo} · ${d.shop.name}` : `Invoice ${d.sale.invoiceNo} · ${d.shop.name}`) : 'Invoice' }, [d]);
 
   if (err) return <div className="inv-page"><p className="inv-err">{err}</p></div>;
-  if (!d) return <div className="inv-page"><p className="inv-err">Loading invoice…</p></div>;
+  if (!d) return <div className="inv-page"><p className="inv-err" style={{ visibility: 'hidden' }}>Loading invoice…</p></div>;
   const { shop } = d;
   if (d.kind === 'return') return (
     <div className="inv-page">
