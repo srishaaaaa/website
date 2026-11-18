@@ -210,6 +210,34 @@ function EditInvoice({ sale, onClose, onSaved }) {
   );
 }
 
+// Row tools for a website order on the Online orders page: the same fulfilment chip, next-step button and icon buttons as Order History
+// (WhatsApp, invoice preview, details, return, edit). x = { orderNumber, status, invoiceNo, shareToken, phone, customerName }.
+export function OnlineRowTools({ x, manager, onStatus }) {
+  const [preview, setPreview] = useState(null); const [returning, setReturning] = useState(null); const [editing, setEditing] = useState(null); const [detail, setDetail] = useState(null); const [err, setErr] = useState();
+  const st = ({ confirmed: 'pending', pending: 'pending', packed: 'packed', shipped: 'shipped', delivered: 'shipped', cancelled: 'cancelled' })[x.status || 'pending'] || 'pending';
+  const next = ({ pending: 'packed', packed: 'shipped' })[st];
+  const mark = async status => { try { await api('/admin/orders/' + encodeURIComponent(x.orderNumber), { method: 'PATCH', body: { status } }); onStatus?.(x, status) } catch (e) { setErr(e.message) } };
+  const load = (then) => api('/admin/pos/sales/' + encodeURIComponent(x.invoiceNo)).then(d => then(d.sale || d)).catch(e => setErr(e.message));
+  const has = !!x.invoiceNo;
+  return (
+    <div className="ol-tools" onClick={e => e.stopPropagation()}>
+      <span className="ol-fc"><span className={`ol-fs fs-${st}`}>{st === 'shipped' ? '✓' : '▣'} {st}</span>{next && manager && <button type="button" className="ol-mark" onClick={() => mark(next)}>Mark {next}</button>}</span>
+      <div className="dpos-rowact">
+        {x.phone && <a className="ra wa" title="Send on WhatsApp" aria-label="Send on WhatsApp" href={waLink(x.phone, `Hello${x.customerName ? ' ' + x.customerName : ''}, your order ${x.orderNumber} is ${st}.`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
+        <button type="button" className="ra doc" title="Invoice preview" aria-label="Invoice preview" disabled={!has} onClick={() => setPreview({ invoiceNo: x.invoiceNo, shareToken: x.shareToken })}><DocIcon /></button>
+        <button type="button" className="ra eye" title="Quick details" aria-label="Quick details" disabled={!has} onClick={() => load(s => setDetail(s))}><EyeIcon /></button>
+        <button type="button" className="ra ret" title="Return items" aria-label="Return items" disabled={!has} onClick={() => setReturning(x.invoiceNo)}><RetIcon /></button>
+        {manager && <button type="button" className="ra edit" title="Edit invoice" aria-label="Edit invoice" disabled={!has} onClick={() => load(s => setEditing(s))}><EditIcon /></button>}
+      </div>
+      {err && <small className="dpos-err" role="alert">{err}</small>}
+      {preview && <InvoicePreview row={preview} onClose={() => setPreview(null)} />}
+      {returning && <ReturnWindow invoiceNo={returning} onClose={() => setReturning(null)} onDone={r => { setReturning(null); setPreview({ invoiceNo: r.invoiceNo, shareToken: r.shareToken, tab: r.returnNo }) }} />}
+      {editing && <EditInvoice sale={editing} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} />}
+      {detail && <QuickDetails row={{ invoiceNo: x.invoiceNo, shareToken: x.shareToken }} sale={detail} manager={manager} onClose={() => setDetail(null)} onView={() => { setDetail(null); setPreview({ invoiceNo: x.invoiceNo, shareToken: x.shareToken }) }} onEdit={() => { setEditing(detail); setDetail(null) }} />}
+    </div>
+  );
+}
+
 // In-page invoice preview: the real invoice page in a frame, so nothing navigates away. One tab for the original bill and one for each return invoice
 // (RTN-00000001 …); every tab can be printed or saved as a PDF. "Open Full Page" goes to /invoice/<token>.
 export function InvoicePreview({ row, onClose }) {

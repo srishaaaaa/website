@@ -849,3 +849,4 @@ div.dpos .dpos-main { display: flex !important; flex-direction: column; min-heig
 div.dpos .dpos-main > .dpos-foot { margin-top: auto !important }
 div.dpos .dpos-main > :not(.dpos-foot):nth-last-child(2) { margin-bottom: 16px }
 .sd-row .sd-who b { max-width: none !important; flex: 0 1 auto; min-width: 0 }
+.ol-tools { display: inline-flex; align-items: center; gap: 10px; flex-wrap: nowrap; justify-content: flex-end }

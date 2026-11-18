@@ -438,7 +438,7 @@ function TodayPanels({ rep, bills, openInvoice }) {
 
 // Everything the Analytics "Export Excel" button writes, for the tab that is open, with the period and filters that are applied.
 const R2 = n => ((n || 0) / 100).toFixed(2);
-function exportFor(tab, rep, from, to, f) {
+function exportFor(tab, rep, from, to, f, netOf) {
   if (!rep) return { name: 'analytics', header: ['Measure', 'Value'], rows: [] };
   const lab = { all: 'All', gst: 'GST invoices', nongst: 'Non-GST bills', offline: 'Offline (POS)', online: 'Online', cash: 'Cash', upi: 'GPay / UPI', card: 'Card', split: 'Split' };
   const head = [['Period', `${dmy(from)} to ${dmy(to)}`], ['Bills filter', lab[f.gst]], ['Channel filter', lab[f.src]], ['Payment filter', lab[f.pay]], ['', '']];
@@ -525,7 +525,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const netOf = r => r.net + (reduce ? 0 : (r.returned?.total || 0));
   return (
     <>
-      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv {...exportFor(tab, rep, from, to, { gst, pay, src })} /></div>}
+      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv {...exportFor(tab, rep, from, to, { gst, pay, src }, netOf)} /></div>}
       <div className="an-tabrow">
         <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
       </div>

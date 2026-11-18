@@ -11,6 +11,7 @@ import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFi
 import { Stars } from '../components/CustomerReviews';
 import StaffOnly from '../components/StaffOnly';
 import RowActions from '../components/RowActions';
+import { OnlineRowTools } from './PosOrders';
 
 // Online-store admin panels (orders, reviews, users, store settings) in the shared admin layout. Authorization is enforced by the API.
 const STATUSES = ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'];
@@ -45,7 +46,7 @@ export function AdminOrders() {
             <tbody>{shownO.map(x => (
               <tr key={x.id}><td><b>{x.order_number}</b></td><td>{x.email}</td><td className="r">{inr(x.total)}</td><td><span className={`dpos-pill ${x.payment_status === 'paid' ? 'ok' : ''}`}>{x.payment_status}</span></td>
                 <td><select value={x.status} aria-label={`Status for ${x.order_number}`} onChange={async ev => { try { await api('/admin/orders/' + x.order_number, { method: 'PATCH', body: { status: ev.target.value } }); setO(list => list.map(y => y.id === x.id ? { ...y, status: ev.target.value } : y)) } catch (err) { setE(err.message) } }}>{STATUSES.map(v => <option key={v}>{v}</option>)}</select></td>
-                <td className="r"><RowActions label={x.order_number} wa={x.phone ? { phone: x.phone, text: `Hello${x.customerName ? ' ' + x.customerName : ''}, your order ${x.order_number} is ${x.status}.` } : null} doc={x.shareToken ? `/invoice/${x.shareToken}` : null} eye={() => nav('/admin/billing/orders')} /></td></tr>))}</tbody></table></div>)}
+                <td className="r"><OnlineRowTools x={{ orderNumber: x.order_number, status: x.status, invoiceNo: x.invoiceNo, shareToken: x.shareToken, phone: x.phone, customerName: x.customerName }} manager onStatus={(o, st) => setO(list => list.map(y => y.id === x.id ? { ...y, status: st } : y))} /></td></tr>))}</tbody></table></div>)}
       </Card>
     </AdminShell>
   );

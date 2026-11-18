@@ -4,11 +4,11 @@ import { one } from '../db/index.js';
 // A page can only be switched on for a role whose server permissions can serve it (CAN below), so a ticked page always works.
 export const PAGES = [
   ['/admin/orders', 'Online orders'], ['/admin/reviews', 'Reviews'], ['/admin/categories', 'Categories'], ['/admin/trending', 'Trending'], ['/admin/site-text', 'Site text'],
-  ['/admin/storefront', 'Storefront images'], ['/admin/reels', 'Reels & Gallery'], ['/admin/enquiries', 'Enquiries'], ['/admin/users', 'Users'], ['/admin/sample', 'Sample data'],
+  ['/admin/storefront', 'Storefront images'], ['/admin/reels', 'Reels & Gallery'], ['/admin/enquiries', 'Enquiries'], ['/admin/users', 'Users'], ['/admin/delivery', 'Delivery'], ['/admin/sample', 'Sample data'],
   ['/admin/billing', 'Billing'], ['/admin/billing/analytics', 'POS Analytics'], ['/admin/billing/advance', 'Advance Orders'], ['/admin/billing/orders', 'Order History'],
   ['/admin/billing/inventory', 'Inventory'], ['/admin/billing/customers', 'Customers'], ['/admin/billing/coupons', 'Coupons'], ['/admin/billing/birthdays', 'Date of Birth'],
   ['/admin/billing/expenses', 'Expenses'], ['/admin/stitching', 'Stitching Dashboard'], ['/admin/stitching/orders', 'Stitching Orders'], ['/admin/billing/measurements', 'Measurements'],
-  ['/admin/stitching/reports', 'Stitching Reports'], ['/admin/delivery', 'Delivery'], ['/admin/billing/settings', 'POS Settings'], ['/admin/settings', 'Store Settings'],
+  ['/admin/stitching/reports', 'Stitching Reports'], ['/admin/billing/settings', 'POS Settings'], ['/admin/settings', 'Store Settings'],
 ];
 const ALL = PAGES.map(p => p[0]);
 // What each role's server permissions can serve.
