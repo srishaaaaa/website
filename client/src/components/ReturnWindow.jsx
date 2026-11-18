@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useApp } from '../context/App';
 import Modal from './Modal';
@@ -13,7 +14,7 @@ const toPaise = s => { const n = Math.round(parseFloat(String(s ?? '').replace(/
 //  - the delivery charge is never refunded;
 //  - an admin has to confirm the refund: an owner / admin ticks the box, any other staff member types the admin password.
 export default function ReturnWindow({ invoiceNo, onClose, onDone }) {
-  const { user } = useApp();
+  const { user } = useApp(); const nav = useNavigate(); const [exchange, setExchange] = useState(false);
   const admin = ['owner', 'admin'].includes(user?.role);
   const [full, setFull] = useState(null); const [qty, setQty] = useState({}); const [back, setBack] = useState({}); const [reason, setReason] = useState('');
   const [mode, setMode] = useState('cash'); const [split, setSplit] = useState({ cash: '', upi: '', card: '' });
@@ -32,6 +33,7 @@ export default function ReturnWindow({ invoiceNo, onClose, onDone }) {
         items: picked.map(([itemId, n]) => { const it = full.items.find(x => x.id === +itemId); return { itemId: +itemId, qty: n, restock: stocked(it) && back[itemId] !== false } }),
         reason, refundMode: mode, ...(mode === 'split' ? { refundSplit: { cash: toPaise(split.cash), upi: toPaise(split.upi), card: toPaise(split.card) } } : {}),
         approval: admin ? { approved: ok } : { adminPassword: pwd } } });
+      if (exchange) { try { sessionStorage.setItem('dhanya.exchange', JSON.stringify({ name: full.customerName || '', phone: full.customerPhone || '', note: `Exchange against ${r.returnNo} (bill ${invoiceNo})` })) } catch { /* ignore */ } onDone(r); nav('/admin/billing'); return }
       onDone(r);
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
   };
@@ -55,6 +57,7 @@ export default function ReturnWindow({ invoiceNo, onClose, onDone }) {
             <p className={splitSum === refund ? 'rw-ok' : 'rw-bad'}>Split {money(splitSum)} of {money(refund)}</p></div>}
           <div className="rw-sum"><span>Refund total</span><b>{money(refund)}</b></div>
           <p className="rw-note">Delivery charge{full.deliveryFee > 0 ? ` (${money(full.deliveryFee)})` : ''} is never refunded.</p>
+          <label className="rw-tick" style={{ marginTop: 10 }}><input type="checkbox" checked={exchange} onChange={e => setExchange(e.target.checked)} /> <span><b>This is an exchange</b>: after the return invoice, open a new bill for the replacement item</span></label>
           <fieldset className="rw-admin"><legend>Admin approval</legend>
             {admin
               ? <label className="rw-tick"><input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} /> <span>I confirm this refund as admin ({user.name || user.email})</span></label>

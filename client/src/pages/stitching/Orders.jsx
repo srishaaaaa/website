@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
+import RowActions from '../../components/RowActions';
 import { Empty, Err, Field, PayPill, PriPill, StatusPill, dmy, inr, useMeta } from './common';
 
 const SORTS = [['created', 'Date created'], ['delivery', 'Delivery date'], ['priority', 'Priority'], ['status', 'Status']];
@@ -37,7 +38,7 @@ export default function Orders() {
       <section className="dpos-card">
         <div className="stc-row between" style={{ marginBottom: 10 }}><span className="muted small">{data ? `${data.total} order${data.total === 1 ? '' : 's'}` : 'Loading…'}</span><Link className="dpos-btn sm" to="/admin/stitching/orders/new">+ New order</Link></div>
         {!data && !err ? <Empty>Loading…</Empty> : data && !data.rows.length ? <Empty>{sp.toString() ? 'No orders match these filters.' : 'No stitching orders yet. Create the first one.'}</Empty> : data && (
-          <div className="dpos-tw"><table className="stc-table cards"><thead><tr><th>Order</th><th>Customer</th><th>Garments</th><th>Tailor</th><th>Delivery</th><th>Status</th><th>Payment</th><th className="r">Total / balance</th></tr></thead>
+          <div className="dpos-tw"><table className="stc-table cards"><thead><tr><th>Order</th><th>Customer</th><th>Garments</th><th>Tailor</th><th>Delivery</th><th>Status</th><th>Payment</th><th className="r">Total / balance</th><th className="r">Actions</th></tr></thead>
             <tbody>{data.rows.map(o => (
               <tr key={o.id} className="click" onClick={() => nav(`/admin/stitching/orders/${o.id}`)}>
                 <td><Link className="stc-mono stc-link" to={`/admin/stitching/orders/${o.id}`} onClick={e => e.stopPropagation()}>{o.orderNo}</Link><div className="muted small">{dmy(o.orderDate)}</div></td>
@@ -46,7 +47,8 @@ export default function Orders() {
                 <td>{o.tailorName || <span className="muted">Unassigned</span>}</td>
                 <td>{dmy(o.deliveryDate)}{o.overdue && <div><span className="stc-pill late">Overdue</span></div>}</td>
                 <td><StatusPill s={o.status} meta={meta} /></td><td><PayPill s={o.paymentStatus} /></td>
-                <td className="r"><span className="money">{inr(o.total)}</span>{o.balance > 0 && <div className="small" style={{ color: 'var(--d-bad)' }}>due {inr(o.balance)}</div>}</td></tr>))}</tbody></table></div>)}
+                <td className="r"><span className="money">{inr(o.total)}</span>{o.balance > 0 && <div className="small" style={{ color: 'var(--d-bad)' }}>due {inr(o.balance)}</div>}</td>
+                <td className="r"><RowActions label={o.orderNo} wa={o.customerPhone ? { phone: o.customerPhone, text: `Hello ${o.customerName}, your stitching order ${o.orderNo} is ready for delivery on ${dmy(o.deliveryDate)}.` } : null} doc={`/admin/stitching/print/${o.id}`} eye={() => nav(`/admin/stitching/orders/${o.id}`)} /></td></tr>))}</tbody></table></div>)}
         {data && pages > 1 && <div className="stc-row between" style={{ marginTop: 14 }}>
           <button className="dpos-btn ghost sm" disabled={page <= 1} onClick={() => set('page', String(page - 1))}>← Previous</button><span className="muted small">Page {page} of {pages}</span>
           <button className="dpos-btn ghost sm" disabled={page >= pages} onClick={() => set('page', String(page + 1))}>Next →</button></div>}

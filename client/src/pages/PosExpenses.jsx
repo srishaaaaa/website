@@ -15,7 +15,7 @@ export default function PosExpenses() {
   const { toast } = useApp();
   const [per, setPer] = usePeriod('month'); const [rows, setRows] = useState(null); const [cats, setCats] = useState([]); const [err, setErr] = useState();
   const [f, setF] = useState({ title: '', amount: '', date: todayStr(), category: '', mode: 'cash', notes: '' });
-  const [manage, setManage] = useState(false); const [newCat, setNewCat] = useState(''); const [fc, setFc] = useState('all'); const [q, setQ] = useState(''); const [busy, setBusy] = useState(false);
+  const [editId, setEditId] = useState(null); const [manage, setManage] = useState(false); const [newCat, setNewCat] = useState(''); const [fc, setFc] = useState('all'); const [q, setQ] = useState(''); const [busy, setBusy] = useState(false);
   const [from, to] = periodRange(per);
   const load = useCallback(() => api(`/admin/pos/expenses?from=${from}&to=${to}`).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), [from, to]);
   const loadCats = useCallback(() => api('/admin/pos/expense-categories').then(c => { setCats(c); setF(x => ({ ...x, category: x.category && c.includes(x.category) ? x.category : (c[0] || 'General') })) }).catch(e => setErr(e.message)), []);
@@ -29,9 +29,10 @@ export default function PosExpenses() {
 
   const add = async e => {
     e.preventDefault(); setErr(); setBusy(true);
-    try { await api('/admin/pos/expenses', { method: 'POST', body: { title: f.title.trim(), category: f.category || 'General', amount: toPaise(f.amount), paymentMode: f.mode, date: f.date, notes: f.notes.trim() || null } }); setF({ ...f, title: '', amount: '', notes: '' }); toast('Expense added.'); load() }
+    try { await api(editId ? '/admin/pos/expenses/' + editId : '/admin/pos/expenses', { method: editId ? 'PATCH' : 'POST', body: { title: f.title.trim(), category: f.category || 'General', amount: toPaise(f.amount), paymentMode: f.mode, date: f.date, notes: f.notes.trim() || null } }); setF({ ...f, title: '', amount: '', notes: '' }); toast(editId ? 'Expense updated.' : 'Expense added.'); setEditId(null); load() }
     catch (x) { setErr(x.issues?.[0]?.message || (x.message === 'Validation failed' ? 'Enter what it was for and an amount above ₹0.' : x.message)) } finally { setBusy(false) }
   };
+  const edit = x => { setEditId(x.id); setF({ title: x.title, amount: String(x.amount / 100), date: x.date, category: x.category, mode: x.paymentMode, notes: x.notes || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }) };
   const del = async x => { if (!confirm(`Delete expense “${x.title}”?`)) return; try { await api('/admin/pos/expenses/' + x.id, { method: 'DELETE' }); toast('Expense deleted.'); load() } catch (e) { setErr(e.message) } };
   const addCat = async e => { e.preventDefault(); setErr(); try { const c = await api('/admin/pos/expense-categories', { method: 'POST', body: { name: newCat.trim() } }); setCats(c); setNewCat(''); toast('Category added.') } catch (x) { setErr(x.message) } };
   const delCat = async name => { if (!confirm(`Remove the category “${name}”? Expenses already saved under it keep their name.`)) return; try { setCats(await api('/admin/pos/expense-categories?name=' + encodeURIComponent(name), { method: 'DELETE' })) } catch (x) { setErr(x.message) } };
@@ -46,16 +47,16 @@ export default function PosExpenses() {
         <div className="ex-k"><span>TOP CATEGORY</span><b>{byCat[0]?.[0] || 'None'}</b><small>{byCat[0] ? `${inr(byCat[0][1])} spent` : 'Highest spend'}</small></div>
       </div>
       <div className="ex-two">
-        <form className="ex-card" onSubmit={add}><h3 className="ex-h">ADD EXPENSE</h3>
+        <form className="ex-card" onSubmit={add}><h3 className="ex-h">{editId ? 'EDIT EXPENSE' : 'ADD EXPENSE'}</h3>
           <label className="ex-l">WHAT FOR?<input required maxLength={120} value={f.title} onChange={e => setF({ ...f, title: e.target.value })} placeholder="e.g. October shop rent" /></label>
           <div className="ex-g2"><label className="ex-l">AMOUNT (₹)<input required inputMode="decimal" value={f.amount} onChange={e => setF({ ...f, amount: e.target.value })} placeholder="0.00" /></label>
             <label className="ex-l">DATE<input type="date" max={todayStr()} value={f.date} onChange={e => setF({ ...f, date: e.target.value || todayStr() })} /></label></div>
-          <label className="ex-l">CATEGORY<select value={f.category} onChange={e => setF({ ...f, category: e.target.value })}>{cats.map(c => <option key={c}>{c}</option>)}</select></label>
+          <label className="ex-l">CATEGORY<select value={f.category} onChange={e => setF({ ...f, category: e.target.value })}>{[...new Set([...cats, f.category].filter(Boolean))].map(c => <option key={c}>{c}</option>)}</select></label>
           <button type="button" className="ex-link" onClick={() => setManage(true)}>Add or manage categories</button>
           <p className="ex-l" style={{ margin: '10px 0 6px' }}>PAID VIA</p>
           <div className="ex-modes" role="radiogroup" aria-label="Paid via">{MODES.map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={f.mode === v} className={f.mode === v ? 'on' : ''} onClick={() => setF({ ...f, mode: v })}>{l}</button>)}</div>
           <label className="ex-l">NOTES (OPTIONAL)<input maxLength={300} value={f.notes} onChange={e => setF({ ...f, notes: e.target.value })} placeholder="Reference / supplier / bill no." /></label>
-          <button className="ex-add" disabled={busy}>+ ADD EXPENSE</button></form>
+          <button className="ex-add" disabled={busy}>{editId ? 'SAVE CHANGES' : '+ ADD EXPENSE'}</button>{editId && <button type="button" className="ex-link" onClick={() => { setEditId(null); setF({ title: '', amount: '', date: todayStr(), category: cats[0] || 'General', mode: 'cash', notes: '' }) }}>Cancel editing</button>}</form>
         <section className="ex-card"><div className="ex-ch"><h3 className="ex-h">SPEND BY CATEGORY</h3><button type="button" className="ex-man" onClick={() => setManage(m => !m)}><Icon n="gear" size={15} /> {manage ? 'CLOSE' : 'MANAGE'}</button></div>
           {manage ? (
             <div className="ex-mgr">
@@ -75,7 +76,7 @@ export default function PosExpenses() {
           <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search expenses…" aria-label="Search expenses" /></div></div>
         {!rows ? <p className="dpos-empty">Loading…</p> : !shown.length ? <div className="ex-empty"><span className="ex-pig"><Icon n="wallet" size={26} /></span><b>No expenses found.</b><p>Try a different period or add a new expense.</p></div> : (
           <div className="dpos-tw"><table><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Paid via</th><th className="r">Amount</th><th /></tr></thead>
-            <tbody>{shown.map(x => <tr key={x.id}><td>{dmy(x.date)}</td><td><b>{x.title}</b>{x.notes && <div className="muted small">{x.notes}</div>}</td><td><span className="ex-chip">{x.category}</span></td><td>{{ cash: 'Cash', upi: 'QR / GPay', card: 'Card' }[x.paymentMode]}</td><td className="r ex-amt">{inr(x.amount)}</td><td className="r"><button type="button" className="dpos-btn danger sm" onClick={() => del(x)}>Delete</button></td></tr>)}</tbody></table></div>)}
+            <tbody>{shown.map(x => <tr key={x.id}><td>{dmy(x.date)}</td><td><b>{x.title}</b>{x.notes && <div className="muted small">{x.notes}</div>}</td><td><span className="ex-chip">{x.category}</span></td><td>{{ cash: 'Cash', upi: 'QR / GPay', card: 'Card' }[x.paymentMode]}</td><td className="r ex-amt">{inr(x.amount)}</td><td className="r"><span style={{ display: 'inline-flex', gap: 6 }}><button type="button" className="dpos-btn ghost sm" onClick={() => edit(x)}>Edit</button><button type="button" className="dpos-btn danger sm" onClick={() => del(x)}>Delete</button></span></td></tr>)}</tbody></table></div>)}
       </section>
     </div>
   );

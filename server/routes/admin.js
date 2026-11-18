@@ -19,8 +19,9 @@ export default function admin({ db, auth }) {
 
   r.get('/orders', staff, wrap(async (_req, res) => res.json(await rows(db, `
     SELECT o.id, o.order_number, o.email, o.status, o.payment_status, o.total_amount AS total, o.created_at,
-           (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count
-    FROM orders o ORDER BY o.id DESC LIMIT 200`))));
+           (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
+           s.share_token AS "shareToken", s.invoice_no AS "invoiceNo", s.customer_phone AS phone, s.customer_name AS "customerName"
+    FROM orders o LEFT JOIN pos_sales s ON s.web_order_id = o.id ORDER BY o.id DESC LIMIT 200`))));
 
   r.patch('/orders/:number', staff, wrap(async (req, res) => {
     const { status } = z.object({ status: z.enum(['confirmed', 'packed', 'shipped', 'delivered', 'cancelled']) }).parse(req.body);

@@ -11,6 +11,7 @@ import { MODE, clock, longDate, money } from '../lib/invoiceFormat';
 import PayPicker, { blankPay, payParts } from '../components/PayPicker';
 import BillSummary from '../components/BillSummary';
 import ReturnWindow from '../components/ReturnWindow';
+import RowActions from '../components/RowActions';
 
 // "Cash ₹500 · QR / GPay ₹500" for a {cash, upi, card} split.
 const SPLIT_L = [['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']];
@@ -168,22 +169,42 @@ function QuickDetails({ row, sale, manager, onClose, onView, onEdit }) {
 // Correct an invoice after billing: customer details, date and note (amounts, items and stock stay as billed).
 function EditInvoice({ sale, onClose, onSaved }) {
   const [f, setF] = useState({ customerName: sale.customerName || '', customerPhone: sale.customerPhone || '', customerAddress: sale.customerAddress || '', billDate: sale.billDate || todayStr(), notes: sale.notes || '' });
+  const canItems = !sale.isWeb && !sale.returns?.length && !sale.web_order_id;
+  const [rows, setRows] = useState((sale.items || []).map(i => ({ id: i.id, name: i.name, variant: i.variant, qty: String(i.quantity), price: String(i.unitPrice / 100), q0: i.quantity, p0: i.unitPrice, stocked: i.stocked })));
+  const [mode, setMode] = useState(sale.paymentMode === 'split' ? 'cash' : sale.paymentMode);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState();
+  const toQ = v => Math.max(0, parseInt(v, 10) || 0), toP = v => { const n = Math.round(parseFloat(String(v).replace(/,/g, '')) * 100); return Number.isFinite(n) && n >= 0 ? n : 0 };
+  const changed = canItems && rows.some(r => toQ(r.qty) !== r.q0 || toP(r.price) !== r.p0);
+  const sub = rows.reduce((t, r) => t + toQ(r.qty) * toP(r.price), 0), sub0 = rows.reduce((t, r) => t + r.q0 * r.p0, 0);
   const save = async e => {
     e.preventDefault(); setBusy(true); setErr();
-    try { onSaved(await api('/admin/pos/sales/' + encodeURIComponent(sale.invoiceNo), { method: 'PATCH', body: { ...f, customerName: f.customerName.trim(), customerPhone: f.customerPhone.trim(), customerAddress: f.customerAddress.trim(), notes: f.notes.trim() } })) }
-    catch (x) { setErr(x.issues?.[0]?.message || x.message); setBusy(false) }
+    try {
+      const body = { ...f, customerName: f.customerName.trim(), customerPhone: f.customerPhone.trim(), customerAddress: f.customerAddress.trim(), notes: f.notes.trim() };
+      if (changed) { body.items = rows.map(r => ({ id: r.id, quantity: toQ(r.qty), unitPrice: toP(r.price) })); body.payment = { mode } }
+      onSaved(await api('/admin/pos/sales/' + encodeURIComponent(sale.invoiceNo), { method: 'PATCH', body }));
+    } catch (x) { setErr(x.issues?.[0]?.message || x.message); setBusy(false) }
   };
   return (
-    <Modal title={`Edit invoice ${sale.invoiceNo}`} sub="Amounts, items and stock stay as billed. Use Return or Void to change those." onClose={onClose}>
-      <form onSubmit={save} className="dpos-grid" style={{ gap: 12 }}>
-        <label className="f">Customer name<input value={f.customerName} onChange={e => setF({ ...f, customerName: e.target.value })} /></label>
-        <label className="f">Mobile number<input inputMode="tel" value={f.customerPhone} onChange={e => setF({ ...f, customerPhone: e.target.value })} /></label>
-        <label className="f">Bill date<input type="date" max={todayStr()} value={f.billDate} onChange={e => setF({ ...f, billDate: e.target.value || todayStr() })} /></label>
-        <label className="f">Address<input value={f.customerAddress} onChange={e => setF({ ...f, customerAddress: e.target.value })} /></label>
-        <label className="f" style={{ gridColumn: '1 / -1' }}>Note shown on the bill<textarea rows={2} maxLength={300} value={f.notes} onChange={e => setF({ ...f, notes: e.target.value })} /></label>
-        {err && <p className="dpos-err" role="alert" style={{ gridColumn: '1 / -1' }}>{err}</p>}
-        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button></div>
+    <Modal title={`Edit invoice ${sale.invoiceNo}`} sub={canItems ? 'Change details, quantities or prices. Stock updates by itself.' : 'Details only: this bill has returns or is a website order (use Return for its items).'} onClose={onClose}>
+      <form onSubmit={save} className="ei-form">
+        <div className="ei-grid">
+          <label className="f">Customer name<input value={f.customerName} onChange={e => setF({ ...f, customerName: e.target.value })} /></label>
+          <label className="f">Mobile number<input inputMode="tel" value={f.customerPhone} onChange={e => setF({ ...f, customerPhone: e.target.value })} /></label>
+          <label className="f">Bill date<input type="date" max={todayStr()} value={f.billDate} onChange={e => setF({ ...f, billDate: e.target.value || todayStr() })} /></label>
+          <label className="f">Address<input value={f.customerAddress} onChange={e => setF({ ...f, customerAddress: e.target.value })} /></label>
+        </div>
+        {canItems && <div className="ei-items"><b className="ei-h">Items</b>
+          {rows.map((r, n) => <div className="ei-row" key={r.id}>
+            <span className="ei-n">{r.name}{r.variant?.size ? <small> · {r.variant.size}{r.variant.color && r.variant.color !== 'Default' ? ', ' + r.variant.color : ''}</small> : null}</span>
+            <label>Qty<input type="number" min="0" inputMode="numeric" value={r.qty} onChange={e => setRows(x => x.map((y, k) => k === n ? { ...y, qty: e.target.value } : y))} aria-label={`Quantity of ${r.name}`} /></label>
+            <label>Price ₹<input inputMode="decimal" value={r.price} onChange={e => setRows(x => x.map((y, k) => k === n ? { ...y, price: e.target.value } : y))} aria-label={`Price of ${r.name}`} /></label>
+            <span className="ei-t">{inr(toQ(r.qty) * toP(r.price))}</span></div>)}
+          <p className="ei-note">Set quantity to 0 to remove a line. {changed ? <b>Items total {inr(sub0)} → {inr(sub)}; GST and discount are recalculated and stock is adjusted.</b> : 'Stock follows any change you make.'}</p>
+          {changed && <div className="ei-pay"><span>Bill is now paid by</span>{[['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card']].map(([k, l]) => <button type="button" key={k} className={mode === k ? 'on' : ''} onClick={() => setMode(k)}>{l}</button>)}</div>}
+        </div>}
+        <label className="f">Note shown on the bill<textarea rows={2} maxLength={300} value={f.notes} onChange={e => setF({ ...f, notes: e.target.value })} /></label>
+        {err && <p className="dpos-err" role="alert">{err}</p>}
+        <div className="ei-foot"><span className="ei-hint">Exchange? Use <b>Return</b> and tick “This is an exchange”: the return invoice is made and a new bill opens.</span><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button></div>
       </form>
     </Modal>
   );
@@ -340,12 +361,13 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
       <Err>{err}</Err>
       <section className="dpos-card">
         {!rows ? <Empty>Loading…</Empty> : !shown.length ? <Empty>No advance orders here. Add items in Billing and press “Save as advance order”.</Empty> : (
-          <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Customer</th><th>Delivery date</th><th className="r">Items</th><th className="r">Total</th><th className="r">Advance</th><th className="r">Balance</th><th>Status</th></tr></thead>
+          <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Customer</th><th>Delivery date</th><th className="r">Items</th><th className="r">Total</th><th className="r">Advance</th><th className="r">Balance</th><th>Status</th><th className="r">Actions</th></tr></thead>
             <tbody>{shown.map(r => { const late = r.deliveryDate && r.deliveryDate < today && ['pending', 'ready'].includes(r.status); const [lab, tone] = ADV_STATUS[r.status]; return (
               <tr key={r.code} className="click" tabIndex={0} onClick={() => setSel(r.code)} onKeyDown={e => e.key === 'Enter' && setSel(r.code)}>
                 <td><b>{r.code}</b></td><td>{r.customerName || <span className="muted">Walk-in</span>}{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
                 <td>{r.deliveryDate ? longDate(r.deliveryDate) : <span className="muted">—</span>} {late && <span className="dpos-pill bad">Late</span>}</td>
-                <td className="r">{r.itemCount}</td><td className="r">{inr(r.total)}</td><td className="r">{inr(r.deposit)}</td><td className="r"><b>{inr(r.balance)}</b></td><td><span className={`dpos-pill ${tone}`}>{lab}</span></td></tr>) })}</tbody></table></div>)}
+                <td className="r">{r.itemCount}</td><td className="r">{inr(r.total)}</td><td className="r">{inr(r.deposit)}</td><td className="r"><b>{inr(r.balance)}</b></td><td><span className={`dpos-pill ${tone}`}>{lab}</span></td>
+                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setSel(r.code)} doc={() => setSel(r.code)} /></td></tr>) })}</tbody></table></div>)}
       </section>
       {sel && <AdvanceDetail code={sel} manager={manager} onClose={() => setSel(null)} onChanged={() => setN(x => x + 1)} onBilled={(sale, invoiceNo) => { setSel(null); setN(x => x + 1); onBilled(sale, invoiceNo) }} />}
     </>

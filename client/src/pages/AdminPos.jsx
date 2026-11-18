@@ -112,6 +112,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const [lines, setLines] = useState(ws ? [blankCustom()] : []);
   const [measureFor, setMeasureFor] = useState(null); // key of the service line whose Measurements window is open
   const [wsItems, setWsItems] = useState([]);
+  useEffect(() => { try { const x = JSON.parse(sessionStorage.getItem('dhanya.exchange') || 'null'); if (x) { sessionStorage.removeItem('dhanya.exchange'); setCust(c => ({ ...c, name: x.name, phone: x.phone })); setNotes(x.note) } } catch { /* ignore */ } }, []); // eslint-disable-line
   const [cust, setCust] = useState({ name: '', phone: '', dob: '', address: '' }); const [billDate, setBillDate] = useState(todayStr()); const [source, setSource] = useState('offline');
   const [isGst, setIsGst] = useState(false); const gstTouched = useRef(false); const [gstRate, setGstRate] = useState('item');
   const [disc, setDisc] = useState({ type: 'fixed', value: '' });

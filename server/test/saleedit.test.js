@@ -35,3 +35,29 @@ test('an invoice can be corrected (customer, date, note) without touching money 
   await o('POST', `/admin/pos/sales/${s.invoiceNo}/void`, { reason: 'test' });
   assert.equal((await o('PATCH', `/admin/pos/sales/${s.invoiceNo}`, { notes: 'x' })).status, 409);
 });
+
+test('editing items changes the total and stock, re-splits the payment, and is blocked once a return exists', async () => {
+  const o = await login();
+  const v = (await o('GET', '/admin/pos/catalog')).body.find(x => x.stock >= 5), stock0 = await stockOf(v.variantId);
+  const s = (await sale(o, [{ variantId: v.variantId, qty: 2 }])).body;
+  assert.equal(await stockOf(v.variantId), stock0 - 2);
+  const it = s.items[0];
+  const down = await o('PATCH', `/admin/pos/sales/${s.invoiceNo}`, { items: [{ id: it.id, quantity: 1 }], payment: { mode: 'upi' } });
+  assert.equal(down.status, 200); assert.equal(down.body.items[0].quantity, 1); assert.ok(down.body.total < s.total);
+  assert.equal(down.body.payUpi, down.body.total, 'the whole new total is on GPay / UPI');
+  assert.equal(await stockOf(v.variantId), stock0 - 1, 'one piece went back on the shelf');
+  const up = await o('PATCH', `/admin/pos/sales/${s.invoiceNo}`, { items: [{ id: down.body.items[0].id, quantity: 3 }], payment: { mode: 'cash' } });
+  assert.equal(up.status, 200); assert.equal(await stockOf(v.variantId), stock0 - 3);
+  assert.equal((await o('PATCH', `/admin/pos/sales/${s.invoiceNo}`, { items: [{ id: up.body.items[0].id, quantity: 0 }] })).status, 400, 'a bill cannot be emptied');
+  await o('POST', `/admin/pos/sales/${s.invoiceNo}/returns`, { items: [{ itemId: up.body.items[0].id, qty: 1, restock: true }], reason: 'x', refundMode: 'cash', approval: { approved: true } });
+  assert.equal((await o('PATCH', `/admin/pos/sales/${s.invoiceNo}`, { items: [{ id: up.body.items[0].id, quantity: 1 }] })).status, 409);
+});
+
+test('an expense can be edited', async () => {
+  const o = await login();
+  const c = await o('POST', '/admin/pos/expenses', { title: 'tea', category: 'General', amount: 10000, paymentMode: 'cash', notes: null });
+  const p = await o('PATCH', `/admin/pos/expenses/${c.body.id}`, { title: 'tea & snacks', category: 'General', amount: 15000, paymentMode: 'upi', notes: 'edited' });
+  assert.equal(p.status, 200);
+  const list = (await o('GET', `/admin/pos/expenses?from=2020-01-01&to=2099-12-31`)).body.find(x => x.id === c.body.id);
+  assert.equal(list.amount, 15000); assert.equal(list.title, 'tea & snacks'); assert.equal(list.paymentMode, 'upi');
+});

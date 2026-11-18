@@ -116,21 +116,22 @@ export function StitchReports() {
     <AdminShell title="Stitching Reports" sub="Stitching revenue by garment and by day"
       actions={<><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="stitching-report" header={['Type', 'Name', 'Garments', 'Revenue']} rows={rows} /></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
-      <div className="sd-grid6 four">
+      <div className="sd-grid6 four sr-kpis">
         <Card label="STITCHING REVENUE" value={v(x => inr(x.stitchingRevenue))} sub="Stitching lines on completed bills" tone="green" />
         <Card label="BILLS" value={v(x => x.bills)} sub="With stitching" />
         <Card label="GARMENTS" value={v(x => x.garments)} sub={v(x => `${inr(x.averageGarment)} average each`)} />
         <Card label="PENDING VALUE" value={v(x => inr(x.pendingValue))} sub={v(x => `${x.pendingOrders} pending orders`)} />
       </div>
-      <div className="sd-two wide">
+      <div className="sr-grid">
         <section className="sd-panel"><h2>Revenue by garment</h2>
           {!d ? <Empty>Loading…</Empty> : !d.byGarment.length ? <Empty>No stitching sales in this period.</Empty> : <ul className="sd-bars">{d.byGarment.map(g => <li key={g.name}><span>{g.name} <small>×{g.qty}</small></span><i><u style={{ width: `${Math.max(4, g.revenue / maxG * 100)}%` }} /></i><b>{inr(g.revenue)}</b></li>)}</ul>}</section>
         <section className="sd-panel"><h2>Orders by status</h2>
           {['pending', 'completed', 'cancelled'].map(k => <div className="sd-st" key={k}><b>{STATUS_L[k]}</b><span>{v(x => x.byStatus[k])}</span></div>)}
           <p className="sd-foot">{v(x => `${x.overdue} overdue · ${x.dueToday} due today · ${inr(x.balanceToCollect)} still to collect on ${x.openAdvances} open advance orders.`)}</p></section>
-      </div>
-      <section className="sd-panel"><h2>Stitching revenue by day</h2>
+        <section className="sd-panel"><h2>Stitching revenue by day</h2>
         {!d ? <Empty>Loading…</Empty> : !d.byDay.length ? <Empty>No stitching sales in this period.</Empty> : <ul className="sd-bars">{d.byDay.map(x => <li key={x.day}><span>{dmy(x.day)}</span><i><u style={{ width: `${Math.max(4, x.amount / maxD * 100)}%` }} /></i><b>{inr(x.amount)}</b></li>)}</ul>}</section>
+      </div>
+
     </AdminShell>
   );
 }

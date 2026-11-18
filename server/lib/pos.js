@@ -552,12 +552,45 @@ export async function finalizeAdvance(db, user, code, { balanceMode, balanceSpli
 
 // Correct an invoice after billing: customer details, bill date and the note. Money, items and stock are never changed here (use Return / Void for that).
 export async function editSale(db, user, invoice, d) {
-  const s = await one(db, 'SELECT id, status FROM pos_sales WHERE invoice_no = $1', [invoice]);
-  if (!s) throw new HttpError(404, 'Invoice not found');
-  if (s.status === 'voided') throw new HttpError(409, 'A voided invoice cannot be edited');
-  await db.query(`UPDATE pos_sales SET customer_name = COALESCE($2, customer_name), customer_phone = COALESCE($3, customer_phone), customer_address = COALESCE($4, customer_address),
-    bill_date = COALESCE($5::date, bill_date), notes = COALESCE($6, notes), edited_at = now() WHERE id = $1`,
-    [s.id, d.customerName ?? null, d.customerPhone ?? null, d.customerAddress ?? null, d.billDate ?? null, d.notes ?? null]);
-  await audit(db, user.id, 'pos.sale_edit', 'pos_sales', invoice);
+  await db.tx(async t => {
+    const s = await one(t, 'SELECT id, status, web_order_id, is_gst, gst_rate, discount_type, discount_value, delivery_fee, payment_mode, total_amount FROM pos_sales WHERE invoice_no = $1 FOR UPDATE', [invoice]);
+    if (!s) throw new HttpError(404, 'Invoice not found');
+    if (s.status === 'voided') throw new HttpError(409, 'A voided invoice cannot be edited');
+    if (d.items?.length) {
+      // Item edit: change quantities / prices (0 removes a line). Stock follows: fewer pieces go back on the shelf, more pieces are taken off it.
+      if (s.web_order_id) throw new HttpError(409, 'Items of a website order cannot be edited. Use Return for those.', 'web_order');
+      if (await one(t, 'SELECT 1 AS x FROM pos_returns WHERE sale_id = $1 LIMIT 1', [s.id])) throw new HttpError(409, 'This bill already has returns, so its items cannot be edited', 'has_returns');
+      const old = await rows(t, 'SELECT * FROM pos_sale_items WHERE sale_id = $1 ORDER BY id', [s.id]);
+      const lines = [];
+      for (const o of old) {
+        const ch = d.items.find(x => x.id === o.id);
+        const qty = ch ? ch.quantity : o.quantity, price = ch?.unitPrice ?? o.unit_price;
+        if (qty > 0) lines.push({ o, qty, price });
+        const delta = o.quantity - qty; // + puts stock back, - takes more
+        if (o.variant_id && delta !== 0) {
+          const u = await t.query('UPDATE product_variants SET stock_quantity = stock_quantity + $1 WHERE id = $2 AND stock_quantity + $1 >= 0 RETURNING stock_quantity', [delta, o.variant_id]);
+          if (!u.rows.length) throw new HttpError(409, `Not enough stock of ${o.name_snapshot} for that quantity`, 'insufficient_stock');
+          await t.query('INSERT INTO inventory_movements (variant_id, quantity_change, reason, reference_id) VALUES ($1,$2,$3,$4)', [o.variant_id, delta, 'pos_edit', invoice]);
+        }
+      }
+      if (!lines.length) throw new HttpError(400, 'A bill needs at least one item. Void the bill instead.', 'no_items');
+      const bill = computeBill(lines.map(l => ({ price: l.price, qty: l.qty, taxRate: Number(l.o.tax_rate) })), { isGst: s.is_gst, gstRate: s.gst_rate ?? null, discountType: s.discount_type, discountValue: s.discount_value, deliveryFee: s.delivery_fee });
+      for (const o of old) await t.query('DELETE FROM pos_sale_items WHERE id = $1', [o.id]);
+      for (const [n, l] of lines.entries()) {
+        const b = bill.lines[n], o = l.o;
+        await t.query(`INSERT INTO pos_sale_items (sale_id, product_id, variant_id, name_snapshot, sku_snapshot, variant_snapshot, unit_price, quantity, line_total, discount_alloc, tax_rate, tax_amount, cost_snapshot)
+                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, [s.id, o.product_id, o.variant_id, o.name_snapshot, o.sku_snapshot, JSON.stringify(o.variant_snapshot ?? {}), l.price, l.qty, b.lineTotal, b.alloc, b.taxRate, b.tax, o.cost_snapshot ?? null]);
+      }
+      const mode = d.payment?.mode ?? s.payment_mode;
+      if (bill.total !== s.total_amount && mode === 'split' && !d.payment) throw new HttpError(400, 'The total changed. Say how the bill is paid now (cash, GPay / UPI, card or a split).', 'need_payment');
+      const pay = settle(bill.total, { mode, ...(d.payment?.split ?? {}), tendered: bill.total });
+      await t.query('UPDATE pos_sales SET subtotal = $2, discount_amount = $3, tax_amount = $4, total_amount = $5, payment_mode = $6, pay_cash = $7, pay_upi = $8, pay_card = $9, cash_tendered = $10, change_given = 0 WHERE id = $1',
+        [s.id, bill.subtotal, bill.discount, bill.tax, bill.total, mode, pay.cash, pay.upi, pay.card, pay.tendered]);
+    }
+    await t.query(`UPDATE pos_sales SET customer_name = COALESCE($2, customer_name), customer_phone = COALESCE($3, customer_phone), customer_address = COALESCE($4, customer_address),
+      bill_date = COALESCE($5::date, bill_date), notes = COALESCE($6, notes), edited_at = now() WHERE id = $1`,
+      [s.id, d.customerName ?? null, d.customerPhone ?? null, d.customerAddress ?? null, d.billDate ?? null, d.notes ?? null]);
+    await audit(t, user.id, 'pos.sale_edit', 'pos_sales', invoice, d.items?.length ? { items: true } : {});
+  });
   return getSale(db, invoice);
 }

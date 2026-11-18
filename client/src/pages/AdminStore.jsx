@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import ExportCsv from '../components/ExportCsv';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/App';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
@@ -10,6 +10,7 @@ import LogoCard from '../components/LogoCard';
 import { Chips, PeriodFilter, inPeriod, usePeriod } from '../components/PeriodFilter';
 import { Stars } from '../components/CustomerReviews';
 import StaffOnly from '../components/StaffOnly';
+import RowActions from '../components/RowActions';
 
 // Online-store admin panels (orders, reviews, users, store settings) in the shared admin layout. Authorization is enforced by the API.
 const STATUSES = ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'];
@@ -25,7 +26,7 @@ function useGate() {
 const Card = ({ children }) => <section className="dpos-card">{children}</section>;
 
 export function AdminOrders() {
-  const gate = useGate(); const [s, setS] = useState(); const [o, setO] = useState(null); const [e, setE] = useState(); const [per, setPer] = usePeriod('all'); const [pay, setPay] = useState('all');
+  const gate = useGate(); const nav = useNavigate(); const [s, setS] = useState(); const [o, setO] = useState(null); const [e, setE] = useState(); const [per, setPer] = usePeriod('all'); const [pay, setPay] = useState('all');
   useEffect(() => { if (!gate) Promise.all([api('/admin/stats'), api('/admin/orders')]).then(([a, b]) => { setS(a); setO(b) }).catch(x => setE(x.message)) }, [gate]);
   if (gate) return gate;
   const shownO = (o || []).filter(x => inPeriod(x.created_at, per) && (pay === 'all' || (pay === 'paid' ? x.payment_status === 'paid' : x.payment_status !== 'paid')));
@@ -40,10 +41,11 @@ export function AdminOrders() {
       <div className="dpos-bar-tools"><Chips label="Payment" value={pay} onChange={setPay} options={[['all', 'All'], ['paid', 'Paid'], ['unpaid', 'Unpaid']]} /><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="online-orders" header={['Order', 'Email', 'Total (₹)', 'Payment', 'Status', 'Date']} rows={shownO.map(x => [x.order_number, x.email, (x.total / 100).toFixed(2), x.payment_status, x.status, x.created_at ? String(x.created_at).slice(0, 10) : ''])} /></div>
       <Card>
         {!o ? <p className="dpos-empty">Loading…</p> : !shownO.length ? <p className="dpos-empty">No online orders here.</p> : (
-          <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Email</th><th className="r">Total</th><th>Payment</th><th>Status</th></tr></thead>
+          <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Email</th><th className="r">Total</th><th>Payment</th><th>Status</th><th className="r">Actions</th></tr></thead>
             <tbody>{shownO.map(x => (
               <tr key={x.id}><td><b>{x.order_number}</b></td><td>{x.email}</td><td className="r">{inr(x.total)}</td><td><span className={`dpos-pill ${x.payment_status === 'paid' ? 'ok' : ''}`}>{x.payment_status}</span></td>
-                <td><select value={x.status} aria-label={`Status for ${x.order_number}`} onChange={async ev => { try { await api('/admin/orders/' + x.order_number, { method: 'PATCH', body: { status: ev.target.value } }); setO(list => list.map(y => y.id === x.id ? { ...y, status: ev.target.value } : y)) } catch (err) { setE(err.message) } }}>{STATUSES.map(v => <option key={v}>{v}</option>)}</select></td></tr>))}</tbody></table></div>)}
+                <td><select value={x.status} aria-label={`Status for ${x.order_number}`} onChange={async ev => { try { await api('/admin/orders/' + x.order_number, { method: 'PATCH', body: { status: ev.target.value } }); setO(list => list.map(y => y.id === x.id ? { ...y, status: ev.target.value } : y)) } catch (err) { setE(err.message) } }}>{STATUSES.map(v => <option key={v}>{v}</option>)}</select></td>
+                <td className="r"><RowActions label={x.order_number} wa={x.phone ? { phone: x.phone, text: `Hello${x.customerName ? ' ' + x.customerName : ''}, your order ${x.order_number} is ${x.status}.` } : null} doc={x.shareToken ? `/invoice/${x.shareToken}` : null} eye={() => nav('/admin/billing/orders')} /></td></tr>))}</tbody></table></div>)}
       </Card>
     </AdminShell>
   );

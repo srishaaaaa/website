@@ -204,7 +204,9 @@ export default function pos({ db, auth }) {
     res.json({ ok: true });
   }));
   r.patch('/pos/sales/:invoice', manager, wrap(async (req, res) => {
-    const d = z.object({ customerName: text(120).optional(), customerPhone: text(20).optional(), customerAddress: text(300).optional(), billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), notes: text(300).optional() }).parse(req.body);
+    const d = z.object({ customerName: text(120).optional(), customerPhone: text(20).optional(), customerAddress: text(300).optional(), billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), notes: text(300).optional(),
+      items: z.array(z.object({ id: z.number().int(), quantity: z.number().int().min(0).max(9999), unitPrice: z.number().int().min(0).optional() })).max(100).optional(),
+      payment: z.object({ mode: z.enum(['cash', 'upi', 'card', 'split']), split: z.object({ cash: z.number().int().min(0).optional(), upi: z.number().int().min(0).optional(), card: z.number().int().min(0).optional() }).optional() }).optional() }).parse(req.body);
     res.json(await editSale(db, req.user, req.params.invoice, d));
   }));
   r.patch('/pos/sales/:invoice/tailoring', biller, wrap(async (req, res) => {
@@ -512,6 +514,15 @@ export default function pos({ db, auth }) {
     if (!cats.includes(name)) throw new HttpError(404, 'Category not found');
     const next = cats.filter(c => c !== name); await putSetting(db, 'expense_categories', next);
     await audit(db, req.user.id, 'pos.expense_category.remove', 'pos_settings', name); res.json(next);
+  }));
+  r.patch('/pos/expenses/:id', area('/admin/billing/expenses'), wrap(async (req, res) => {
+    const e = expenseBody.parse(req.body);
+    if (e.date && e.date > today()) throw new HttpError(400, 'Expense date cannot be in the future');
+    const u = await db.query('UPDATE pos_expenses SET title = $2, category = $3, amount = $4, payment_mode = $5, notes = $6, expense_date = COALESCE($7::date, expense_date) WHERE id = $1 RETURNING id',
+      [id.parse(req.params.id), e.title, e.category, e.amount, e.paymentMode, e.notes, e.date ?? null]);
+    if (!u.rows.length) throw new HttpError(404, 'Expense not found');
+    await audit(db, req.user.id, 'pos.expense.edit', 'pos_expense', u.rows[0].id, { amount: e.amount });
+    res.json({ id: u.rows[0].id });
   }));
   r.delete('/pos/expenses/:id', area('/admin/billing/expenses'), wrap(async (req, res) => {
     const d = await db.query('DELETE FROM pos_expenses WHERE id = $1 RETURNING id', [id.parse(req.params.id)]);
