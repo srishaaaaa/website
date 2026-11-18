@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
 import { useApp } from '../context/App';
@@ -24,17 +24,39 @@ const Card = ({ label, value, sub, tone = '' }) => <div className={`sd-card ${to
 const Empty = ({ children }) => <p className="sd-empty">{children}</p>;
 const openOrder = (nav, o) => o.kind === 'advance' ? nav('/admin/billing/advance') : o.shareToken && nav('/invoice/' + o.shareToken);
 
-function OrderList({ list, nav }) {
+const todayIst = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+// The promised date of an order, with a pencil to change it.
+function DueEdit({ o, onChanged }) {
+  const [on, setOn] = useState(false); const [err, setErr] = useState();
+  const late = o.due && o.due < todayIst() && o.status === 'pending';
+  const save = async v => { if (!v || v === o.due) return setOn(false); try { await api('/admin/pos/stitching/due', { method: 'PATCH', body: { kind: o.kind, ref: o.ref, due: v } }); setOn(false); onChanged?.() } catch (e) { setErr(e.message) } };
+  return on
+    ? <span className="sd-dueedit"><input type="date" autoFocus defaultValue={o.due || ''} aria-label={`New due date for ${o.ref}`} onChange={e => save(e.target.value)} onBlur={() => setOn(false)} />{err && <small role="alert">{err}</small>}</span>
+    : <span className={`sd-due ${late ? 'late' : ''}`}>{o.due ? `Due ${dmy(o.due)}` : 'No due date'}{o.status !== 'cancelled' && o.status !== 'completed' && <button type="button" className="sd-pen" title="Change due date" aria-label={`Change due date of ${o.ref}`} onClick={() => setOn(true)}>✎</button>}</span>;
+}
+
+function OrderList({ list, nav, onChanged }) {
   return (
     <div className="sd-list">{list.map(o => (
-      <button type="button" key={o.ref} className="sd-row" onClick={() => openOrder(nav, o)}>
-        <span className="sd-ref">{o.ref}</span>
-        <span className="sd-who"><b>{o.customerName || 'Walk-in customer'}</b><small>{o.customerPhone || '-'} · {dmy(o.billDate)} · {o.garments} {o.garments === 1 ? 'garment' : 'garments'}</small></span>
-        <span className="sd-due">{o.due ? `Due ${dmy(o.due)}` : 'No due date'}</span>
+      <div key={o.ref} className="sd-row">
+        <button type="button" className="sd-open" onClick={() => openOrder(nav, o)}>
+          <span className="sd-ref">{o.ref}</span>
+          <span className="sd-who"><b>{o.customerName || 'Walk-in customer'}</b><small>{o.customerPhone || '-'} · {dmy(o.billDate)}{o.time ? ` · ${o.time}` : ''} · {o.garments} {o.garments === 1 ? 'garment' : 'garments'}</small></span>
+        </button>
+        <DueEdit o={o} onChanged={onChanged} />
         <span className={`sd-pill ${o.status}`}>{o.kind === 'advance' ? 'Advance' : STATUS_L[o.status]}</span>
         <b className="sd-amt">{inr(o.total)}</b>
-      </button>))}</div>
+      </div>))}</div>
   );
+}
+
+// Alert for orders that are late or promised for today: a banner on the stitching pages and, once a day, a pop-up message.
+function DueAlert({ d }) {
+  const { toast } = useApp(); const al = d?.alerts ?? { stitchDue: true, popup: true, banner: true, daysBefore: 2, dueSoonCount: 0 };
+  const n = d ? d.overdue : 0, t = d ? d.dueToday : 0, k = al.dueSoonCount || 0;
+  useEffect(() => { if (!d || !al.stitchDue || !al.popup || (!n && !t && !k)) return; try { if (sessionStorage.getItem('dhanya.dueAlert') === d.today) return; sessionStorage.setItem('dhanya.dueAlert', d.today) } catch { /* ignore */ } toast(`Stitching: ${n} overdue, ${t} due today${k ? `, ${k} due within ${al.daysBefore} days` : ''}`) }, [d?.today, n, t, k, al.popup, al.stitchDue]); // eslint-disable-line
+  if (!d || !al.stitchDue || !al.banner || (!n && !t && !k)) return null;
+  return <div className="sd-alert" role="alert"><b>⚠ Stitching due dates</b><span>{n > 0 && <em className="bad">{n} overdue</em>}{t > 0 && <em className="warn">{t} due today</em>}{k > 0 && <em className="soon">{k} due within {al.daysBefore} days</em>}</span><Link to="/admin/stitching/orders?due=overdue">View</Link></div>;
 }
 
 // ---------------- Stitching Dashboard ----------------
@@ -42,33 +64,33 @@ export function StitchDashboard() {
   const gate = useStaff(); const nav = useNavigate();
   const [per, setPer] = usePeriod('month'); const [d, setD] = useState(null); const [err, setErr] = useState();
   const [from, to] = periodRange(per);
-  useEffect(() => { if (!gate) api(`/admin/pos/stitching/overview?from=${from}&to=${to}`).then(x => { setD(x); setErr() }).catch(e => setErr(e.message)) }, [gate, from, to]);
+  const [n, setN] = useState(0); const reload = () => setN(x => x + 1);
+  useEffect(() => { if (!gate) api(`/admin/pos/stitching/overview?from=${from}&to=${to}`).then(x => { setD(x); setErr() }).catch(e => setErr(e.message)) }, [gate, from, to, n]);
   if (gate) return gate;
   const v = (f, dash = '…') => d ? f(d) : dash;
   return (
     <AdminShell title="Stitching Dashboard" sub="Stitching work at a glance: what is due, what is late and what it earned"
       actions={<><PeriodFilter value={per} onChange={setPer} /><Link className="dpos-btn" to="/admin/billing?new=stitching">+ New stitching order</Link></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
-      <div className="sd-grid6">
-        <Card label="ACTIVE ORDERS" value={v(x => x.activeOrders)} sub="Pending stitching work" />
-        <Card label="DUE TODAY" value={v(x => x.dueToday)} sub="Promised for today" />
-        <Card label="OVERDUE" value={v(x => x.overdue)} sub="Past the promised date" />
+      <DueAlert d={d} />
+      <div className="sd-grid6 sd-line">
+        <Card label="ACTIVE ORDERS" value={v(x => x.activeOrders)} sub="Pending work" />
+        <Card label="DUE TODAY" value={v(x => x.dueToday)} sub="Promised today" tone={d?.dueToday ? 'amber' : ''} />
+        <Card label="OVERDUE" value={v(x => x.overdue)} sub="Past promised date" tone={d?.overdue ? 'red' : ''} />
         <Card label="COMPLETED" value={v(x => x.completed)} sub="Finished orders" tone="green" />
-        <Card label="STITCHING REVENUE" value={v(x => inr(x.stitchingRevenue))} sub={v(x => `${x.bills} ${x.bills === 1 ? 'bill' : 'bills'} in this period`)} />
-        <Card label="GARMENTS" value={v(x => x.garments)} sub={v(x => `${inr(x.averageGarment)} average each`)} />
-      </div>
-      <div className="sd-grid6 two">
-        <Card label="OPEN ADVANCES" value={v(x => x.openAdvances)} sub="Deposit taken, work pending" />
-        <Card label="BALANCE TO COLLECT" value={v(x => inr(x.balanceToCollect))} sub="On open advance orders" />
+        <Card label="REVENUE" value={v(x => inr(x.stitchingRevenue))} sub={v(x => `${x.bills} ${x.bills === 1 ? 'bill' : 'bills'} this period`)} />
+        <Card label="GARMENTS" value={v(x => x.garments)} sub={v(x => `${inr(x.averageGarment)} avg each`)} />
+        <Card label="OPEN ADVANCES" value={v(x => x.openAdvances)} sub="Work pending" />
+        <Card label="TO COLLECT" value={v(x => inr(x.balanceToCollect))} sub="On advance orders" />
       </div>
       <div className="sd-two">
         <section className="sd-panel"><h2>Due in the next 7 days</h2>
-          {!d ? <Empty>Loading…</Empty> : !d.dueSoon.length ? <Empty>Nothing is due in the next 7 days.</Empty> : <OrderList list={d.dueSoon} nav={nav} />}</section>
+          {!d ? <Empty>Loading…</Empty> : !d.dueSoon.length ? <Empty>Nothing is due in the next 7 days.</Empty> : <OrderList list={d.dueSoon} nav={nav} onChanged={reload} />}</section>
         <section className="sd-panel"><h2>Overdue</h2>
-          {!d ? <Empty>Loading…</Empty> : !d.overdueList.length ? <Empty>No overdue orders. 🎉</Empty> : <OrderList list={d.overdueList} nav={nav} />}</section>
+          {!d ? <Empty>Loading…</Empty> : !d.overdueList.length ? <Empty>No overdue orders. 🎉</Empty> : <OrderList list={d.overdueList} nav={nav} onChanged={reload} />}</section>
       </div>
       <section className="sd-panel"><div className="sd-ph"><h2>Recent stitching orders</h2><span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}><ExportCsv name="recent-stitching-orders" header={['Order', 'Customer', 'Status', 'Due']} rows={(d?.recent || []).map(o => [o.ref, o.customer || o.name || '', o.status || '', o.due || o.dueDate || ''])} /><Link className="sd-va" to="/admin/stitching/orders">View all →</Link></span></div>
-        {!d ? <Empty>Loading…</Empty> : !d.recent.length ? <Empty>No stitching orders yet. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.recent} nav={nav} />}</section>
+        {!d ? <Empty>Loading…</Empty> : !d.recent.length ? <Empty>No stitching orders yet. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.recent} nav={nav} onChanged={reload} />}</section>
     </AdminShell>
   );
 }
@@ -77,18 +99,19 @@ export function StitchDashboard() {
 const TILES = [['all', 'ALL ORDERS', ''], ['pending', 'PENDING', 'amber'], ['completed', 'COMPLETED', 'green'], ['cancelled', 'CANCELLED', 'red']];
 export function StitchOrders() {
   const gate = useStaff(); const nav = useNavigate();
-  const [per, setPer] = usePeriod('all'); const [f, setF] = useState({ q: '', name: '', phone: '' }); const [status, setStatus] = useState('all');
+  const [per, setPer] = usePeriod('all'); const [sp] = useSearchParams(); const [f, setF] = useState({ q: '', name: '', phone: '', garment: '', due: sp.get('due') || 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); const [status, setStatus] = useState('all'); const [n, setN] = useState(0); const [ov, setOv] = useState(null);
   const [d, setD] = useState(null); const [err, setErr] = useState(); const [from, to] = periodRange(per);
   useEffect(() => {
     if (gate) return;
-    const t = setTimeout(() => api(`/admin/pos/stitching/orders?from=${from}&to=${to}&status=${status}&q=${encodeURIComponent(f.q)}&name=${encodeURIComponent(f.name)}&phone=${encodeURIComponent(f.phone)}`).then(x => { setD(x); setErr() }).catch(e => setErr(e.message)), 200);
+    const t = setTimeout(() => api(`/admin/pos/stitching/orders?from=${from}&to=${to}&status=${status}&q=${encodeURIComponent(f.q)}&name=${encodeURIComponent(f.name)}&phone=${encodeURIComponent(f.phone)}&garment=${encodeURIComponent(f.garment)}&due=${f.due}&kind=${f.kind}&gst=${f.gst}&sort=${f.sort}${f.dueFrom ? `&dueFrom=${f.dueFrom}` : ''}${f.dueTo ? `&dueTo=${f.dueTo}` : ''}`).then(x => { setD(x); setErr() }).catch(e => setErr(e.message)), 200);
     return () => clearTimeout(t);
-  }, [gate, from, to, status, f]);
+  }, [gate, from, to, status, f, n]);
+  useEffect(() => { if (!gate) api('/admin/pos/stitching/overview').then(setOv).catch(() => {}) }, [gate, n]);
   if (gate) return gate;
-  const rows = (d?.orders || []).map(o => [o.ref, o.customerName, o.customerPhone, dmy(o.billDate), o.due ? dmy(o.due) : '', STATUS_L[o.status], o.garments, (o.total / 100).toFixed(2)]);
+  const rows = (d?.orders || []).map(o => [o.ref, o.customerName, o.customerPhone, dmy(o.billDate), o.time || '', o.due ? dmy(o.due) : '', STATUS_L[o.status], o.garmentNames || '', o.garments, (o.total / 100).toFixed(2)]);
   return (
     <AdminShell title="Stitching Orders" sub="Every bill with stitching and every open advance order, with due dates and status"
-      actions={<><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="stitching-orders" header={['Order', 'Customer', 'Phone', 'Date', 'Due', 'Status', 'Garments', 'Total']} rows={rows} /></>}>
+      actions={<><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="stitching-orders" header={['Order', 'Customer', 'Phone', 'Date', 'Time', 'Due', 'Status', 'Items', 'Garments', 'Total']} rows={rows} /></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       <div className="sd-tiles">{TILES.map(([k, l, tone]) => (
         <button key={k} type="button" className={`sd-tile ${tone} ${status === k ? 'on' : ''}`} aria-pressed={status === k} onClick={() => setStatus(k)}><span>{l}</span><b>{d ? d.counts[k] : '…'}</b></button>))}</div>
@@ -97,8 +120,17 @@ export function StitchOrders() {
         <label>Customer name<input value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Search name…" /></label>
         <label>Customer phone<input inputMode="tel" value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} placeholder="Search phone…" /></label>
         <label>Status<select value={status} onChange={e => setStatus(e.target.value)}><option value="all">All statuses</option><option value="pending">Pending</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+        <label>Due<select value={f.due} onChange={e => setF({ ...f, due: e.target.value })}><option value="all">Any due date</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="week">Next 7 days</option><option value="none">No due date</option></select></label>
+        <label>Due from<input type="date" value={f.dueFrom} onChange={e => setF({ ...f, dueFrom: e.target.value })} /></label>
+        <label>Due to<input type="date" value={f.dueTo} onChange={e => setF({ ...f, dueTo: e.target.value })} /></label>
+        <label>Garment<input value={f.garment} onChange={e => setF({ ...f, garment: e.target.value })} placeholder="e.g. blouse" /></label>
+        <label>Type<select value={f.kind} onChange={e => setF({ ...f, kind: e.target.value })}><option value="all">Bills + advances</option><option value="bill">Bills</option><option value="advance">Advance orders</option></select></label>
+        <label>Bill type<select value={f.gst} onChange={e => setF({ ...f, gst: e.target.value })}><option value="all">GST + non-GST</option><option value="gst">GST invoices</option><option value="nongst">Non-GST bills</option></select></label>
+        <label>Sort<select value={f.sort} onChange={e => setF({ ...f, sort: e.target.value })}><option value="new">Newest first</option><option value="old">Oldest first</option><option value="due">Due date (soonest)</option></select></label>
+        <button type="button" className="dpos-btn ghost sm sd-reset" onClick={() => { setF({ q: '', name: '', phone: '', garment: '', due: 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); setStatus('all') }}>Reset filters</button>
       </section>
-      <section className="sd-panel">{!d ? <Empty>Loading…</Empty> : !d.orders.length ? <Empty>No stitching orders here. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.orders} nav={nav} />}</section>
+      <DueAlert d={ov} />
+      <section className="sd-panel">{!d ? <Empty>Loading…</Empty> : !d.orders.length ? <Empty>No stitching orders here. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.orders} nav={nav} onChanged={() => setN(x => x + 1)} />}</section>
     </AdminShell>
   );
 }
@@ -111,14 +143,15 @@ export function StitchReports() {
   if (gate) return gate;
   const v = (f, dash = '…') => d ? f(d) : dash;
   const maxG = Math.max(1, ...(d?.byGarment || []).map(g => g.revenue)), maxD = Math.max(1, ...(d?.byDay || []).map(x => x.amount));
-  const rows = [...(d?.byGarment || []).map(g => ['Garment', g.name, g.qty, (g.revenue / 100).toFixed(2)]), ...(d?.byDay || []).map(x => ['Day', dmy(x.day), '', (x.amount / 100).toFixed(2)])];
+  const rows = [['Summary', 'GST invoices', d?.gstBills ?? '', ((d?.gstRevenue || 0) / 100).toFixed(2)], ['Summary', 'Non-GST bills', d?.nonGstBills ?? '', ((d?.nonGstRevenue || 0) / 100).toFixed(2)], ...(d?.byGarment || []).map(g => ['Garment', g.name, g.qty, (g.revenue / 100).toFixed(2)]), ...(d?.byDay || []).map(x => ['Day', dmy(x.day), '', (x.amount / 100).toFixed(2)])];
   return (
     <AdminShell title="Stitching Reports" sub="Stitching revenue by garment and by day"
       actions={<><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="stitching-report" header={['Type', 'Name', 'Garments', 'Revenue']} rows={rows} /></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
-      <div className="sd-grid6 four sr-kpis">
+      <div className="sd-grid6 five sr-kpis">
         <Card label="STITCHING REVENUE" value={v(x => inr(x.stitchingRevenue))} sub="Stitching lines on completed bills" tone="green" />
-        <Card label="BILLS" value={v(x => x.bills)} sub="With stitching" />
+        <Card label="GST INVOICES" value={v(x => inr(x.gstRevenue))} sub={v(x => `${x.gstBills} ${x.gstBills === 1 ? 'bill' : 'bills'}`)} />
+        <Card label="NON-GST BILLS" value={v(x => inr(x.nonGstRevenue))} sub={v(x => `${x.nonGstBills} ${x.nonGstBills === 1 ? 'bill' : 'bills'}`)} />
         <Card label="GARMENTS" value={v(x => x.garments)} sub={v(x => `${inr(x.averageGarment)} average each`)} />
         <Card label="PENDING VALUE" value={v(x => inr(x.pendingValue))} sub={v(x => `${x.pendingOrders} pending orders`)} />
       </div>

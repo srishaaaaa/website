@@ -784,3 +784,37 @@ div.dpos .dpos-rowact { gap: 6px; justify-content: flex-end }
 .sr-grid .sd-st { display: flex; justify-content: space-between; padding: 9px 0; font-size: 13px; border-bottom: 1px solid #eee7e0 } .sr-grid .sd-st b { font-weight: 600 } .sr-grid .sd-st span { font-weight: 700; color: #330533 }
 .sr-grid .sd-foot { font-size: 11.5px; margin: 10px 0 0; color: #7a6f80 }
 @media (max-width: 1100px) { .sr-grid { grid-template-columns: 1fr 1fr } } @media (max-width: 700px) { .sr-grid { grid-template-columns: 1fr } }
+
+/* Billing: order item rows aligned (inputs left, quantity + remove on the first row at the right, measurements below) */
+div.dpos .bp .dpos-line { align-items: start; gap: 8px 14px; padding: 10px 12px; margin-top: 10px; border-radius: 14px }
+div.dpos .bp .dpos-line > div:last-child { align-self: start; justify-self: end; height: 40px; display: flex; align-items: center }
+div.dpos .bp .dpos-line .dpos-grid { grid-template-columns: minmax(140px, 2fr) minmax(80px, 1fr) 92px !important; gap: 8px; align-items: center }
+div.dpos .bp .dpos-line input, div.dpos .bp .dpos-line select { height: 40px; padding: 0 12px; font-size: 13px; border-radius: 10px }
+div.dpos .bp .dpos-line .msr-line { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 2px }
+div.dpos .bp .dpos-line .msr-sum { flex: 1 1 100%; font-size: 11.5px; line-height: 1.5; color: #6f6b66; text-align: left; padding-left: 2px }
+div.dpos .bp .dpos-line .dpos-qty { height: 40px; display: inline-flex; align-items: center } div.dpos .bp .dpos-line .dpos-qty input { height: 30px; width: 38px; padding: 0; text-align: center }
+
+/* Compact form boxes everywhere in admin */
+div.dpos input:not([type=checkbox]):not([type=radio]):not([type=range]), div.dpos select, .dpos-modal input:not([type=checkbox]):not([type=radio]), .dpos-modal select { min-height: 0; padding-top: 8px; padding-bottom: 8px; font-size: 13px; border-radius: 10px }
+div.dpos textarea, .dpos-modal textarea { padding: 8px 12px; font-size: 13px; border-radius: 10px }
+div.dpos label.f, div.dpos .f, .dpos-modal .f { gap: 4px; font-size: 11px }
+div.dpos .dpos-grid { gap: 10px }
+div.dpos .dpos-btn { padding-top: 8px; padding-bottom: 8px; font-size: 12.5px }
+
+/* Stitching: one line of summary cards, due-date alert, due editing, filters */
+.sd-grid6.sd-line { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px }
+.sd-grid6.sd-line .sd-card { padding: 12px 14px; border-radius: 16px; gap: 3px } .sd-grid6.sd-line .sd-card span { font-size: 10px; letter-spacing: .1em } .sd-grid6.sd-line .sd-card b { font-size: 22px } .sd-grid6.sd-line .sd-card small { font-size: 11px }
+.sd-card.amber b { color: #b45309 } .sd-card.amber { border-color: #f3d9a4 } .sd-card.red b { color: #b3261e } .sd-card.red { border-color: #f1c2be }
+.sd-grid6.five { grid-template-columns: repeat(5, minmax(0, 1fr)) }
+@media (max-width: 1200px) { .sd-grid6.sd-line { grid-template-columns: repeat(4, minmax(0, 1fr)) } .sd-grid6.five { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+@media (max-width: 640px) { .sd-grid6.sd-line, .sd-grid6.five { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.sd-alert { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px; border-radius: 14px; background: #fff7e6; border: 1px solid #f3d9a4; font-size: 13px } .sd-alert b { font-weight: 700; color: #7a4a00 }
+.sd-alert span { display: inline-flex; gap: 8px } .sd-alert em { font-style: normal; font-weight: 700; padding: 3px 10px; border-radius: 999px } .sd-alert em.bad { background: #fdecea; color: #b3261e } .sd-alert em.warn { background: #fff0cc; color: #8a5a00 } .sd-alert a { margin-left: auto; font-weight: 700; color: #330533; text-decoration: underline }
+.sd-row { grid-template-columns: minmax(0, 1.6fr) 170px 96px 90px !important; padding: 10px 14px }
+.sd-open { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 14px; align-items: center; text-align: left; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; min-width: 0 }
+.sd-due { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600 } .sd-due.late { color: #b3261e }
+.sd-pen { width: 24px; height: 24px; border-radius: 8px; background: #f3f1f4; color: #330533; font-size: 13px; line-height: 1 } .sd-dueedit input { padding: 5px 8px; font-size: 12.5px }
+.sd-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px !important; padding: 14px 18px !important; border-radius: 18px !important } .sd-filters label { gap: 4px !important; font-size: 10.5px !important }
+.sd-reset { align-self: end; justify-self: start }
+@media (max-width: 900px) { .sd-filters { grid-template-columns: repeat(2, minmax(0, 1fr)) } .sd-row { grid-template-columns: 1fr 1fr !important } .sd-open { grid-template-columns: 1fr } }
+.sd-alert em.soon { background: #eef4ff; color: #2d4aa8 }

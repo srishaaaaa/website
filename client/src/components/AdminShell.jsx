@@ -66,7 +66,7 @@ export const NAV = [
   { group: 'Stitching', roles: ['owner', 'admin', 'cashier'], items: [
     ['/admin/stitching', 'Stitching Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/billing/measurements', 'Measurements', 'ruler', false],
     ['/admin/stitching/reports', 'Stitching Reports', 'chart', true]] },
-  { group: 'Settings', items: [['/admin/billing/settings', 'POS Settings', 'gear', true], ['/admin/settings', 'Store Settings', 'gear', true]] },
+  { group: 'Settings', items: [['/admin/delivery', 'Delivery', 'truck', true], ['/admin/billing/settings', 'POS Settings', 'gear', true], ['/admin/settings', 'Store Settings', 'gear', true]] },
 ];
 
 // Every admin page draws its own sidebar, so its scroll position is kept here: opening a panel near the bottom

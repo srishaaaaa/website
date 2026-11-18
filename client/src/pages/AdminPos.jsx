@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ExportCsv from '../components/ExportCsv';
+import AlertSettingsCard from '../components/AlertSettingsCard';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
@@ -15,7 +16,6 @@ import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowS
 import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
 import PosMeasurements from './PosMeasurements';
-import DeliveryRulesCard from '../components/DeliveryRulesCard';
 import PageAccessCard from '../components/PageAccessCard';
 import PosBirthdays from './PosBirthdays';
 import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
@@ -711,7 +711,6 @@ function Settings({ onSaved }) {
           <label className="f" style={{ marginTop: 14 }}>Terms &amp; notes printed on the invoice (one point per line)<textarea rows={3} maxLength={600} value={s.terms || ''} onChange={e => setS({ ...s, terms: e.target.value })} placeholder="e.g. Custom-stitched and altered garments are made to order and are non-returnable." /></label>
           <p className="sub" style={{ marginTop: 12 }}>Invoice numbers are created automatically, like INV-2026-G3AKL.</p>
         </section>
-        <DeliveryRulesCard />
         <section className="dpos-card"><h2><Icon n="truck" />Delivery &amp; packing quick picks</h2>
           {s.deliveryPresets.map((p, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -728,6 +727,7 @@ function Settings({ onSaved }) {
       <LoginPasswordCard />
       <StaffAccessCard />
       <PageAccessCard />
+        <AlertSettingsCard />
     </div>
   );
 }

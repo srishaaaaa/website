@@ -8,6 +8,7 @@ import './styles.css';
 import './home.css';
 import './boutique.css';
 import './nav.css';
+import './fonts.css';
 
 addEventListener('vite:preloadError', e => { if (reloadOnce()) e.preventDefault() }); // a page chunk missing after a release: reload once
 

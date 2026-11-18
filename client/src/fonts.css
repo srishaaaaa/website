@@ -1,0 +1,4 @@
+/* Admin / staff / cashier side only: one font family (Poppins) for everything, numbers and codes included (no serif, no monospace).
+   The customer website keeps its own typography. */
+div.dpos, div.dpos *:not(svg):not(svg *), .dpos-modal, .dpos-modal *:not(svg):not(svg *) { font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif !important; font-style: normal }
+div.dpos .mono, div.dpos code, div.dpos .oid, div.dpos .stc-mono, div.dpos .sd-ref, div.dpos .cp-c, .dpos-modal .mono { font-variant-numeric: tabular-nums; letter-spacing: .02em; font-weight: 600 }

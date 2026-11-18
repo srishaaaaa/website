@@ -1,0 +1,24 @@
+.pc-page { min-height: 100vh; display: grid; place-items: center; padding: 28px 16px; background: radial-gradient(70% 55% at 50% 0%, #4a0f4c 0%, #260326 60%, #170117 100%); color: #f6efe6; font-family: 'Poppins', system-ui, sans-serif }
+.pc-wrap { width: min(440px, 100%); display: grid; gap: 18px; justify-items: center }
+.pc-brand { text-align: center } .pc-brand b { display: block; font: 600 26px/1.1 'Playfair Display', Georgia, serif; letter-spacing: .32em; padding-left: .32em; color: #fff } .pc-brand span { font-size: 10px; letter-spacing: .5em; color: #C6A052; padding-left: .5em }
+.pc-ticket { position: relative; width: 100%; border-radius: 26px; background: linear-gradient(155deg, #fffdf8 0%, #f6ecdc 100%); color: #2a1030; box-shadow: 0 30px 70px rgba(0, 0, 0, .45), 0 0 0 1px rgba(198, 160, 82, .55); overflow: hidden; animation: pc-in .7s cubic-bezier(.2, .8, .2, 1) both }
+.pc-ticket::before { content: ''; position: absolute; inset: 10px; border-radius: 18px; border: 1px dashed rgba(51, 5, 51, .28); pointer-events: none }
+.pc-top { padding: 34px 28px 20px; text-align: center; background: linear-gradient(135deg, #330533 0%, #5a1560 100%); color: #fff; position: relative }
+.pc-top::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(198, 160, 82, .22) 50%, transparent 65%); transform: translateX(-100%); animation: pc-shine 3.6s ease-in-out infinite }
+.pc-gift { margin: 0; font-size: 11px; letter-spacing: .42em; padding-left: .42em; color: #e9cd8d; font-weight: 600 }
+.pc-off { margin: 10px 0 2px; font: 700 54px/1 'Playfair Display', Georgia, serif; background: linear-gradient(180deg, #fff 20%, #e9cd8d 100%); -webkit-background-clip: text; background-clip: text; color: transparent }
+.pc-sub { margin: 0; font-size: 12.5px; color: #eadcf0; letter-spacing: .08em }
+.pc-cut { position: relative; height: 0; margin: 0 -1px } .pc-cut::before, .pc-cut::after { content: ''; position: absolute; top: -13px; width: 26px; height: 26px; border-radius: 50%; background: #260326 } .pc-cut::before { left: -13px } .pc-cut::after { right: -13px }
+.pc-body { padding: 26px 28px 28px; text-align: center; display: grid; gap: 16px }
+.pc-lab { margin: 0; font-size: 10px; letter-spacing: .3em; padding-left: .3em; color: #8a6a2a; font-weight: 700 }
+.pc-code { font: 700 28px/1 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .14em; padding: 14px 16px; border-radius: 14px; background: #fff; border: 1.5px solid #C6A052; color: #330533; user-select: all }
+.pc-copy { justify-self: center; padding: 9px 18px; border-radius: 999px; border: 1px solid #330533; background: transparent; color: #330533; font-weight: 700; font-size: 12px; cursor: pointer } .pc-copy:hover { background: #330533; color: #fff }
+.pc-rules { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; text-align: left } .pc-rules li { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #4a3a50 } .pc-rules li::before { content: '✦'; color: #C6A052; font-size: 11px; margin-top: 3px }
+.pc-warn { margin: 0; padding: 8px 12px; border-radius: 10px; background: #fdecea; color: #b3261e; font-size: 12.5px; font-weight: 600 }
+.pc-acts { display: grid; gap: 10px; width: 100% }
+.pc-shop, .pc-dl { display: block; text-align: center; padding: 14px 18px; border-radius: 14px; font-weight: 700; font-size: 13.5px; letter-spacing: .08em; cursor: pointer; text-decoration: none; border: 0 }
+.pc-shop { background: linear-gradient(135deg, #C6A052, #e3c47f); color: #2a0b2c; box-shadow: 0 10px 24px rgba(198, 160, 82, .35) } .pc-dl { background: rgba(255, 255, 255, .1); color: #fff; border: 1px solid rgba(255, 255, 255, .25) }
+.pc-foot { text-align: center; font-size: 11.5px; color: #bfa9c6 }
+@keyframes pc-in { from { opacity: 0; transform: translateY(18px) scale(.97) } to { opacity: 1; transform: none } } @keyframes pc-shine { 0%, 55% { transform: translateX(-100%) } 100% { transform: translateX(100%) } }
+@media (prefers-reduced-motion: reduce) { .pc-ticket, .pc-top::after { animation: none } }
+@media print { .pc-page { background: #fff; color: #000 } .pc-acts, .pc-copy { display: none } }

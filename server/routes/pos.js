@@ -5,7 +5,7 @@ import { HttpError, wrap } from '../lib/http.js';
 import { audit } from '../lib/orders.js';
 import { hasCostColumns, hasBestSeller } from '../lib/cost.js';
 import { createReturn, getReturn } from '../lib/returns.js';
-import { listMeasurements, setTailoring, stitchingOrders, stitchingOverview } from '../lib/measurements.js';
+import { listMeasurements, setTailoring, stitchingOrders, stitchingOverview, setDueDate } from '../lib/measurements.js';
 import { DEFAULT_RULES, loadRules } from '../lib/delivery.js';
 import { loadAccess, pagesFor, CAN, PAGES } from '../lib/staffAccess.js';
 import { syncWebInvoices } from '../lib/webInvoices.js';
@@ -187,12 +187,28 @@ export default function pos({ db, auth }) {
     res.json(await listMeasurements(db, f));
   }));
   r.get('/pos/stitching/orders', biller, wrap(async (req, res) => {
-    const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), status: z.enum(['all', 'pending', 'completed', 'cancelled']).default('all'), from: date.optional(), to: date.optional() }).parse(req.query);
+    const f = z.object({ q: text(80).default(''), name: text(80).default(''), phone: text(20).default(''), status: z.enum(['all', 'pending', 'completed', 'cancelled']).default('all'), from: date.optional(), to: date.optional(),
+      due: z.enum(['all', 'overdue', 'today', 'week', 'none']).default('all'), dueFrom: date.optional(), dueTo: date.optional(), kind: z.enum(['all', 'bill', 'advance']).default('all'), garment: text(60).default(''), gst: z.enum(['all', 'gst', 'nongst']).default('all'), sort: z.enum(['new', 'old', 'due']).default('new') }).parse(req.query);
     res.json(await stitchingOrders(db, f));
+  }));
+  r.patch('/pos/stitching/due', biller, wrap(async (req, res) => {
+    const d = z.object({ kind: z.enum(['bill', 'advance']), ref: text(40).min(1), due: date }).parse(req.body);
+    res.json(await setDueDate(db, req.user, d));
+  }));
+  // Alert settings (POS Settings → Alerts): the stitching due-date alert.
+  const ALERTS = { stitchDue: true, daysBefore: 2, popup: true, banner: true };
+  const loadAlerts = async () => ({ ...ALERTS, ...(await getSetting(db, 'alerts', {})) });
+  r.get('/pos/alert-settings', biller, wrap(async (_req, res) => res.json(await loadAlerts())));
+  r.put('/pos/alert-settings', manager, wrap(async (req, res) => {
+    const v = z.object({ stitchDue: z.boolean(), daysBefore: z.number().int().min(0).max(30), popup: z.boolean(), banner: z.boolean() }).parse(req.body);
+    await putSetting(db, 'alerts', v); await audit(db, req.user.id, 'pos.alert_settings', 'pos_settings', 'alerts', v); res.json(v);
   }));
   r.get('/pos/stitching/overview', biller, wrap(async (req, res) => {
     const f = z.object({ from: date.optional(), to: date.optional() }).parse(req.query);
-    res.json(await stitchingOverview(db, f));
+    const out = await stitchingOverview(db, f), al = await loadAlerts();
+    const lim = new Date(out.today + 'T00:00:00Z'); lim.setUTCDate(lim.getUTCDate() + al.daysBefore); const lead = lim.toISOString().slice(0, 10);
+    out.alerts = { ...al, dueSoonCount: out.dueSoon.filter(o => o.due > out.today && o.due <= lead && o.status === 'pending').length };
+    res.json(out);
   }));
   // Best Sellers shelf: flag / unflag one product (the shelf keeps the 10 newest flagged pieces).
   r.patch('/pos/products/:id/best-seller', area('/admin/billing/inventory', { not: ['inventory'] }), wrap(async (req, res) => {

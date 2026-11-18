@@ -61,3 +61,16 @@ test('an expense can be edited', async () => {
   const list = (await o('GET', `/admin/pos/expenses?from=2020-01-01&to=2099-12-31`)).body.find(x => x.id === c.body.id);
   assert.equal(list.amount, 15000); assert.equal(list.title, 'tea & snacks'); assert.equal(list.paymentMode, 'upi');
 });
+
+test('stitching due date can be changed and filtered; reports split GST / non-GST', async () => {
+  const o = await login();
+  const v = (await o('GET', '/admin/pos/catalog')).body.find(x => x.stock >= 2);
+  const s = (await sale(o, [{ variantId: v.variantId, qty: 1 }, { name: 'Blouse stitching', price: 50000, qty: 1, measure: { dueDate: '2030-01-10' } }], { isGst: false })).body;
+  assert.ok(s.invoiceNo);
+  const p = await o('PATCH', '/admin/pos/stitching/due', { kind: 'bill', ref: s.invoiceNo, due: '2030-02-01' });
+  assert.equal(p.status, 200);
+  const list = (await o('GET', '/admin/pos/stitching/orders?dueFrom=2030-01-25&dueTo=2030-02-05&gst=nongst')).body;
+  assert.ok(list.orders.some(x => x.ref === s.invoiceNo && x.due === '2030-02-01'));
+  const ov = (await o('GET', '/admin/pos/stitching/overview?from=2020-01-01&to=2099-12-31')).body;
+  assert.equal(ov.gstRevenue + ov.nonGstRevenue, ov.stitchingRevenue);
+});

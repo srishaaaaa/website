@@ -39,7 +39,7 @@ const A = {
   stitch: lazyEl(() => import('./pages/AdminStitching')), stitchNew: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="new" /> }))), stitchDetail: lazyEl(() => import('./pages/AdminStitching').then(m => ({ default: () => <m.default view="detail" /> }))), stitchPrint: lazyEl(() => import('./pages/stitching/Print')),
   pos: lazyEl(() => import('./pages/AdminPos')), invoice: lazyEl(() => import('./pages/InvoicePage')), coupon: lazyEl(() => import('./pages/CouponCard')),
   orders: lazyEl(store, 'AdminOrders'), reviews: lazyEl(store, 'AdminReviews'), users: lazyEl(store, 'AdminUsers'), settings: lazyEl(store, 'AdminSettings'),
-  categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
+  delivery: lazyEl(() => import('./pages/AdminDelivery')), categories: lazyEl(more, 'AdminCategories'), reels: lazyEl(more, 'AdminReels'),
   storefront: lazyEl(media, 'AdminStorefront'), trending: lazyEl(media, 'AdminTrending'), sitetext: lazyEl(media, 'AdminSiteText'), enquiries: lazyEl(media, 'AdminEnquiries'), sample: lazyEl(media, 'AdminSample'),
 };
 
@@ -93,6 +93,7 @@ export default function App() {
           <Route path="/admin/categories" element={A.categories} />
           <Route path="/admin/reels" element={A.reels} />
           <Route path="/admin/settings" element={A.settings} />
+          <Route path="/admin/delivery" element={A.delivery} />
           <Route path="/admin/products" element={<Navigate to="/admin/billing/inventory" replace />} />
           <Route path="/admin/storefront" element={A.storefront} />
           <Route path="/admin/trending" element={A.trending} />

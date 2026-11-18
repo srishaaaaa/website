@@ -38,6 +38,23 @@ export async function setTailoring(db, user, invoice, status) {
   return { invoiceNo: invoice, status };
 }
 
+// Changes the promised (due) date of a stitching order: a bill (by invoice number) or an open advance order (by code).
+export async function setDueDate(db, user, { kind, ref, due }) {
+  if (kind === 'advance') {
+    const a = await one(db, "SELECT id, items FROM pos_advances WHERE code = $1 AND status IN ('pending', 'ready')", [ref]);
+    if (!a) throw new HttpError(404, 'Open advance order not found');
+    const items = (a.items || []).map(i => i.measure ? { ...i, measure: { ...i.measure, dueDate: due } } : i);
+    await db.query('UPDATE pos_advances SET delivery_date = $2::date, items = $3::jsonb WHERE id = $1', [a.id, due, JSON.stringify(items)]);
+  } else {
+    const s = await one(db, 'SELECT id, status FROM pos_sales WHERE invoice_no = $1', [ref]);
+    if (!s) throw new HttpError(404, 'Invoice not found');
+    if (s.status === 'voided') throw new HttpError(409, 'A cancelled bill cannot be changed', 'voided');
+    await db.query("UPDATE pos_sale_items SET variant_snapshot = jsonb_set(variant_snapshot, '{measure,dueDate}', to_jsonb($2::text)) WHERE sale_id = $1 AND variant_snapshot ? 'measure'", [s.id, due]);
+  }
+  await audit(db, user.id, 'pos.stitch_due', kind === 'advance' ? 'pos_advance' : 'pos_sale', ref, { due });
+  return { ref, due };
+}
+
 // ---------- Stitching dashboard / orders / reports ----------
 // A "stitching order" is a retail bill with at least one stitching line, or an open advance order whose items carry measurements.
 // Active = pending bills + open advance orders. Dates are Asia/Kolkata days (YYYY-MM-DD).
@@ -47,32 +64,37 @@ const minDate = list => list.filter(Boolean).sort()[0] ?? null;
 
 async function stitchRows(db) {
   const bills = await rows(db, `
-    SELECT s.invoice_no AS "invoiceNo", s.customer_name AS "customerName", s.customer_phone AS "customerPhone", s.bill_date::text AS "billDate", s.share_token AS "shareToken",
+    SELECT s.invoice_no AS "invoiceNo", s.customer_name AS "customerName", s.customer_phone AS "customerPhone", s.bill_date::text AS "billDate", s.created_at AS "createdAt", s.is_gst AS "isGst", s.share_token AS "shareToken",
            CASE WHEN s.status = 'voided' THEN 'cancelled' ELSE s.tailoring_status END AS status, s.total_amount AS total,
            json_agg(json_build_object('name', i.name_snapshot, 'qty', i.quantity, 'amount', i.line_total - i.discount_alloc, 'due', i.variant_snapshot -> 'measure' ->> 'dueDate') ORDER BY i.id) AS lines
     FROM pos_sales s JOIN pos_sale_items i ON i.sale_id = s.id
     WHERE s.channel = 'retail' AND i.variant_snapshot ? 'measure' GROUP BY s.id ORDER BY s.id DESC LIMIT 1000`);
-  const adv = await rows(db, `SELECT code, customer_name AS "customerName", customer_phone AS "customerPhone", created_at::date::text AS "billDate", total_amount AS total, deposit, delivery_date::text AS "deliveryDate", items
+  const adv = await rows(db, `SELECT code, customer_name AS "customerName", customer_phone AS "customerPhone", created_at::date::text AS "billDate", created_at AS "createdAt", total_amount AS total, deposit, delivery_date::text AS "deliveryDate", items
     FROM pos_advances WHERE status IN ('pending', 'ready') ORDER BY id DESC LIMIT 500`);
   const advances = adv.filter(a => (a.items || []).some(i => i.measure)).map(a => {
     const lines = a.items.filter(i => i.measure).map(i => ({ name: i.name, qty: i.qty, amount: i.price * i.qty, due: i.measure?.dueDate ?? null }));
-    return { kind: 'advance', code: a.code, customerName: a.customerName, customerPhone: a.customerPhone, billDate: a.billDate, status: 'pending', total: a.total, balance: a.total - a.deposit, lines, due: minDate([...lines.map(l => l.due), a.deliveryDate]) };
+    return { kind: 'advance', createdAt: a.createdAt, code: a.code, customerName: a.customerName, customerPhone: a.customerPhone, billDate: a.billDate, status: 'pending', total: a.total, balance: a.total - a.deposit, lines, due: minDate([...lines.map(l => l.due), a.deliveryDate]) };
   });
   const bs = bills.map(b => ({ kind: 'bill', ...b, due: minDate(b.lines.map(l => l.due)) }));
   return { bills: bs, advances };
 }
 const garments = o => o.lines.reduce((s, l) => s + l.qty, 0);
 const value = o => o.lines.reduce((s, l) => s + l.amount, 0);
-const brief = o => ({ kind: o.kind, ref: o.invoiceNo ?? o.code, shareToken: o.shareToken ?? null, customerName: o.customerName, customerPhone: o.customerPhone, billDate: o.billDate, due: o.due, status: o.status, total: o.total, garments: garments(o) });
+const brief = o => ({ kind: o.kind, ref: o.invoiceNo ?? o.code, shareToken: o.shareToken ?? null, customerName: o.customerName, customerPhone: o.customerPhone, billDate: o.billDate, time: o.createdAt ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(o.createdAt)) : null, due: o.due, status: o.status, total: o.total, garments: garments(o), isGst: o.isGst ?? null, garmentNames: [...new Set(o.lines.map(l => l.name))].join(', ') });
 
-export async function stitchingOrders(db, { q = '', name = '', phone = '', status = 'all', from, to }) {
-  const { bills, advances } = await stitchRows(db);
+export async function stitchingOrders(db, { q = '', name = '', phone = '', status = 'all', from, to, due = 'all', dueFrom, dueTo, kind = 'all', garment = '', gst = 'all', sort = 'new' }) {
+  const { bills, advances } = await stitchRows(db); const today = istToday();
   const has = (v, t) => String(v ?? '').toLowerCase().includes(String(t).trim().toLowerCase());
   const digits = s => String(s ?? '').replace(/\D/g, '');
   const all = [...advances, ...bills].filter(o => (!q.trim() || has(o.invoiceNo ?? o.code, q)) && (!name.trim() || has(o.customerName, name)) && (!phone.trim() || digits(o.customerPhone).includes(digits(phone)))
-    && (!from || o.billDate >= from) && (!to || o.billDate <= to));
+    && (!from || o.billDate >= from) && (!to || o.billDate <= to)
+    && (kind === 'all' || o.kind === kind) && (!garment.trim() || o.lines.some(l => has(l.name, garment))) && (gst === 'all' || (gst === 'gst' ? o.isGst === true : o.isGst === false))
+    && (!dueFrom || (o.due && o.due >= dueFrom)) && (!dueTo || (o.due && o.due <= dueTo))
+    && (due === 'all' || (due === 'none' ? !o.due : due === 'overdue' ? (o.due && o.due < today && ['pending'].includes(o.status)) : due === 'today' ? o.due === today : due === 'week' ? (o.due && o.due >= today && o.due <= addDays(today, 7)) : true)));
   const counts = { all: all.length, pending: all.filter(o => o.status === 'pending').length, completed: all.filter(o => o.status === 'completed').length, cancelled: all.filter(o => o.status === 'cancelled').length };
-  return { counts, orders: all.filter(o => status === 'all' || o.status === status).map(brief) };
+  const list = all.filter(o => status === 'all' || o.status === status);
+  list.sort(sort === 'due' ? (a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999') : sort === 'old' ? (a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) : (a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return { counts, orders: list.map(brief) };
 }
 
 export async function stitchingOverview(db, { from, to }) {
@@ -81,7 +103,8 @@ export async function stitchingOverview(db, { from, to }) {
   const active = [...advances, ...bills.filter(b => b.status === 'pending')];
   const inPeriod = bills.filter(b => (!from || b.billDate >= from) && (!to || b.billDate <= to));
   const done = inPeriod.filter(b => b.status === 'completed');
-  const revenue = done.reduce((s, b) => s + value(b), 0), gar = done.reduce((s, b) => s + garments(b), 0);
+  const revenue = done.reduce((s, b) => s + value(b), 0), gstRev = done.filter(b => b.isGst).reduce((s, b) => s + value(b), 0), gstBills = done.filter(b => b.isGst).length;
+  const gar = done.reduce((s, b) => s + garments(b), 0);
   const byGarment = new Map(), byDay = new Map();
   for (const b of done) {
     byDay.set(b.billDate, (byDay.get(b.billDate) ?? 0) + value(b));
@@ -91,7 +114,7 @@ export async function stitchingOverview(db, { from, to }) {
   return {
     from, to, today,
     activeOrders: active.length, dueToday: dueToday.length, overdue: overdue.length, completed: done.length,
-    stitchingRevenue: revenue, bills: done.length, garments: gar, averageGarment: gar ? Math.round(revenue / gar) : 0,
+    stitchingRevenue: revenue, gstRevenue: gstRev, nonGstRevenue: revenue - gstRev, gstBills, nonGstBills: done.length - gstBills, bills: done.length, garments: gar, averageGarment: gar ? Math.round(revenue / gar) : 0,
     openAdvances: advances.length, balanceToCollect: advances.reduce((s, a) => s + a.balance, 0),
     pendingValue: active.reduce((s, o) => s + value(o), 0), pendingOrders: active.length,
     dueSoon: active.filter(o => o.due && o.due >= today && o.due <= soon).sort((a, b) => a.due.localeCompare(b.due)).slice(0, 12).map(brief),

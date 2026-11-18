@@ -20,4 +20,4 @@ export const pageOf = (pathname, pages) => [...pages].sort((a, b) => b.length - 
 // The order the sidebar lists the pages in (used to pick the first page a staff member lands on).
 export const ADMIN_ORDER = ['/admin/orders', '/admin/reviews', '/admin/categories', '/admin/trending', '/admin/site-text', '/admin/storefront', '/admin/reels', '/admin/enquiries', '/admin/users', '/admin/sample',
   '/admin/billing', '/admin/billing/analytics', '/admin/billing/advance', '/admin/billing/orders', '/admin/billing/inventory', '/admin/billing/customers', '/admin/billing/coupons', '/admin/billing/birthdays', '/admin/billing/expenses',
-  '/admin/stitching', '/admin/stitching/orders', '/admin/billing/measurements', '/admin/stitching/reports', '/admin/billing/settings', '/admin/settings'];
+  '/admin/stitching', '/admin/stitching/orders', '/admin/billing/measurements', '/admin/stitching/reports', '/admin/delivery', '/admin/billing/settings', '/admin/settings'];

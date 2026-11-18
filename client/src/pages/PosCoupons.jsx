@@ -15,10 +15,10 @@ const expired = c => c.expiresOn && String(c.expiresOn).slice(0, 10) < new Date(
 
 // The message opened in WhatsApp: the offer, its rules and the link to the printable coupon card.
 const message = (c, name, shop) => [
-  `Hello${name ? ' ' + name : ''},`, `🎁 Here is a coupon from *${shop?.name || 'DHANYA'}*`, '', `Code: *${c.code}*`, `Offer: *${offerText(c)}*`, '',
+  `Dear${name ? ' ' + name : ' valued customer'},`, '', `✨ A special gift from *${shop?.name || 'DHANYA'}* ✨`, '', `🎁 *${offerText(c)}*`, `🔑 Your code: *${c.code}*`, '',
   ...(c.minOrder ? [`• Valid on purchases of ${inr(c.minOrder)} or more`] : []), ...(c.expiresOn ? [`• Valid till ${dmy(c.expiresOn)}`] : []),
   ...(c.sentOnly ? ['• Only for the mobile number it was sent to'] : []), '• Show this code at billing. Discount applies to the item value only.', '',
-  `Download your coupon: ${location.origin}/coupon/${c.code}`, ...(shop?.phone ? ['', `📞 ${shop.phone}`] : []),
+  `💳 Open your coupon: ${location.origin}/coupon/${c.code}`, ...(shop?.phone ? ['', `📞 ${shop.phone}`] : []),
 ].join('\n');
 
 function SendModal({ c, shop, onClose, onDone }) {
