@@ -818,3 +818,11 @@ div.dpos .dpos-btn { padding-top: 8px; padding-bottom: 8px; font-size: 12.5px }
 .sd-reset { align-self: end; justify-self: start }
 @media (max-width: 900px) { .sd-filters { grid-template-columns: repeat(2, minmax(0, 1fr)) } .sd-row { grid-template-columns: 1fr 1fr !important } .sd-open { grid-template-columns: 1fr } }
 .sd-alert em.soon { background: #eef4ff; color: #2d4aa8 }
+
+/* Stitching order rows: flexible so they fit narrow panels too */
+.sd-row { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 14px !important }
+.sd-row .sd-open { flex: 1 1 240px; grid-template-columns: auto minmax(0, 1fr); min-width: 0 }
+.sd-row .sd-who small { white-space: normal }
+.sd-row .sd-due { flex: 0 0 auto; min-width: 130px }
+.sd-row .sd-pill { flex: 0 0 auto; min-width: 76px }
+.sd-row .sd-amt { flex: 0 0 auto; min-width: 70px; text-align: right; margin-left: auto; display: block !important }

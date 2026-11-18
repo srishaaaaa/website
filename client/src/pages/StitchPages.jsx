@@ -113,6 +113,7 @@ export function StitchOrders() {
     <AdminShell title="Stitching Orders" sub="Every bill with stitching and every open advance order, with due dates and status"
       actions={<><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="stitching-orders" header={['Order', 'Customer', 'Phone', 'Date', 'Time', 'Due', 'Status', 'Items', 'Garments', 'Total']} rows={rows} /></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
+      <DueAlert d={ov} />
       <div className="sd-tiles">{TILES.map(([k, l, tone]) => (
         <button key={k} type="button" className={`sd-tile ${tone} ${status === k ? 'on' : ''}`} aria-pressed={status === k} onClick={() => setStatus(k)}><span>{l}</span><b>{d ? d.counts[k] : '…'}</b></button>))}</div>
       <section className="sd-filters">
@@ -129,7 +130,6 @@ export function StitchOrders() {
         <label>Sort<select value={f.sort} onChange={e => setF({ ...f, sort: e.target.value })}><option value="new">Newest first</option><option value="old">Oldest first</option><option value="due">Due date (soonest)</option></select></label>
         <button type="button" className="dpos-btn ghost sm sd-reset" onClick={() => { setF({ q: '', name: '', phone: '', garment: '', due: 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); setStatus('all') }}>Reset filters</button>
       </section>
-      <DueAlert d={ov} />
       <section className="sd-panel">{!d ? <Empty>Loading…</Empty> : !d.orders.length ? <Empty>No stitching orders here. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.orders} nav={nav} onChanged={() => setN(x => x + 1)} />}</section>
     </AdminShell>
   );
