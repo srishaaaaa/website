@@ -905,3 +905,9 @@ div.dpos .dpos-filters .f input, div.dpos .dpos-filters .f select { height: 42px
 .sto .sd-due { font-weight: 700 }
 .sto-st { height: 38px; padding: 0 30px 0 14px; border-radius: 12px; border: 1px solid #e6d4a8; background: #fff4d6; color: #9a5a00; font-weight: 600; font-size: 13px; min-width: 130px } .sto-st.completed { background: #e4f5ea; border-color: #b9e3cc; color: #1c7a4b }
 .sto td { white-space: nowrap } .sto td:nth-child(3) { white-space: normal; max-width: 220px } .sto .sd-due { white-space: nowrap }
+.sto td { padding: 10px 8px !important } .sto th { padding: 10px 8px !important }
+.sto td:nth-child(3) { white-space: nowrap !important; max-width: 150px; overflow: hidden; text-overflow: ellipsis }
+.sto .dpos-rowact { gap: 4px; flex-wrap: nowrap } .sto .dpos-rowact .ra { width: 34px !important; height: 34px !important; border-radius: 10px !important } .sto .dpos-rowact .ra svg { width: 17px !important; height: 17px !important }
+.sto-st { min-width: 118px; padding-left: 10px }
+.dpos-tw:has(.sto) { overflow-x: auto }
+.sto td:nth-child(3) { max-width: 120px !important }

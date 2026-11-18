@@ -27,13 +27,13 @@ const openOrder = (nav, o) => o.kind === 'advance' ? nav('/admin/billing/advance
 
 const todayIst = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 // The promised date of an order, with a pencil to change it.
-function DueEdit({ o, onChanged }) {
+function DueEdit({ o, onChanged, short }) {
   const [on, setOn] = useState(false); const [err, setErr] = useState();
   const late = o.due && o.due < todayIst() && o.status === 'pending';
   const save = async v => { if (!v || v === o.due) return setOn(false); try { await api('/admin/pos/stitching/due', { method: 'PATCH', body: { kind: o.kind, ref: o.ref, due: v } }); setOn(false); onChanged?.() } catch (e) { setErr(e.message) } };
   return on
     ? <span className="sd-dueedit"><input type="date" autoFocus defaultValue={o.due || ''} aria-label={`New due date for ${o.ref}`} onChange={e => save(e.target.value)} onBlur={() => setOn(false)} />{err && <small role="alert">{err}</small>}</span>
-    : <span className={`sd-due ${late ? 'late' : ''}`}>{o.due ? `Due ${dmy(o.due)}` : 'No due date'}{o.status !== 'cancelled' && o.status !== 'completed' && <button type="button" className="sd-pen" title="Change due date" aria-label={`Change due date of ${o.ref}`} onClick={() => setOn(true)}>✎</button>}</span>;
+    : <span className={`sd-due ${late ? 'late' : ''}`}>{o.due ? `${short ? '' : 'Due '}${dmy(o.due)}` : 'No due date'}{o.status !== 'cancelled' && o.status !== 'completed' && <button type="button" className="sd-pen" title="Change due date" aria-label={`Change due date of ${o.ref}`} onClick={() => setOn(true)}>✎</button>}</span>;
 }
 
 function OrderList({ list, nav, onChanged }) {
@@ -63,7 +63,7 @@ function OrdersTable({ list, nav, onChanged }) {
             <td><b>{o.ref}</b><div className="muted small">{dmy(o.billDate)}{o.time ? ` · ${o.time}` : ''}</div></td>
             <td><b>{o.customerName || 'Walk-in customer'}</b><div className="muted small">{o.customerPhone || '-'}</div></td>
             <td>{o.garmentNames || `${o.garments} garment${o.garments === 1 ? '' : 's'}`}</td>
-            <td className={late ? 'sto-late' : ''}><DueEdit o={o} onChanged={onChanged} /></td>
+            <td className={late ? 'sto-late' : ''}><DueEdit o={o} onChanged={onChanged} short /></td>
             <td className="r"><b>{inr(o.total)}</b></td>
             <td className="r">{o.balance > 0 ? <b>{inr(o.balance)}</b> : <span className="muted">Paid</span>}</td>
             <td>{fixed ? <span className={`sd-pill ${o.status}`}>{o.kind === 'advance' ? 'Advance' : STATUS_L[o.status]}</span>
