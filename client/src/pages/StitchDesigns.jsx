@@ -48,7 +48,7 @@ function NeckSection({ title, kind, list, builtinCount, busy, onSave }) {
             <b>{x.name}</b>
             <button type="button" className="dpos-btn danger sm" disabled={busy} onClick={() => { if (confirm(`Remove “${x.name}”? Orders that already use it keep the name.`)) onSave(list.filter((_, k) => k !== i)) }}>Remove</button>
           </div>))}
-        {!list.length && <p className="muted small">No designs of your own yet.</p>}
+        {!list.length && <p className="muted small sdz-none">No designs of your own yet.</p>}
       </div>
       <form className="sdz-add" onSubmit={add}>
         <label className="f">Design name<input value={name} maxLength={60} onChange={e => setName(e.target.value)} placeholder={kind === 'front' ? 'e.g. Princess cut' : 'e.g. Deep scoop'} /></label>
@@ -67,7 +67,7 @@ function NameSection({ title, base, list, busy, onSave }) {
     <section className="dpos-card"><h2>{title}</h2>
       <p className="muted small">Built in: {base.join(', ')}</p>
       <div className="sdz-chips">{list.map(x => <span key={x} className="sdz-chip">{x}<button type="button" aria-label={`Remove ${x}`} disabled={busy} onClick={() => onSave(list.filter(y => y !== x))}>×</button></span>)}</div>
-      <form className="sdz-add" onSubmit={add}><label className="f">Add an option<input value={v} maxLength={40} onChange={e => setV(e.target.value)} placeholder="e.g. Cap sleeve" /></label><button className="dpos-btn" disabled={busy || !v.trim()}>+ Add</button></form>
+      <form className="sdz-add one" onSubmit={add}><label className="f">Add an option<input value={v} maxLength={40} onChange={e => setV(e.target.value)} placeholder="e.g. Cap sleeve" /></label><button className="dpos-btn" disabled={busy || !v.trim()}>+ Add</button></form>
     </section>
   );
 }

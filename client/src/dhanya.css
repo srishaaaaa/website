@@ -882,3 +882,12 @@ div.dpos .dpos-line input, div.dpos .dpos-line select { height: 40px }
 .sdz-add { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 8px } @media (max-width: 700px) { .sdz-add { grid-template-columns: 1fr } }
 .sdz-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 } .sdz-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 12px; border-radius: 999px; background: #f3e8f4; color: #330533; font-size: 12.5px; font-weight: 600 } .sdz-chip button { width: 20px; height: 20px; border-radius: 50%; background: #fff; color: #330533 }
 .pick-go { background: #330533 !important; color: #fff !important } .pick-card.on { border-color: #C6A052 !important; background: #fbf6ea }
+.sdz-add { grid-template-columns: minmax(160px, 260px) minmax(200px, 300px) auto !important; justify-content: start; gap: 10px 14px }
+.sdz-add.one { grid-template-columns: minmax(160px, 300px) auto !important }
+.sdz-add .dpos-btn { height: 40px; padding: 0 18px; white-space: nowrap }
+.sdz-add input[type=file] { padding: 6px 10px; font-size: 12px; height: 40px }
+.sdz-add input[type=file]::file-selector-button { margin-right: 10px; padding: 5px 12px; border: 0; border-radius: 8px; background: #f3e8f4; color: #330533; font: 600 12px 'Poppins', sans-serif; cursor: pointer }
+.sdz-none { margin: 4px 0 !important; white-space: nowrap } .sdz-grid:has(.sdz-none) { display: block; margin: 4px 0 8px }
+.sdz-add + .dpos-err { margin-top: 8px }
+@media (max-width: 760px) { .sdz-add, .sdz-add.one { grid-template-columns: 1fr !important } }
+.sdz-add input { height: 40px }
