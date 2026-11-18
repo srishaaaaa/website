@@ -98,7 +98,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
       <div className="dpos-filterbar">
         <span className="of-l">TYPE</span><Chips value={tab} onChange={t => { setTab(t); setRows(null) }} options={[['all', 'All bills'], ['online', 'Online (website)'], ['offline', 'In-store (billing)']]} />
         <Chips value={f.gst} onChange={v => setF({ ...f, gst: v })} options={[['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']]} />
-        {tab !== 'online' && <><span className="of-l">PAYMENT</span><Chips value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']]} /></>}
+        {tab !== 'online' && <><span className="of-l">PAYMENT</span><Chips value={f.payment} onChange={v => setF({ ...f, payment: v })} options={[['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card']]} /></>}
       </div>
       <Err>{err}</Err>
       {onlineList}

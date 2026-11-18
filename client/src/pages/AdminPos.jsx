@@ -385,7 +385,7 @@ function BillsTable({ rows, onOpen, empty = 'No bills found.' }) {
   );
 }
 const GST_CHIPS = [['all', 'All bills'], ['gst', 'GST invoices'], ['nongst', 'Non-GST bills']];
-const PAY_CHIPS = [['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card'], ['split', 'Split']];
+const PAY_CHIPS = [['all', 'All methods'], ['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card']];
 const SRC_CHIPS = [['all', 'All channels'], ['offline', 'Offline (POS)'], ['online', 'Online']];
 
 // ============================ analytics ============================
@@ -435,10 +435,37 @@ function TodayPanels({ rep, bills, openInvoice }) {
   );
 }
 
+// Everything the Analytics "Export Excel" button writes, for the tab that is open, with the period and filters that are applied.
+const R2 = n => ((n || 0) / 100).toFixed(2);
+function exportFor(tab, rep, from, to, f) {
+  if (!rep) return { name: 'analytics', header: ['Measure', 'Value'], rows: [] };
+  const lab = { all: 'All', gst: 'GST invoices', nongst: 'Non-GST bills', offline: 'Offline (POS)', online: 'Online', cash: 'Cash', upi: 'GPay / UPI', card: 'Card', split: 'Split' };
+  const head = [['Period', `${dmy(from)} to ${dmy(to)}`], ['Bills filter', lab[f.gst]], ['Channel filter', lab[f.src]], ['Payment filter', lab[f.pay]], ['', '']];
+  if (tab === 'products') {
+    const all = rep.allProducts || rep.products || []; const total = all.reduce((s, p) => s + p.revenue, 0) || 1;
+    return { name: 'product-sales', header: ['Rank', 'Product', 'Qty sold', 'Revenue (₹)', 'Market share %'], rows: all.map((p, i) => [i + 1, p.name, p.qty, R2(p.revenue), (p.revenue / total * 100).toFixed(1)]) };
+  }
+  if (tab === 'coupons') return { name: 'coupon-usage', header: ['Coupon code', 'Times used', 'Discount given (₹)', 'Revenue (₹)'], rows: (rep.coupons || []).map(c => [c.code, c.uses, R2(c.discount), R2(c.revenue)]) };
+  const rb = rep.returnedBy || {};
+  const rows = [...head,
+    ['Total revenue (after refunds)', R2(rep.revenue)], ['Gross sales before refunds', R2(rep.grossRevenue)], ['GST invoices sales', R2(rep.gstSales)], ['Non-GST sales', R2(rep.nonGstSales)],
+    ['GST collected (CGST + SGST)', R2(rep.tax)], ['  CGST', R2((rep.tax || 0) / 2)], ['  SGST', R2((rep.tax || 0) / 2)], ['Discounts given', R2(rep.discounts)],
+    ['', ''], ['PAYMENT METHOD', 'Bills paid (incl. split parts) | Received (₹) | Refunded (₹) | Net (₹)'],
+    ...[['cash', 'Cash'], ['upi', 'GPay / UPI'], ['card', 'Card']].map(([k, l]) => { const m = rep.byMethod?.[k] || {}; return [l, `${m.bills || 0} | ${R2(m.amount)} | ${R2(m.refunded)} | ${R2((m.amount || 0) - (m.refunded || 0))}`] }), ['', ''],
+    ['Refunded amount', R2(rep.returned?.total)], ['Refunded bills', rep.returned?.count || 0], ['  Refunded in cash', R2(rb.cash)], ['  Refunded by GPay / UPI', R2(rb.upi)], ['  Refunded by card', R2(rb.card)],
+    ['Offline sales', R2(rep.offlineSales)], ['Offline bills', rep.offlineBills], ['Online sales', R2(rep.onlineSales)], ['Online bills', rep.onlineBills],
+    ['Completed bills', rep.bills], ['Voided bills', rep.voided], ['Customers', rep.customers], ['Items sold', rep.units],
+    ['Cost of goods sold', R2(rep.cogs)], ['Gross profit', R2(rep.gross)], ['Expenses', R2(rep.expenses)], ['Net profit', R2(netOf(rep))]];
+  for (const e of rep.expenseByCategory || []) rows.push([`  Expense: ${e.category}`, R2(e.amount)]);
+  rows.push(['', ''], ['Day', 'Bills / Revenue (₹)']);
+  for (const d of rep.daily || []) rows.push([d.day, `${d.bills} bills / ${R2(d.revenue)}`]);
+  return { name: 'analytics-summary', header: ['Measure', 'Value (₹ / count)'], rows };
+}
+
 // "Products" tab: every product ranked by revenue, with its share of all product revenue.
 function ProductsBoard({ rep }) {
   const [q, setQ] = useState('');
-  const all = rep?.products || []; const total = all.reduce((s, p) => s + p.revenue, 0) || 1;
+  const all = rep?.allProducts || rep?.products || []; const total = all.reduce((s, p) => s + p.revenue, 0) || 1;
   const needle = q.trim().toLowerCase();
   const rows = all.map((p, i) => ({ ...p, rank: i + 1 })).filter(p => !needle || p.name.toLowerCase().includes(needle));
   return (
@@ -497,14 +524,14 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const netOf = r => r.net + (reduce ? 0 : (r.returned?.total || 0));
   return (
     <>
-      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="analytics-summary" header={['Measure', 'Value (₹ / count)']} rows={rep ? [['Total revenue', (rep.revenue / 100).toFixed(2)], ['GST sales', (rep.gstSales / 100).toFixed(2)], ['Non-GST sales', (rep.nonGstSales / 100).toFixed(2)], ['Expenses', (rep.expenses / 100).toFixed(2)], ['Net profit', (netOf(rep) / 100).toFixed(2)], ['Refunded amount', ((rep.returned?.total || 0) / 100).toFixed(2)], ['Refunded bills', rep.returned?.count || 0], ['Completed bills', rep.bills], ['Offline sales', (rep.offlineSales / 100).toFixed(2)], ['Online sales', (rep.onlineSales / 100).toFixed(2)], ['Items sold', rep.units]] : []} /></div>}
+      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv {...exportFor(tab, rep, from, to, { gst, pay, src })} /></div>}
       <div className="an-tabrow">
         <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
       </div>
       <div className="an-all">
         {!ws && <div className="an-grp" role="radiogroup" aria-label="Channel">{[['all', 'All Channels', ''], ['offline', 'Offline (POS)', '#f5a524'], ['online', 'Online', '#22a06b']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={src === k} className={src === k ? 'on' : ''} onClick={() => setSrc(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>}
         <div className="an-gst"><Chips value={gst} onChange={setGst} options={GST_CHIPS} /></div>
-        <div className="an-pay" role="radiogroup" aria-label="Payment"><b>PAYMENT</b>{[['all', 'All', ''], ['cash', 'Cash', '#f5a524'], ['upi', 'GPay / UPI', '#3b82f6'], ['card', 'Card', '#ec4899'], ['split', 'Split', '#8b5cf6']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={pay === k} className={pay === k ? 'on' : ''} onClick={() => setPay(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>
+        <div className="an-pay" role="radiogroup" aria-label="Payment"><b>PAYMENT</b>{[['all', 'All', ''], ['cash', 'Cash', '#f5a524'], ['upi', 'GPay / UPI', '#3b82f6'], ['card', 'Card', '#ec4899']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={pay === k} className={pay === k ? 'on' : ''} onClick={() => setPay(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>
       </div>
       <Err>{err}</Err>
 

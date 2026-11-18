@@ -750,3 +750,9 @@ div.dpos { --z: .9; zoom: .9 }
 
 /* Text-valued stat tiles (e.g. Top product) stay compact */
 div.dpos .dpos-card2 .v.txt { font-size: 15px; font-weight: 700; line-height: 1.25 }
+
+/* One font, size and weight across every admin table row (Advance Orders, Customers, Order History …) */
+div.dpos .dpos-tw table td, div.dpos .dpos-tw table td * { font-family: 'Poppins', system-ui, sans-serif !important; font-size: 13px; font-weight: 500; letter-spacing: 0; font-variant-numeric: tabular-nums }
+div.dpos .dpos-tw table td b, div.dpos .dpos-tw table td b * { font-weight: 600 }
+div.dpos .dpos-tw table td .small, div.dpos .dpos-tw table td small { font-size: 12px; font-weight: 400 }
+div.dpos .dpos-tw table th { font-family: 'Poppins', system-ui, sans-serif !important }

@@ -254,7 +254,8 @@ export function listSales(db, { q = '', name = '', phone = '', source = 'all', f
   if (phone.trim()) w.push(`regexp_replace(s.customer_phone, '\\D', '', 'g') LIKE ${add(`%${phone.replace(/\D/g, '')}%`)}`);
   if (source === 'offline' || source === 'online') w.push(`s.source = ${add(source)}`);
   if (gst === 'gst') w.push('s.is_gst'); else if (gst === 'nongst') w.push('NOT s.is_gst');
-  if (['cash', 'upi', 'card', 'split'].includes(payment)) w.push(`s.payment_mode = ${add(payment)}`);
+  if (['cash', 'upi', 'card'].includes(payment)) w.push(`s.pay_${payment} > 0`); // a split bill counts under each method it was paid with
+  else if (payment === 'split') w.push(`s.payment_mode = ${add(payment)}`);
   if (from) w.push(`${dayExpr} >= ${add(from)}::date`);
   if (to) w.push(`${dayExpr} <= ${add(to)}::date`);
   return rows(db, `
@@ -268,7 +269,7 @@ export function listSales(db, { q = '', name = '', phone = '', source = 'all', f
 export async function report(db, from, to, channel = 'retail', gst = 'all', source = 'all', payment = 'all') {
   const g = gst === 'gst' ? ' AND s.is_gst' : gst === 'nongst' ? ' AND NOT s.is_gst' : '';
   const src = source === 'offline' || source === 'online' ? ` AND s.source = '${source}'` : '';
-  const pay = ['cash', 'upi', 'card', 'split'].includes(payment) ? ` AND s.payment_mode = '${payment}'` : '';
+  const pay = ['cash', 'upi', 'card'].includes(payment) ? ` AND s.pay_${payment} > 0` : payment === 'split' ? " AND s.payment_mode = 'split'" : '';
   const range = `s.channel = $3 AND ${dayExpr} BETWEEN $1::date AND $2::date${g}${src}${pay}`, p = [from, to, channel];
   const done = "s.status = 'completed'";
   const totals = await one(db, `
@@ -312,6 +313,10 @@ export async function report(db, from, to, channel = 'retail', gst = 'all', sour
       FROM pos_return_items ri JOIN pos_sale_items i ON i.id = ri.sale_item_id JOIN pos_returns r ON r.id = ri.return_id JOIN pos_sales s ON s.id = r.sale_id
       WHERE s.channel = $3 AND ${rDay} BETWEEN $1::date AND $2::date${g}${src}${rPay} GROUP BY i.name_snapshot`, p);
   } catch { /* migration 024 (returns) has not been run yet: nothing to subtract */ }
+  // Revenue per payment method: a split bill's cash part counts as cash and its GPay part as GPay (never as a separate "split" pot).
+  const byMethod = {};
+  for (const m of ['cash', 'upi', 'card']) byMethod[m] = await one(db, `SELECT COUNT(*) FILTER (WHERE s.pay_${m} > 0)::int AS bills, COALESCE(SUM(s.pay_${m}), 0)::int AS amount FROM pos_sales s WHERE ${done} AND s.channel = $3 AND ${dayExpr} BETWEEN $1::date AND $2::date${g}${src}`, p);
+  for (const m of ['cash', 'upi', 'card']) byMethod[m].refunded = retBy[m] || 0;
   const grossRevenue = totals.revenue;
   totals.revenue -= ret.total; totals.tax -= ret.tax; totals.cash -= retBy.cash; totals.upi -= retBy.upi; totals.card -= retBy.card;
   totals.gstSales -= retBy.gst; totals.nonGstSales -= retBy.nonGst; totals.offlineSales -= retBy.offline; totals.onlineSales -= retBy.online;
@@ -324,9 +329,11 @@ export async function report(db, from, to, channel = 'retail', gst = 'all', sour
   const products = await rows(db, `
     SELECT i.name_snapshot AS name, SUM(i.quantity)::int AS qty, SUM(i.line_total - i.discount_alloc)::int AS revenue
     FROM pos_sale_items i JOIN pos_sales s ON s.id = i.sale_id WHERE ${done} AND ${range}
-    GROUP BY i.name_snapshot ORDER BY revenue DESC, qty DESC LIMIT 40`, p);
+    GROUP BY i.name_snapshot ORDER BY revenue DESC, qty DESC LIMIT 5000`, p);
   for (const rp of retProducts) { const row = products.find(x => x.name === rp.name); if (row) { row.qty -= rp.qty; row.revenue -= rp.revenue } }
-  products.sort((a, b) => b.revenue - a.revenue || b.qty - a.qty); products.splice(15);
+  products.sort((a, b) => b.revenue - a.revenue || b.qty - a.qty);
+  const allProducts = products.filter(x => x.qty > 0 || x.revenue > 0); // the full leaderboard / Excel export; the dashboard cards use the top 15
+  products.splice(15);
   const coupons = await rows(db, `
     SELECT s.coupon_code AS code, COUNT(*)::int AS uses, SUM(s.discount_amount)::int AS discount, SUM(s.total_amount)::int AS revenue
     FROM pos_sales s WHERE ${done} AND s.coupon_code IS NOT NULL AND ${range} GROUP BY s.coupon_code ORDER BY uses DESC`, p);
@@ -348,7 +355,7 @@ export async function report(db, from, to, channel = 'retail', gst = 'all', sour
   const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setUTCDate(mon.getUTCDate() + i); return (wk.find(r => r.day === iso(d))?.revenue ?? 0) - (retWeek.find(r => r.day === iso(d))?.revenue ?? 0) });
   const jan1 = new Date(Date.UTC(year, 0, 1)), weekNo = Math.ceil(((t - jan1) / 86400000 + ((jan1.getUTCDay() + 6) % 7) + 1) / 7);
   return { from, to, channel, gst, source, payment, ...totals, grossRevenue, returned: ret, returnedBy: retBy, units: unitsNet, expenses, expenseByCategory, costs, cogs: costs.soldCost, gross: totals.revenue - costs.soldCost, net: totals.revenue - costs.soldCost - expenses, average: totals.bills ? Math.round(totals.revenue / totals.bills) : 0,
-    topProduct: products[0]?.name ?? null, daily, products, coupons, discountedList, year, monthly, week, weekNo };
+    topProduct: products[0]?.name ?? null, daily, products, allProducts, byMethod, coupons, discountedList, year, monthly, week, weekNo };
 }
 
 // ---- expenses ----
