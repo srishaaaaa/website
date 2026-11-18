@@ -298,13 +298,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
       <div className="dpos-col dpos-sticky">
         <section className="dpos-card bp-sum"><div className="dpos-head" style={{ marginBottom: 10 }}><h2 style={{ marginBottom: 0 }}><Icon n="orders" size={20} />Current order{lines.length > 0 && <b key={added?.id ?? 0} className="dpos-count">{lines.reduce((a, l) => a + l.qty, 0)}</b>}</h2>
 </div>
-          <div className="dpos-box dpos-sum" style={{ marginBottom: 14 }}>
-            <div><span>SOURCE</span><span className="dpos-pill">{ws ? 'Wholesale' : 'Offline'}</span></div>
-            <div><span>CUSTOMER</span><span>{cust.name || '-'}</span></div><div><span>PHONE</span><span>{cust.phone || '-'}</span></div>
-            <div><span>DATE</span><span>{dmy(billDate)}</span></div>
-            <hr style={{ border: 0, borderTop: '1px solid var(--d-line)', width: '100%' }} />
-            {priced.length ? priced.map(l => <div key={l.key}><span>{l.name} × {l.qty}</span><span>{inr(l.price * l.qty)}</span></div>) : <em className="muted" style={{ textAlign: 'center', display: 'block' }}>No items added yet</em>}
-          </div>
+          <div className="bp-source"><span>SOURCE</span><span className="dpos-pill">{ws ? 'Wholesale' : 'Offline'}</span></div>
           <p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: '0 0 6px' }}>MANUAL DISCOUNT</p>
           <div className="dpos-grid" style={{ gridTemplateColumns: '110px 1fr', marginBottom: 12 }}>
             <select aria-label="Discount type" value={disc.type} disabled={!!coupon} onChange={e => setDisc({ ...disc, type: e.target.value })}><option value="fixed">₹</option><option value="percent">%</option></select>
