@@ -276,8 +276,8 @@ function Billing({ channel, shop, onSale, onAdvance }) {
             <label className="f">Mobile number (WhatsApp)<input value={cust.phone} inputMode="tel" onChange={e => setCust({ ...cust, phone: e.target.value })} onBlur={lookup} placeholder="Enter 10-digit number" autoComplete="off" /></label>
             <label className="f">Bill date · custom / past<input type="date" max={todayStr()} value={billDate} onChange={e => setBillDate(e.target.value || todayStr())} /></label>
             {!ws && <label className="f">Date of birth (for birthday offers)<input type="date" max={todayStr()} value={cust.dob} onChange={e => setCust({ ...cust, dob: e.target.value })} />{cust.dob && cust.phone.replace(/\D/g, '').length < 10 && <small className="dpos-warn">Add the 10-digit mobile number too, so the birthday is saved to the Date of Birth panel.</small>}</label>}
+            <label className="f bp-addr" style={{ gridColumn: ws ? '1 / -1' : 'span 2' }}>Customer address (optional)<input value={cust.address} maxLength={300} onChange={e => setCust({ ...cust, address: e.target.value })} placeholder="Enter full address" /></label>
           </div>
-          <label className="f" style={{ marginTop: 14 }}>Customer address (optional)<input value={cust.address} maxLength={300} onChange={e => setCust({ ...cust, address: e.target.value })} placeholder="Enter full address" /></label>
         </section>
 
         <section className="dpos-card">

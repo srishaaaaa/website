@@ -173,7 +173,7 @@ export default function InvoicePage() {
   const { shop } = d;
   if (d.kind === 'return') return (
     <div className="inv-page">
-      {window.self === window.top && <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" /><button className="inv-btn dark" onClick={() => window.print()}><PrintIcon size={15} /> Print</button></div>}
+      {window.self === window.top && !!user && ['owner', 'admin', 'cashier'].includes(user.role) && <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" /><button className="inv-btn dark" onClick={() => window.print()}><PrintIcon size={15} /> Print</button></div>}
       <ReturnDoc ret={d.ret} shop={shop} />
     </div>
   );
@@ -191,7 +191,7 @@ export default function InvoicePage() {
   };
   return (
     <div className="inv-page">
-      {window.self === window.top && <div className="inv-bar">
+      {window.self === window.top && staff && <div className="inv-bar">
         {staff ? <Link className="inv-btn" to="/admin/billing/orders">← Return to POS</Link> : <Link className="inv-btn" to="/">← {shop.name}</Link>}
         <span className="inv-grow" />
         <a className="inv-btn" href={wa} target="_blank" rel="noopener noreferrer">Share WhatsApp</a>
