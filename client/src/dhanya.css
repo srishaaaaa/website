@@ -916,3 +916,13 @@ div.dpos .dpos-filters .f input, div.dpos .dpos-filters .f select { height: 42px
 .sd-filters input, .sd-filters select { height: 46px; padding: 0 18px; border-radius: 14px; font-size: 14px }
 .sd-filters label { gap: 8px !important; font-size: 11px !important; letter-spacing: .1em }
 .sto .ol-tools { gap: 0 } .sto td:last-child { white-space: nowrap }
+
+/* Stitching Reports (reference layout): 4 cards, two panels, revenue-by-day chart */
+.sr2-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px } .sr2-kpis .sd-card { padding: 18px 22px; border-radius: 22px } .sr2-kpis .sd-card b { font-size: 30px }
+.sr2-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch }
+.sr2-two .sd-panel, .sd-panel:has(.sr2-days) { padding: 20px 24px; border-radius: 22px } .sr2-two .sd-panel h2, .sd-panel:has(.sr2-days) h2 { font-size: 18px; margin: 0 0 14px }
+.sr2-list { display: grid; gap: 14px } .sr2-row > div { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px } .sr2-row b { font-weight: 600 } .sr2-row span { color: #6b6070; font-size: 13px }
+.sr2-row i { display: block; height: 8px; border-radius: 6px; background: #efe9e0; margin-top: 7px; overflow: hidden } .sr2-row u { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #330533, #C6A052) }
+.sr2-row i.st-pending u { background: #f5a524 } .sr2-row i.st-completed u { background: #1c9a5f } .sr2-row i.st-cancelled u { background: #d4443b }
+.sr2-days { display: flex; align-items: flex-end; gap: 14px; min-height: 200px; overflow-x: auto; padding: 4px 4px 0 } .sr2-days > div { display: grid; justify-items: center; gap: 6px; min-width: 56px } .sr2-days b { font-size: 11.5px; font-weight: 600; color: #330533 } .sr2-days i { display: block; width: 44px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #5a1560, #330533) } .sr2-days span { font-size: 11px; color: #6b6070 }
+@media (max-width: 900px) { .sr2-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) } .sr2-two { grid-template-columns: 1fr } }

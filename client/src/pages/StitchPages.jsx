@@ -178,23 +178,25 @@ export function StitchReports() {
     <AdminShell title="Stitching Reports" sub="Stitching revenue by garment and by day"
       actions={<><PeriodFilter value={per} onChange={setPer} /><ExportCsv name="stitching-report" header={['Type', 'Name', 'Garments', 'Revenue']} rows={rows} /></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
-      <div className="sd-grid6 five sr-kpis">
-        <Card label="STITCHING REVENUE" value={v(x => inr(x.stitchingRevenue))} sub="Stitching lines on completed bills" tone="green" />
-        <Card label="GST INVOICES" value={v(x => inr(x.gstRevenue))} sub={v(x => `${x.gstBills} ${x.gstBills === 1 ? 'bill' : 'bills'}`)} />
-        <Card label="NON-GST BILLS" value={v(x => inr(x.nonGstRevenue))} sub={v(x => `${x.nonGstBills} ${x.nonGstBills === 1 ? 'bill' : 'bills'}`)} />
+      <div className="sr2-kpis">
+        <Card label="STITCHING REVENUE" value={v(x => inr(x.stitchingRevenue))} sub={v(x => `GST ${inr(x.gstRevenue)} · Non-GST ${inr(x.nonGstRevenue)}`)} tone="green" />
+        <Card label="BILLS" value={v(x => x.bills)} sub={v(x => `GST ${x.gstBills} · Non-GST ${x.nonGstBills}`)} />
         <Card label="GARMENTS" value={v(x => x.garments)} sub={v(x => `${inr(x.averageGarment)} average each`)} />
-        <Card label="PENDING VALUE" value={v(x => inr(x.pendingValue))} sub={v(x => `${x.pendingOrders} pending orders`)} />
+        <Card label="PENDING VALUE" value={v(x => inr(x.pendingValue))} sub={v(x => `${x.pendingOrders} pending ${x.pendingOrders === 1 ? 'order' : 'orders'}`)} />
       </div>
-      <div className="sr-grid">
+      <div className="sr2-two">
         <section className="sd-panel"><h2>Revenue by garment</h2>
-          {!d ? <Empty>Loading…</Empty> : !d.byGarment.length ? <Empty>No stitching sales in this period.</Empty> : <ul className="sd-bars">{d.byGarment.map(g => <li key={g.name}><span>{g.name} <small>×{g.qty}</small></span><i><u style={{ width: `${Math.max(4, g.revenue / maxG * 100)}%` }} /></i><b>{inr(g.revenue)}</b></li>)}</ul>}</section>
+          {!d ? <Empty>Loading…</Empty> : !d.byGarment.length ? <Empty>No stitching sales in this period.</Empty> : <div className="sr2-list">{d.byGarment.map(g => (
+            <div key={g.name} className="sr2-row"><div><b>{g.name}</b><span>{g.qty} pcs · {inr(g.revenue)}</span></div><i><u style={{ width: `${Math.max(3, g.revenue / maxG * 100)}%` }} /></i></div>))}</div>}</section>
         <section className="sd-panel"><h2>Orders by status</h2>
-          {['pending', 'completed', 'cancelled'].map(k => <div className="sd-st" key={k}><b>{STATUS_L[k]}</b><span>{v(x => x.byStatus[k])}</span></div>)}
+          {!d ? <Empty>Loading…</Empty> : <div className="sr2-list">{['pending', 'completed', 'cancelled'].map(k => { const n = d.byStatus[k], tot = Math.max(1, d.byStatus.pending + d.byStatus.completed + d.byStatus.cancelled); return (
+            <div key={k} className="sr2-row"><div><b>{STATUS_L[k]}</b><span>{n}</span></div><i className={`st-${k}`}><u style={{ width: `${n ? Math.max(3, n / tot * 100) : 0}%` }} /></i></div>) })}</div>}
           <p className="sd-foot">{v(x => `${x.overdue} overdue · ${x.dueToday} due today · ${inr(x.balanceToCollect)} still to collect on ${x.openAdvances} open advance orders.`)}</p></section>
-        <section className="sd-panel"><h2>Stitching revenue by day</h2>
-        {!d ? <Empty>Loading…</Empty> : !d.byDay.length ? <Empty>No stitching sales in this period.</Empty> : <ul className="sd-bars">{d.byDay.map(x => <li key={x.day}><span>{dmy(x.day)}</span><i><u style={{ width: `${Math.max(4, x.amount / maxD * 100)}%` }} /></i><b>{inr(x.amount)}</b></li>)}</ul>}</section>
       </div>
-
+      <section className="sd-panel"><h2>Stitching revenue by day</h2>
+        {!d ? <Empty>Loading…</Empty> : !d.byDay.length ? <Empty>No stitching sales in this period.</Empty> : (
+          <div className="sr2-days" role="img" aria-label="Stitching revenue by day">{d.byDay.map(x => (
+            <div key={x.day} title={`${dmy(x.day)}: ${inr(x.amount)}`}><b>{inr(x.amount)}</b><i style={{ height: `${Math.max(6, x.amount / maxD * 150)}px` }} /><span>{dmy(x.day).slice(0, 5)}</span></div>))}</div>)}</section>
     </AdminShell>
   );
 }
