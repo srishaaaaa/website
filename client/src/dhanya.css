@@ -826,3 +826,26 @@ div.dpos .dpos-btn { padding-top: 8px; padding-bottom: 8px; font-size: 12.5px }
 .sd-row .sd-due { flex: 0 0 auto; min-width: 130px }
 .sd-row .sd-pill { flex: 0 0 auto; min-width: 76px }
 .sd-row .sd-amt { flex: 0 0 auto; min-width: 70px; text-align: right; margin-left: auto; display: block !important }
+
+/* Stitching order rows: everything on one line */
+.sd-row { flex-wrap: nowrap !important; gap: 10px !important; padding: 9px 12px !important }
+.sd-row .sd-open { flex: 1 1 0; min-width: 0; display: flex !important; align-items: center; gap: 10px }
+.sd-row .sd-ref { flex: 0 0 auto; white-space: nowrap }
+.sd-row .sd-who { display: flex !important; align-items: baseline; gap: 8px; min-width: 0; flex: 1 1 0; overflow: hidden }
+.sd-row .sd-who b { flex: 0 0 auto; white-space: nowrap; max-width: 45%; overflow: hidden; text-overflow: ellipsis }
+.sd-row .sd-who small { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-size: 12px }
+.sd-row .sd-due { white-space: nowrap; min-width: 0 !important; font-size: 12.5px }
+.sd-row .sd-pill { white-space: nowrap; min-width: 0 !important; padding: 4px 10px }
+.sd-row .sd-amt { white-space: nowrap; min-width: 0 !important; margin-left: 0 }
+.sd-two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important } .sd-panel, .sd-list { min-width: 0 } .sd-row, .sd-row .sd-open { overflow: hidden }
+.sd-row .sd-open { width: 0 }
+.sd-row .sd-who small { display: none } .sd-list .sd-row .sd-who small { display: block }
+@container (max-width: 560px) { .sd-row .sd-who small { display: none } }
+.sd-two .sd-row .sd-who small { display: none }
+
+/* The footer stays at the bottom of the screen on short pages (the page fills the screen; zoom-aware) */
+div.dpos { min-height: calc(100vh / var(--z, 1)) }
+div.dpos .dpos-main { display: flex !important; flex-direction: column; min-height: calc((100vh - 48px) / var(--z, 1)) }
+div.dpos .dpos-main > .dpos-foot { margin-top: auto !important }
+div.dpos .dpos-main > :not(.dpos-foot):nth-last-child(2) { margin-bottom: 16px }
+.sd-row .sd-who b { max-width: none !important; flex: 0 1 auto; min-width: 0 }
