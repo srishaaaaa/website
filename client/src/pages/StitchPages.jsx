@@ -6,6 +6,7 @@ import { useApp } from '../context/App';
 import AdminShell from '../components/AdminShell';
 import StaffOnly from '../components/StaffOnly';
 import ExportCsv from '../components/ExportCsv';
+import { WaIcon, DocIcon, EyeIcon, waUrl } from '../components/RowActions';
 import { PeriodFilter, periodRange, usePeriod } from '../components/PeriodFilter';
 
 const dmy = d => d ? String(d).slice(0, 10).split('-').reverse().join('-') : '';
@@ -47,6 +48,31 @@ function OrderList({ list, nav, onChanged }) {
         <span className={`sd-pill ${o.status}`}>{o.kind === 'advance' ? 'Advance' : STATUS_L[o.status]}</span>
         <b className="sd-amt">{inr(o.total)}</b>
       </div>))}</div>
+  );
+}
+
+// Stitching Orders table: Order · Customer · Items · Due date · Total · Balance · Status (change it here) · WhatsApp / invoice / details.
+function OrdersTable({ list, nav, onChanged }) {
+  const [err, setErr] = useState();
+  const setStatus = async (o, status) => { setErr(); try { await api(`/admin/pos/sales/${encodeURIComponent(o.ref)}/tailoring`, { method: 'PATCH', body: { status } }); onChanged?.() } catch (e) { setErr(e.message) } };
+  return (
+    <>{err && <p className="dpos-err" role="alert">{err}</p>}
+      <div className="dpos-tw"><table className="sto"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Due date</th><th className="r">Total</th><th className="r">Balance</th><th>Status</th><th className="r">Actions</th></tr></thead>
+        <tbody>{list.map(o => { const late = o.due && o.due < todayIst() && o.status === 'pending'; const fixed = o.kind === 'advance' || o.status === 'cancelled'; return (
+          <tr key={o.ref}>
+            <td><b>{o.ref}</b><div className="muted small">{dmy(o.billDate)}{o.time ? ` · ${o.time}` : ''}</div></td>
+            <td><b>{o.customerName || 'Walk-in customer'}</b><div className="muted small">{o.customerPhone || '-'}</div></td>
+            <td>{o.garmentNames || `${o.garments} garment${o.garments === 1 ? '' : 's'}`}</td>
+            <td className={late ? 'sto-late' : ''}><DueEdit o={o} onChanged={onChanged} /></td>
+            <td className="r"><b>{inr(o.total)}</b></td>
+            <td className="r">{o.balance > 0 ? <b>{inr(o.balance)}</b> : <span className="muted">Paid</span>}</td>
+            <td>{fixed ? <span className={`sd-pill ${o.status}`}>{o.kind === 'advance' ? 'Advance' : STATUS_L[o.status]}</span>
+              : <select className={`sto-st ${o.status}`} aria-label={`Status of ${o.ref}`} value={o.status} onChange={e => setStatus(o, e.target.value)}><option value="pending">Pending</option><option value="completed">Completed</option></select>}</td>
+            <td className="r"><div className="dpos-rowact">
+              {o.customerPhone && <a className="ra wa" title="Send on WhatsApp" aria-label={`Send ${o.ref} on WhatsApp`} href={waUrl(o.customerPhone, `Hello ${o.customerName || ''}, your stitching order ${o.ref}${o.due ? ` is due on ${dmy(o.due)}` : ''}.`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
+              <button type="button" className="ra doc" title="Open invoice" aria-label={`Open ${o.ref}`} onClick={() => openOrder(nav, o)}><DocIcon /></button>
+              <button type="button" className="ra eye" title="Details" aria-label={`Details of ${o.ref}`} onClick={() => openOrder(nav, o)}><EyeIcon /></button>
+            </div></td></tr>) })}</tbody></table></div></>
   );
 }
 
@@ -130,7 +156,7 @@ export function StitchOrders() {
         <label>Sort<select value={f.sort} onChange={e => setF({ ...f, sort: e.target.value })}><option value="new">Newest first</option><option value="old">Oldest first</option><option value="due">Due date (soonest)</option></select></label>
         <button type="button" className="dpos-btn ghost sm sd-reset" onClick={() => { setF({ q: '', name: '', phone: '', garment: '', due: 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); setStatus('all') }}>Reset filters</button>
       </section>
-      <section className="sd-panel">{!d ? <Empty>Loading…</Empty> : !d.orders.length ? <Empty>No stitching orders here. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.orders} nav={nav} onChanged={() => setN(x => x + 1)} />}</section>
+      <section className="sd-panel">{!d ? <Empty>Loading…</Empty> : !d.orders.length ? <Empty>No stitching orders here. Add a service in Billing and take its measurements.</Empty> : <OrdersTable list={d.orders} nav={nav} onChanged={() => setN(x => x + 1)} />}</section>
     </AdminShell>
   );
 }

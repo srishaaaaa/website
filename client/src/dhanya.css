@@ -891,3 +891,17 @@ div.dpos .dpos-line input, div.dpos .dpos-line select { height: 40px }
 .sdz-add + .dpos-err { margin-top: 8px }
 @media (max-width: 760px) { .sdz-add, .sdz-add.one { grid-template-columns: 1fr !important } }
 .sdz-add input { height: 40px }
+
+/* Order History filters: one white panel, four columns, labels above (Search order ID · Customer name · Customer phone · Status) */
+div.dpos .dpos-filters { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 14px 18px !important; padding: 16px 20px !important; border-radius: 20px }
+div.dpos .dpos-filters .f { display: grid; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6b6070 }
+div.dpos .dpos-filters .f input, div.dpos .dpos-filters .f select { height: 42px; width: 100%; padding: 0 16px; border-radius: 12px; border: 1px solid #e3dde6; background: #fff; font-size: 13.5px; letter-spacing: 0; text-transform: none; font-weight: 500; color: #1a1420 }
+@media (max-width: 900px) { div.dpos .dpos-filters { grid-template-columns: repeat(2, minmax(0, 1fr)) !important } } @media (max-width: 520px) { div.dpos .dpos-filters { grid-template-columns: 1fr !important } }
+
+/* Stitching orders table */
+.sto { width: 100%; border-collapse: collapse } .sto th { text-align: left; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #6b6070; padding: 10px 12px; border-bottom: 1px solid #e8e2ea } .sto th.r, .sto td.r { text-align: right }
+.sto td { padding: 12px; border-bottom: 1px solid #efeaf0; font-size: 13px; vertical-align: middle } .sto td b { font-weight: 600 } .sto td .small { font-size: 12px }
+.sto-late b, .sto-late .sd-due { color: #b3261e }
+.sto .sd-due { font-weight: 700 }
+.sto-st { height: 38px; padding: 0 30px 0 14px; border-radius: 12px; border: 1px solid #e6d4a8; background: #fff4d6; color: #9a5a00; font-weight: 600; font-size: 13px; min-width: 130px } .sto-st.completed { background: #e4f5ea; border-color: #b9e3cc; color: #1c7a4b }
+.sto td { white-space: nowrap } .sto td:nth-child(3) { white-space: normal; max-width: 220px } .sto .sd-due { white-space: nowrap }

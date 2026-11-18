@@ -80,7 +80,7 @@ async function stitchRows(db) {
 }
 const garments = o => o.lines.reduce((s, l) => s + l.qty, 0);
 const value = o => o.lines.reduce((s, l) => s + l.amount, 0);
-const brief = o => ({ kind: o.kind, ref: o.invoiceNo ?? o.code, shareToken: o.shareToken ?? null, customerName: o.customerName, customerPhone: o.customerPhone, billDate: o.billDate, time: o.createdAt ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(o.createdAt)) : null, due: o.due, status: o.status, total: o.total, garments: garments(o), isGst: o.isGst ?? null, garmentNames: [...new Set(o.lines.map(l => l.name))].join(', ') });
+const brief = o => ({ kind: o.kind, ref: o.invoiceNo ?? o.code, shareToken: o.shareToken ?? null, customerName: o.customerName, customerPhone: o.customerPhone, billDate: o.billDate, time: o.createdAt ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(o.createdAt)) : null, due: o.due, status: o.status, total: o.total, balance: o.balance ?? 0, garments: garments(o), isGst: o.isGst ?? null, garmentNames: [...new Set(o.lines.map(l => l.name))].join(', ') });
 
 export async function stitchingOrders(db, { q = '', name = '', phone = '', status = 'all', from, to, due = 'all', dueFrom, dueTo, kind = 'all', garment = '', gst = 'all', sort = 'new' }) {
   const { bills, advances } = await stitchRows(db); const today = istToday();

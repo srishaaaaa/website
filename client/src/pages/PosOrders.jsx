@@ -34,7 +34,7 @@ const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14
 
 // ============================ order history ============================
 export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
-  const [tab, setTab] = useState('all'); const [f, setF] = useState({ q: '', name: '', phone: '', gst: 'all', payment: 'all' }); const [per, setPer] = usePeriod('all'); const [preview, setPreview] = useState(null);
+  const [tab, setTab] = useState('all'); const [f, setF] = useState({ q: '', name: '', phone: '', gst: 'all', payment: 'all', status: 'all' }); const [per, setPer] = usePeriod('all'); const [preview, setPreview] = useState(null);
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [n, setN] = useState(0);
   const [openNo, setOpenNo] = useState(null); const [detail, setDetail] = useState(null); const [editing, setEditing] = useState(null); const [returning, setReturning] = useState(null);
   const openEdit = r => api('/admin/pos/sales/' + encodeURIComponent(r.invoiceNo)).then(d => setEditing(d.sale || d)).catch(e => setErr(e.message));
@@ -69,7 +69,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
   const setFulfilment = async (r, status) => {
     try { await api('/admin/orders/' + encodeURIComponent(r.orderNumber), { method: 'PATCH', body: { status } }); setRows(l => l.map(x => x.invoiceNo === r.invoiceNo ? { ...x, fulfilment: status } : x)); onChanged?.() } catch (e) { setErr(e.message) }
   };
-  const onlineRows = useMemo(() => [...(rows || [])].sort((a, b) => sort === 'old' ? a.createdAt.localeCompare(b.createdAt) : sort === 'high' ? b.total - a.total : sort === 'low' ? a.total - b.total : b.createdAt.localeCompare(a.createdAt)), [rows, sort]);
+  const onlineRows = useMemo(() => [...(rows || [])].filter(r => f.status === 'all' || (f.status === 'voided' ? r.status === 'voided' : f.status === 'returned' ? r.returnCount > 0 : r.status !== 'voided')).sort((a, b) => sort === 'old' ? a.createdAt.localeCompare(b.createdAt) : sort === 'high' ? b.total - a.total : sort === 'low' ? a.total - b.total : b.createdAt.localeCompare(a.createdAt)), [rows, sort, f.status]);
   const toProcess = (rows || []).filter(r => r.isWeb && r.status !== 'voided' && ['pending', 'packed'].includes(stageOf(r))).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const onlineList = (
     <>
@@ -95,6 +95,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
         <label className="f">Search order ID<input type="search" value={f.q} onChange={set('q')} placeholder="e.g. DP-2026-…" /></label>
         <label className="f">Customer name<input value={f.name} onChange={set('name')} placeholder="Search name…" /></label>
         <label className="f">Customer phone<input value={f.phone} inputMode="tel" onChange={set('phone')} placeholder="Search phone…" /></label>
+        <label className="f">Status<select value={f.status} onChange={set('status')}><option value="all">All statuses</option><option value="completed">Completed</option><option value="returned">Has returns</option><option value="voided">Voided</option></select></label>
       </section>
       <div className="dpos-filterbar">
         <span className="of-l">TYPE</span><Chips value={tab} onChange={t => { setTab(t); setRows(null) }} options={[['all', 'All bills'], ['online', 'Online (website)'], ['offline', 'In-store (billing)']]} />
