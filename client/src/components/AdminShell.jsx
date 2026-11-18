@@ -62,7 +62,7 @@ export const NAV = [
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true]] },
   { group: 'Stitching', roles: ['owner', 'admin', 'cashier'], items: [
     ['/admin/stitching', 'Stitching Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/billing/measurements', 'Measurements', 'ruler', false],
-    ['/admin/stitching/reports', 'Stitching Reports', 'chart', true]] },
+    ['/admin/stitching/reports', 'Stitching Reports', 'chart', true], ['/admin/stitching/designs', 'Stitching Designs', 'scissors', true]] },
   { group: 'Website', items: [
     ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/site-text', 'Site text', 'edit', true],
     ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],

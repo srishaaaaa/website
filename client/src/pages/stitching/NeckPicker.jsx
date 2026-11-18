@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../../lib/api';
 
 // Small line drawings of each neckline (60 x 44 box), shown on the option cards.
 const P = ({ d, extra }) => <svg viewBox="0 0 60 44" width="64" height="48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} />{extra}</svg>;
@@ -30,6 +31,24 @@ export const BACK_NECKS = [
   ['Collar', <P d="M4 10 20 6 30 18 40 6 56 10 48 28 30 20 12 28Z" />],
 ];
 
+// Designs the owner added in Stitching → Stitching Designs are appended to the built-in lists (in place, so every picker sees them).
+const BUILTIN = { front: FRONT_NECKS.length, back: BACK_NECKS.length };
+export const SLEEVE_TYPES_X = [], SLEEVE_LENGTHS_X = [];
+const img = d => d.image ? <img src={d.image} alt="" width="64" height="48" style={{ objectFit: 'contain' }} /> : <P d="M6 6C14 30 46 30 54 6" />;
+let designsAt = 0, designsP = null;
+export function applyDesigns(d) {
+  FRONT_NECKS.length = BUILTIN.front; BACK_NECKS.length = BUILTIN.back;
+  for (const x of d.front || []) FRONT_NECKS.push([x.name, img(x)]);
+  for (const x of d.back || []) BACK_NECKS.push([x.name, img(x)]);
+  SLEEVE_TYPES_X.length = 0; SLEEVE_TYPES_X.push(...(d.sleeveTypes || [])); SLEEVE_LENGTHS_X.length = 0; SLEEVE_LENGTHS_X.push(...(d.sleeveLengths || []));
+}
+export function loadDesigns(force) {
+  if (!force && designsP && Date.now() - designsAt < 60000) return designsP;
+  designsAt = Date.now(); designsP = api('/admin/pos/stitch-designs').then(d => { applyDesigns(d); return d }).catch(() => ({}));
+  return designsP;
+}
+export const useDesigns = () => { const [, tick] = useState(0); useEffect(() => { let dead = false; loadDesigns().then(() => { if (!dead) tick(x => x + 1) }); return () => { dead = true } }, []); };
+
 const parse = v => {
   const s = String(v || '');
   const f = /Front:\s*([^·]+?)\s*(?:·|$)/.exec(s)?.[1] ?? '', b = /Back:\s*(.+)$/.exec(s)?.[1]?.trim() ?? '';
@@ -60,6 +79,7 @@ export function Sheet({ title, options, value, onCancel, onNext, last }) {
 // "Neck design": a Front neck card and a Back neck card. Front opens the front picker and then the back one (Skip / Next);
 // Back opens just the back picker. Stored as "Front: … · Back: …".
 export function NeckField({ value, onChange }) {
+  useDesigns();
   const cur = parse(value);
   const [step, setStep] = useState(0); const [front, setFront] = useState('');
   const icon = (list, label) => list.find(([l]) => l === label)?.[1];

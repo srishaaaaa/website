@@ -4,7 +4,7 @@ import { inr } from '../lib/format';
 import ExportCsv from '../components/ExportCsv';
 import { PeriodFilter, periodRange, usePeriod } from '../components/PeriodFilter';
 import { CM_FIELDS, measureSummary } from '../components/MeasureModal';
-import { BACK_NECKS, FRONT_NECKS } from './stitching/NeckPicker';
+import { BACK_NECKS, FRONT_NECKS, useDesigns } from './stitching/NeckPicker';
 
 const dmy = d => d ? String(d).slice(0, 10).split('-').reverse().join('-') : '';
 const TILES = [['all', 'TOTAL BILLS', 'plum'], ['pending', 'PENDING', 'amber'], ['completed', 'COMPLETED', 'green'], ['cancelled', 'CANCELLED', 'red']];
@@ -12,6 +12,7 @@ const drawing = (list, name) => list.find(([n]) => n.toLowerCase() === String(na
 
 // Measurements: one card per bill that has stitching lines, with the neck drawings, sizes and a Pending / Completed status.
 export default function PosMeasurements() {
+  useDesigns();
   const [per, setPer] = usePeriod('all'); const [f, setF] = useState({ q: '', name: '', phone: '' }); const [status, setStatus] = useState('all');
   const [data, setData] = useState(null); const [err, setErr] = useState(); const [open, setOpen] = useState({}); const [n, setN] = useState(0);
   const [from, to] = periodRange(per);

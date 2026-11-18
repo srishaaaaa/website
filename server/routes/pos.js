@@ -195,6 +195,20 @@ export default function pos({ db, auth }) {
     const d = z.object({ kind: z.enum(['bill', 'advance']), ref: text(40).min(1), due: date }).parse(req.body);
     res.json(await setDueDate(db, req.user, d));
   }));
+  // Stitching designs: extra neck designs (a name and an uploaded picture) and sleeve options the owner adds. They appear in the measurement pickers next to the built-in ones.
+  const designBody = z.object({
+    front: z.array(z.object({ name: text(60).min(1), image: text(600).nullable().default(null) })).max(60).default([]),
+    back: z.array(z.object({ name: text(60).min(1), image: text(600).nullable().default(null) })).max(60).default([]),
+    sleeveTypes: z.array(text(40).min(1)).max(40).default([]), sleeveLengths: z.array(text(40).min(1)).max(40).default([]),
+  });
+  const EMPTY_DESIGNS = { front: [], back: [], sleeveTypes: [], sleeveLengths: [] };
+  r.get('/pos/stitch-designs', biller, wrap(async (_req, res) => res.json({ ...EMPTY_DESIGNS, ...(await getSetting(db, 'stitch_designs', {})) })));
+  r.put('/pos/stitch-designs', manager, wrap(async (req, res) => {
+    const v = designBody.parse(req.body);
+    for (const d of [...v.front, ...v.back]) if (d.image && !/^(https?:\/\/|\/)/.test(d.image)) throw new HttpError(400, 'Design pictures must be uploaded images');
+    await putSetting(db, 'stitch_designs', v); await audit(db, req.user.id, 'pos.stitch_designs', 'pos_settings', 'stitch_designs', { front: v.front.length, back: v.back.length });
+    res.json(v);
+  }));
   // Alert settings (POS Settings → Alerts): the stitching due-date alert.
   const ALERTS = { stitchDue: true, daysBefore: 2, popup: true, banner: true };
   const loadAlerts = async () => ({ ...ALERTS, ...(await getSetting(db, 'alerts', {})) });

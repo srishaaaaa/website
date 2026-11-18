@@ -74,3 +74,12 @@ test('stitching due date can be changed and filtered; reports split GST / non-GS
   const ov = (await o('GET', '/admin/pos/stitching/overview?from=2020-01-01&to=2099-12-31')).body;
   assert.equal(ov.gstRevenue + ov.nonGstRevenue, ov.stitchingRevenue);
 });
+
+test('the owner can add stitching designs and sleeve options; staff can read them but not change them', async () => {
+  const o = await login();
+  const put = await o('PUT', '/admin/pos/stitch-designs', { front: [{ name: 'Princess cut', image: '/uploads/x.png' }], back: [{ name: 'Deep scoop', image: null }], sleeveTypes: ['Cap sleeve'], sleeveLengths: [] });
+  assert.equal(put.status, 200);
+  const got = (await o('GET', '/admin/pos/stitch-designs')).body;
+  assert.equal(got.front[0].name, 'Princess cut'); assert.deepEqual(got.sleeveTypes, ['Cap sleeve']);
+  assert.equal((await o('PUT', '/admin/pos/stitch-designs', { front: [{ name: 'Bad', image: 'javascript:alert(1)' }] })).status, 400);
+});
