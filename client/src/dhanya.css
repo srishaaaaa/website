@@ -911,3 +911,8 @@ div.dpos .dpos-filters .f input, div.dpos .dpos-filters .f select { height: 42px
 .sto-st { min-width: 118px; padding-left: 10px }
 .dpos-tw:has(.sto) { overflow-x: auto }
 .sto td:nth-child(3) { max-width: 120px !important }
+.sd-more { grid-column: 1 / -1; justify-self: end; background: none; color: #330533; font-weight: 700; font-size: 12px; padding: 2px 4px; text-decoration: underline; cursor: pointer }
+.sd-filters { padding: 18px 22px !important; border-radius: 22px !important }
+.sd-filters input, .sd-filters select { height: 46px; padding: 0 18px; border-radius: 14px; font-size: 14px }
+.sd-filters label { gap: 8px !important; font-size: 11px !important; letter-spacing: .1em }
+.sto .ol-tools { gap: 0 } .sto td:last-child { white-space: nowrap }

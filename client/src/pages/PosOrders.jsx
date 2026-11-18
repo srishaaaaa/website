@@ -213,27 +213,29 @@ function EditInvoice({ sale, onClose, onSaved }) {
 
 // Row tools for a website order on the Online orders page: the same fulfilment chip, next-step button and icon buttons as Order History
 // (WhatsApp, invoice preview, details, return, edit). x = { orderNumber, status, invoiceNo, shareToken, phone, customerName }.
-export function OnlineRowTools({ x, manager, onStatus }) {
+export function OnlineRowTools({ x, manager, onStatus, noStatus, canVoid, onChanged, waText }) {
   const [preview, setPreview] = useState(null); const [returning, setReturning] = useState(null); const [editing, setEditing] = useState(null); const [detail, setDetail] = useState(null); const [err, setErr] = useState();
   const st = ({ confirmed: 'pending', pending: 'pending', packed: 'packed', shipped: 'shipped', delivered: 'shipped', cancelled: 'cancelled' })[x.status || 'pending'] || 'pending';
   const next = ({ pending: 'packed', packed: 'shipped' })[st];
   const mark = async status => { try { await api('/admin/orders/' + encodeURIComponent(x.orderNumber), { method: 'PATCH', body: { status } }); onStatus?.(x, status) } catch (e) { setErr(e.message) } };
   const load = (then) => api('/admin/pos/sales/' + encodeURIComponent(x.invoiceNo)).then(d => then(d.sale || d)).catch(e => setErr(e.message));
   const has = !!x.invoiceNo;
+  const voidIt = async () => { const reason = window.prompt('Reason for deleting (voiding) this invoice? Stock will be returned.'); if (!reason) return; try { await api(`/admin/pos/sales/${encodeURIComponent(x.invoiceNo)}/void`, { method: 'POST', body: { reason } }); onChanged?.() } catch (e) { setErr(e.message) } };
   return (
     <div className="ol-tools" onClick={e => e.stopPropagation()}>
-      <span className="ol-fc"><span className={`ol-fs fs-${st}`}>{st === 'shipped' ? '✓' : '▣'} {st}</span>{next && manager && <button type="button" className="ol-mark" onClick={() => mark(next)}>Mark {next}</button>}</span>
+      {!noStatus && <span className="ol-fc"><span className={`ol-fs fs-${st}`}>{st === 'shipped' ? '✓' : '▣'} {st}</span>{next && manager && <button type="button" className="ol-mark" onClick={() => mark(next)}>Mark {next}</button>}</span>}
       <div className="dpos-rowact">
-        {x.phone && <a className="ra wa" title="Send on WhatsApp" aria-label="Send on WhatsApp" href={waLink(x.phone, `Hello${x.customerName ? ' ' + x.customerName : ''}, your order ${x.orderNumber} is ${st}.`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
+        {x.phone && <a className="ra wa" title="Send on WhatsApp" aria-label="Send on WhatsApp" href={waLink(x.phone, waText || `Hello${x.customerName ? ' ' + x.customerName : ''}, your order ${x.orderNumber} is ${st}.`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
         <button type="button" className="ra doc" title="Invoice preview" aria-label="Invoice preview" disabled={!has} onClick={() => setPreview({ invoiceNo: x.invoiceNo, shareToken: x.shareToken })}><DocIcon /></button>
         <button type="button" className="ra eye" title="Quick details" aria-label="Quick details" disabled={!has} onClick={() => load(s => setDetail(s))}><EyeIcon /></button>
         <button type="button" className="ra ret" title="Return items" aria-label="Return items" disabled={!has} onClick={() => setReturning(x.invoiceNo)}><RetIcon /></button>
         {manager && <button type="button" className="ra edit" title="Edit invoice" aria-label="Edit invoice" disabled={!has} onClick={() => load(s => setEditing(s))}><EditIcon /></button>}
+        {canVoid && <button type="button" className="ra del" title="Delete (void) invoice" aria-label="Delete invoice" disabled={!has} onClick={voidIt}><TrashIcon /></button>}
       </div>
       {err && <small className="dpos-err" role="alert">{err}</small>}
       {preview && <InvoicePreview row={preview} onClose={() => setPreview(null)} />}
-      {returning && <ReturnWindow invoiceNo={returning} onClose={() => setReturning(null)} onDone={r => { setReturning(null); setPreview({ invoiceNo: r.invoiceNo, shareToken: r.shareToken, tab: r.returnNo }) }} />}
-      {editing && <EditInvoice sale={editing} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} />}
+      {returning && <ReturnWindow invoiceNo={returning} onClose={() => setReturning(null)} onDone={r => { setReturning(null); onChanged?.(); setPreview({ invoiceNo: r.invoiceNo, shareToken: r.shareToken, tab: r.returnNo }) }} />}
+      {editing && <EditInvoice sale={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); onChanged?.() }} />}
       {detail && <QuickDetails row={{ invoiceNo: x.invoiceNo, shareToken: x.shareToken }} sale={detail} manager={manager} onClose={() => setDetail(null)} onView={() => { setDetail(null); setPreview({ invoiceNo: x.invoiceNo, shareToken: x.shareToken }) }} onEdit={() => { setEditing(detail); setDetail(null) }} />}
     </div>
   );
@@ -366,6 +368,7 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
 export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
   const [st, setSt] = useState('all'); const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all');
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [sel, setSel] = useState(initialCode || null); const [n, setN] = useState(0);
+  const cancelAdv = async r => { if (!confirm(`Cancel ${r.code}? Remember to hand back the ${inr(r.deposit)} advance.`)) return; try { await api(`/admin/pos/advances/${encodeURIComponent(r.code)}/status`, { method: 'PATCH', body: { status: 'cancelled' } }); setN(x => x + 1) } catch (e) { setErr(e.message) } };
   useEffect(() => { const t = setTimeout(() => api('/admin/pos/advances?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), 200); return () => clearTimeout(t) }, [q, tick, n]);
   const today = todayStr();
   const shown = useMemo(() => (rows || []).filter(r => inPeriod(r.createdAt, per) && (st === 'all' || r.status === st)), [rows, per, st]);
@@ -396,7 +399,7 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
                 <td><b>{r.code}</b></td><td>{r.customerName || <span className="muted">Walk-in</span>}{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
                 <td>{r.deliveryDate ? longDate(r.deliveryDate) : <span className="muted">—</span>} {late && <span className="dpos-pill bad">Late</span>}</td>
                 <td className="r">{r.itemCount}</td><td className="r">{inr(r.total)}</td><td className="r">{inr(r.deposit)}</td><td className="r"><b>{inr(r.balance)}</b></td><td><span className={`dpos-pill ${tone}`}>{lab}</span></td>
-                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setSel(r.code)} doc={() => setSel(r.code)} /></td></tr>) })}</tbody></table></div>)}
+                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setSel(r.code)} doc={() => setSel(r.code)} edit={['pending', 'ready'].includes(r.status) ? () => setSel(r.code) : null} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
       </section>
       {sel && <AdvanceDetail code={sel} manager={manager} onClose={() => setSel(null)} onChanged={() => setN(x => x + 1)} onBilled={(sale, invoiceNo) => { setSel(null); setN(x => x + 1); onBilled(sale, invoiceNo) }} />}
     </>

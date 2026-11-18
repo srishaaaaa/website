@@ -6,7 +6,8 @@ import { useApp } from '../context/App';
 import AdminShell from '../components/AdminShell';
 import StaffOnly from '../components/StaffOnly';
 import ExportCsv from '../components/ExportCsv';
-import { WaIcon, DocIcon, EyeIcon, waUrl } from '../components/RowActions';
+import RowActions from '../components/RowActions';
+import { OnlineRowTools } from './PosOrders';
 import { PeriodFilter, periodRange, usePeriod } from '../components/PeriodFilter';
 
 const dmy = d => d ? String(d).slice(0, 10).split('-').reverse().join('-') : '';
@@ -53,7 +54,9 @@ function OrderList({ list, nav, onChanged }) {
 
 // Stitching Orders table: Order · Customer · Items · Due date · Total · Balance · Status (change it here) · WhatsApp / invoice / details.
 function OrdersTable({ list, nav, onChanged }) {
+  const { user } = useApp(); const manager = ['owner', 'admin'].includes(user?.role);
   const [err, setErr] = useState();
+  const cancelAdv = async o => { if (!confirm(`Cancel ${o.ref}? Remember to hand back the advance.`)) return; try { await api(`/admin/pos/advances/${encodeURIComponent(o.ref)}/status`, { method: 'PATCH', body: { status: 'cancelled' } }); onChanged?.() } catch (e) { setErr(e.message) } };
   const setStatus = async (o, status) => { setErr(); try { await api(`/admin/pos/sales/${encodeURIComponent(o.ref)}/tailoring`, { method: 'PATCH', body: { status } }); onChanged?.() } catch (e) { setErr(e.message) } };
   return (
     <>{err && <p className="dpos-err" role="alert">{err}</p>}
@@ -68,11 +71,9 @@ function OrdersTable({ list, nav, onChanged }) {
             <td className="r">{o.balance > 0 ? <b>{inr(o.balance)}</b> : <span className="muted">Paid</span>}</td>
             <td>{fixed ? <span className={`sd-pill ${o.status}`}>{o.kind === 'advance' ? 'Advance' : STATUS_L[o.status]}</span>
               : <select className={`sto-st ${o.status}`} aria-label={`Status of ${o.ref}`} value={o.status} onChange={e => setStatus(o, e.target.value)}><option value="pending">Pending</option><option value="completed">Completed</option></select>}</td>
-            <td className="r"><div className="dpos-rowact">
-              {o.customerPhone && <a className="ra wa" title="Send on WhatsApp" aria-label={`Send ${o.ref} on WhatsApp`} href={waUrl(o.customerPhone, `Hello ${o.customerName || ''}, your stitching order ${o.ref}${o.due ? ` is due on ${dmy(o.due)}` : ''}.`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
-              <button type="button" className="ra doc" title="Open invoice" aria-label={`Open ${o.ref}`} onClick={() => openOrder(nav, o)}><DocIcon /></button>
-              <button type="button" className="ra eye" title="Details" aria-label={`Details of ${o.ref}`} onClick={() => openOrder(nav, o)}><EyeIcon /></button>
-            </div></td></tr>) })}</tbody></table></div></>
+            <td className="r">{o.kind === 'advance'
+              ? <RowActions label={o.ref} wa={o.customerPhone ? { phone: o.customerPhone, text: `Hello ${o.customerName || ''}, your advance order ${o.ref}${o.due ? ` is due on ${dmy(o.due)}` : ''}.` } : null} doc={() => openOrder(nav, o)} eye={() => openOrder(nav, o)} edit={() => openOrder(nav, o)} del={manager ? () => cancelAdv(o) : null} />
+              : <OnlineRowTools x={{ invoiceNo: o.ref, shareToken: o.shareToken, phone: o.customerPhone, customerName: o.customerName }} manager={manager} noStatus canVoid={manager} onChanged={onChanged} waText={`Hello ${o.customerName || ''}, your stitching order ${o.ref}${o.due ? ` is due on ${dmy(o.due)}` : ''}.`} />}</td></tr>) })}</tbody></table></div></>
   );
 }
 
@@ -125,7 +126,7 @@ export function StitchDashboard() {
 const TILES = [['all', 'ALL ORDERS', ''], ['pending', 'PENDING', 'amber'], ['completed', 'COMPLETED', 'green'], ['cancelled', 'CANCELLED', 'red']];
 export function StitchOrders() {
   const gate = useStaff(); const nav = useNavigate();
-  const [per, setPer] = usePeriod('all'); const [sp] = useSearchParams(); const [f, setF] = useState({ q: '', name: '', phone: '', garment: '', due: sp.get('due') || 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); const [status, setStatus] = useState('all'); const [n, setN] = useState(0); const [ov, setOv] = useState(null);
+  const [per, setPer] = usePeriod('all'); const [sp] = useSearchParams(); const [f, setF] = useState({ q: '', name: '', phone: '', garment: '', due: sp.get('due') || 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); const [status, setStatus] = useState('all'); const [n, setN] = useState(0); const [ov, setOv] = useState(null); const [more, setMore] = useState(() => (sp.get('due') || 'all') !== 'all');
   const [d, setD] = useState(null); const [err, setErr] = useState(); const [from, to] = periodRange(per);
   useEffect(() => {
     if (gate) return;
@@ -147,6 +148,7 @@ export function StitchOrders() {
         <label>Customer name<input value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Search name…" /></label>
         <label>Customer phone<input inputMode="tel" value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} placeholder="Search phone…" /></label>
         <label>Status<select value={status} onChange={e => setStatus(e.target.value)}><option value="all">All statuses</option><option value="pending">Pending</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+        {more && <>
         <label>Due<select value={f.due} onChange={e => setF({ ...f, due: e.target.value })}><option value="all">Any due date</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="week">Next 7 days</option><option value="none">No due date</option></select></label>
         <label>Due from<input type="date" value={f.dueFrom} onChange={e => setF({ ...f, dueFrom: e.target.value })} /></label>
         <label>Due to<input type="date" value={f.dueTo} onChange={e => setF({ ...f, dueTo: e.target.value })} /></label>
@@ -155,6 +157,8 @@ export function StitchOrders() {
         <label>Bill type<select value={f.gst} onChange={e => setF({ ...f, gst: e.target.value })}><option value="all">GST + non-GST</option><option value="gst">GST invoices</option><option value="nongst">Non-GST bills</option></select></label>
         <label>Sort<select value={f.sort} onChange={e => setF({ ...f, sort: e.target.value })}><option value="new">Newest first</option><option value="old">Oldest first</option><option value="due">Due date (soonest)</option></select></label>
         <button type="button" className="dpos-btn ghost sm sd-reset" onClick={() => { setF({ q: '', name: '', phone: '', garment: '', due: 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); setStatus('all') }}>Reset filters</button>
+        </>}
+        <button type="button" className="sd-more" aria-expanded={more} onClick={() => setMore(m => !m)}>{more ? 'Fewer filters ▴' : 'More filters ▾'}</button>
       </section>
       <section className="sd-panel">{!d ? <Empty>Loading…</Empty> : !d.orders.length ? <Empty>No stitching orders here. Add a service in Billing and take its measurements.</Empty> : <OrdersTable list={d.orders} nav={nav} onChanged={() => setN(x => x + 1)} />}</section>
     </AdminShell>
