@@ -360,6 +360,7 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
 export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
   const [st, setSt] = useState('all'); const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all');
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [sel, setSel] = useState(initialCode || null); const [view, setView] = useState(null); const [n, setN] = useState(0);
+  const [invPv, setInvPv] = useState(null);
   const cancelAdv = async r => { if (!confirm(`Cancel ${r.code}? Remember to hand back the ${inr(r.deposit)} advance.`)) return; try { await api(`/admin/pos/advances/${encodeURIComponent(r.code)}/status`, { method: 'PATCH', body: { status: 'cancelled' } }); setN(x => x + 1) } catch (e) { setErr(e.message) } };
   useEffect(() => { const t = setTimeout(() => api('/admin/pos/advances?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), 200); return () => clearTimeout(t) }, [q, tick, n]);
   const today = todayStr();
@@ -391,9 +392,10 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
                 <td><b>{r.code}</b></td><td>{r.customerName || <span className="muted">Walk-in</span>}{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
                 <td>{r.deliveryDate ? longDate(r.deliveryDate) : <span className="muted">—</span>} {late && <span className="dpos-pill bad">Late</span>}</td>
                 <td className="r">{r.itemCount}</td><td className="r">{inr(r.total)}</td><td className="r">{inr(r.deposit)}</td><td className="r"><b>{inr(r.balance)}</b></td><td><span className={`dpos-pill ${tone}`}>{lab}</span></td>
-                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setView(r.code)} doc={() => setSel(r.code)} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
+                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setView(r.code)} doc={() => r.invoiceNo ? api('/admin/pos/sales/' + encodeURIComponent(r.invoiceNo)).then(x => setInvPv({ invoiceNo: r.invoiceNo, shareToken: (x.sale || x).shareToken })).catch(e => setErr(e.message)) : setSel(r.code)} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
       </section>
       {view && <AdvanceQuick code={view} onClose={() => setView(null)} />}
+      {invPv && <InvoicePreview row={invPv} onClose={() => setInvPv(null)} />}
       {sel && <AdvanceDetail code={sel} manager={manager} onClose={() => setSel(null)} onChanged={() => setN(x => x + 1)} onBilled={(sale, invoiceNo) => { setSel(null); setN(x => x + 1); onBilled(sale, invoiceNo) }} />}
     </>
   );
