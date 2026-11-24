@@ -8,7 +8,7 @@ export const PAGES = [
   ['/admin/billing', 'Billing'], ['/admin/billing/analytics', 'POS Analytics'], ['/admin/billing/advance', 'Advance Orders'], ['/admin/billing/orders', 'Order History'],
   ['/admin/billing/inventory', 'Inventory'], ['/admin/billing/customers', 'Customers'], ['/admin/billing/coupons', 'Coupons'], ['/admin/billing/birthdays', 'Date of Birth'],
   ['/admin/billing/expenses', 'Expenses'], ['/admin/stitching', 'Stitching Dashboard'], ['/admin/stitching/orders', 'Stitching Orders'], ['/admin/billing/measurements', 'Measurements'],
-  ['/admin/stitching/reports', 'Stitching Reports'], ['/admin/stitching/designs', 'Stitching Designs'], ['/admin/billing/settings', 'POS Settings'], ['/admin/settings', 'Store Settings'],
+  ['/admin/stitching/reports', 'Stitching Reports'], ['/admin/stitching/designs', 'Stitching Designs'], ['/admin/billing/settings', 'Settings'],
 ];
 const ALL = PAGES.map(p => p[0]);
 // What each role's server permissions can serve.

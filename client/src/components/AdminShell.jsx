@@ -67,7 +67,7 @@ export const NAV = [
     ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/site-text', 'Site text', 'edit', true],
     ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
     ['/admin/users', 'Users', 'users', true], ['/admin/delivery', 'Delivery', 'truck', true], ['/admin/sample', 'Sample data', 'flask', true]] },
-  { group: 'Settings', items: [['/admin/billing/settings', 'POS Settings', 'gear', true], ['/admin/settings', 'Store Settings', 'gear', true]] },
+  { group: 'Settings', items: [['/admin/billing/settings', 'Settings', 'gear', true]] },
 ];
 
 // Every admin page draws its own sidebar, so its scroll position is kept here: opening a panel near the bottom

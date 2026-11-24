@@ -92,7 +92,7 @@ export default function App() {
           <Route path="/admin/users" element={A.users} />
           <Route path="/admin/categories" element={A.categories} />
           <Route path="/admin/reels" element={A.reels} />
-          <Route path="/admin/settings" element={A.settings} />
+          <Route path="/admin/settings" element={<Navigate to="/admin/billing/settings" replace />} />
           <Route path="/admin/delivery" element={A.delivery} />
           <Route path="/admin/stitching/designs" element={A.designs} />
           <Route path="/admin/products" element={<Navigate to="/admin/billing/inventory" replace />} />

@@ -232,7 +232,7 @@ export function InvoicePreview({ row, onClose }) {
   return (
     <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Invoice preview" onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="dpos-sheet invprev">
-        <div className="invprev-bar"><b>🖨 INVOICE PREVIEW • #{row.invoiceNo}</b><span><button type="button" onClick={print}>Print</button><button type="button" onClick={print} title="Choose Save as PDF in the print window">PDF</button><button type="button" onClick={() => nav('/invoice/' + cur.token)}>Open Full Page ↗</button><button type="button" aria-label="Close" onClick={onClose}>✕</button></span></div>
+        <div className="invprev-bar"><b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginRight: 10, verticalAlign: '-2px' }}><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z" /></svg>INVOICE PREVIEW • #{row.invoiceNo}</b><span><button type="button" onClick={print}>Print</button><button type="button" onClick={() => nav('/invoice/' + cur.token)}>Open Full Page ↗</button><button type="button" aria-label="Close" onClick={onClose}>✕</button></span></div>
         {rets.length > 0 && <div className="invprev-tabs" role="tablist"><button type="button" role="tab" aria-selected={tab === 'orig'} className={tab === 'orig' ? 'on' : ''} onClick={() => setTab('orig')}>Original bill</button>
           {rets.map(r => <button key={r.returnNo} type="button" role="tab" aria-selected={tab === r.returnNo} className={tab === r.returnNo ? 'on' : ''} onClick={() => setTab(r.returnNo)}>{r.returnNo}</button>)}</div>}
         <iframe ref={frame} key={cur.token} title={`Invoice ${cur.no}`} src={`/invoice/${cur.token}`} />
@@ -399,7 +399,7 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
 
 // ============================ "Bill generated" window after Complete sale ============================
 export function BillDone({ sale, shop, onClose }) {
-  const nav = useNavigate();
+  const nav = useNavigate(); const [pv, setPv] = useState(null);
   const [ps, setPs] = useState(false);
   const received = sale.paymentMode === 'cash' ? (sale.cashTendered || sale.total) : sale.total;
   const link = invoiceUrl(sale.shareToken);
@@ -419,7 +419,7 @@ export function BillDone({ sale, shop, onClose }) {
         </section>
         <div className="dpos-done-act">
           <button className="dpos-btn outline" onClick={() => setPs(true)}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
-          <button className="dpos-btn outline" onClick={() => nav('/invoice/' + sale.shareToken)}><EyeIcon />View</button>
+          <button className="dpos-btn outline" onClick={() => setPv({ invoiceNo: sale.invoiceNo, shareToken: sale.shareToken })}><EyeIcon />View</button>
           <a className="dpos-btn wa" href={waLink(sale.customerPhone, `Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop?.name || 'us'} for ${money(sale.total)}: ${link}`)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp invoice</a>
           <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
         </div>
@@ -429,6 +429,7 @@ export function BillDone({ sale, shop, onClose }) {
         </section>
         <section className="dpos-done-card items"><p className="dpos-done-l">BILL SPLIT-UP</p><BillSummary bill={sale} /></section>
       </div>
+      {pv && <InvoicePreview row={pv} onClose={() => setPv(null)} />}
       {ps && <PrintSettings onClose={() => setPs(false)} onPrint={({ type, paper }) => { setPs(false); window.open(`/invoice/${sale.shareToken}?fmt=${type === 'thermal' ? 'thermal' : 'a4'}&size=${paper}&print=1`, '_blank') }} />}
     </div>
   );

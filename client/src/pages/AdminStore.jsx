@@ -128,6 +128,11 @@ export function AdminUsers() {
   );
 }
 
+// The website / map details form, shown inside the one Settings page (POS Settings → Website & store location).
+export function StoreSettingsCard() {
+  return <section className="dpos-card"><h2>Website &amp; store location</h2><p className="sub">Boutique location, hours and Instagram shown on the homepage, footer and map.</p><StoreSettingsForm /></section>;
+}
+
 export function AdminSettings() {
   const gate = useGate();
   if (gate) return gate;

@@ -17,8 +17,9 @@ import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
 import PosMeasurements from './PosMeasurements';
 import PageAccessCard from '../components/PageAccessCard';
+import { StoreSettingsCard } from './AdminStore';
 import PosBirthdays from './PosBirthdays';
-import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, OrderHistory } from './PosOrders';
+import { AdvanceDone, AdvanceModal, AdvanceOrders, BillDone, CouponPanel, InvoicePreview, OrderHistory } from './PosOrders';
 import { STATES } from '../lib/invoiceFormat';
 import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from '../components/PeriodFilter';
 import StaffOnly from '../components/StaffOnly';
@@ -230,7 +231,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
       const link = `${location.origin}/invoice/${sale.shareToken}`;
       const to = kind === 'print' ? `${link}?print=1` : kind === 'wa' ? waLink(sale.customerPhone, `Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop?.name || 'DHANYA BOUTIQUE'} for ${inr(sale.total)}: ${link}`) : null;
       if (to) { if (tab) tab.location.href = to; else window.open(to, '_blank') }
-      toast(`Bill ${sale.invoiceNo} saved.`); onSale(sale, true); clearOrder();
+      toast(`Bill ${sale.invoiceNo} saved.`); onSale(sale, kind !== 'save'); clearOrder();
       if (!ws) { setQ(''); api('/admin/pos/catalog').then(setResults).catch(() => {}) }
     } catch (e) { tab?.close(); setErr(e.message) } finally { setBusy(false) }
   };
@@ -352,8 +353,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           <p className="sub" style={{ margin: '8px 2px 14px' }}>GPay / UPI and card are confirmed by the cashier at the counter; no payment gateway is attached.</p>
           <Err>{err}</Err>
           {problem && priced.length > 0 && <p className="sub" role="status" style={{ marginBottom: 10 }}>{problem}</p>}
-          <button className="dpos-cta bp-wa" disabled={!!problem || busy} onClick={() => submit('wa')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.9 7L4 20l1.1-4A8 8 0 1 1 20 12Z" /></svg> {busy ? 'SAVING…' : 'COMPLETE SALE & WHATSAPP'}</button>
-          <div className="bp-pair"><button type="button" disabled={!!problem || busy} onClick={() => submit('print')}>PRINT</button><button type="button" disabled={!!problem || busy} onClick={() => submit('save')}>SAVE ONLY</button></div>
+          <button className="dpos-cta bp-wa" disabled={!!problem || busy} onClick={() => submit('save')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg> {busy ? 'SAVING…' : 'COMPLETE SALE'}</button>
           {!ws && <button className="dpos-cta amber" disabled={!priced.length || busy} onClick={() => setAdvOpen(true)}><ClockI /> SAVE AS ADVANCE ORDER</button>}
         </section>
       </div>
@@ -611,7 +611,7 @@ function CustomerModal({ c, onClose, onDone }) {
 }
 // Everything one customer has bought: totals, invoices (click to open), advance orders and stitching bills.
 function CustomerHistory({ id, onClose }) {
-  const [d, setD] = useState(null); const [err, setErr] = useState(); const nav = useNavigate();
+  const [d, setD] = useState(null); const [err, setErr] = useState(); const [prev, setPrev] = useState(null);
   useEffect(() => { api(`/admin/pos/customers/${id}/history`).then(setD).catch(e => setErr(e.message)) }, [id]);
   return (
     <Modal wide title={d ? (d.customer.name || d.customer.phone) : 'Customer'} sub={d ? `${d.customer.phone}${d.customer.dob ? ' · born ' + dmy(d.customer.dob) : ''}` : ''} onClose={onClose}>
@@ -622,10 +622,11 @@ function CustomerHistory({ id, onClose }) {
         </div>
         <h3 className="adm-h3">Invoices</h3>
         {!d.invoices.length ? <Empty>No bills yet.</Empty> : <div className="dpos-tw"><table><thead><tr><th>Invoice</th><th>Date</th><th>Payment</th><th className="r">Total</th><th>Status</th></tr></thead>
-          <tbody>{d.invoices.map(i => <tr key={i.invoiceNo} className="click" onClick={() => nav('/invoice/' + i.shareToken)}><td className="oid">{i.invoiceNo}{i.stitching ? ' ✂' : ''}</td><td>{dmy(i.billDate)}</td><td>{MODE_LABEL[i.paymentMode]}</td><td className="r">{inr(i.total)}</td><td><span className={`dpos-pill ${i.status === 'voided' ? 'bad' : 'ok'}`}>{i.status === 'voided' ? 'Void' : 'Completed'}</span></td></tr>)}</tbody></table></div>}
+          <tbody>{d.invoices.map(i => <tr key={i.invoiceNo} className="click" onClick={() => setPrev({ invoiceNo: i.invoiceNo, shareToken: i.shareToken })}><td className="oid">{i.invoiceNo}{i.stitching ? ' ✂' : ''}</td><td>{dmy(i.billDate)}</td><td>{MODE_LABEL[i.paymentMode]}</td><td className="r">{inr(i.total)}</td><td><span className={`dpos-pill ${i.status === 'voided' ? 'bad' : 'ok'}`}>{i.status === 'voided' ? 'Void' : 'Completed'}</span></td></tr>)}</tbody></table></div>}
         {d.advances.length > 0 && <><h3 className="adm-h3" style={{ marginTop: 16 }}>Advance orders</h3><div className="dpos-tw"><table><thead><tr><th>Code</th><th>Status</th><th>Delivery</th><th className="r">Deposit</th><th className="r">Total</th></tr></thead>
           <tbody>{d.advances.map(a => <tr key={a.code}><td className="oid">{a.code}</td><td>{a.status}</td><td>{a.deliveryDate ? dmy(a.deliveryDate) : '—'}</td><td className="r">{inr(a.deposit)}</td><td className="r">{inr(a.total)}</td></tr>)}</tbody></table></div></>}
       </>}
+      {prev && <InvoicePreview row={prev} onClose={() => setPrev(null)} />}
     </Modal>
   );
 }
@@ -718,10 +719,13 @@ function Settings({ onSaved }) {
         <div><button className="dpos-btn" disabled={busy} type="submit">{busy ? 'Saving…' : 'Save settings'}</button></div>
         </div>
       </form>
-      <LoginPasswordCard />
-      <StaffAccessCard />
-      <PageAccessCard />
+      <div className="pset-flow">
+        <LoginPasswordCard />
+        <StoreSettingsCard />
         <AlertSettingsCard />
+        <div className="pset-span"><StaffAccessCard /></div>
+        <div className="pset-span"><PageAccessCard /></div>
+      </div>
     </div>
   );
 }
@@ -742,7 +746,8 @@ export default function AdminPos() {
   useEffect(() => { if (allowed) loadShop() }, [allowed, loadShop]);
   useEffect(() => { document.documentElement.style.setProperty('--pos-accent', shop?.accent || ''); return () => document.documentElement.style.removeProperty('--pos-accent') }, [shop?.accent]);
   // The invoice is a page of its own (/invoice/<token>): print it, share it, copy its link.
-  const openInvoice = useCallback((no, row) => row?.shareToken ? nav('/invoice/' + row.shareToken) : api('/admin/pos/sales/' + encodeURIComponent(no)).then(x => nav('/invoice/' + x.shareToken)).catch(e => setErr(e.message)), [nav]);
+  const [invPrev, setInvPrev] = useState(null);
+  const openInvoice = useCallback((no, row) => row?.shareToken ? setInvPrev({ invoiceNo: no, shareToken: row.shareToken }) : api('/admin/pos/sales/' + encodeURIComponent(no)).then(x => setInvPrev({ invoiceNo: no, shareToken: x.shareToken })).catch(e => setErr(e.message)), []);
 
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
@@ -776,6 +781,7 @@ export default function AdminPos() {
       {body}
       {allowed && <LowStockAlert />}
       {done && <BillDone sale={done} shop={shop} onClose={() => setDone(null)} />}
+      {invPrev && <InvoicePreview row={invPrev} onClose={() => setInvPrev(null)} />}
       {advDone && <AdvanceDone adv={advDone} shop={shop} onClose={() => setAdvDone(null)} onView={() => { setAdvDone(null); nav('/admin/billing/advance') }} />}
     </AdminShell>
   );

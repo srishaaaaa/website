@@ -926,3 +926,66 @@ div.dpos .dpos-filters .f input, div.dpos .dpos-filters .f select { height: 42px
 .sr2-row i.st-pending u { background: #f5a524 } .sr2-row i.st-completed u { background: #1c9a5f } .sr2-row i.st-cancelled u { background: #d4443b }
 .sr2-days { display: flex; align-items: flex-end; gap: 14px; min-height: 200px; overflow-x: auto; padding: 4px 4px 0 } .sr2-days > div { display: grid; justify-items: center; gap: 6px; min-width: 56px } .sr2-days b { font-size: 11.5px; font-weight: 600; color: #330533 } .sr2-days i { display: block; width: 44px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #5a1560, #330533) } .sr2-days span { font-size: 11px; color: #6b6070 }
 @media (max-width: 900px) { .sr2-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) } .sr2-two { grid-template-columns: 1fr } }
+
+/* Invoice preview window (opened from every invoice icon): dark title bar, Print / Open Full Page / close, invoice below */
+.dpos-modal .dpos-sheet.invprev { border-radius: 22px; background: #f3f1ec }
+.invprev-bar { background: #111 !important; padding: 16px 24px !important } .invprev-bar b { font-size: 13px; letter-spacing: .06em; display: inline-flex; align-items: center }
+.invprev-bar button { background: #2b2b2e !important; color: #fff !important; padding: 9px 16px !important; border-radius: 10px !important; font-size: 12.5px !important; font-weight: 600 }
+.invprev-bar button:last-child { width: 38px; padding: 9px 0 !important }
+div.dpos .dpos-cta.bp-wa { background: #330533; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 18px rgba(51, 5, 51, .25) }
+div.dpos .dpos-cta.bp-wa:disabled { background: #a99aae; box-shadow: none }
+div.dpos .dpos-cta.bp-wa { border: 0 !important }
+
+/* Print settings: smaller */
+.inv-ps { width: min(360px, 92vw) !important; border-radius: 16px !important }
+.inv-ps-head { padding: 12px 16px !important } .inv-ps-head b { font-size: 12px !important }
+.inv-ps-body { padding: 14px 16px !important } .inv-ps-l { font-size: 10.5px !important; margin: 0 0 6px !important } .inv-ps-body .inv-ps-l:not(:first-child) { margin-top: 12px !important }
+.inv-ps-row { gap: 8px !important } .inv-ps-row button { padding: 9px 10px !important; font-size: 12.5px !important; border-radius: 10px !important }
+.inv-ps-foot { padding: 10px 16px !important } .inv-ps-go { padding: 9px 16px !important; font-size: 12px !important; border-radius: 10px !important } .inv-ps-cancel { font-size: 11.5px !important }
+.dpos-done-card.items + .dpos-done-card.items { margin-top: 12px }
+
+/* One Settings page: cards flow in two balanced columns, no gaps */
+.pset-grid { display: block !important; columns: 2 420px; column-gap: 16px }
+.pset-col, .pset-wide { display: contents !important }
+.pset-grid .dpos-card, .pset-flow .dpos-card { break-inside: avoid; margin: 0 0 16px; display: block }
+.pset-flow { columns: 2 420px; column-gap: 16px; margin-top: 16px }
+.pset-flow > .pset-span { column-span: all }
+.pset-grid > :last-child, .pset-grid .pset-wide > :last-child { break-inside: avoid }
+.pset > * { margin: 0 } .pset { gap: 16px }
+@media (max-width: 1000px) { .pset-grid, .pset-flow { columns: 1 } }
+
+/* ---- Bill Generated: compact, plum header like every other admin window ---- */
+.dpos-modal .dpos-sheet.dpos-done { width: min(520px, 94vw) !important; padding: 0 !important; border-radius: 20px; overflow: auto }
+.dpos-done-head { background: #330533; color: #fff; padding: 14px 20px !important; margin: 0 0 14px; border: 0 !important; align-items: center !important }
+.dpos-done-head h2 { font-size: 18px !important; gap: 8px !important; color: #fff } .dpos-done-head .oid { margin: 3px 0 0 !important; color: #e9cd8d !important; font-size: 11.5px }
+.dpos-done-head .dpos-tag { background: rgba(255, 255, 255, .16) !important; color: #fff !important; border: 0 !important }
+.dpos-done-head .dpos-btn { background: #fff !important; color: #330533 !important; padding: 7px 14px !important; font-size: 11.5px !important; border-radius: 999px !important }
+.dpos-done > :not(.dpos-done-head) { margin-left: 20px; margin-right: 20px } .dpos-done > :last-child { margin-bottom: 18px }
+.dpos-done-card { padding: 12px 16px !important; margin-bottom: 12px !important; border-radius: 14px !important }
+.dpos-done-row { padding: 6px 0 !important; font-size: 13px !important } .dpos-done-row .big { font-size: 20px !important }
+.dpos-done-bal { padding: 10px 14px !important; border-radius: 12px !important; font-size: 13px } .dpos-done-bal b { font-size: 17px }
+.dpos-done-act { gap: 8px !important; margin-bottom: 12px !important } .dpos-done-act .dpos-btn { padding: 8px 10px !important; font-size: 11.5px !important; border-radius: 10px !important }
+.dpos-done-item { padding: 5px 0 !important; font-size: 12.5px !important } .dpos-done-l { margin-bottom: 6px !important; font-size: 10px !important }
+
+/* ---- One dropdown style for every <select> on the admin side ---- */
+div.dpos select, .dpos-modal select, .dpos-menu select {
+  -webkit-appearance: none; appearance: none; height: 40px; padding: 0 34px 0 14px; border: 1px solid #e3dde6; border-radius: 12px; background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23330533' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center; background-size: 12px; color: #1a1420; font: 500 13px 'Poppins', system-ui, sans-serif !important; cursor: pointer; text-overflow: ellipsis;
+}
+div.dpos select:focus, .dpos-modal select:focus { outline: none; border-color: #330533; box-shadow: 0 0 0 3px rgba(51, 5, 51, .12) }
+div.dpos select:disabled, .dpos-modal select:disabled { opacity: .55; cursor: not-allowed }
+div.dpos select option, .dpos-modal select option { font-family: 'Poppins', system-ui, sans-serif; font-size: 13px; color: #1a1420; background: #fff }
+div.dpos select.sto-st { background-color: #fff4d6; border-color: #e6d4a8; color: #9a5a00; font-weight: 600 }
+div.dpos select.sto-st.completed { background-color: #e4f5ea; border-color: #b9e3cc; color: #1c7a4b }
+div.dpos .dpos-line select { height: 40px }
+
+/* Settings: one balanced two-column flow for the whole page (no gaps) */
+.pset { display: block !important; columns: 2 440px; column-gap: 16px }
+.pset > .pset-top { column-span: all; margin: 0 0 16px }
+.pset > form.pset-grid, .pset .pset-flow { display: contents !important; columns: auto }
+.pset form.pset-grid > .pset-col, .pset form.pset-grid > .pset-wide { display: contents !important }
+.pset .dpos-card, .pset .pset-flow > *:not(.pset-span), .pset form.pset-grid > * > * { break-inside: avoid; margin: 0 0 16px }
+.pset .pset-span { column-span: all; margin: 0 0 16px }
+.pset form.pset-grid > .pset-wide > div:last-child { break-inside: avoid; margin: 0 0 16px }
+@media (max-width: 1000px) { .pset { columns: 1 } }

@@ -7,7 +7,7 @@ import AdminShell from '../components/AdminShell';
 import StaffOnly from '../components/StaffOnly';
 import ExportCsv from '../components/ExportCsv';
 import RowActions from '../components/RowActions';
-import { OnlineRowTools } from './PosOrders';
+import { InvoicePreview, OnlineRowTools } from './PosOrders';
 import { PeriodFilter, periodRange, usePeriod } from '../components/PeriodFilter';
 
 const dmy = d => d ? String(d).slice(0, 10).split('-').reverse().join('-') : '';
@@ -24,7 +24,14 @@ function useStaff(managerOnly = false) {
 
 const Card = ({ label, value, sub, tone = '' }) => <div className={`sd-card ${tone}`}><span>{label}</span><b>{value}</b><small>{sub}</small></div>;
 const Empty = ({ children }) => <p className="sd-empty">{children}</p>;
-const openOrder = (nav, o) => o.kind === 'advance' ? nav('/admin/billing/advance') : o.shareToken && nav('/invoice/' + o.shareToken);
+// A bill opens in the invoice preview window (set by the page via setInvoicePreview); an advance order opens the Advance Orders page.
+let setInvoicePreview = null;
+const openOrder = (nav, o) => o.kind === 'advance' ? nav('/admin/billing/advance') : o.shareToken && setInvoicePreview ? setInvoicePreview({ invoiceNo: o.ref, shareToken: o.shareToken }) : o.shareToken && nav('/invoice/' + o.shareToken);
+function useInvoicePreview() {
+  const [pv, setPv] = useState(null);
+  useEffect(() => { setInvoicePreview = setPv; return () => { if (setInvoicePreview === setPv) setInvoicePreview = null } }, []);
+  return pv && <InvoicePreview row={pv} onClose={() => setPv(null)} />;
+}
 
 const todayIst = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 // The promised date of an order, with a pencil to change it.
@@ -88,7 +95,7 @@ function DueAlert({ d }) {
 
 // ---------------- Stitching Dashboard ----------------
 export function StitchDashboard() {
-  const gate = useStaff(); const nav = useNavigate();
+  const gate = useStaff(); const nav = useNavigate(); const invPrev = useInvoicePreview();
   const [per, setPer] = usePeriod('month'); const [d, setD] = useState(null); const [err, setErr] = useState();
   const [from, to] = periodRange(per);
   const [n, setN] = useState(0); const reload = () => setN(x => x + 1);
@@ -118,6 +125,7 @@ export function StitchDashboard() {
       </div>
       <section className="sd-panel"><div className="sd-ph"><h2>Recent stitching orders</h2><span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}><ExportCsv name="recent-stitching-orders" header={['Order', 'Customer', 'Status', 'Due']} rows={(d?.recent || []).map(o => [o.ref, o.customer || o.name || '', o.status || '', o.due || o.dueDate || ''])} /><Link className="sd-va" to="/admin/stitching/orders">View all →</Link></span></div>
         {!d ? <Empty>Loading…</Empty> : !d.recent.length ? <Empty>No stitching orders yet. Add a service in Billing and take its measurements.</Empty> : <OrderList list={d.recent} nav={nav} onChanged={reload} />}</section>
+      {invPrev}
     </AdminShell>
   );
 }
@@ -125,7 +133,7 @@ export function StitchDashboard() {
 // ---------------- Stitching Orders ----------------
 const TILES = [['all', 'ALL ORDERS', ''], ['pending', 'PENDING', 'amber'], ['completed', 'COMPLETED', 'green'], ['cancelled', 'CANCELLED', 'red']];
 export function StitchOrders() {
-  const gate = useStaff(); const nav = useNavigate();
+  const gate = useStaff(); const nav = useNavigate(); const invPrev = useInvoicePreview();
   const [per, setPer] = usePeriod('all'); const [sp] = useSearchParams(); const [f, setF] = useState({ q: '', name: '', phone: '', garment: '', due: sp.get('due') || 'all', dueFrom: '', dueTo: '', kind: 'all', gst: 'all', sort: 'new' }); const [status, setStatus] = useState('all'); const [n, setN] = useState(0); const [ov, setOv] = useState(null); const [more, setMore] = useState(() => (sp.get('due') || 'all') !== 'all');
   const [d, setD] = useState(null); const [err, setErr] = useState(); const [from, to] = periodRange(per);
   useEffect(() => {
@@ -161,6 +169,7 @@ export function StitchOrders() {
         <button type="button" className="sd-more" aria-expanded={more} onClick={() => setMore(m => !m)}>{more ? 'Fewer filters ▴' : 'More filters ▾'}</button>
       </section>
       <section className="sd-panel">{!d ? <Empty>Loading…</Empty> : !d.orders.length ? <Empty>No stitching orders here. Add a service in Billing and take its measurements.</Empty> : <OrdersTable list={d.orders} nav={nav} onChanged={() => setN(x => x + 1)} />}</section>
+      {invPrev}
     </AdminShell>
   );
 }
