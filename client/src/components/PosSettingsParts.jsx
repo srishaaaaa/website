@@ -96,30 +96,21 @@ const ROLES = [['admin', 'Admin', 'Everything, including settings and reports'],
 export function StaffAccessCard() {
   const { user, toast } = useApp();
   const owner = ['owner', 'admin'].includes(user?.role); // owner and admin are the same
-  const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [nw, setNw] = useState({ name: '', email: '', password: '', role: 'cashier' }); const [busy, setBusy] = useState(false);
+  const [rows, setRows] = useState(null); const [err, setErr] = useState();
   const load = useCallback(() => api('/admin/users').then(r => setRows(r.filter(u => u.role !== 'customer'))).catch(e => setErr(e.message)), []);
   useEffect(() => { load() }, [load]);
   const setRole = async (u, role) => { setErr(); try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role } }); toast('Access updated.'); load() } catch (e) { setErr(e.message) } };
-  const add = async e => {
-    e.preventDefault(); setErr(); setBusy(true);
-    try { await api('/admin/users', { method: 'POST', body: nw }); setNw({ name: '', email: '', password: '', role: 'cashier' }); toast('Staff member added.'); load() }
-    catch (x) { setErr(x.issues?.[0]?.message || (x.message === 'Validation failed' ? 'Enter a name, a valid email and a password of 8+ characters.' : x.message)) } finally { setBusy(false) }
-  };
   return (
     <section className="dpos-card"><h2>Staff access</h2>
-      <p className="sub" style={{ marginBottom: 12 }}>Each staff member signs in with their own email and password, and sees only what their role allows. {ROLES.map(r => `${r[1]}: ${r[2].toLowerCase()}.`).join(' ')}</p>
+      <p className="sub" style={{ marginBottom: 12 }}>Staff sign in with their own account and see only what their role allows. {ROLES.map(r => `${r[1]}: ${r[2].toLowerCase()}.`).join(' ')}</p>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       {!rows ? <p className="dpos-empty">Loading…</p> : (
         <ul className="pset-staff">{rows.map(u => (
           <li key={u.id}><span><b>{u.name || u.email}</b><em>{u.email}</em></span>
             {u.role === 'owner' || !owner || u.id === user.id ? <span className="dpos-pill">{u.role === 'owner' ? 'Admin' : (ROLES.find(r => r[0] === u.role)?.[1] || u.role)}</span>
               : <select aria-label={`Role for ${u.email}`} value={u.role} onChange={e => setRole(u, e.target.value)}>{ROLES.map(r => <option key={r[0]} value={r[0]}>{r[1]}</option>)}</select>}</li>))}</ul>)}
-      {owner && (
-        <form onSubmit={add} className="pset-add"><p className="pset-l">ADD A STAFF MEMBER</p>
-          <div className="dpos-grid"><input aria-label="Name" placeholder="Name" value={nw.name} onChange={e => setNw({ ...nw, name: e.target.value })} /><input aria-label="Email" type="email" placeholder="Email" required value={nw.email} onChange={e => setNw({ ...nw, email: e.target.value })} /></div>
-          <div className="dpos-grid"><input aria-label="Password" type="password" placeholder="Password (8+ characters)" required minLength={8} value={nw.password} onChange={e => setNw({ ...nw, password: e.target.value })} />
-            <select aria-label="Role" value={nw.role} onChange={e => setNw({ ...nw, role: e.target.value })}>{ROLES.map(r => <option key={r[0]} value={r[0]}>{r[1]}</option>)}</select></div>
-          <button className="dpos-btn" disabled={busy}>{busy ? 'Adding…' : 'Add staff member'}</button></form>)}
+      <p className="pset-l" style={{ marginTop: 14 }}>NEW STAFF</p>
+      <p className="sub">People are added automatically when they sign in with their email on the Sign in page. Open Users in the sidebar, find them and set their role to give them access.</p>
     </section>
   );
 }

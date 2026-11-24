@@ -80,30 +80,8 @@ export function AdminReviews() {
   );
 }
 
-function AddUserModal({ onClose, onDone }) {
-  const [f, setF] = useState({ name: '', email: '', password: '', role: 'cashier' }); const [busy, setBusy] = useState(false); const [err, setErr] = useState(); const [show, setShow] = useState(false);
-  const submit = async e => {
-    e.preventDefault(); setBusy(true); setErr();
-    try { await api('/admin/users', { method: 'POST', body: { name: f.name.trim(), email: f.email.trim(), password: f.password, role: f.role } }); onDone(); onClose() }
-    catch (x) { setErr(x.issues?.[0]?.message || x.message) } finally { setBusy(false) }
-  };
-  return (
-    <Modal title="Add user" sub="Create a staff login. They sign in at the normal Sign in page." onClose={onClose}>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
-        <label className="f">Full name<input autoFocus value={f.name} maxLength={120} onChange={e => setF({ ...f, name: e.target.value })} /></label>
-        <label className="f">Email<input required type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} autoComplete="off" /></label>
-        <label className="f">Temporary password (8+ characters)<span style={{ display: 'flex', gap: 8 }}><input required minLength={8} type={show ? 'text' : 'password'} value={f.password} onChange={e => setF({ ...f, password: e.target.value })} autoComplete="new-password" /><button type="button" className="dpos-btn ghost sm" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button></span></label>
-        <label className="f">Role<select value={f.role} onChange={e => setF({ ...f, role: e.target.value })}>
-          <option value="cashier">Staff · Billing — can bill, sees today’s bills</option><option value="inventory">Staff · Stock — can adjust stock</option><option value="admin">Admin — manages the store</option><option value="customer">Customer — no admin access</option></select></label>
-        {err && <p className="dpos-err" role="alert">{err}</p>}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn" disabled={busy}>{busy ? 'Creating…' : 'Create user'}</button></div>
-      </form>
-    </Modal>
-  );
-}
-
 export function AdminUsers() {
-  const gate = useGate(); const { user, toast } = useApp(); const [list, setList] = useState(null); const [q, setQ] = useState(''); const [e, setE] = useState(); const [per, setPer] = usePeriod('all'); const [role, setRole_] = useState('all'); const [add, setAdd] = useState(false);
+  const gate = useGate(); const { user, toast } = useApp(); const [list, setList] = useState(null); const [q, setQ] = useState(''); const [e, setE] = useState(); const [per, setPer] = usePeriod('all'); const [role, setRole_] = useState('all');
   const load = () => api('/admin/users').then(setList).catch(x => setE(x.message));
   useEffect(() => { if (!gate) load() }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
   if (gate) return gate;
@@ -112,9 +90,9 @@ export function AdminUsers() {
   const shown = (list || []).filter(u => (!q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase())) && inPeriod(u.created_at, per) && (role === 'all' || (role === 'admins' ? ['owner', 'admin'].includes(u.role) : role === 'staff' ? ['cashier', 'inventory'].includes(u.role) : u.role === 'customer')));
   const setRole = async (u, r) => { try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role: r } }); setList(l => l.map(x => x.id === u.id ? { ...x, role: r } : x)); toast(`${u.email} is now ${r}`) } catch (x) { setE(x.message) } };
   return (
-    <AdminShell title="Users & Roles" sub="Staff with access to this admin. Cashiers can bill; admins manage the store; only the owner adds users and changes roles.">
+    <AdminShell title="Users & Roles" sub="Everyone who signs in appears here automatically. Change a person's role to give them access: cashiers can bill, admins manage the store.">
       {e && <p role="alert" className="dpos-err">{e}</p>}
-      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" /><ExportCsv name="users" header={['Name', 'Email', 'Role', 'Joined']} rows={shown.map(u => [u.name || '', u.email, ROLE_L[u.role] || u.role, u.created_at ? String(u.created_at).slice(0, 10) : ''])} />{isOwner && <button className="dpos-btn" onClick={() => setAdd(true)}><Icon n="plus" size={16} />Add user</button>}<Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
+      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" /><ExportCsv name="users" header={['Name', 'Email', 'Role', 'Joined']} rows={shown.map(u => [u.name || '', u.email, ROLE_L[u.role] || u.role, u.created_at ? String(u.created_at).slice(0, 10) : ''])} /><Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
       <Card>
         {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No users found.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
@@ -123,7 +101,6 @@ export function AdminUsers() {
                 <td>{u.role === 'owner' || !isOwner || u.id === user.id ? <span className={`dpos-pill ${u.role === 'customer' ? '' : 'ok'}`}>{ROLE_L[u.role] || u.role}</span>
                   : <select aria-label={`Role for ${u.email}`} value={u.role} onChange={ev => setRole(u, ev.target.value)} style={{ maxWidth: 150 }}>{['customer', 'cashier', 'inventory', 'admin'].map(r => <option key={r} value={r}>{ROLE_L[r]}</option>)}</select>}</td><td>{when(u.created_at)}</td></tr>))}</tbody></table></div>)}
       </Card>
-      {add && <AddUserModal onClose={() => setAdd(false)} onDone={() => { toast('User created.'); load() }} />}
     </AdminShell>
   );
 }
