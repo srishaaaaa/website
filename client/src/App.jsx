@@ -55,9 +55,19 @@ function AdminHome() {
   return <Navigate to={order.find(p => pages.includes(p)) || '/account'} replace />;
 }
 
+// Admin: once the first admin page is up, fetch the code of every other admin page in the background, so moving between panels is instant.
+let adminWarm = false;
+function warmAdmin() {
+  if (adminWarm) return; adminWarm = true;
+  const go = () => [store, media, more, () => import('./pages/AdminPos'), () => import('./pages/InvoicePage'), () => import('./pages/AdminDelivery'),
+    () => import('./pages/StitchDesigns'), () => import('./pages/StitchPages'), () => import('./pages/AdminStitching')].reduce((p, f) => p.then(() => f()).catch(() => {}), Promise.resolve());
+  (window.requestIdleCallback || (f => setTimeout(f, 1200)))(go, { timeout: 2500 });
+}
+
 export default function App() {
   const { entered, enter, setBagOpen, setSearchOpen, setMenuOpen, setQuick } = useApp();
   const location = useLocation();
+  useEffect(() => { if (location.pathname === '/admin' || location.pathname.startsWith('/admin/')) warmAdmin() }, [location.pathname]);
   const bare = location.pathname.startsWith('/invoice/') || location.pathname.startsWith('/coupon/') || location.pathname.startsWith('/admin/stitching/print/'); // invoice / job card pages are clean documents: no site header, footer, intro or overlays
 
   const admin = location.pathname === '/admin' || location.pathname.startsWith('/admin/'); // the admin panel has its own sidebar: no website menu, footer or intro

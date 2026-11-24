@@ -207,7 +207,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   };
   const patch = (kk, p) => setLines(ls => ls.map(l => l.key === kk ? { ...l, ...p } : l));
   const setQty = (l, n) => { const max = l.stock ?? 99999; patch(l.key, { qty: Math.max(1, Math.min(max, Math.floor(n) || 1)) }) };
-  const drop = kk => setLines(ls => ls.filter(l => l.key !== kk));
+  const drop = kk => setLines(ls => ls.filter(l => l.key !== kk && l.chargeFor !== kk)); // an item's stitching charge goes with it
   const onSearchEnter = e => { // a barcode scanner / typed SKU followed by Enter adds the exact match straight away
     if (e.key !== 'Enter' || !results) return;
     const exact = results.find(r => r.sku.toLowerCase() === q.trim().toLowerCase()) || (results.length === 1 ? results[0] : null);
@@ -296,7 +296,16 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           {ws && <datalist id="dpos-ws-list">{wsItems.map(i => <option key={i.id} value={[i.code, i.company, i.colour].filter(Boolean).join(' · ')} />)}</datalist>}
           {lines.length ? <div className={`dpos-lines ${isGst ? 'gst' : ''}`}><div className="dpos-lh"><span>ITEM NAME / DESCRIPTION</span><span>PRICE (₹)</span>{isGst && <span>GST</span>}<span>QTY</span></div>{lineEls}</div> : <Empty>{ws ? 'No items yet.' : 'No items yet. Press Catalog to pick products, or add a service or custom item.'}</Empty>}
           {catOpen && <CatalogPicker onClose={() => setCatOpen(false)} onPick={addMany} />}
-          {measureLine && <MeasureModal value={measureLine.measure} onClose={() => setMeasureFor(null)} onSave={m => patch(measureLine.key, { measure: m || undefined })} />}
+          {measureLine && <MeasureModal value={measureLine.measure} charge={lines.find(x => x.chargeFor === measureLine.key)?.priceStr || ''} onClose={() => setMeasureFor(null)} onSave={(m, charge) => {
+            // the extra stitching charge is its own bill line, linked to the item it is for
+            setLines(ls => {
+              const next = ls.map(l => l.key === measureLine.key ? { ...l, measure: m || undefined } : l).filter(l => l.chargeFor !== measureLine.key || charge);
+              if (!charge) return next;
+              const name = `Stitching charge · ${measureLine.name || 'item'}`.slice(0, 160);
+              return next.some(l => l.chargeFor === measureLine.key) ? next.map(l => l.chargeFor === measureLine.key ? { ...l, priceStr: charge, name } : l)
+                : [...next, { ...blankCustom(true), name, priceStr: charge, chargeFor: measureLine.key }];
+            });
+          }} />}
         </section>
       </div>
 

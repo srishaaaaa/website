@@ -24,7 +24,9 @@ function Chips({ options, value, onChange, label }) {
   );
 }
 
-export default function MeasureModal({ value, onSave, onClose }) {
+// charge: the extra stitching charge already on the bill for this item (rupees text, '' = none). onSave(measure, charge).
+export default function MeasureModal({ value, onSave, onClose, charge = '' }) {
+  const [extra, setExtra] = useState(charge ? 'extra' : 'free'); const [amt, setAmt] = useState(charge || '');
   useDesigns();
   const [m, setM] = useState(() => ({ frontNeck: '', backNeck: '', sleeveType: '', sleeveLength: '', dueDate: '', ...value, cm: { ...(value?.cm || {}) }, remarks: [...(value?.remarks || [])] }));
   const [sheet, setSheet] = useState(null);
@@ -50,7 +52,7 @@ export default function MeasureModal({ value, onSave, onClose }) {
       ...(m.dueDate ? { dueDate: m.dueDate } : {}), cm, remarks: m.remarks.map(r => r.trim()).filter(Boolean),
     };
     const empty = !Object.keys(cm).length && !out.remarks.length && Object.keys(out).length === 2;
-    onSave(empty ? null : out); onClose();
+    onSave(empty ? null : out, extra === 'extra' && parseFloat(amt) > 0 ? String(parseFloat(amt)) : ''); onClose();
   };
 
   return (
@@ -61,6 +63,16 @@ export default function MeasureModal({ value, onSave, onClose }) {
         <div className="msr-two">{neck('Front neck type', 'frontNeck', FRONT_NECKS, 'front')}{neck('Back neck type', 'backNeck', BACK_NECKS, 'back')}</div>
         <div className="msr-f"><span className="msr-l">Sleeve type</span><Chips label="Sleeve type" options={[...SLEEVE_TYPES, ...SLEEVE_TYPES_X.filter(x => !SLEEVE_TYPES.includes(x))]} value={m.sleeveType} onChange={v => set({ sleeveType: v })} /></div>
         <div className="msr-f"><span className="msr-l">Sleeve length</span><Chips label="Sleeve length" options={[...SLEEVE_LENGTHS, ...SLEEVE_LENGTHS_X.filter(x => !SLEEVE_LENGTHS.includes(x))]} value={m.sleeveLength} onChange={v => set({ sleeveLength: v })} /></div>
+        <div className="msr-f"><span className="msr-l">Stitching charge</span>
+          <div className="msr-charge">
+            <div className="msr-chips" role="radiogroup" aria-label="Stitching charge">
+              <button type="button" role="radio" aria-checked={extra === 'free'} className={extra === 'free' ? 'on' : ''} onClick={() => setExtra('free')}>No extra charge</button>
+              <button type="button" role="radio" aria-checked={extra === 'extra'} className={extra === 'extra' ? 'on' : ''} onClick={() => setExtra('extra')}>Extra charge</button>
+            </div>
+            {extra === 'extra' && <span className="msr-cm msr-amt"><em>₹</em><input autoFocus inputMode="decimal" aria-label="Extra stitching charge in rupees" placeholder="0" value={amt} onChange={e => setAmt(e.target.value.replace(/[^\d.]/g, '').slice(0, 8))} /></span>}
+          </div>
+          {extra === 'extra' && <small className="msr-note">Added to the bill as a separate “Stitching charge” line.</small>}
+        </div>
         <label className="msr-f"><span className="msr-l">Due date (optional)</span><input type="date" value={m.dueDate} onChange={e => set({ dueDate: e.target.value })} /></label>
 
         <div className="msr-rh"><h4 className="msr-h">Remarks</h4><button type="button" className="dpos-btn ghost sm" onClick={() => setRemark('')}>+ Add remark</button></div>
