@@ -35,7 +35,7 @@ export default function invoicePublic({ db }) {
     if (!c) throw new HttpError(404, 'Coupon not found');
     const shop = await shopInfo(db);
     res.set('Cache-Control', 'no-store').json({
-      shop: { name: shop.name, phone: shop.phone },
+      shop: { name: shop.name, phone: shop.phone, logo: shop.logo || null },
       coupon: { code: c.code, discountType: c.discount_type, discountValue: c.discount_value, minOrder: c.min_order, expiresOn: c.expires_on, active: c.active, sentOnly: c.sent_only },
     });
   }));

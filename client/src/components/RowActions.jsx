@@ -8,7 +8,7 @@ export const RetIcon = () => <Ico><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5
 export const EditIcon = () => <Ico><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></Ico>;
 export const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14 11v6" /></Ico>;
 
-export const waUrl = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://wa.me/${d.length === 10 ? '91' + d : ''}?text=${encodeURIComponent(text)}` };
+export const waUrl = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://api.whatsapp.com/send?phone=${d.length === 10 ? '91' + d : ''}&text=${encodeURIComponent(text)}` };
 
 // wa: { phone, text }  ·  doc: click handler or href  ·  eye: click handler
 export default function RowActions({ wa, doc, eye, ret, edit, del, pay, label = '' }) {

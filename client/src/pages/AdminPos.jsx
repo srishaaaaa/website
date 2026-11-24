@@ -703,6 +703,7 @@ function Settings({ onSaved }) {
             <div className="dpos-grid">{f('city', 'City / location', { max: 80 })}{f('hours', 'Business hours', { max: 120, ph: 'e.g. Open daily, 10 AM – 9 PM' })}</div>
             <div className="dpos-grid">{f('shopNameTamil', 'Shop name (Tamil)')}{f('instagram', 'Instagram ID', { max: 60, ph: 'yourshop.official' })}</div>
             <label className="f">GSTIN (on GST invoices)<input value={s.gstin} onChange={e => setS({ ...s, gstin: e.target.value })} maxLength={15} placeholder="Optional · 15 characters" style={{ fontFamily: 'monospace' }} /></label>
+            <label className="f">HSN code (printed on invoice lines)<input value={s.hsn || ''} onChange={e => setS({ ...s, hsn: e.target.value.replace(/\D/g, '').slice(0, 8) })} inputMode="numeric" placeholder="e.g. 6211 for garments" style={{ fontFamily: 'monospace' }} /></label>
             <LogoCard />
           </section>
         </div>

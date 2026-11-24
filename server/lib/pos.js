@@ -137,11 +137,13 @@ export async function getSale(q, invoice) {
     FROM pos_sale_items WHERE sale_id = $1 ORDER BY id`, [sale.id]);
   sale.returns = await returnsFor(q, sale.id);
   // A bill made by completing an advance order: show what was paid as deposit and what was paid at collection.
-  const adv = await one(q, `SELECT code, deposit, deposit_mode, to_jsonb(a) -> 'deposit_split' AS dsplit FROM pos_advances a WHERE a.finalized_invoice = $1`, [invoice]);
+  const adv = await one(q, `SELECT code, deposit, deposit_mode, to_jsonb(a) -> 'deposit_split' AS dsplit, created_at, finalized_at FROM pos_advances a WHERE a.finalized_invoice = $1`, [invoice]);
   if (adv) {
     const dep = depositSplitOf(adv);
     const bal = { cash: Math.max(0, sale.payCash - dep.cash), upi: Math.max(0, sale.payUpi - dep.upi), card: Math.max(0, sale.payCard - dep.card) };
-    sale.advance = { code: adv.code, deposit: adv.deposit, depositSplit: dep, balance: sale.total - adv.deposit, balanceSplit: bal };
+    const given = sale.change > 0 ? sale.cashTendered - dep.cash : null; // cash handed over for the balance, when change was given
+    sale.advance = { code: adv.code, deposit: adv.deposit, depositSplit: dep, depositAt: adv.created_at, balance: sale.total - adv.deposit, balanceSplit: bal, balanceAt: adv.finalized_at || sale.createdAt,
+      ...(given != null ? { balanceCashGiven: given, balanceChange: sale.change } : {}) };
   }
   return sale;
 }
@@ -465,7 +467,7 @@ export const listProducts = async (db, q = '', onlyId = null) => {
 
 // ---- shop details printed on invoices (also used by the public invoice page) ----
 const INVOICE_DEFAULTS = { gstin: '', showGstRetail: false, showGstWholesale: false, deliveryPresets: [], state: 'Tamil Nadu (33)',
-  terms: 'Custom-stitched and altered garments are made to order and are non-returnable.',
+  terms: 'Custom-stitched and altered garments are made to order and are non-returnable.', hsn: '',
   shopName: '', shopAddress: '', shopPhone: '', shopEmail: '', ownerName: '', ownerPhone: '', whatsapp: '', city: '', hours: '', shopNameTamil: '', instagram: '', accent: '' };
 export const invoiceDefaults = INVOICE_DEFAULTS;
 export async function shopInfo(db) {
@@ -475,7 +477,7 @@ export async function shopInfo(db) {
   const lines = String(cfg.shopAddress || '').split('\n').map(s => s.trim()).filter(Boolean);
   return { name: cfg.shopName || st.name || 'DHANYA', address: lines.length ? lines : (st.address ?? []), phone: cfg.shopPhone || st.phone || null, email: cfg.shopEmail || st.email || null, logo,
     accent: cfg.accent || '', ownerName: cfg.ownerName || '', city: cfg.city || '', hours: cfg.hours || '', whatsapp: cfg.whatsapp || '', instagram: cfg.instagram || '', shopNameTamil: cfg.shopNameTamil || '',
-    gstin: cfg.gstin || '', showGst: { retail: !!cfg.showGstRetail, wholesale: !!cfg.showGstWholesale }, deliveryPresets: cfg.deliveryPresets ?? [], state: cfg.state, terms: cfg.terms };
+    gstin: cfg.gstin || '', showGst: { retail: !!cfg.showGstRetail, wholesale: !!cfg.showGstWholesale }, deliveryPresets: cfg.deliveryPresets ?? [], state: cfg.state, terms: cfg.terms, hsn: cfg.hsn || '' };
 }
 
 // ---- advance orders: booked with a deposit now, billed (and stock taken) when the customer collects ----
@@ -538,12 +540,13 @@ export async function setAdvanceStatus(db, user, code, status) {
 
 // Collecting the balance bills the order: a real sale is created (stock is taken now, at the price agreed at booking), the deposit is counted
 // under the mode it was paid in and the balance under `balanceMode`. A retry returns the same invoice.
-export async function finalizeAdvance(db, user, code, { balanceMode, balanceSplit, paymentRef }) {
+export async function finalizeAdvance(db, user, code, { balanceMode, balanceSplit, paymentRef, cashReceived }) {
   const a = await one(db, `SELECT a.*, to_jsonb(a) -> 'deposit_split' AS dsplit FROM pos_advances a WHERE a.code = $1`, [code]);
   if (!a) throw new HttpError(404, 'Advance order not found');
   if (a.status === 'cancelled') throw new HttpError(409, 'This advance order was cancelled', 'cancelled');
   const balance = a.total_amount - a.deposit;
   const dep = depositSplitOf(a), bal = splitOf(balanceMode, balance, balanceSplit, 'balance');
+  if (cashReceived != null && bal.cash > 0 && cashReceived < bal.cash) throw new HttpError(400, 'Cash received is less than the cash part of the balance', 'short_cash');
   const b = { cash: dep.cash + bal.cash, upi: dep.upi + bal.upi, card: dep.card + bal.card };
   const modes = Object.keys(b).filter(k => b[k] > 0);
   const paymentMode = modes.length > 1 ? 'split' : (modes[0] ?? balanceMode);
@@ -554,6 +557,8 @@ export async function finalizeAdvance(db, user, code, { balanceMode, balanceSpli
     discountType: a.discount_type, discountValue: a.discount_value, deliveryFee: a.delivery_fee, paymentMode, cashTendered: paymentMode === 'cash' ? a.total_amount : undefined,
     payments: { cash: b.cash, upi: b.upi, card: b.card }, paymentRef, notes: `Advance order ${code}${a.notes ? ' · ' + a.notes : ''}`,
   });
+  // cash handed over for the balance and the change given back
+  if (cashReceived != null && bal.cash > 0 && cashReceived > bal.cash) await db.query('UPDATE pos_sales SET cash_tendered = $2, change_given = $3 WHERE invoice_no = $1', [sale.invoiceNo, dep.cash + cashReceived, cashReceived - bal.cash]);
   await db.query("UPDATE pos_advances SET status = 'completed', finalized_invoice = $2, finalized_at = COALESCE(finalized_at, now()) WHERE id = $1", [a.id, sale.invoiceNo]);
   await audit(db, user.id, 'pos.advance.finalize', 'pos_advance', code, { invoice: sale.invoiceNo });
   // read the bill again now that it is linked to this advance order, so it carries the deposit / balance breakdown

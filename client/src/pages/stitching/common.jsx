@@ -17,7 +17,7 @@ export const dmy = d => d ? longDate(String(d).slice(0, 10)) : '—';
 export const when = iso => iso ? `${longDate(istDay(iso))}, ${clock(iso)}` : '—';
 export const toPaise = s => { const n = Math.round(parseFloat(String(s ?? '').replace(/,/g, '')) * 100); return Number.isFinite(n) && n > 0 ? n : 0 };
 export const rupees = p => p ? String(p / 100) : '';
-export const waLink = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://wa.me/${d.length === 10 ? '91' + d : ''}?text=${encodeURIComponent(text)}` };
+export const waLink = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://api.whatsapp.com/send?phone=${d.length === 10 ? '91' + d : ''}&text=${encodeURIComponent(text)}` };
 
 // Garment types, status names, field catalogues: one fetch, shared by every Stitching Studio screen (server is the source of truth).
 let metaPromise = null;

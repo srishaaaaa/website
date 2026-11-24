@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { inr } from '../lib/format';
+import BillSummary from './BillSummary';
 
 // The eye button on every admin order list: a clean read-only "Order Details" sheet (customer, bill type, items, totals).
+// bill (+ sale for a billed advance order): shows the complete split-up (discounts, GST, delivery, payments, dates) instead of the short totals.
 // rows: extra summary lines [{ label, value, tone }] shown between Discount and TOTAL (e.g. Advance paid).
-export default function OrderDetailsModal({ no, customer, phone, address, source, isGst, when, items = [], subtotal, discount = 0, delivery = 0, total, rows = [], notes, loading, onClose }) {
+export default function OrderDetailsModal({ no, customer, phone, address, source, isGst, when, items = [], subtotal, discount = 0, delivery = 0, total, rows = [], notes, loading, onClose, bill, sale }) {
   useEffect(() => { const k = e => e.key === 'Escape' && onClose(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k) }, [onClose]);
   const dt = when ? new Date(when) : null;
   const sub = subtotal ?? items.reduce((t, i) => t + i.total, 0);
@@ -22,13 +24,13 @@ export default function OrderDetailsModal({ no, customer, phone, address, source
           </div>
           <h3 className="od-h">Order items</h3>
           <ul className="od-items">{items.map((i, n) => <li key={n}><span><b>{i.name}</b>{i.note && <em>{i.note}</em>}</span><span className="od-amt"><b>{inr(i.total)}</b><small>{i.qty} x {inr(i.unit)}</small></span></li>)}</ul>
-          <div className="od-sums">
+          {bill ? <div className="od-sums od-full"><BillSummary bill={bill} sale={sale} />{rows.map((r, n) => <div key={n} className={r.tone || ''}><span>{r.label}</span><b>{r.value}</b></div>)}</div> : <div className="od-sums">
             <div><span>Subtotal</span><b>{inr(sub)}</b></div>
             {discount > 0 && <div><span>Discount</span><b>-{inr(discount)}</b></div>}
             {delivery > 0 && <div><span>Delivery</span><b>{inr(delivery)}</b></div>}
             {rows.map((r, n) => <div key={n} className={r.tone || ''}><span>{r.label}</span><b>{r.value}</b></div>)}
             <div className="od-total"><span>TOTAL</span><b>{inr(total)}</b></div>
-          </div>
+          </div>}
           {notes && <p className="od-note">Note: {notes}</p>}
         </div>}
       </div>

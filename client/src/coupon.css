@@ -28,3 +28,10 @@
   .pc-ticket { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact } .pc-top { -webkit-print-color-adjust: exact; print-color-adjust: exact }
   .pc-brand b, .pc-foot { color: #330533 !important } .pc-acts { display: none !important } .pc-top::after { display: none }
 }
+
+/* Shop logo above the name */
+.pc-logo { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(232, 196, 120, .7); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); margin-bottom: -6px }
+/* While the PDF is pictured: just the card on its background */
+.pc-page.pc-snap { min-height: 0 !important; padding: 32px 28px !important; width: 520px; max-width: none }
+.pc-page.pc-snap .pc-acts { display: none !important }
+@media print { .pc-logo { box-shadow: none } }

@@ -23,7 +23,7 @@ const depSplit = a => a.depositSplit || { [a.depositMode]: a.deposit };
 const toPaise = s => { const n = Math.round(parseFloat(String(s || '').replace(/,/g, '')) * 100); return Number.isFinite(n) && n > 0 ? n : 0 };
 const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{children}</p> : null;
 const Empty = ({ children }) => <p className="dpos-empty">{children}</p>;
-const waLink = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://wa.me/${d.length === 10 ? '91' + d : ''}?text=${encodeURIComponent(text)}` };
+const waLink = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://api.whatsapp.com/send?phone=${d.length === 10 ? '91' + d : ''}&text=${encodeURIComponent(text)}` };
 const invoiceUrl = token => `${location.origin}/invoice/${token}`;
 const dtShort = iso => ({ d: longDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(iso))), t: clock(iso) });
 const Ico = ({ children, size = 17 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>;
@@ -144,7 +144,7 @@ function QuickDetails({ row, sale, onClose }) {
   if (sale?.returns?.length) rows.push({ label: 'Returned (' + sale.returns.map(x => x.returnNo).join(', ') + ')', value: '-' + inr(sale.returns.reduce((t, x) => t + x.total, 0)), tone: 'bad' });
   return <OrderDetailsModal no={row?.invoiceNo || sale?.invoiceNo} loading={!sale} onClose={onClose} customer={sale?.customerName} phone={sale?.customerPhone} address={sale?.customerAddress}
     source={sale?.source || row?.source} isGst={sale?.isGst ?? row?.isGst} when={sale?.createdAt || row?.createdAt} subtotal={sale?.subtotal} discount={sale?.discount} delivery={sale?.deliveryFee}
-    total={sale?.total} rows={rows} notes={sale?.notes}
+    total={sale?.total} rows={rows} notes={sale?.notes} bill={sale || undefined}
     items={(sale?.items || []).map(i => ({ name: i.name, note: varText(i), qty: i.quantity, unit: i.unitPrice, total: i.lineTotal }))} />;
 }
 
@@ -263,12 +263,14 @@ export function AdvanceModal({ total, onClose, onSave }) {
     <Modal className="adv" title="Save as Advance Order" sub="Not counted as revenue until fully paid" onClose={onClose}>
       <form onSubmit={submit} className="adv-form">
         <div className="adv-total"><span>ORDER TOTAL</span><b>{inr(total)}</b></div>
-        <label className="adv-l">DEPOSIT AMOUNT (₹) *<input autoFocus inputMode="decimal" value={dep} onChange={e => setDep(e.target.value)} placeholder="0.00" /></label>
+        <div className="adv-pair">
+          <label className="adv-l">DEPOSIT AMOUNT (₹) *<input autoFocus inputMode="decimal" value={dep} onChange={e => setDep(e.target.value)} placeholder="0.00" /></label>
+          <label className="adv-l">EXPECTED DELIVERY DATE<input type="date" min={todayStr()} value={date} onChange={e => setDate(e.target.value)} /></label>
+        </div>
         {deposit > 0 && deposit <= total && <p className="adv-due">Balance due: {inr(total - deposit)}</p>}
         <div><p className="adv-l">DEPOSIT PAYMENT MODE</p>
           <PayPicker value={pay} onChange={setPay} amount={deposit} label="Deposit payment mode" /></div>
-        <label className="adv-l">EXPECTED DELIVERY DATE<input type="date" min={todayStr()} value={date} onChange={e => setDate(e.target.value)} /></label>
-        <label className="adv-l">NOTES (OPTIONAL)<textarea rows={3} maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Colour preference, follow-up needed…" /></label>
+        <label className="adv-l">NOTES (OPTIONAL)<textarea rows={2} maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Colour preference, follow-up needed…" /></label>
         <Err>{err}</Err>
         <button className="adv-go" disabled={busy}><ClockIcon /> {busy ? 'SAVING…' : 'CONFIRM ADVANCE ORDER'}</button>
       </form>
@@ -321,11 +323,12 @@ const ADV_STATUS = { pending: ['Pending', 'warn'], ready: ['Ready', 'ok'], compl
 
 // Advance orders: the eye opens the same read-only Order Details sheet (edit / bill lives behind the document icon).
 function AdvanceQuick({ code, onClose }) {
-  const [a, setA] = useState(null);
+  const [a, setA] = useState(null); const [sale, setSale] = useState(null);
   useEffect(() => { api('/admin/pos/advances/' + encodeURIComponent(code)).then(setA).catch(onClose) }, [code, onClose]);
+  useEffect(() => { if (a?.invoiceNo) api('/admin/pos/sales/' + encodeURIComponent(a.invoiceNo)).then(d => setSale(d.sale || d)).catch(() => {}) }, [a?.invoiceNo]);
   return <OrderDetailsModal no={code} loading={!a} onClose={onClose} customer={a?.customerName} phone={a?.customerPhone} address={a?.customerAddress} source="offline" isGst={a?.isGst} when={a?.createdAt}
     subtotal={a?.subtotal} discount={a?.discount} delivery={a?.deliveryFee} total={a?.total} notes={a?.notes}
-    rows={a ? [{ label: 'Advance paid', value: inr(a.deposit) }, { label: 'Balance due', value: inr(a.balance), tone: a.balance > 0 ? 'bad' : '' }] : []}
+    bill={a ? (sale || a) : undefined}
     items={(a?.items || []).map(i => ({ name: i.name, note: i.size ? [i.size, i.color && i.color !== 'Default' ? i.color : ''].filter(Boolean).join(', ') : '', qty: i.qty, unit: i.price, total: i.price * i.qty }))} />;
 }
 
@@ -333,12 +336,12 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
 
   const [invPv, setInvPv] = useState(null);
   const nav = useNavigate();
-  const [a, setA] = useState(null); const [err, setErr] = useState(); const [pay, setPay] = useState(blankPay); const [busy, setBusy] = useState(false);
+  const [a, setA] = useState(null); const [err, setErr] = useState(); const [pay, setPay] = useState(blankPay); const [busy, setBusy] = useState(false); const [given, setGiven] = useState('');
   const load = useCallback(() => api('/admin/pos/advances/' + encodeURIComponent(code)).then(x => { setA(x); setErr() }).catch(e => setErr(e.message)), [code]);
   useEffect(() => { load() }, [load]);
   const act = async fn => { setBusy(true); setErr(); try { await fn(); await load(); onChanged() } catch (e) { setErr(e.message) } finally { setBusy(false) } };
   const setStatus = s => act(() => api(`/admin/pos/advances/${encodeURIComponent(code)}/status`, { method: 'PATCH', body: { status: s } }));
-  const bill = () => { const pp = payParts(pay, a.balance); if (pp.problem) return setErr(pp.problem); act(async () => { const out = await api(`/admin/pos/advances/${encodeURIComponent(code)}/finalize`, { method: 'POST', body: { balanceMode: pp.mode, balanceSplit: pp.split } }); onBilled(out.sale) }) };
+  const bill = () => { const pp = payParts(pay, a.balance); if (pp.problem) return setErr(pp.problem); const cashPart = pp.mode === 'cash' ? a.balance : pp.split?.cash || 0; const got = given.trim() ? toPaise(given) : null; if (got != null && cashPart && got < cashPart) return setErr(`Cash received is less than ${inr(cashPart)}`); act(async () => { const out = await api(`/admin/pos/advances/${encodeURIComponent(code)}/finalize`, { method: 'POST', body: { balanceMode: pp.mode, balanceSplit: pp.split, ...(got != null && cashPart ? { cashReceived: got } : {}) } }); onBilled(out.sale) }) };
   const open = a && (a.status === 'pending' || a.status === 'ready');
   const [sale, setSale] = useState(null);
   useEffect(() => { if (a?.invoiceNo) api('/admin/pos/sales/' + encodeURIComponent(a.invoiceNo)).then(d => setSale(d.sale || d)).catch(() => {}) }, [a?.invoiceNo]);
@@ -353,7 +356,7 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
           <div className="rrp-tiles"><div><small>TOTAL</small><b>{inr(a.total)}</b></div><div className="ok"><small>PAID</small><b>{inr(a.deposit)}</b></div><div className="bad"><small>BALANCE</small><b>{inr(a.balance)}</b></div></div>
           <div className="rrp-info">Deposit {inr(a.deposit)} via {a.depositMode === 'split' ? splitText(depSplit(a)) : (MODE[a.depositMode] || a.depositMode)}</div>
           <p className="rrp-l">PAYMENT METHOD</p>
-          <PayPicker value={pay} onChange={setPay} amount={a.balance} label="Balance paid by" />
+          <PayPicker value={pay} onChange={setPay} amount={a.balance} label="Balance paid by" />{(() => { const pp = payParts(pay, a.balance); const cashPart = pp.mode === 'cash' ? a.balance : pp.split?.cash || 0; const got = given.trim() ? toPaise(given) : 0; return cashPart > 0 && <label className="adv-l adv-given">CASH RECEIVED (OPTIONAL)<input inputMode="decimal" value={given} onChange={e => setGiven(e.target.value.replace(/[^\d.]/g, ''))} placeholder={`${(cashPart / 100).toFixed(2)}`} />{got > cashPart && <small>Return {inr(got - cashPart)} to the customer</small>}</label> })()}
           <div className="rrp-final"><small>FINAL AMOUNT TO COLLECT</small><b>{inr(a.balance)}</b></div>
           <p className="rrp-note">Confirmation marks the order Completed, creates one official invoice, and recognizes the full {inr(a.total)} as revenue.</p>
           <button className="dpos-cta" disabled={busy} onClick={bill}>{busy ? 'Billing…' : `Collect ${inr(a.balance)} & generate bill`}</button>
@@ -371,7 +374,7 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
           {a.notes && <p className="sub">Note: {a.notes}</p>}
           {open && <div className="dpos-box" style={{ display: 'grid', gap: 10 }}>
             <p className="muted small" style={{ fontWeight: 800, letterSpacing: '.1em', margin: 0 }}>BALANCE RECEIVED BY</p>
-            <PayPicker value={pay} onChange={setPay} amount={a.balance} label="Balance paid by" />
+            <PayPicker value={pay} onChange={setPay} amount={a.balance} label="Balance paid by" />{(() => { const pp = payParts(pay, a.balance); const cashPart = pp.mode === 'cash' ? a.balance : pp.split?.cash || 0; const got = given.trim() ? toPaise(given) : 0; return cashPart > 0 && <label className="adv-l adv-given">CASH RECEIVED (OPTIONAL)<input inputMode="decimal" value={given} onChange={e => setGiven(e.target.value.replace(/[^\d.]/g, ''))} placeholder={`${(cashPart / 100).toFixed(2)}`} />{got > cashPart && <small>Return {inr(got - cashPart)} to the customer</small>}</label> })()}
             <button className="dpos-cta" disabled={busy} onClick={bill}>{busy ? 'Billing…' : `Collect ${inr(a.balance)} & generate bill`}</button></div>}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {open && <button className="dpos-btn ghost" disabled={busy} onClick={() => setStatus(a.status === 'pending' ? 'ready' : 'pending')}>{a.status === 'pending' ? 'Mark ready for collection' : 'Back to pending'}</button>}

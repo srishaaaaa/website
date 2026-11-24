@@ -11,7 +11,7 @@ export default function Modal({ title, sub, onClose, wide, className = '', child
       <div className={`dpos-sheet ${wide ? 'wide' : ''} ${className}`}>
         <div className="dpos-mhead"><div><b style={{ fontSize: 17 }}>{title}</b>{sub && <small>{sub}</small>}</div><button type="button" aria-label="Close" onClick={onClose}>✕</button></div>
         {children}
-        {footer && <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16, flexWrap: 'wrap' }}>{footer}</div>}
+        {footer && <div className="mfoot" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16, flexWrap: 'wrap' }}>{footer}</div>}
       </div>
     </div>
   );

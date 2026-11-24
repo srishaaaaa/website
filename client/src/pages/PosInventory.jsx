@@ -55,8 +55,11 @@ function StockModal({ product, variantId, onClose, onDone }) {
 
 // Everything about one product in one window: details, website text, collections, sizes & colours, and photos.
 function VariantRow({ productId, v, basePrice, productCost, canCost, onChanged, setErr, onlyOne }) {
-  const [r, setR] = useState({ size: v.size, color: v.color, sku: v.sku, price: v.priceOverride != null ? rupees(v.priceOverride) : '', cost: v.costOverride != null ? rupees(v.costOverride) : '', weight: v.weightGrams != null ? String(v.weightGrams) : '' });
-  const dirty = r.size !== v.size || r.color !== v.color || r.sku !== v.sku || (r.price ? toPaise(r.price) : null) !== (v.priceOverride ?? null) || (r.cost ? toPaise(r.cost) : null) !== (v.costOverride ?? null) || (r.weight === '' ? null : +r.weight) !== (v.weightGrams ?? null);
+  // The boxes show the size's actual selling / cost price; a value equal to the product's own is saved as "same as product".
+  const ownP = v.priceOverride ?? basePrice, ownC = v.costOverride ?? productCost ?? null;
+  const asOver = (val, base) => { const p = val ? toPaise(val) : null; return p == null || p === base ? null : p };
+  const [r, setR] = useState({ size: v.size, color: v.color, sku: v.sku, price: ownP != null ? rupees(ownP) : '', cost: ownC ? rupees(ownC) : '', weight: v.weightGrams != null ? String(v.weightGrams) : '' });
+  const dirty = r.size !== v.size || r.color !== v.color || r.sku !== v.sku || asOver(r.price, basePrice) !== (v.priceOverride ?? null) || asOver(r.cost, productCost ?? null) !== (v.costOverride ?? null) || (r.weight === '' ? null : +r.weight) !== (v.weightGrams ?? null);
   const call = async (body, method = 'PATCH') => {
     setErr();
     try { await api(`/admin/pos/products/${productId}/variants/${v.id}`, { method, ...(body ? { body } : {}) }); onChanged() }
@@ -67,12 +70,12 @@ function VariantRow({ productId, v, basePrice, productCost, canCost, onChanged, 
       <td><input aria-label="Size" value={r.size} maxLength={40} onChange={e => setR({ ...r, size: e.target.value })} /></td>
       <td><input aria-label="Colour" value={r.color} maxLength={40} onChange={e => setR({ ...r, color: e.target.value })} /></td>
       <td><input aria-label="SKU" value={r.sku} maxLength={80} onChange={e => setR({ ...r, sku: e.target.value.toUpperCase() })} /></td>
-      <td><input aria-label="Own price in rupees" inputMode="decimal" value={r.price} placeholder={rupees(basePrice)} onChange={e => setR({ ...r, price: e.target.value })} /></td>
-      {canCost && <td><input aria-label="Own cost price in rupees" inputMode="decimal" value={r.cost} placeholder={productCost ? rupees(productCost) : 'product cost'} onChange={e => setR({ ...r, cost: e.target.value })} /></td>}
+      {canCost && <td><input aria-label="Cost price in rupees" inputMode="decimal" value={r.cost} placeholder="Cost" onChange={e => setR({ ...r, cost: e.target.value })} /></td>}
+      <td><input aria-label="Selling price in rupees" inputMode="decimal" value={r.price} placeholder={rupees(basePrice)} onChange={e => setR({ ...r, price: e.target.value })} /></td>
       <td><input aria-label="Own weight in grams" inputMode="numeric" value={r.weight} placeholder="Base" onChange={e => setR({ ...r, weight: e.target.value.replace(/\D/g, '') })} /></td>
       <td className="r"><b>{v.stock}</b></td>
       <td className="r pe-acts">
-        {dirty && <button type="button" className="dpos-btn sm" onClick={() => call({ size: r.size.trim(), color: r.color.trim() || 'Default', sku: r.sku.trim(), price: r.price ? toPaise(r.price) : null, cost: r.cost ? toPaise(r.cost) : null, weight: r.weight === '' ? null : +r.weight })}>Save</button>}
+        {dirty && <button type="button" className="dpos-btn sm" onClick={() => call({ size: r.size.trim(), color: r.color.trim() || 'Default', sku: r.sku.trim(), price: asOver(r.price, basePrice), cost: asOver(r.cost, productCost ?? null), weight: r.weight === '' ? null : +r.weight })}>Save</button>}
         <button type="button" className="dpos-btn ghost sm" title={v.active ? 'Hide this size from the website and billing' : 'Show this size again'} onClick={() => call({ active: !v.active })}>{v.active ? 'Hide' : 'Show'}</button>
         <button type="button" className="dpos-btn ghost sm" disabled={onlyOne} aria-label={`Delete ${v.size} ${v.color}`} onClick={() => confirm(`Delete size ${v.size} (${v.color})? Past bills keep their own copy.`) && call(null, 'DELETE')}>✕</button>
       </td>
@@ -136,7 +139,7 @@ function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
         <div style={{ display: 'grid', gap: 12 }}>
           <p className="muted small" style={{ margin: 0 }}>Edit a row and press Save. Leave “Own price” empty to use the product price. Stock is changed with the Stock button in the list.</p>
           <div className="acc-scroll"><table className="dpos-table pe-vars">
-            <thead><tr><th>Size</th><th>Colour</th><th>SKU</th><th>Own price ₹</th>{start.costPrice !== undefined && <th>Cost price ₹</th>}<th className="r">Stock</th><th /></tr></thead>
+            <thead><tr><th>Size</th><th>Colour</th><th>SKU</th>{start.costPrice !== undefined && <th>Cost price ₹</th>}<th>Selling price ₹</th><th className="r">Stock</th><th /></tr></thead>
             <tbody>{(product.variants || []).map(v => <VariantRow key={`${v.id}-${v.size}-${v.color}-${v.sku}-${v.priceOverride}-${v.active}`} productId={product.id} v={v} basePrice={product.price} productCost={product.costPrice} canCost={start.costPrice !== undefined} onChanged={reload} setErr={setErr} onlyOne={product.variants.length <= 1} />)}</tbody>
           </table></div>
           <form onSubmit={addVariant} className="pe-add">
@@ -163,7 +166,7 @@ function AddModal({ categories, onClose, onDone }) {
   const submit = async e => {
     e.preventDefault(); setErr(); setBusy(true);
     const base = slugify(f.name) || 'product';
-    const payload = slug => ({ slug, name: f.name.trim(), description: '', category: f.cat || undefined, price: toPaise(f.price), ...(toPaise(f.cost) ? { cost_price: toPaise(f.cost) } : {}), gst_rate: +f.tax, status: f.status, featured: false,
+    const payload = slug => ({ slug, name: f.name.trim(), description: '', category: f.cat || undefined, price: priceP, ...(costP ? { cost_price: costP } : {}), gst_rate: +f.tax, status: f.status, featured: false,
       variants: vars.map(v => ({ size: v.size.trim() || 'Free Size', color: v.color.trim() || 'Default', sku: (v.sku.trim() || `${slug}-${slugify(v.size) || 'free'}-${slugify(v.color) || 'default'}`).toUpperCase(), stock: Math.max(0, parseInt(v.stock, 10) || 0), ...(toPaise(v.cost) ? { cost: toPaise(v.cost) } : {}) })) });
     try {
       let made;
@@ -242,7 +245,6 @@ function ProductsStock({ manager, stocker, slot }) {
       <div className="dpos-bar-tools inv-filters">
         <div className="inv-chips" role="radiogroup" aria-label="Stock">{[['all', 'All'], ['best', `Best Sellers (${(list || []).filter(p => p.bestSeller).length})`], ['low', 'Low Stock'], ['out', 'Out of Stock']].map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={stock === k} className={`${stock === k ? 'on' : ''} ${k === 'best' && stock !== k ? 'hl' : ''}`} onClick={() => setStock(k)}>{l}</button>)}</div>
         <select aria-label="Category" value={catF} onChange={e => setCatF(e.target.value)}><option value="all">All categories</option>{cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select>
-        <select aria-label="Sort" value={sortBy} onChange={e => setSortBy(e.target.value)}><option value="name">Name A–Z</option><option value="stock-asc">Stock low → high</option><option value="stock-desc">Stock high → low</option><option value="price-asc">Price low → high</option><option value="price-desc">Price high → low</option></select>
         <label className="inv-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4-4" /></svg><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search products…" aria-label="Search products" /></label>
       </div>
       <Err>{err}</Err>
@@ -349,7 +351,15 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
       setNv({ size: '', color: '', sku: '', stock: '' }); reload();
     } catch (x) { setErr(x.issues?.[0]?.message || x.message) }
   };
-  const body = () => ({ name: f.name.trim(), price: toPaise(f.price), costPrice: toPaise(f.cost), taxRate: +f.tax, categorySlug: f.cat || null, status: f.status, description: f.description.trim(), material: f.material.trim(),
+  // With size rows, the product's figures come from the rows: price / cost left empty take the lowest row value, and stock is the rows added up.
+  const filled = vars.filter(v => v.size.trim() || v.stock || v.price || v.cost);
+  const lowest = k => { const xs = filled.map(v => toPaise(v[k])).filter(x => x > 0); return xs.length ? Math.min(...xs) : 0 };
+  const priceP = toPaise(f.price) || lowest('price'), costP = toPaise(f.cost) || lowest('cost');
+  const rowStock = v => Math.max(0, parseInt(v.stock === '' ? f.defStock : v.stock, 10) || 0);
+  const totals = editing
+    ? (product.variants || []).filter(v => v.active !== false).reduce((t, v) => ({ n: t.n + 1, stock: t.stock + v.stock, sell: t.sell + (v.priceOverride ?? product.price) * v.stock, cost: t.cost + (v.costOverride ?? product.costPrice ?? 0) * v.stock }), { n: 0, stock: 0, sell: 0, cost: 0 })
+    : (filled.length ? filled : [{ stock: '' }]).reduce((t, v) => ({ n: t.n + 1, stock: t.stock + rowStock(v), sell: t.sell + (toPaise(v.price) || priceP) * rowStock(v), cost: t.cost + (toPaise(v.cost) || costP) * rowStock(v) }), { n: 0, stock: 0, sell: 0, cost: 0 });
+  const body = () => ({ name: f.name.trim(), price: priceP, costPrice: costP, taxRate: +f.tax, categorySlug: f.cat || null, status: f.status, description: f.description.trim(), material: f.material.trim(),
     featured: f.featured, bestSeller: f.best, lowAlert: Math.max(0, Math.round(+f.low) || 0), weightGrams: Math.max(0, Math.round(+f.weight) || 0) });
   const submit = async e => {
     e.preventDefault(); setErr(); setBusy(true);
@@ -357,6 +367,8 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
       let id = start?.id;
       if (editing) await api(`/admin/pos/products/${id}`, { method: 'PATCH', body: body() });
       else {
+        const ups = []; // upload the photos first: if one fails, nothing has been saved yet
+        for (const file of files) { try { ups.push(await uploadImage(file.file)) } catch (x) { throw new Error(`Photo “${file.file.name}” could not be uploaded: ${x.message}`) } }
         const base = slugify(f.name) || 'product';
         const rowsOk = vars.filter(v => v.size.trim() || v.stock || v.price || v.cost);
         const list = (rowsOk.length ? rowsOk : [{ size: '', color: '', sku: '', stock: '' }]);
@@ -372,7 +384,7 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
           const sp = toPaise(v.price); const row = fresh?.variants.find(x => x.size === (v.size.trim() || 'Free Size') && x.color === (v.color.trim() || 'Default'));
           if (sp && row) await api(`/admin/pos/products/${id}/variants/${row.id}`, { method: 'PATCH', body: { price: sp } });
         }
-        for (const file of files) { const up = await uploadImage(file.file); await api(`/admin/products/${id}/images`, { method: 'POST', body: { url: up.url, alt: f.name.trim() } }) }
+        for (const up of ups) await api(`/admin/products/${id}/images`, { method: 'POST', body: { url: up.url, alt: f.name.trim() } });
       }
       await api(`/admin/pos/products/${id}/suggested`, { method: 'PUT', body: { ids: picked.map(p => p.id) } });
       toast(editing ? 'Product saved.' : 'Product added to the catalog.'); onDone(); onClose();
@@ -388,34 +400,31 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
           <div className="pe2-l">
             <h3>Basic Details</h3>
             <label className="pe2-f">PRODUCT NAME<input required autoFocus={!editing} value={f.name} maxLength={160} onChange={e => setF({ ...f, name: e.target.value })} placeholder="e.g. Kanjivaram Silk Saree · Maroon" /></label>
-            <label className="pe2-f">DESCRIPTION<textarea rows={5} maxLength={4000} value={f.description} onChange={e => setF({ ...f, description: e.target.value })} placeholder="Tell your customers about this product…" /></label>
+            <label className="pe2-f">DESCRIPTION<textarea rows={4} maxLength={4000} value={f.description} onChange={e => setF({ ...f, description: e.target.value })} placeholder="Tell your customers about this product…" /></label>
+        <section className="pe2-media in">
+              <div className="pe2-gh"><h3>Photos</h3>{!editing && <button type="button" className="pe2-up" onClick={() => fileIn.current.click()}>Upload</button>}</div>
+              {editing ? <ProductPhotos product={product} onChanged={() => { reload() }} /> : (
+                <div className="pe2-ph">{files.map((x, i) => <span key={i} className="pe2-th"><img src={x.url} alt="" /><button type="button" aria-label="Remove photo" onClick={() => setFiles(fs => fs.filter((_, n) => n !== i))}>✕</button></span>)}
+                  <button type="button" className="pe2-plus" aria-label="Add photos" onClick={() => fileIn.current.click()}>+</button>
+                  <input ref={fileIn} type="file" hidden multiple accept="image/jpeg,image/png,image/webp" onChange={e => { pickFiles(e.target.files); e.target.value = '' }} /></div>)}
+          </section>
           </div>
           <div className="pe2-r">
             <h3>Organization &amp; Pricing</h3>
             <div className="pe2-g">
               <label className="pe2-f">CATEGORY<select value={f.cat} onChange={e => setF({ ...f, cat: e.target.value })}><option value="">Select category</option>{categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select></label>
               <label className="pe2-f">STATUS<select value={f.status} onChange={e => setF({ ...f, status: e.target.value })}><option value="active">Active (on sale)</option><option value="draft">Draft (hidden)</option>{editing && <option value="archived">Archived</option>}</select></label>
-              <label className="pe2-f">SELLING PRICE (₹)<input required inputMode="decimal" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} placeholder="0" /></label>
               <label className="pe2-f">COST PRICE (₹)<input inputMode="decimal" value={f.cost} onChange={e => setF({ ...f, cost: e.target.value })} placeholder="What you paid" /></label>
+              <label className="pe2-f">SELLING PRICE (₹)<input required={editing || !lowest('price')} inputMode="decimal" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} placeholder="0" /></label>
               <label className="pe2-f">GST %<select value={f.tax} onChange={e => setF({ ...f, tax: e.target.value })}>{[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}</select></label>
               <label className="pe2-f">FABRIC / MATERIAL<input value={f.material} maxLength={80} onChange={e => setF({ ...f, material: e.target.value })} placeholder="e.g. Cotton" /></label>
               <label className="pe2-f">WEIGHT (GRAMS)<input inputMode="numeric" value={f.weight} onChange={e => setF({ ...f, weight: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 650" /></label>
-            </div>
-            <h3 style={{ marginTop: 18 }}>Inventory Alerts</h3>
-            <div className="pe2-g">
               {!editing && <label className="pe2-f">DEFAULT STOCK<input type="number" min="0" value={f.defStock} onChange={e => setF({ ...f, defStock: e.target.value })} /></label>}
               <label className="pe2-f">LOW-STOCK ALERT AT<input type="number" min="0" value={f.low} onChange={e => setF({ ...f, low: e.target.value })} /></label>
             </div>
-            <p className="pe2-hint">{!editing && 'DEFAULT STOCK FILLS ANY SIZE ROW LEFT EMPTY · '}ALERT IS COMPARED AGAINST THE TOTAL ACROSS ALL VARIANTS</p>
+            <p className="pe2-hint">{!editing && 'Leave selling / cost price empty to use the lowest size price. Default stock fills any size row left empty. '}The low-stock alert (default 3) is checked against the total stock of all sizes.</p>
           </div>
         </div>
-        <section className="pe2-media">
-            <div className="pe2-gh"><h3>Media Gallery</h3>{!editing && <button type="button" className="pe2-up" onClick={() => fileIn.current.click()}>Upload</button>}</div>
-            {editing ? <ProductPhotos product={product} onChanged={() => { reload() }} /> : (
-              <div className="pe2-ph">{files.map((x, i) => <span key={i} className="pe2-th"><img src={x.url} alt="" /><button type="button" aria-label="Remove photo" onClick={() => setFiles(fs => fs.filter((_, n) => n !== i))}>✕</button></span>)}
-                <button type="button" className="pe2-plus" aria-label="Add photos" onClick={() => fileIn.current.click()}>+</button>
-                <input ref={fileIn} type="file" hidden multiple accept="image/jpeg,image/png,image/webp" onChange={e => { pickFiles(e.target.files); e.target.value = '' }} /></div>)}
-        </section>
         <section className="pe2-var">
           <div className="pe2-vh"><div><h3>Product Variants</h3><p className="pe2-hint">MANAGE SIZES, COLOURS AND SPECIFIC INVENTORY</p></div>
             {!editing && <button type="button" className="dpos-btn" onClick={() => setVars(v => [...v, { size: '', color: '', sku: '', price: '', cost: '', weight: '', stock: '' }])}>+ Add Row</button>}</div>
@@ -435,21 +444,22 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
             </>
           ) : (
             <div className="pe2-rows">
-              <div className="pe2-rh"><span>SIZE</span><span>COLOUR</span><span>SELLING (₹)</span><span>COST (₹)</span><span>WEIGHT (G)</span><span>STOCK</span><span /></div>
+              <div className="pe2-rh"><span>SIZE</span><span>COLOUR</span><span>COST PRICE (₹)</span><span>SELLING PRICE (₹)</span><span>WEIGHT (G)</span><span>STOCK</span><span /></div>
               {vars.map((v, i) => (
                 <div className="pe2-row" key={i}>
                   <input aria-label="Size" placeholder="e.g. M" value={v.size} onChange={e => setV(i, { size: e.target.value })} />
                   <input aria-label="Colour" placeholder="e.g. Blue" value={v.color} onChange={e => setV(i, { color: e.target.value })} />
-                  <input aria-label="Selling price" inputMode="decimal" placeholder="Same" value={v.price} onChange={e => setV(i, { price: e.target.value })} />
                   <input aria-label="Cost price" inputMode="decimal" placeholder="Same" value={v.cost} onChange={e => setV(i, { cost: e.target.value })} />
+                  <input aria-label="Selling price" inputMode="decimal" placeholder="Same" value={v.price} onChange={e => setV(i, { price: e.target.value })} />
                   <input aria-label="Weight in grams" inputMode="numeric" placeholder="Base" value={v.weight} onChange={e => setV(i, { weight: e.target.value.replace(/\D/g, '') })} />
                   <input aria-label="Stock" inputMode="numeric" placeholder="0" value={v.stock} onChange={e => setV(i, { stock: e.target.value.replace(/\D/g, '') })} />
                   <button type="button" aria-label="Remove row" disabled={vars.length === 1} onClick={() => setVars(vs => vs.filter((_, n) => n !== i))}><Icon n="trash" size={16} /></button>
                 </div>))}
             </div>)}
         </section>
-        <div className="pe2-foot"><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn lg" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save Changes' : 'Add to Catalog'}</button></div>
+        <p className="pe2-tot"><span>{totals.n} {totals.n === 1 ? 'size' : 'sizes'}</span><span>Total stock <b>{totals.stock}</b></span><span>Selling value <b>{inr(totals.sell)}</b></span><span>Cost value <b>{inr(totals.cost)}</b></span></p>
         <SuggestPicker selfId={start?.id} picked={picked} setPicked={setPicked} />
+        <div className="pe2-foot"><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button className="dpos-btn lg" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save Changes' : 'Add to Catalog'}</button></div>
       </form>
     </div>
   );

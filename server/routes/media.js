@@ -60,8 +60,10 @@ export function mediaPublic({ db }) {
 export function mediaAdmin({ db, auth }) {
   const r = Router();
   const staff = auth.role('owner', 'admin');
+  const photos = pageGuard(db, auth, ['/admin/billing/inventory', '/admin/storefront']); // product photos: whoever manages products
 
-  r.post('/media', pageGuard(db, auth, '/admin/storefront'), express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'], limit: MAX_BYTES }), wrap(async (req, res) => {
+  // Anyone who manages photos somewhere (storefront, reels, products, categories, designs) can upload.
+  r.post('/media', pageGuard(db, auth, ['/admin/storefront', '/admin/reels', '/admin/billing/inventory', '/admin/categories', '/admin/stitching/designs']), express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'], limit: MAX_BYTES }), wrap(async (req, res) => {
     if (!Buffer.isBuffer(req.body) || !req.body.length) throw new HttpError(400, 'Send the file as the request body (JPEG, PNG, WebP, MP4 or WebM, up to 4 MB)');
     const mime = sniff(req.body);
     if (!mime || mime !== req.get('content-type')?.split(';')[0]) throw new HttpError(400, 'That file is not a valid JPEG, PNG, WebP, MP4 or WebM file');
@@ -85,8 +87,8 @@ export function mediaAdmin({ db, auth }) {
   const gallery = (productId) => rows(db, 'SELECT id, image_url AS url, alt_text AS alt, color, focus_x AS "focusX", focus_y AS "focusY", display_order FROM product_images WHERE product_id = $1 ORDER BY display_order, id', [productId]);
   const pid = z.coerce.number().int().positive();
 
-  r.get('/products/:id/images', staff, wrap(async (req, res) => res.json(await gallery(pid.parse(req.params.id)))));
-  r.post('/products/:id/images', staff, wrap(async (req, res) => {
+  r.get('/products/:id/images', photos, wrap(async (req, res) => res.json(await gallery(pid.parse(req.params.id)))));
+  r.post('/products/:id/images', photos, wrap(async (req, res) => {
     const id = pid.parse(req.params.id);
     const d = z.object({ url: imageUrl, alt: z.string().trim().max(200).default(''), color: z.string().trim().max(40).nullable().default(null) }).parse(req.body);
     if (!(await one(db, 'SELECT 1 AS x FROM products WHERE id = $1', [id]))) throw new HttpError(404, 'Product not found');
@@ -95,13 +97,13 @@ export function mediaAdmin({ db, auth }) {
     await audit(db, req.user.id, 'product.image.add', 'product', id, { url: d.url });
     res.status(201).json(await gallery(id));
   }));
-  r.put('/products/:id/images/order', staff, wrap(async (req, res) => {
+  r.put('/products/:id/images/order', photos, wrap(async (req, res) => {
     const id = pid.parse(req.params.id);
     const { ids } = z.object({ ids: z.array(z.number().int()).max(60) }).parse(req.body);
     await db.tx(async t => { for (const [i, imgId] of ids.entries()) await t.query('UPDATE product_images SET display_order = $1 WHERE id = $2 AND product_id = $3', [i, imgId, id]) });
     res.json(await gallery(id));
   }));
-  r.patch('/images/:imageId', staff, wrap(async (req, res) => {
+  r.patch('/images/:imageId', photos, wrap(async (req, res) => {
     const pct = z.number().int().min(0).max(100).nullable();
     const d = z.object({ alt: z.string().trim().max(200).optional(), color: z.string().trim().max(40).nullable().optional(), focusX: pct.optional(), focusY: pct.optional() })
       .refine(b => b.alt !== undefined || b.color !== undefined || b.focusX !== undefined || b.focusY !== undefined, 'Nothing to change')
@@ -112,7 +114,7 @@ export function mediaAdmin({ db, auth }) {
     if (!u.rows.length) throw new HttpError(404, 'Image not found');
     res.json(await gallery(u.rows[0].product_id));
   }));
-  r.delete('/images/:imageId', staff, wrap(async (req, res) => {
+  r.delete('/images/:imageId', photos, wrap(async (req, res) => {
     const d = await db.query('DELETE FROM product_images WHERE id = $1 RETURNING product_id, image_url', [pid.parse(req.params.imageId)]);
     if (!d.rows.length) throw new HttpError(404, 'Image not found');
     await dropIfOrphan(db, d.rows[0].image_url);

@@ -30,8 +30,6 @@ export default function StockMovements({ onSnapshot }) {
     (data?.rows || []).map(r => [istDay(r.at), clock(r.at), r.name, r.size, r.color, r.sku, label(r.reason)[0], r.change, r.before, r.after, r.ref]));
   return (
     <>
-      <h2 className="sm-h">Stock Movements</h2>
-      <p className="sub sm-sub">Every change to stock — restocks, sales, returns, losses and counts — with before and after levels.</p>
       <div className="sm-bar">
         <PeriodFilter value={per} onChange={setPer} />
         <span className="sm-sp" />
@@ -48,8 +46,8 @@ export default function StockMovements({ onSnapshot }) {
       </div>
       <section className="sm-ledger">
         <div className="sm-lh"><b>MOVEMENT AUDIT LEDGER ({data ? data.summary.count : '…'})</b>
-          <label className="sm-search"><Glyph><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Glyph><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search product, bill no. or note…" aria-label="Search movements" /></label>
-          <select value={type} onChange={e => setType(e.target.value)} aria-label="Movement type">{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+          <span className="sm-lt"><label className="sm-search"><Glyph><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Glyph><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search product, bill no. or note…" aria-label="Search movements" /></label>
+          <select value={type} onChange={e => setType(e.target.value)} aria-label="Movement type">{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></span></div>
         <div className="dpos-tw"><table><thead><tr><th>Date &amp; time</th><th>Product</th><th>Type</th><th className="r">Change</th><th className="r">Stock level</th><th>Reference / note</th></tr></thead>
           <tbody>{!data ? <tr><td colSpan="6" className="dpos-empty">Loading…</td></tr> : !data.rows.length ? <tr><td colSpan="6" className="dpos-empty">No stock movements in this period.</td></tr> : data.rows.map(r => { const [l, tone] = label(r.reason); return (
             <tr key={r.id}><td>{longDate(istDay(r.at))}, {clock(r.at)}</td>

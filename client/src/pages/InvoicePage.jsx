@@ -28,6 +28,13 @@ export function A4Doc({ sale, shop }) {
   const open = 'deposit' in sale && !('paymentMode' in sale);
   const showGst = shop.gstin && shop.showGst?.[sale.channel];
   const terms = String(shop.terms || '').split('\n').map(t => t.trim()).filter(Boolean);
+  // GST columns and the GST-by-rate table (GST bills only)
+  const gst = !!sale.isGst && sale.tax > 0;
+  const rateOf = i => sale.gstRate ?? i.taxRate ?? 0;
+  const gstTable = gst ? Object.values(sale.items.reduce((m, i) => {
+    const r = rateOf(i), base = (i.lineTotal || 0) - (i.discount || 0); const g = m[r] ??= { rate: r, taxable: 0, tax: 0 };
+    g.taxable += base; g.tax += i.tax ?? Math.round(base * r / 100); return m;
+  }, {})).filter(g => g.rate > 0).sort((a, b) => a.rate - b.rate).map(g => { const c = Math.floor(g.tax / 2); return { ...g, cgst: c, sgst: g.tax - c } }) : [];
   return (
     <article className="inv-doc">
       {sale.status === 'voided' && <div className="inv-void" aria-hidden="true">VOID</div>}
@@ -60,13 +67,18 @@ export function A4Doc({ sale, shop }) {
         <div><p className="inv-l">BILLED TO</p><b className="inv-who">{sale.customerName || 'Walk-in Customer'}</b>{sale.customerPhone && <p className="inv-sm">{phoneShown(sale.customerPhone)}</p>}{sale.customerAddress && <p className="inv-sm">{sale.customerAddress}</p>}</div>
         <div className="inv-r"><p className="inv-l">PLACE OF SUPPLY</p><b>{shop.state}</b></div>
       </section>
-      <table className="inv-items">
-        <thead><tr><th>#</th><th>ITEM DESCRIPTION</th><th className="c">QTY</th><th className="r">RATE (₹)</th><th className="r">AMOUNT (₹)</th></tr></thead>
+      <table className={`inv-items ${gst ? 'gst' : ''}`}>
+        <thead><tr><th>#</th><th>ITEM DESCRIPTION</th>{shop.hsn && <th className="c">HSN</th>}{gst && <th className="c">GST %</th>}{gst && <th className="r">MRP (₹)</th>}<th className="c">QTY</th><th className="r">RATE (₹)</th><th className="r">AMOUNT (₹)</th></tr></thead>
         <tbody>{sale.items.map((i, n) => (
           <tr key={n}><td className="n">{n + 1}</td>
             <td><b>{i.name}</b>{i.variant?.size ? <span className="inv-var"> ({i.variant.size}{i.variant.color && i.variant.color !== 'Default' ? `, ${i.variant.color}` : ''})</span> : null}{i.variant?.measure && <span className="inv-msr">{measureSummary(i.variant.measure)}</span>}</td>
-            <td className="c mono">{i.quantity}{i.returnedQty > 0 && <small className="inv-ret">returned {i.returnedQty}</small>}</td><td className="r mono muted">{num2(i.unitPrice)}</td><td className="r mono"><b>{num2(i.lineTotal)}</b></td></tr>))}</tbody>
+            {shop.hsn && <td className="c mono">{shop.hsn}</td>}{gst && <td className="c mono">{rateOf(i)}%</td>}{gst && <td className="r mono muted">{num2(Math.round(i.unitPrice * (100 + rateOf(i)) / 100))}</td>}<td className="c mono">{i.quantity}{i.returnedQty > 0 && <small className="inv-ret">returned {i.returnedQty}</small>}</td><td className="r mono muted">{num2(i.unitPrice)}</td><td className="r mono"><b>{num2(i.lineTotal)}</b></td></tr>))}</tbody>
       </table>
+      {gst && gstTable.length > 0 && (
+        <table className="inv-gst">
+          <thead><tr><th>GST RATE</th><th className="r">TAXABLE VALUE</th><th className="r">CGST</th><th className="r">SGST</th><th className="r">TOTAL TAX</th></tr></thead>
+          <tbody>{gstTable.map(g => <tr key={g.rate}><td>{g.rate}%</td><td className="r mono">{money(g.taxable)}</td><td className="r mono">{money(g.cgst)} <small>@{g.rate / 2}%</small></td><td className="r mono">{money(g.sgst)} <small>@{g.rate / 2}%</small></td><td className="r mono"><b>{money(g.cgst + g.sgst)}</b></td></tr>)}</tbody>
+        </table>)}
       <section className="inv-foot">
         <div className="inv-words">
           <p className="inv-l">AMOUNT IN WORDS</p>
@@ -198,7 +210,7 @@ export default function InvoicePage() {
   const staff = !!user && ['owner', 'admin', 'cashier'].includes(user.role), manager = !!user && ['owner', 'admin'].includes(user.role);
   const link = `${location.origin}/invoice/${token}`;
   const digits = String(sale.customerPhone || '').replace(/\D/g, '').slice(-10);
-  const wa = `https://wa.me/${digits.length === 10 ? '91' + digits : ''}?text=${encodeURIComponent(`Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop.name} for ${money(sale.total)}: ${link}`)}`;
+  const wa = `https://api.whatsapp.com/send?phone=${digits.length === 10 ? '91' + digits : ''}&text=${encodeURIComponent(`Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop.name} for ${money(sale.total)}: ${link}`)}`;
   const copy = async () => { try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { window.prompt('Copy this link', link) } };
   const printNow = ({ type, paper: p }) => { setFmt(type === 'thermal' ? 'thermal' : 'a4'); setPaper(p); setPs(false); setTimeout(() => window.print(), 350) };
   const voidIt = async () => {

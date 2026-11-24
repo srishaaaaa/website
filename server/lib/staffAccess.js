@@ -31,9 +31,11 @@ export async function loadAccess(db) {
   return out;
 }
 // A route that an admin can hand to Staff: owner / admin always pass; any other staff member needs the page ticked in Settings → Staff permissions.
+// page may be a list: having any one of those pages is enough.
 export const pageGuard = (db, auth, page) => [...auth.role('owner', 'admin', 'cashier', 'inventory'), wrap(async (req, _res, next) => {
   if (['owner', 'admin'].includes(req.user.role)) return next();
-  if ((await loadAccess(db))[req.user.role]?.includes(page)) return next();
+  const mine = (await loadAccess(db))[req.user.role] || [];
+  if ([].concat(page).some(p => mine.includes(p))) return next();
   throw new HttpError(403, 'Not allowed for your role');
 })];
 export const pagesFor = (access, role) => role === 'owner' || role === 'admin' ? ALL : (access[role] || []);

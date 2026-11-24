@@ -57,12 +57,12 @@ function Recipients({ c, shop, onClose, onDone }) {
   };
   const n = (list || []).filter(p => p.sent || sent[p.phone]).length;
   return (
-    <Modal className="cpm" title={<>Send <span className="mono">{c.code}</span> to customers</>} onClose={onClose} footer={<><span className="muted small" style={{ marginRight: 'auto' }}>{n} sent</span><button className="dpos-btn" onClick={onClose}>Done · {n} sent</button></>}>
+    <Modal className="cpm" title={<>Send <span className="mono">{c.code}</span> to customers</>} onClose={onClose} footer={<><span className="cpm-count">{n} of {(list || []).length} sent</span><button className="dpos-btn" onClick={onClose}>Done</button></>}>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       {!list ? <p className="muted">Loading…</p> : !list.length ? <p className="muted">No customers with a mobile number yet.</p> : (
         <ul className="cp-rec">{list.map(p => { const done = p.sent || sent[p.phone]; return (
           <li key={p.phone}><span><b>{p.name || 'Customer'}</b><em>{p.phone}</em></span>
-            <button type="button" className={`cp-send ${done ? 'done' : ''}`} onClick={() => send(p)}>{done ? 'SENT ✓ · AGAIN' : 'SEND'}</button></li>) })}</ul>)}
+            <span className="cp-rec-act">{done && <span className="cp-rec-ok">✓ Sent</span>}<button type="button" className={`cp-send ${done ? 'done' : ''}`} onClick={() => send(p)}>{done ? 'Send again' : 'Send'}</button></span></li>) })}</ul>)}
     </Modal>
   );
 }

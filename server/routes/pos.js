@@ -61,6 +61,7 @@ const settingsBody = z.object({
   deliveryPresets: z.array(z.object({ name: text(60).min(1), fee: paise })).max(20).default([]),
   state: text(60).default('Tamil Nadu (33)'),
   terms: text(600).default('Custom-stitched and altered garments are made to order and are non-returnable.'),
+  hsn: text(12).regex(/^(\d{4,8})?$/, 'HSN code is 4 to 8 digits').default(''), // printed on each invoice line
   // Shop details printed on POS bills. Blank means "use the website's store details".
   shopName: text(80).default(''), shopAddress: text(400).default(''), shopPhone: text(30).default(''), shopEmail: text(120).default(''),
   ownerName: text(80).default(''), ownerPhone: text(30).default(''), whatsapp: text(30).default(''), city: text(80).default(''), hours: text(120).default(''), shopNameTamil: text(80).default(''), instagram: text(60).default(''),
@@ -258,7 +259,7 @@ export default function pos({ db, auth }) {
     res.json(await setAdvanceStatus(db, req.user, req.params.code, status));
   }));
   r.post('/pos/advances/:code/finalize', biller, wrap(async (req, res) => {
-    const d = z.object({ balanceMode: z.enum(['cash', 'upi', 'card', 'split']).default('cash'), balanceSplit: z.object({ cash: paise.default(0), upi: paise.default(0), card: paise.default(0) }).optional(), paymentRef: text(80).optional() }).parse(req.body);
+    const d = z.object({ balanceMode: z.enum(['cash', 'upi', 'card', 'split']).default('cash'), balanceSplit: z.object({ cash: paise.default(0), upi: paise.default(0), card: paise.default(0) }).optional(), paymentRef: text(80).optional(), cashReceived: paise.optional() }).parse(req.body);
     res.json(await finalizeAdvance(db, req.user, req.params.code, d));
   }));
 

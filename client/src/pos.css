@@ -146,3 +146,118 @@ div.dpos .inv-filters .inv-chips { flex-wrap: wrap }
 div.dpos .inv-filters select { width: 160px; min-width: 0 !important; height: 34px; padding: 0 12px !important; font-size: 12.5px !important; border-radius: 10px !important }
 div.dpos .inv-filters .inv-search { flex: 1 1 180px; max-width: 280px; min-width: 150px; height: 34px; padding: 0 12px; border-radius: 10px }
 div.dpos .inv-filters .inv-search input { padding: 0 !important; height: 32px; font-size: 13px !important }
+
+/* Add / Edit product: photos sit under the description; pricing and stock share one grid; totals under the sizes */
+div.dpos-modal .pe2 .pe2-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) !important; align-items: start !important }
+div.dpos-modal .pe2 .pe2-l { gap: 10px !important }
+div.dpos-modal .pe2 .pe2-l textarea { min-height: 84px !important; max-height: 140px }
+div.dpos-modal .pe2 .pe2-media.in { padding: 0 !important; border: 0 !important; background: transparent !important; margin-top: 4px }
+div.dpos-modal .pe2 .pe2-media.in .pe2-gh { margin-bottom: 6px } div.dpos-modal .pe2 .pe2-media.in h3 { margin: 0 }
+div.dpos-modal .pe2 .pe2-media.in .pe2-up { font-size: 12px; font-weight: 700; color: #5a1560 }
+div.dpos-modal .pe2 .pe2-media.in .pe2-plus, div.dpos-modal .pe2 .pe2-media.in .pe2-th { width: 72px; height: 72px; border-radius: 12px }
+div.dpos-modal .pe2 .pe2-media.in .pphotos .adm-gal > * { width: 110px }
+div.dpos-modal .pe2 .pe2-r { border-left: 1px solid #ece6dd }
+div.dpos-modal .pe2 .pe2-g { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px 12px !important }
+div.dpos-modal .pe2 .pe2-hint { margin: 2px 0 0; font-size: 11px; line-height: 1.45; letter-spacing: 0; text-transform: none; color: #7a6f7c }
+div.dpos-modal .pe2 .pe2-tot { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; padding: 10px 20px; border-top: 1px solid #ece6dd; background: #faf7f2; font-size: 12.5px; color: #6f6875 }
+div.dpos-modal .pe2 .pe2-tot b { color: #17131a; margin-left: 4px }
+@media (max-width: 760px) { div.dpos-modal .pe2 .pe2-top { grid-template-columns: 1fr !important } div.dpos-modal .pe2 .pe2-r { border-left: 0; border-top: 1px solid #ece6dd } div.dpos-modal .pe2 .pe2-g { grid-template-columns: repeat(2, minmax(0, 1fr)) !important } }
+div.dpos-modal .pe2 .pe2-sug { padding: 12px 20px !important; border-top: 1px solid #ece6dd }
+div.dpos-modal .pe2 .pe2-sug h3 { margin: 0 } div.dpos-modal .pe2 .pe2-sug .pe2-hint { margin: 0 0 8px }
+div.dpos-modal .pe2 .pe2-sug > input { height: 36px; margin-bottom: 10px }
+div.dpos-modal .pe2 .pe2-two { gap: 12px } div.dpos-modal .pe2 .pe2-two h4 { padding: 9px 14px; font-size: 10.5px }
+div.dpos-modal .pe2 .pe2-two ul { max-height: 200px } div.dpos-modal .pe2 .pe2-two li { padding: 7px 12px; gap: 10px }
+div.dpos-modal .pe2 .pe2-two li img, div.dpos-modal .pe2 .pe2-two li i { width: 36px; height: 36px; border-radius: 8px }
+div.dpos-modal .pe2 .pe2-two .pe2-empty { padding: 14px; margin: 0; font-size: 12.5px }
+/* Save buttons stay at the bottom of the window */
+div.dpos-modal .pe2 .pe2-foot { position: sticky; bottom: 0; z-index: 3; background: #fff; padding: 12px 20px !important; margin-top: 0; box-shadow: 0 -6px 16px rgba(23, 19, 26, .06) }
+div.dpos-modal .pe2 .pe2-var { padding: 12px 20px !important }
+div.dpos-modal .pe2 .pe2-var .pe2-vh { margin-bottom: 8px } div.dpos-modal .pe2 .pe2-var h3 { margin: 0 }
+
+/* Search boxes with a magnifier: the icon sits inside the box, the text starts after it */
+div.dpos label.adv-search, div.dpos label.sm-search, div.dpos label.an-search, .dpos-modal label.adv-search, .dpos-modal label.sm-search { position: relative !important; display: flex !important; align-items: center }
+div.dpos label.adv-search > svg, div.dpos label.sm-search > svg, div.dpos label.an-search > svg, .dpos-modal label.adv-search > svg, .dpos-modal label.sm-search > svg { position: absolute !important; left: 14px !important; top: 50% !important; transform: translateY(-50%); margin: 0 !important; z-index: 1; pointer-events: none }
+div.dpos label.adv-search > input, div.dpos label.sm-search > input, div.dpos label.an-search > input, .dpos-modal label.adv-search > input, .dpos-modal label.sm-search > input { padding-left: 42px !important; width: 100% }
+
+/* Stock Movements: no repeated heading; period, refresh and exports on one slim row; compact totals; ledger tools on the title line */
+div.dpos .sm-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px !important; margin: 0 0 12px !important; border-radius: 14px }
+div.dpos .sm-bar .sm-sp { flex: 1 }
+div.dpos .sm-bar .sm-ic { width: 34px; height: 34px }
+div.dpos .sm-bar .sm-btn { height: 34px; padding: 0 12px !important; font-size: 11px !important; border-radius: 10px !important; gap: 6px }
+div.dpos .sm-kpis { gap: 10px !important; margin: 0 0 12px !important }
+div.dpos .sm-k { padding: 12px 14px !important; gap: 12px !important; border-radius: 14px !important; min-height: 0 !important }
+div.dpos .sm-k i { width: 38px !important; height: 38px !important; border-radius: 10px !important }
+div.dpos .sm-k b { font-size: 20px !important } div.dpos .sm-k span { font-size: 10px !important }
+div.dpos .sm-ledger { padding: 12px 14px !important }
+div.dpos .sm-lh { display: flex !important; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 10px }
+div.dpos .sm-lh .sm-lt { display: flex; align-items: center; gap: 8px; flex: 0 1 520px; min-width: 0 }
+div.dpos .sm-lh .sm-search { flex: 1 1 220px; min-width: 0 } div.dpos .sm-lh .sm-search input { height: 36px }
+div.dpos .sm-lh select { flex: 0 0 170px; width: 170px !important; height: 36px; padding: 0 12px }
+@media (max-width: 640px) { div.dpos .sm-lh .sm-lt { flex: 1 1 100%; flex-wrap: wrap } div.dpos .sm-lh select { flex: 1 1 100%; width: 100% !important } }
+
+/* Coupon windows: even spacing, one button row, tidy recipient list */
+.dpos-modal .cpm .cpm-p { font-size: 13px; color: #5d5560; margin-bottom: 6px }
+.dpos-modal .cpm .f { margin-top: 12px !important }
+.dpos-modal .cpm .f input:not([type=checkbox]) { height: 44px; padding: 0 14px !important; border-radius: 12px !important; margin-top: 6px !important }
+.dpos-modal .cpm .cp-swrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: #f4f2f6 }
+.dpos-modal .cpm .cp-swrow b { font-size: 11px; letter-spacing: .08em }
+.dpos-modal .cpm .mfoot { display: grid !important; grid-template-columns: auto 1fr 1fr; gap: 8px !important; margin-top: 18px !important; align-items: stretch }
+.dpos-modal .cpm .mfoot .cp-b { justify-content: center; height: 44px; padding: 0 14px !important; border-radius: 12px !important; font-size: 13px !important; white-space: nowrap }
+.dpos-modal .cpm .mfoot .cp-b.pdf { background: #fff; border: 1px solid #d9d2dc; color: #17131a }
+@media (max-width: 520px) { .dpos-modal .cpm .mfoot { grid-template-columns: 1fr 1fr } .dpos-modal .cpm .mfoot .cp-b.cancel { grid-column: 1 / -1; order: 3 } }
+/* recipients */
+.dpos-modal .cpm .cp-rec { list-style: none; margin: 0; padding: 0; border: 1px solid #ece6ee; border-radius: 14px; overflow: hidden; max-height: 360px; overflow-y: auto }
+.dpos-modal .cpm .cp-rec li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #f1ecf2 }
+.dpos-modal .cpm .cp-rec li:last-child { border-bottom: 0 }
+.dpos-modal .cpm .cp-rec li > span:first-child { display: grid; gap: 2px; min-width: 0 } .dpos-modal .cpm .cp-rec li em { font-style: normal; font-size: 12.5px; color: #6f6875 }
+.dpos-modal .cpm .cp-rec-act { display: flex; align-items: center; gap: 10px; flex: none }
+.dpos-modal .cpm .cp-rec-ok { font-size: 12px; font-weight: 700; color: #1c7a4b }
+.dpos-modal .cpm .cp-rec .cp-send { display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #22c55e; color: #fff; gap: 0 }
+.dpos-modal .cpm .cp-rec .cp-send.done { background: #fff; color: #1c7a4b; border: 1px solid #bfe3cd }
+.dpos-modal .cpm .mfoot .cpm-count { align-self: center; font-size: 12.5px; color: #6f6875 }
+.dpos-modal .cpm .mfoot:has(.cpm-count) { grid-template-columns: 1fr auto }
+
+/* Measurements window: landscape. Choices and remarks on the left, the 12 sizes in a compact grid on the right */
+.dpos-modal .msr-modal, .msr-modal { width: min(1080px, calc(100vw - 32px)) !important; max-width: none !important }
+.msr.msr-land { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0 22px; align-items: start }
+.msr-land .msr-a, .msr-land .msr-b { display: grid; gap: 10px; align-content: start; min-width: 0 }
+.msr-land .msr-b { padding-left: 22px; border-left: 1px solid #ece6ee }
+.msr-land .msr-h { margin: 0 }
+.msr-land .msr-f { gap: 4px }
+.msr-land .msr-l { font-size: 10px }
+.msr-land .msr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px }
+.msr-land .msr-grid .msr-cm input { height: 36px; padding: 0 30px 0 10px }
+.msr-land .msr-chips { gap: 6px } .msr-land .msr-chips button { padding: 6px 11px; font-size: 12px }
+.msr-land .msr-neck { min-height: 40px }
+.msr-land input[type=date] { height: 38px }
+@media (max-width: 820px) { .msr.msr-land { grid-template-columns: 1fr } .msr-land .msr-b { padding-left: 0; border-left: 0; border-top: 1px solid #ece6ee; padding-top: 12px } .msr-land .msr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+/* Pop-up windows never scroll sideways; headers sit inside the window */
+.dpos-modal .dpos-sheet { overflow-x: hidden !important; max-height: calc(100vh - 32px) }
+/* Advance order window: header inside, deposit + date side by side, everything visible without scrolling */
+.dpos-modal .dpos-sheet.adv { max-width: 540px !important; width: min(540px, calc(100vw - 32px)) !important; overflow-y: auto }
+.dpos-modal .dpos-sheet.adv .dpos-mhead { margin: 0 !important; padding: 16px 20px 12px !important; border-radius: 0 !important; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px }
+.dpos-modal .dpos-sheet.adv .dpos-mhead b { font-size: 19px !important }
+.dpos-modal .adv-form { gap: 10px !important; padding: 14px 20px 18px !important }
+.dpos-modal .adv-form .adv-total { padding: 10px 14px !important }
+.dpos-modal .adv-form .adv-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.dpos-modal .adv-form input:not([type=checkbox]), .dpos-modal .adv-form textarea { padding: 9px 12px !important; font-size: 14px !important }
+.dpos-modal .adv-form .adv-l { gap: 5px } .dpos-modal .adv-form .adv-due { margin: -2px 0 0 }
+.dpos-modal .adv-form .adv-go { padding: 12px !important }
+@media (max-width: 460px) { .dpos-modal .adv-form .adv-pair { grid-template-columns: 1fr } }
+.dpos-modal .adv-given { display: grid; gap: 5px; margin-top: 10px } .dpos-modal .adv-given small { color: #1c7a4b; font-weight: 700; font-size: 12px }
+.dpos-modal .od-sums.od-full { display: block } .dpos-modal .od-sums.od-full .bsum { font-size: 13.5px }
+
+/* Order, deposit and online order IDs: a little bolder than the text around them */
+div.dpos .oid, div.dpos td.oid, div.dpos b.oid, div.dpos .msp-inv, .dpos-modal .oid { font-weight: 800 !important; color: #17131a; letter-spacing: .01em }
+
+/* Row action icons: one size and look everywhere (WhatsApp green, invoice red, details grey, delete red) */
+.dpos-rowact { display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap }
+.dpos-rowact .ra, div.dpos .ra, .dpos-modal .ra { width: 36px !important; height: 36px !important; min-width: 36px; padding: 0 !important; border-radius: 10px !important; border: 0 !important; display: inline-grid !important; place-items: center; box-shadow: none !important; transition: filter .15s }
+.dpos-rowact .ra svg, div.dpos .ra svg, .dpos-modal .ra svg { width: 18px !important; height: 18px !important }
+.ra.wa { background: #e3f6ea !important; color: #1fa855 !important }
+.ra.doc, .ra.del { background: #fde8ea !important; color: #e0313f !important }
+.ra.eye { background: #eeeef0 !important; color: #1c1a1f !important }
+.ra.ret, .ra.edit { background: #f1ebf3 !important; color: #5a1560 !important }
+.ra.pay { background: #fff3dc !important; color: #b4690e !important }
+.ra:hover:not(:disabled) { filter: brightness(.95) } .ra:disabled { opacity: .35; cursor: default }

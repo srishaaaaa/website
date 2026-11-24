@@ -54,21 +54,14 @@ export default function MeasureModal({ value, onSave, onClose }) {
   };
 
   return (
-    <Modal title="Measurements" sub="For this stitching service. Sizes in cm." wide onClose={onClose}
+    <Modal title="Measurements" sub="For this stitching service. Sizes in cm." wide className="msr-modal" onClose={onClose}
       footer={<><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button><button type="button" className="dpos-btn" onClick={save}>Save measurements</button></>}>
-      <div className="msr">
+      <div className="msr msr-land">
+        <div className="msr-a">
         <div className="msr-two">{neck('Front neck type', 'frontNeck', FRONT_NECKS, 'front')}{neck('Back neck type', 'backNeck', BACK_NECKS, 'back')}</div>
         <div className="msr-f"><span className="msr-l">Sleeve type</span><Chips label="Sleeve type" options={[...SLEEVE_TYPES, ...SLEEVE_TYPES_X.filter(x => !SLEEVE_TYPES.includes(x))]} value={m.sleeveType} onChange={v => set({ sleeveType: v })} /></div>
         <div className="msr-f"><span className="msr-l">Sleeve length</span><Chips label="Sleeve length" options={[...SLEEVE_LENGTHS, ...SLEEVE_LENGTHS_X.filter(x => !SLEEVE_LENGTHS.includes(x))]} value={m.sleeveLength} onChange={v => set({ sleeveLength: v })} /></div>
         <label className="msr-f"><span className="msr-l">Due date (optional)</span><input type="date" value={m.dueDate} onChange={e => set({ dueDate: e.target.value })} /></label>
-
-        <h4 className="msr-h">Measurements (cm)</h4>
-        <div className="msr-two">
-          {CM_FIELDS.map(([k, l]) => (
-            <label key={k} className="msr-f"><span className="msr-l">{l}</span>
-              <span className="msr-cm"><input inputMode="decimal" placeholder="0" value={m.cm[k] ?? ''} onChange={e => set({ cm: { ...m.cm, [k]: e.target.value.replace(/[^\d.]/g, '').slice(0, 6) } })} /><em>cm</em></span>
-            </label>))}
-        </div>
 
         <div className="msr-rh"><h4 className="msr-h">Remarks</h4><button type="button" className="dpos-btn ghost sm" onClick={() => setRemark('')}>+ Add remark</button></div>
         {!m.remarks.length && remark === null && <p className="muted small" style={{ margin: 0 }}>No remarks added.</p>}
@@ -83,6 +76,17 @@ export default function MeasureModal({ value, onSave, onClose }) {
             <button type="button" className="dpos-btn sm" disabled={!remark.trim()} onClick={addRemark}>Add</button>
             <button type="button" className="dpos-btn ghost sm" onClick={() => setRemark(null)}>Cancel</button>
           </div>)}
+        </div>
+        <div className="msr-b">
+        <h4 className="msr-h">Measurements (cm)</h4>
+        <div className="msr-grid">
+          {CM_FIELDS.map(([k, l]) => (
+            <label key={k} className="msr-f"><span className="msr-l">{l}</span>
+              <span className="msr-cm"><input inputMode="decimal" placeholder="0" value={m.cm[k] ?? ''} onChange={e => set({ cm: { ...m.cm, [k]: e.target.value.replace(/[^\d.]/g, '').slice(0, 6) } })} /><em>cm</em></span>
+            </label>))}
+        </div>
+
+        </div>
       </div>
       {sheet === 'front' && <Sheet title="Select Front Neck Type" options={FRONT_NECKS} value={m.frontNeck} onCancel={() => setSheet(null)} onNext={v => { set({ frontNeck: v }); setSheet(m.backNeck ? null : 'back') }} />}
       {sheet === 'back' && <Sheet title="Select Back Neck Type" options={BACK_NECKS} value={m.backNeck} last onCancel={() => setSheet(null)} onNext={v => { set({ backNeck: v }); setSheet(null) }} />}
