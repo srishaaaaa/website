@@ -22,3 +22,9 @@
 @keyframes pc-in { from { opacity: 0; transform: translateY(18px) scale(.97) } to { opacity: 1; transform: none } } @keyframes pc-shine { 0%, 55% { transform: translateX(-100%) } 100% { transform: translateX(100%) } }
 @media (prefers-reduced-motion: reduce) { .pc-ticket, .pc-top::after { animation: none } }
 @media print { .pc-page { background: #fff; color: #000 } .pc-acts, .pc-copy { display: none } }
+@media print {
+  @page { size: A5 portrait; margin: 10mm }
+  html, body { background: #fff !important } .pc-page { min-height: 0; padding: 0; background: #fff !important }
+  .pc-ticket { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact } .pc-top { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  .pc-brand b, .pc-foot { color: #330533 !important } .pc-acts { display: none !important } .pc-top::after { display: none }
+}

@@ -1187,3 +1187,92 @@ div.dpos .dpos-lines.gst .dpos-line, .dpos-lines.gst .dpos-lh { grid-template-co
 div.dpos .dpos-lines:not(.gst) .dpos-line, .dpos-lines:not(.gst) .dpos-lh { grid-template-columns: minmax(0, 1fr) 100px 160px !important }
 div.dpos .dpos-lines .dpos-qty { width: 106px } div.dpos .dpos-lines .dpos-qty input { width: 30px !important }
 div.dpos .dpos-lines .dpos-line > div:last-child { gap: 10px !important }
+.bp-ruler { position: relative; width: 32px; height: 32px; border-radius: 10px; border: 1px solid #e3dde6; background: #fff; color: #330533; display: grid; place-items: center; flex: none; cursor: pointer }
+.bp-ruler:hover { background: #f6eef7 } .bp-ruler.on { background: #330533; color: #fff; border-color: #330533 }
+.bp-ruler i { position: absolute; right: -5px; top: -6px; width: 15px; height: 15px; border-radius: 50%; background: #1c9a5f; color: #fff; font-size: 9px; font-style: normal; display: grid; place-items: center; line-height: 1 }
+div.dpos .dpos-lines.gst .dpos-line, .dpos-lines.gst .dpos-lh { grid-template-columns: minmax(0, 1fr) 96px 104px 196px !important }
+div.dpos .dpos-lines:not(.gst) .dpos-line, .dpos-lines:not(.gst) .dpos-lh { grid-template-columns: minmax(0, 1fr) 100px 196px !important }
+
+/* Bill Generated: everything on one screen, no scrolling (receipt | split-up side by side, actions in one row, items below) */
+.dpos-modal .dpos-sheet.dpos-done { width: min(760px, 96vw) !important; max-height: none !important; overflow: visible !important; display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; padding: 0 0 16px !important }
+div.dpos-modal > .dpos-sheet.dpos-done { width: min(760px, 96vw) !important; overflow: visible !important }
+.dpos-done > .dpos-done-head { grid-column: 1 / -1 }
+.dpos-done > .d-pay { grid-column: 1; grid-row: 2; margin-right: 0 !important } .dpos-done > .d-split { grid-column: 2; grid-row: 2; margin-left: 0 !important }
+.dpos-done > .dpos-done-act { grid-column: 1 / -1; grid-row: 3; margin-top: 0 } .dpos-done > .d-items { grid-column: 1 / -1; grid-row: 4; margin-bottom: 0 !important }
+.dpos-done-act { grid-template-columns: repeat(3, 1fr) !important } .dpos-done-act .dpos-btn:last-child { grid-column: auto !important }
+.dpos-done .d-split .bsum > div { padding: 3px 0 !important; font-size: 12px !important } .dpos-done .d-split { align-self: stretch }
+.dpos-done .d-items { max-height: 120px; overflow-y: auto }
+.dpos-done-act .dpos-btn.wa { white-space: nowrap; font-size: 11px !important }
+@media (max-width: 700px) { .dpos-modal .dpos-sheet.dpos-done, div.dpos-modal > .dpos-sheet.dpos-done { grid-template-columns: 1fr } .dpos-done > .d-pay, .dpos-done > .d-split { grid-column: 1; grid-row: auto } .dpos-done > .dpos-done-act, .dpos-done > .d-items { grid-row: auto } }
+
+/* Add product: wide two-column window (not the small 540px dialog), compact fields */
+div.dpos-modal > .dpos-sheet.pe2, div.dpos-modal > form.pe2 { width: min(860px, 96vw) !important; max-height: 94vh; overflow-y: auto }
+.pe2 .dpos-mhead { padding: 12px 20px !important } .pe2 .dpos-mhead b { font-size: 15px !important } .pe2 .dpos-mhead small { font-size: 11px }
+.pe2 input:not([type=checkbox]), .pe2 select { height: 36px !important; padding: 0 12px !important; font-size: 12.5px !important }
+.pe2 textarea { padding: 8px 12px !important; font-size: 12.5px !important }
+.pe2 label, .pe2 .f { font-size: 10px !important; gap: 4px !important } .pe2 h3, .pe2 h4 { font-size: 12.5px !important }
+.pe2 .pe2-col, .pe2 > div { gap: 10px }
+
+/* Users: purple theme, role control fixed size so it never clips */
+div.dpos .dpos-av { background: #330533 !important }
+div.dpos select.usr-role.adm, span.usr-role.adm { background-color: #330533 !important; border-color: #330533 !important; color: #fff !important }
+div.dpos select.usr-role, span.usr-role { width: 132px !important; min-width: 132px !important; max-width: 132px !important; height: 32px !important; padding: 0 30px 0 14px !important; box-sizing: border-box; display: inline-flex; align-items: center; font-size: 11px !important; line-height: 1; white-space: nowrap }
+span.usr-role { padding: 0 14px !important; justify-content: flex-start }
+div.dpos select.usr-role.cust { background-color: #f1eff2 !important; color: #55505a !important }
+div.dpos select.usr-role.stf { background-color: #f3e8f4 !important; border-color: #d9b9dc !important; color: #5a1560 !important }
+.dpos-tw:has(.usr-role) td { vertical-align: middle } .dpos-tw:has(.usr-role) th, .dpos-tw:has(.usr-role) td { padding: 12px 14px !important }
+
+/* Customer history window: compact, tidy tables */
+.dpos-modal .dpos-sheet:has(.adm-h3) .dpos-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 8px !important }
+.dpos-sheet:has(.adm-h3) .dpos-grid > div { padding: 8px 12px !important; border-radius: 12px !important }
+.dpos-sheet:has(.adm-h3) .adm-h3 { font-size: 13px !important; margin: 12px 0 4px !important }
+.dpos-sheet:has(.adm-h3) .dpos-tw table th { padding: 6px 8px !important; font-size: 9.5px !important } .dpos-sheet:has(.adm-h3) .dpos-tw table td { padding: 7px 8px !important; font-size: 12.5px !important }
+.dpos-sheet:has(.adm-h3) .dpos-tw table { min-width: 0 }
+div.dpos-modal > .dpos-sheet.pe2:not(.invprev):not(.wide), div.dpos-modal > form.dpos-sheet.pe2 { width: min(880px, 96vw) !important; max-width: none !important; max-height: 94vh; overflow-y: auto; padding-bottom: 0 }
+.pe2 .pe2-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0; align-items: stretch }
+.pe2 .pe2-l, .pe2 .pe2-r { padding: 14px 20px !important; min-width: 0 }
+.pe2 .pe2-g { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px 12px !important }
+.pe2 .pe2-f { display: grid; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: .08em; color: #6b6070 } .pe2 .pe2-f input, .pe2 .pe2-f select, .pe2 .pe2-f textarea { letter-spacing: 0; font-weight: 500; color: #1a1420 }
+.pe2 .pe2-hint { font-size: 9.5px !important; margin: 6px 0 0 !important }
+.pe2 .pe2-var { padding: 14px 20px !important } .pe2 .pe2-sug { padding: 12px 20px !important }
+@media (max-width: 760px) { .pe2 .pe2-top { grid-template-columns: 1fr } }
+.dpos-modal:has(.sa) { backdrop-filter: blur(4px) }
+.sa { width: min(520px, 94vw) !important }
+.sa .inv-al-h b { font-size: 14px !important; font-weight: 600 !important } .sa .inv-al-h small { font-size: 11.5px !important }
+.sa .inv-al-h button, .sa .sa-ed { background: #330533 !important; color: #fff !important }
+span.usr-role { display: inline-flex !important; align-items: center !important; line-height: 1 !important; padding-top: 0 !important; padding-bottom: 0 !important }
+.dlv-body > label.f:nth-child(-n+2) { grid-column: auto !important }
+.dlv-body > label.f textarea { min-height: 64px }
+
+/* Add / Edit product: landscape (wide and short), three fields per row */
+div.dpos-modal > .dpos-sheet.pe2:not(.invprev):not(.wide), div.dpos-modal > form.dpos-sheet.pe2 { width: min(1020px, 97vw) !important }
+.pe2 .pe2-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr) !important }
+.pe2 .pe2-g { grid-template-columns: repeat(3, minmax(0, 1fr)) !important }
+.pe2 .pe2-l textarea { min-height: 96px }
+.pe2 .pe2-r h3 { margin: 0 0 8px }
+
+/* Delivery tiers: columns line up row after row */
+.dlv-row:has(> :nth-child(7)) { display: grid !important; grid-template-columns: 44px minmax(0, 1fr) 36px minmax(0, 1fr) 46px minmax(0, 1fr) 34px; gap: 8px !important; align-items: center }
+.dlv-row:has(> :nth-child(7)) input { max-width: none !important; width: 100% }
+.dlv-row:has(> :nth-child(5)):not(:has(> :nth-child(7))) { display: grid !important; grid-template-columns: 54px minmax(0, 1fr) 46px minmax(0, 1fr) 34px; gap: 8px !important; align-items: center }
+.dlv-row:has(> :nth-child(5)):not(:has(> :nth-child(7))) input { max-width: none !important; width: 100% }
+.dlv-wt .dpos-btn.ghost.sm:not([aria-label]) { width: 100%; height: 34px }
+
+/* Product catalog window (reference size): 780px, 2-column product cards, square + buttons, DONE */
+div.dpos-modal > .dpos-sheet.cpk { width: min(780px, 96vw) !important; border-radius: 20px !important; max-height: 90vh }
+.dpos-modal .dpos-sheet.cpk > .dpos-mhead { padding: 16px 22px !important; border-radius: 0 !important }
+.cpk-title { display: inline-flex; align-items: center; gap: 10px; font-size: 14px !important; font-weight: 700; letter-spacing: .08em }
+.dpos-modal .dpos-sheet.cpk > .cpk-search { height: 42px; margin: 14px 22px 0 !important; padding: 0 16px !important; font-size: 13.5px !important; border-radius: 12px !important }
+.dpos-modal .dpos-sheet.cpk > .cpk-chips { padding: 10px 22px 8px !important; gap: 6px !important }
+.cpk-chips button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px !important; font-size: 12px !important; font-weight: 600 !important; border-radius: 999px !important }
+.cpk-chips button i { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #efeaf0; color: #330533; font-size: 10px; display: inline-grid; place-items: center } .cpk-chips button.on i { background: rgba(255, 255, 255, .22); color: #fff }
+.dpos-modal .dpos-sheet.cpk > .cpk-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 8px 22px 14px !important; align-content: start }
+.cpk-row { padding: 9px 12px !important; border-radius: 14px !important; gap: 12px !important }
+.cpk-row img { width: 48px !important; height: 48px !important; border-radius: 10px !important }
+.cpk-info b { font-size: 13.5px !important; font-weight: 600 !important } .cpk-info em { font-size: 11.5px !important; line-height: 1.35 }
+.cpk-add { width: 34px; height: 34px; padding: 0 !important; border-radius: 10px !important; background: #330533 !important; color: #fff !important; font-size: 20px !important; line-height: 1; display: grid; place-items: center; flex: none }
+.cpk-add:disabled { background: #cfc6d2 !important }
+.cpk-step { display: inline-flex; align-items: center; gap: 8px; flex: none } .cpk-step button { width: 30px; height: 30px; border-radius: 9px; background: #330533; color: #fff; font-size: 16px } .cpk-step b { min-width: 18px; text-align: center; font-size: 13px }
+.dpos-modal .dpos-sheet.cpk > .cpk-foot { padding: 12px 22px !important; font-size: 12.5px }
+.cpk-foot b { font-weight: 700 } .cpk-done { height: 40px; padding: 0 28px; border-radius: 12px; background: #330533; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .06em } .cpk-done:disabled { background: #b9aebd }
+@media (max-width: 640px) { .dpos-modal .dpos-sheet.cpk > .cpk-grid { grid-template-columns: 1fr } }

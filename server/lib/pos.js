@@ -150,9 +150,9 @@ export async function getSale(q, invoice) {
 // free-text items carry the cashier's price. `trusted` lets server-side callers (advance orders) pass the price that was agreed at booking.
 async function resolveLines(t, items, { trusted = false, checkStock = false } = {}) {
   // Merge repeated variants, then lock in a stable order (no deadlocks between two cashiers).
-  const want = new Map(), prices = new Map(), rates = new Map(), custom = [];
+  const want = new Map(), prices = new Map(), rates = new Map(), measures = new Map(), custom = [];
   for (const it of items) {
-    if (it.variantId) { want.set(it.variantId, (want.get(it.variantId) ?? 0) + it.qty); if (trusted && it.price != null) prices.set(it.variantId, it.price); if (it.taxRate != null) rates.set(it.variantId, it.taxRate) }
+    if (it.variantId) { want.set(it.variantId, (want.get(it.variantId) ?? 0) + it.qty); if (trusted && it.price != null) prices.set(it.variantId, it.price); if (it.taxRate != null) rates.set(it.variantId, it.taxRate); if (it.measure) measures.set(it.variantId, it.measure) }
     else custom.push({ variantId: null, product_id: null, name: it.name, sku: it.sku ?? '', size: '', color: '', price: it.price, qty: it.qty, taxRate: it.taxRate ?? 0, stock: null, ...(it.measure ? { measure: it.measure } : {}) });
   }
   const ids = [...want.keys()].sort((a, b) => a - b);
@@ -166,7 +166,7 @@ async function resolveLines(t, items, { trusted = false, checkStock = false } = 
     const r = byId.get(id);
     if (!r) throw new HttpError(409, 'An item on this bill is no longer available', 'unavailable');
     if (checkStock && want.get(id) > r.stock) throw new HttpError(409, `Only ${r.stock} left of ${r.name} (${r.size}${r.color !== 'Default' ? ', ' + r.color : ''})`, 'insufficient_stock');
-    return { ...r, variantId: id, qty: want.get(id), ...(prices.has(id) ? { price: prices.get(id) } : {}), ...(rates.has(id) ? { taxRate: rates.get(id) } : {}) };
+    return { ...r, variantId: id, qty: want.get(id), ...(prices.has(id) ? { price: prices.get(id) } : {}), ...(rates.has(id) ? { taxRate: rates.get(id) } : {}), ...(measures.has(id) ? { measure: measures.get(id) } : {}) };
   }).concat(custom);
 }
 
@@ -211,7 +211,7 @@ export async function createSale(db, user, d) {
         }
         await t.query(`INSERT INTO pos_sale_items (sale_id, product_id, variant_id, name_snapshot, sku_snapshot, variant_snapshot, unit_price, quantity, line_total, discount_alloc, tax_rate, tax_amount)
                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-          [sale.id, l.product_id, l.variantId, l.name, l.sku, JSON.stringify(l.variantId ? { size: l.size, color: l.color } : l.measure ? { measure: l.measure } : {}), l.price, l.qty, l.lineTotal, l.alloc, l.taxRate, l.tax]);
+          [sale.id, l.product_id, l.variantId, l.name, l.sku, JSON.stringify(l.variantId ? { size: l.size, color: l.color, ...(l.measure ? { measure: l.measure } : {}) } : l.measure ? { measure: l.measure } : {}), l.price, l.qty, l.lineTotal, l.alloc, l.taxRate, l.tax]);
         if (l.variantId) await t.query('INSERT INTO inventory_movements (variant_id, quantity_change, reason, reference_id) VALUES ($1,$2,$3,$4)', [l.variantId, -l.qty, 'pos_sale', number]);
       }
       if (await hasCostColumns(t)) {
@@ -549,7 +549,7 @@ export async function finalizeAdvance(db, user, code, { balanceMode, balanceSpli
   const paymentMode = modes.length > 1 ? 'split' : (modes[0] ?? balanceMode);
   const sale = await createSale(db, user, {
     idempotencyKey: `advance-${a.id}-final`, channel: 'retail', source: 'offline', trusted: true,
-    items: a.items.map(i => i.variantId ? { variantId: i.variantId, qty: i.qty, price: i.price, taxRate: i.taxRate } : { name: i.name, sku: i.sku, price: i.price, qty: i.qty, taxRate: i.taxRate, ...(i.measure ? { measure: i.measure } : {}) }),
+    items: a.items.map(i => i.variantId ? { variantId: i.variantId, qty: i.qty, price: i.price, taxRate: i.taxRate, ...(i.measure ? { measure: i.measure } : {}) } : { name: i.name, sku: i.sku, price: i.price, qty: i.qty, taxRate: i.taxRate, ...(i.measure ? { measure: i.measure } : {}) }),
     customerName: a.customer_name, customerPhone: a.customer_phone, customerAddress: a.customer_address, isGst: a.is_gst, gstRate: a.gst_rate ?? undefined, gstInclusive: a.gst_inclusive,
     discountType: a.discount_type, discountValue: a.discount_value, deliveryFee: a.delivery_fee, paymentMode, cashTendered: paymentMode === 'cash' ? a.total_amount : undefined,
     payments: { cash: b.cash, upi: b.upi, card: b.card }, paymentRef, notes: `Advance order ${code}${a.notes ? ' · ' + a.notes : ''}`,

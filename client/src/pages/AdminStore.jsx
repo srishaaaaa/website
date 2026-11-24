@@ -98,8 +98,8 @@ export function AdminUsers() {
           <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
             <tbody>{shown.map(u => (
               <tr key={u.id}><td><span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}><span className="dpos-av" style={{ width: 32, height: 32, fontSize: 13 }}>{(u.name || u.email)[0].toUpperCase()}</span><b>{u.name || '—'}</b></span></td><td>{u.email}</td>
-                <td>{u.role === 'owner' || !isOwner || u.id === user.id ? <span className={`usr-role ${['owner', 'admin'].includes(u.role) ? 'adm' : ''}`}>{ROLE_L[u.role] || u.role}</span>
-                  : <select className={`usr-role ${u.role === 'admin' ? 'adm' : ''}`} aria-label={`Role for ${u.email}`} value={u.role === 'inventory' ? 'cashier' : u.role} onChange={ev => setRole(u, ev.target.value)}>{[['customer', 'Customer'], ['cashier', 'Staff'], ['admin', 'Admin']].map(([r, l]) => <option key={r} value={r}>{l}</option>)}</select>}</td><td><span className="usr-status">ACTIVE</span></td></tr>))}</tbody></table></div>)}
+                <td>{!isOwner || u.id === user.id ? <span className={`usr-role ${['owner', 'admin'].includes(u.role) ? 'adm' : ''}`}>{ROLE_L[u.role] || u.role}</span>
+                  : <select className={`usr-role ${['owner', 'admin'].includes(u.role) ? 'adm' : u.role === 'customer' ? 'cust' : 'stf'}`} aria-label={`Role for ${u.email}`} value={u.role === 'inventory' ? 'cashier' : u.role} onChange={ev => setRole(u, ev.target.value)}>{[['customer', 'Customer'], ['cashier', 'Staff'], ['admin', 'Admin']].map(([r, l]) => <option key={r} value={r}>{l}</option>)}</select>}</td><td><span className="usr-status">ACTIVE</span></td></tr>))}</tbody></table></div>)}
       </Card>
     </AdminShell>
   );

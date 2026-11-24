@@ -12,6 +12,7 @@ import CatalogPicker from '../components/CatalogPicker';
 import MeasureModal, { measureSummary } from '../components/MeasureModal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
+import { StitchingTab } from './StitchPages';
 import { LoginPasswordCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
 import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
@@ -168,7 +169,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
   const body = useMemo(() => ({
     channel, source: ws ? 'offline' : source, billDate,
-    items: priced.map(l => l.custom ? { name: l.name.trim(), price: l.price, qty: l.qty, taxRate: l.taxRate, ...(l.service && l.measure ? { measure: l.measure } : {}) } : { variantId: l.variantId, qty: l.qty, ...(isGst && l.taxRate != null ? { taxRate: l.taxRate } : {}) }),
+    items: priced.map(l => l.custom ? { name: l.name.trim(), price: l.price, qty: l.qty, taxRate: l.taxRate, ...(l.measure ? { measure: l.measure } : {}) } : { variantId: l.variantId, qty: l.qty, ...(isGst && l.taxRate != null ? { taxRate: l.taxRate } : {}), ...(l.measure ? { measure: l.measure } : {}) }),
     customerName: cust.name.trim(), customerPhone: cust.phone.trim(), customerAddress: cust.address.trim(), ...(cust.dob && !ws ? { customerDob: cust.dob } : {}),
     isGst, gstInclusive: isGst && inclusive, ...(flat != null ? { gstRate: flat } : {}), ...(coupon ? { couponCode: coupon.code } : { discountType: disc.type, discountValue }), deliveryFee,
     paymentMode: mode, ...(mode === 'cash' ? { cashTendered: tenderedP } : {}),
@@ -258,17 +259,15 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           <input aria-label="Item name or description" placeholder={l.service ? 'Service (alteration, stitching…)' : 'Item name / description…'} list={ws ? 'dpos-ws-list' : undefined} value={l.name} onChange={e => patch(l.key, { name: e.target.value })} />
           <input aria-label="Price in rupees" inputMode="decimal" placeholder="Price ₹" value={l.priceStr} onChange={e => patch(l.key, { priceStr: e.target.value })} />
           {isGst && <select aria-label="GST rate" value={l.taxRate} onChange={e => patch(l.key, { taxRate: +e.target.value })}>{GST_RATES.map(r => <option key={r} value={r}>{r}% GST</option>)}</select>}
-          {l.service && <div className="msr-line">
-            <button type="button" className="dpos-btn ghost sm" onClick={() => setMeasureFor(l.key)}>📏 {l.measure ? 'Edit measurements' : 'Add measurements'}</button>
-            {l.measure && <span className="msr-sum">{measureSummary(l.measure)}</span>}
-          </div>}
         </div>
       ) : (
         <div className="dpos-catline ln-cols"><div className="ln-name"><b>{l.name}</b><div className="muted small">{l.detail}{l.sku ? ` · ${l.sku}` : ''} · {l.stock} in stock</div></div><span className="ln-price">{inr(l.price)}</span>{isGst && <select className="dpos-ln-gst" aria-label={`GST rate for ${l.name}`} value={l.taxRate ?? 0} onChange={e => patch(l.key, { taxRate: +e.target.value })}>{GST_RATES.map(r => <option key={r} value={r}>{r}% GST</option>)}</select>}</div>
       )}
+      {l.measure && <div className="msr-line"><span className="msr-sum">{measureSummary(l.measure)}</span></div>}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifySelf: 'end' }}>
         <div className="dpos-qty"><button aria-label="Decrease quantity" onClick={() => setQty(l, l.qty - 1)}>−</button>
           <input aria-label="Quantity" inputMode="numeric" value={l.qty} onChange={e => setQty(l, +e.target.value)} /><button aria-label="Increase quantity" onClick={() => setQty(l, l.qty + 1)}>+</button></div>
+        {!ws && <button type="button" className={`bp-ruler ${l.measure ? 'on' : ''}`} title={l.measure ? 'Measurements added: click to edit' : 'Add measurements (stitching)'} aria-label={l.measure ? 'Edit measurements' : 'Add measurements'} onClick={() => setMeasureFor(l.key)}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 17 17 3l4 4L7 21z" /><path d="M7 13l2 2M10 10l2 2M13 7l2 2" /></svg>{l.measure && <i aria-hidden="true">✓</i>}</button>}
         <button className="bp-trash" aria-label="Remove item" onClick={() => ws && lines.length === 1 ? setLines([blankCustom()]) : drop(l.key)}><Icon n="trash" size={20} /></button>
       </div>
     </div>));
@@ -293,7 +292,6 @@ function Billing({ channel, shop, onSale, onAdvance }) {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button className="dpos-btn ghost sm" onClick={clearOrder}><Icon n="trash" size={14} /> Clear Order</button>
               {!ws && <button className="dpos-btn sm" onClick={() => setCatOpen(true)}>☰ Catalog</button>}
-              {!ws && <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom(true)])}>✂ Add Service</button>}
               <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom()])}>+ Add {ws ? 'Item' : 'Custom Item'}</button></div></div>
           {ws && <datalist id="dpos-ws-list">{wsItems.map(i => <option key={i.id} value={[i.code, i.company, i.colour].filter(Boolean).join(' · ')} />)}</datalist>}
           {lines.length ? <div className={`dpos-lines ${isGst ? 'gst' : ''}`}><div className="dpos-lh"><span>ITEM NAME / DESCRIPTION</span><span>PRICE (₹)</span>{isGst && <span>GST</span>}<span>QTY</span></div>{lineEls}</div> : <Empty>{ws ? 'No items yet.' : 'No items yet. Press Catalog to pick products, or add a service or custom item.'}</Empty>}
@@ -510,7 +508,7 @@ function MoneyDetail({ kind, rep, from, to, onClose, goExpenses }) {
 
 function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const ws = channel === 'wholesale';
-  const [tab, setTab] = useState('revenue'); const [gst, setGst] = useState('all'); const [pay, setPay] = useState('all'); const [src, setSrc] = useState('all'); const [per, setPer] = usePeriod('all');
+  const [tab, setTab] = useState(() => new URLSearchParams(location.search).get('tab') === 'stitching' ? 'stitching' : 'revenue'); const [gst, setGst] = useState('all'); const [pay, setPay] = useState('all'); const [src, setSrc] = useState('all'); const [per, setPer] = usePeriod('all');
   const [rep, setRep] = useState(null); const [bills, setBills] = useState(null); const [err, setErr] = useState(); const [detail, setDetail] = useState(null);
   const today = todayStr();
   const [from, to] = tab === 'today' ? [today, today] : periodRange(per);
@@ -526,15 +524,15 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
   const netOf = r => r.net + (reduce ? 0 : (r.returned?.total || 0));
   return (
     <>
-      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} /><ExportCsv {...exportFor(tab, rep, from, to, { gst, pay, src }, netOf)} /></div>}
+      {tab !== 'today' && <div className="dpos-bar-tools"><PeriodFilter value={per} onChange={setPer} />{tab !== 'stitching' && <ExportCsv {...exportFor(tab, rep, from, to, { gst, pay, src }, netOf)} />}</div>}
       <div className="an-tabrow">
-        <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
+        <div className="dpos-tabs" role="tablist">{[['revenue', 'Revenue'], ['today', 'Today’s sales'], ['products', 'Products'], ['coupons', 'Coupons'], ['stitching', 'Stitching']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>)}</div>
       </div>
-      <div className="an-all">
+      {tab !== 'stitching' && <div className="an-all">
         {!ws && <div className="an-grp" role="radiogroup" aria-label="Channel">{[['all', 'All Channels', ''], ['offline', 'Offline (POS)', '#f5a524'], ['online', 'Online', '#22a06b']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={src === k} className={src === k ? 'on' : ''} onClick={() => setSrc(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>}
         <div className="an-gst"><Chips value={gst} onChange={setGst} options={GST_CHIPS} /></div>
         <div className="an-pay" role="radiogroup" aria-label="Payment"><b>PAYMENT</b>{[['all', 'All', ''], ['cash', 'Cash', '#f5a524'], ['upi', 'GPay / UPI', '#3b82f6'], ['card', 'Card', '#ec4899']].map(([k, l, c]) => <button key={k} type="button" role="radio" aria-checked={pay === k} className={pay === k ? 'on' : ''} onClick={() => setPay(k)}>{c && <i style={{ background: c }} />}{l}</button>)}</div>
-      </div>
+      </div>}
       <Err>{err}</Err>
 
       {(tab === 'revenue' || tab === 'today') && <>
@@ -590,6 +588,7 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
       {tab === 'products' && <ProductsBoard rep={rep} />}
 
       {tab === 'coupons' && <CouponPanel rep={rep} openInvoice={openInvoice} />}
+      {tab === 'stitching' && <StitchingTab from={from} to={to} />}
       {detail && rep && <MoneyDetail kind={detail} rep={{ ...rep, net: netOf(rep) }} from={from} to={to} onClose={() => setDetail(null)} goExpenses={goExpenses} />}
     </>
   );

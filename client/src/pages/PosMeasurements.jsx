@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
 import ExportCsv from '../components/ExportCsv';
@@ -27,7 +28,7 @@ export default function PosMeasurements() {
     <div className="msp">
       <div className="msp-top"><span />
         <div className="msp-tools"><PeriodFilter value={per} onChange={setPer} />
-          <ExportCsv name="measurements" header={['Invoice', 'Customer', 'Phone', 'Date', 'Status', 'Item', 'Front neck', 'Back neck', 'Measurements']} rows={rows} /></div></div>
+          <ExportCsv name="measurements" header={['Invoice', 'Customer', 'Phone', 'Date', 'Status', 'Item', 'Front neck', 'Back neck', 'Measurements']} rows={rows} /><Link className="dpos-btn outline" to="/admin/stitching/designs">Options</Link></div></div>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       <div className="msp-tiles">{TILES.map(([k, l, c]) => (
         <button key={k} type="button" className={`msp-tile ${c} ${status === k ? 'on' : ''}`} aria-pressed={status === k} onClick={() => setStatus(k)}><span>{l}</span><b>{data ? data.counts[k] : '…'}</b></button>))}</div>

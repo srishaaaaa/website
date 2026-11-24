@@ -413,7 +413,7 @@ export function BillDone({ sale, shop, onClose }) {
           <div><h2>Bill Generated <span className="dpos-tag solid">{sale.isGst ? 'GST' : 'NON-GST'}</span></h2><p className="oid">#{sale.invoiceNo}</p></div>
           <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
         </div>
-        <section className="dpos-done-card">
+        <section className="dpos-done-card d-pay">
           <div className="dpos-done-top"><span>PAYMENT RECEIPT</span><span className="dpos-tag">{(MODE[sale.paymentMode] || '').toUpperCase()}</span></div>
           <div className="dpos-done-row"><span>Grand Total</span><b className="big">{money(sale.total)}</b></div>
           <div className="dpos-done-row"><span>Amount Received</span><b>{money(received)}</b></div>
@@ -423,13 +423,12 @@ export function BillDone({ sale, shop, onClose }) {
           <button className="dpos-btn outline" onClick={() => setPs(true)}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
           <button className="dpos-btn outline" onClick={() => setPv({ invoiceNo: sale.invoiceNo, shareToken: sale.shareToken })}><EyeIcon />View</button>
           <a className="dpos-btn wa" href={waLink(sale.customerPhone, `Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop?.name || 'us'} for ${money(sale.total)}: ${link}`)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp invoice</a>
-          <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
         </div>
-        <section className="dpos-done-card items">
+        <section className="dpos-done-card items d-items">
           <p className="dpos-done-l">ITEMS SOLD</p>
           {sale.items.map((i, n) => <div key={n} className="dpos-done-item"><span><b>{i.name}</b> <small className="muted">× {i.quantity} piece{i.quantity > 1 ? 's' : ''}</small></span><span>{money(i.lineTotal)}</span></div>)}
         </section>
-        <section className="dpos-done-card items"><p className="dpos-done-l">BILL SPLIT-UP</p><BillSummary bill={sale} /></section>
+        <section className="dpos-done-card items d-split"><p className="dpos-done-l">BILL SPLIT-UP</p><BillSummary bill={sale} /></section>
       </div>
       {pv && <InvoicePreview row={pv} onClose={() => setPv(null)} />}
       {ps && <PrintSettings onClose={() => setPs(false)} onPrint={({ type, paper }) => { setPs(false); window.open(`/invoice/${sale.shareToken}?fmt=${type === 'thermal' ? 'thermal' : 'a4'}&size=${paper}&print=1`, '_blank') }} />}

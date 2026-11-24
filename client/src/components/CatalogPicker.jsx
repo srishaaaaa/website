@@ -24,10 +24,10 @@ export default function CatalogPicker({ onClose, onPick }) {
   return (
     <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Catalog" onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="dpos-sheet wide cpk">
-        <div className="dpos-mhead"><div><b style={{ fontSize: 17 }}>Add products to the bill</b><small>Pick one or more, then press OK</small></div><button type="button" aria-label="Close" onClick={onClose}>✕</button></div>
-        <input className="cpk-search" autoFocus type="search" value={q} onChange={e => setQ(e.target.value)} onKeyDown={onEnter} placeholder="Search name, SKU, size or colour, or scan a barcode and press Enter" aria-label="Search the catalog" />
+        <div className="dpos-mhead"><div><b className="cpk-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>PRODUCT CATALOG</b></div><button type="button" aria-label="Close" onClick={onClose}>✕</button></div>
+        <input className="cpk-search" autoFocus type="search" value={q} onChange={e => setQ(e.target.value)} onKeyDown={onEnter} placeholder="Search products, size, colour or scan a barcode…" aria-label="Search the catalog" />
         <div className="cpk-chips" role="group" aria-label="Category">
-          {['all', ...cats].map(c => <button key={c} type="button" className={cat === c ? 'on' : ''} aria-pressed={cat === c} onClick={() => setCat(c)}>{c === 'all' ? 'All' : c}</button>)}
+          {['all', ...cats].map(c => <button key={c} type="button" className={cat === c ? 'on' : ''} aria-pressed={cat === c} onClick={() => setCat(c)}>{c === 'all' ? 'All' : c}<i>{c === 'all' ? (list || []).length : (list || []).filter(v => v.category === c).length}</i></button>)}
         </div>
         {err && <p className="dpos-err" role="alert">{err}</p>}
         <div className="cpk-grid">
@@ -38,14 +38,13 @@ export default function CatalogPicker({ onClose, onPick }) {
                 {v.image ? <img src={v.image} alt="" loading="lazy" /> : <img alt="" />}
                 <span className="cpk-info"><b>{v.name}</b><em>{inr(v.price)}{v.size && v.size !== 'Default' ? ` · ${v.size}` : ''}{v.color && v.color !== 'Default' ? ` · ${v.color}` : ''} · {out ? 'Out of stock' : `${v.stock} in stock`}</em></span>
                 {n === 0
-                  ? <button type="button" className="cpk-add" disabled={out} onClick={() => set(v, 1)}>+ Add</button>
+                  ? <button type="button" className="cpk-add" aria-label={`Add ${v.name}`} disabled={out} onClick={() => set(v, 1)}>+</button>
                   : <span className="cpk-step"><button type="button" aria-label="Fewer" onClick={() => set(v, n - 1)}>−</button><b>{n}</b><button type="button" aria-label="More" disabled={n >= v.stock} onClick={() => set(v, n + 1)}>+</button></span>}
               </div>);
           })}
         </div>
-        <div className="cpk-foot"><span>{count} {count === 1 ? 'item' : 'items'} · {inr(total)}</span>
-          <div><button type="button" className="dpos-btn ghost" onClick={onClose}>Cancel</button>
-            <button type="button" className="dpos-btn" disabled={!count} onClick={() => onPick(picked.map(x => ({ v: x.v, qty: x.qty })))}>OK</button></div></div>
+        <div className="cpk-foot"><span>{count} {count === 1 ? 'line' : 'lines'} · <b>{inr(total)}</b></span>
+          <div><button type="button" className="cpk-done" disabled={!count} onClick={() => onPick(picked.map(x => ({ v: x.v, qty: x.qty })))}>DONE</button></div></div>
       </div>
     </div>
   );

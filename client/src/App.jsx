@@ -98,14 +98,14 @@ export default function App() {
           <Route path="/admin/products" element={<Navigate to="/admin/billing/inventory" replace />} />
           <Route path="/admin/storefront" element={A.storefront} />
           <Route path="/admin/trending" element={A.trending} />
-          <Route path="/admin/site-text" element={A.sitetext} />
+          <Route path="/admin/site-text" element={<Navigate to="/admin/orders" replace />} />
           <Route path="/admin/enquiries" element={A.enquiries} />
           <Route path="/admin/sample" element={A.sample} />
           <Route path="/invoice/:token" element={A.invoice} />
           <Route path="/coupon/:code" element={A.coupon} />
-          <Route path="/admin/stitching" element={A.stitchDash} />
-          <Route path="/admin/stitching/orders" element={A.stitchOrders} />
-          <Route path="/admin/stitching/reports" element={A.stitchReports} />
+          <Route path="/admin/stitching" element={<Navigate to="/admin/billing/analytics?tab=stitching" replace />} />
+          <Route path="/admin/stitching/orders" element={<Navigate to="/admin/billing/measurements" replace />} />
+          <Route path="/admin/stitching/reports" element={<Navigate to="/admin/billing/analytics?tab=stitching" replace />} />
           <Route path="/admin/stitching/print/:id" element={A.stitchPrint} />
           <Route path="/admin/stitching/orders/new" element={A.stitchNew} />
           <Route path="/admin/stitching/orders/:id" element={A.stitchDetail} />

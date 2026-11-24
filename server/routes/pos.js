@@ -28,7 +28,7 @@ const measure = z.object({
   remarks: z.array(text(200).min(1)).max(20).default([]),
 });
 const item = z.union([
-  z.object({ variantId: z.number().int().positive(), qty: z.number().int().min(1).max(999), taxRate: z.number().int().min(0).max(28).optional() }),
+  z.object({ variantId: z.number().int().positive(), qty: z.number().int().min(1).max(999), taxRate: z.number().int().min(0).max(28).optional(), measure: measure.optional() }),
   // free-text line (retail "Item name / description", services, and every wholesale line): cashier-entered price, no stock
   z.object({ name: text(160).min(1), sku: text(60).optional(), price: paise, qty: z.number().int().min(1).max(99999), taxRate: z.number().int().min(0).max(28).default(0), measure: measure.optional() }),
 ]);

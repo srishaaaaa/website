@@ -96,3 +96,14 @@ test('GST inclusive: the price already contains the GST, so the total stays the 
   const e = await o('POST', '/admin/pos/sales', { idempotencyKey: 'exc-' + Math.random().toString(36).slice(2), channel: 'retail', items: [{ variantId: v.variantId, qty: 1, taxRate: 5 }], customerName: 'Exc', customerPhone: '9000000000', isGst: true, paymentMode: 'cash' });
   assert.equal(e.body.total, price + Math.round(price * 5 / 100), 'without the flag GST is still added on top');
 });
+
+test('any catalogue item can carry measurements for stitching, and the bill then shows in Measurements and the stitching overview', async () => {
+  const o = await login();
+  const v = (await o('GET', '/admin/pos/catalog')).body.find(x => x.stock >= 2);
+  const r = await o('POST', '/admin/pos/sales', { idempotencyKey: 'ms-' + Math.random().toString(36).slice(2), channel: 'retail', items: [{ variantId: v.variantId, qty: 1, measure: { frontNeck: 'Boat', cm: { chest: 86 }, dueDate: '2031-03-01', remarks: ['shorter sleeve'] } }], customerName: 'Meas', customerPhone: '9000000001', isGst: false, paymentMode: 'cash' });
+  assert.equal(r.status, 201);
+  const m = (await o('GET', '/admin/pos/measurements?from=2020-01-01&to=2099-12-31')).body;
+  assert.ok(m.bills.some(b => b.invoiceNo === r.body.invoiceNo && b.items[0].measure?.frontNeck === 'Boat'));
+  const so = (await o('GET', '/admin/pos/stitching/orders')).body;
+  assert.ok(so.orders.some(x => x.ref === r.body.invoiceNo && x.due === '2031-03-01'));
+});

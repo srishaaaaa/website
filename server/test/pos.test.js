@@ -236,7 +236,7 @@ test('staff access: each role gets its own page list, only the owner changes it,
   assert.ok((await mine(cash)).pages.includes('/admin/billing') && !(await mine(cash)).pages.includes('/admin/users'));
   assert.equal((await cash('PUT', '/admin/pos/staff-access', { admin: [], cashier: ['/admin/billing'], inventory: [] })).status, 403, 'cashiers cannot change it');
   const adm = await mk('sa-admin@test.dev', 'admin'); assert.equal((await adm('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing'], inventory: ['/admin/billing/inventory'] })).status, 200, 'an admin can change it too');
-  assert.ok((await mine(adm)).pages.length >= 25 && (await mine(adm)).pages.includes('/admin/users'), 'admin and owner are the same: every page');
+  assert.ok((await mine(adm)).pages.length >= 20 && (await mine(adm)).pages.includes('/admin/users'), 'admin and owner are the same: every page');
   const all = (await mine(owner)).all.map(p => p[0]);
   const r = await owner('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing', '/admin/users', '/admin/billing/inventory'], inventory: ['/admin/billing/inventory', '/admin/billing'] });
   assert.equal(r.status, 200);

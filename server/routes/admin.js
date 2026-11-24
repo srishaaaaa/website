@@ -206,7 +206,7 @@ export default function admin({ db, auth }) {
     if (id === req.user.id) throw new HttpError(400, 'You cannot change your own role');
     const u = await one(db, 'SELECT role FROM profiles WHERE id = $1', [id]);
     if (!u) throw new HttpError(404, 'User not found');
-    if (u.role === 'owner') throw new HttpError(403, 'The first admin account cannot be changed here');
+    if (['owner', 'admin'].includes(u.role) && !['owner', 'admin'].includes(role) && !(await one(db, "SELECT 1 AS x FROM profiles WHERE role IN ('owner','admin') AND id <> $1 LIMIT 1", [id]))) throw new HttpError(403, 'There must always be at least one admin');
     await db.query('UPDATE profiles SET role = $2, updated_at = now() WHERE id = $1', [id, role]);
     await audit(db, req.user.id, 'user.role', 'user', id, { from: u.role, to: role });
     res.json({ ok: true });

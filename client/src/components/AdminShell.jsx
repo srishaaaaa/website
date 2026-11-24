@@ -57,15 +57,11 @@ export const Icon = ({ n, size = 18 }) => <svg width={size} height={size} viewBo
 export const NAV = [
   { group: 'Online store', items: [['/admin/orders', 'Online orders', 'orders', true]] },
   { group: 'Retail billing', items: [
-    ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/advance', 'Advance Orders', 'clock'], ['/admin/billing/orders', 'Order History', 'orders'],
+    ['/admin/billing', 'Billing', 'billing'], ['/admin/billing/analytics', 'POS Analytics', 'chart', true], ['/admin/billing/advance', 'Advance Orders', 'clock'], ['/admin/billing/orders', 'Order History', 'orders'], ['/admin/billing/measurements', 'Measurements', 'ruler'],
     ['/admin/billing/inventory', 'Inventory', 'box', true], ['/admin/billing/customers', 'Customers', 'user'], ['/admin/billing/coupons', 'Coupons', 'tag', true],
     ['/admin/billing/birthdays', 'Date of Birth', 'cake', true], ['/admin/billing/expenses', 'Expenses', 'wallet', true]] },
-  { group: 'Stitching', roles: ['owner', 'admin', 'cashier'], items: [
-    ['/admin/stitching', 'Stitching Dashboard', 'scissors', false], ['/admin/stitching/orders', 'Stitching Orders', 'orders', false], ['/admin/billing/measurements', 'Measurements', 'ruler', false],
-    ['/admin/stitching/reports', 'Stitching Reports', 'chart', true], ['/admin/stitching/designs', 'Stitching Designs', 'scissors', true]] },
   { group: 'Website', items: [
-    ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/site-text', 'Site text', 'edit', true],
-    ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
+    ['/admin/reviews', 'Reviews', 'star', true], ['/admin/categories', 'Categories', 'tag', true], ['/admin/trending', 'Trending', 'star', true], ['/admin/storefront', 'Storefront images', 'image', true], ['/admin/reels', 'Reels & Gallery', 'film', true], ['/admin/enquiries', 'Enquiries', 'mail', true],
     ['/admin/users', 'Users', 'users', true], ['/admin/delivery', 'Delivery', 'truck', true], ['/admin/sample', 'Sample data', 'flask', true]] },
   { group: 'Settings', items: [['/admin/billing/settings', 'Settings', 'gear', true]] },
 ];

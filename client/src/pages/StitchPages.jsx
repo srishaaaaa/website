@@ -130,6 +130,51 @@ export function StitchDashboard() {
   );
 }
 
+// The Stitching tab of POS Analytics: what is due, what is late, what stitching earned. Period comes from the Analytics page.
+export function StitchingTab({ from, to }) {
+  const nav = useNavigate(); const invPrev = useInvoicePreview();
+  const [d, setD] = useState(null); const [err, setErr] = useState(); const [n, setN] = useState(0); const reload = () => setN(x => x + 1);
+  useEffect(() => { api(`/admin/pos/stitching/overview?from=${from}&to=${to}`).then(x => { setD(x); setErr() }).catch(e => setErr(e.message)) }, [from, to, n]);
+  const v = (f, dash = '…') => d ? f(d) : dash;
+  const maxG = Math.max(1, ...(d?.byGarment || []).map(g => g.revenue)), maxD = Math.max(1, ...(d?.byDay || []).map(x => x.amount));
+  return (
+    <div className="stt">
+      {err && <p className="dpos-err" role="alert">{err}</p>}
+      <DueAlert d={d} />
+      <div className="sd-grid6 sd-line">
+        <Card label="ACTIVE ORDERS" value={v(x => x.activeOrders)} sub="Pending work" />
+        <Card label="DUE TODAY" value={v(x => x.dueToday)} sub="Promised today" tone={d?.dueToday ? 'amber' : ''} />
+        <Card label="OVERDUE" value={v(x => x.overdue)} sub="Past promised date" tone={d?.overdue ? 'red' : ''} />
+        <Card label="COMPLETED" value={v(x => x.completed)} sub="Finished orders" tone="green" />
+        <Card label="REVENUE" value={v(x => inr(x.stitchingRevenue))} sub={v(x => `GST ${inr(x.gstRevenue)} · Non-GST ${inr(x.nonGstRevenue)}`)} />
+        <Card label="GARMENTS" value={v(x => x.garments)} sub={v(x => `${inr(x.averageGarment)} avg each`)} />
+        <Card label="OPEN ADVANCES" value={v(x => x.openAdvances)} sub="Work pending" />
+        <Card label="TO COLLECT" value={v(x => inr(x.balanceToCollect))} sub="On advance orders" />
+      </div>
+      <div className="sr2-two">
+        <section className="sd-panel"><h2>Due in the next 7 days</h2>
+          {!d ? <Empty>Loading…</Empty> : !d.dueSoon.length ? <Empty>Nothing is due in the next 7 days.</Empty> : <OrderList list={d.dueSoon} nav={nav} onChanged={reload} />}</section>
+        <section className="sd-panel"><h2>Overdue</h2>
+          {!d ? <Empty>Loading…</Empty> : !d.overdueList.length ? <Empty>No overdue orders.</Empty> : <OrderList list={d.overdueList} nav={nav} onChanged={reload} />}</section>
+      </div>
+      <div className="sr2-two">
+        <section className="sd-panel"><h2>Revenue by garment</h2>
+          {!d ? <Empty>Loading…</Empty> : !d.byGarment.length ? <Empty>No stitching sales in this period.</Empty> : <div className="sr2-list">{d.byGarment.map(g => (
+            <div key={g.name} className="sr2-row"><div><b>{g.name}</b><span>{g.qty} pcs · {inr(g.revenue)}</span></div><i><u style={{ width: `${Math.max(3, g.revenue / maxG * 100)}%` }} /></i></div>))}</div>}</section>
+        <section className="sd-panel"><h2>Orders by status</h2>
+          {!d ? <Empty>Loading…</Empty> : <div className="sr2-list">{['pending', 'completed', 'cancelled'].map(k => { const c = d.byStatus[k], tot = Math.max(1, d.byStatus.pending + d.byStatus.completed + d.byStatus.cancelled); return (
+            <div key={k} className="sr2-row"><div><b>{STATUS_L[k]}</b><span>{c}</span></div><i className={`st-${k}`}><u style={{ width: `${c ? Math.max(3, c / tot * 100) : 0}%` }} /></i></div>) })}</div>}
+          <p className="sd-foot">Measurements are added with the ruler icon on a billing item. <Link to="/admin/billing/measurements" className="link-u">Open Measurements</Link></p></section>
+      </div>
+      <section className="sd-panel"><h2>Stitching revenue by day</h2>
+        {!d ? <Empty>Loading…</Empty> : !d.byDay.length ? <Empty>No stitching sales in this period.</Empty> : (
+          <div className="sr2-days" role="img" aria-label="Stitching revenue by day">{d.byDay.map(x => (
+            <div key={x.day} title={`${dmy(x.day)}: ${inr(x.amount)}`}><b>{inr(x.amount)}</b><i style={{ height: `${Math.max(6, x.amount / maxD * 150)}px` }} /><span>{dmy(x.day).slice(0, 5)}</span></div>))}</div>)}</section>
+      {invPrev}
+    </div>
+  );
+}
+
 // ---------------- Stitching Orders ----------------
 const TILES = [['all', 'ALL ORDERS', ''], ['pending', 'PENDING', 'amber'], ['completed', 'COMPLETED', 'green'], ['cancelled', 'CANCELLED', 'red']];
 export function StitchOrders() {

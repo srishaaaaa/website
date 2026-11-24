@@ -124,9 +124,7 @@ function EditModal({ product: start, categories, onClose, onDone, onPhotos }) {
         </div>
         <div style={{ display: tab === 'website' ? 'grid' : 'none', gap: 14 }}>
           <label className="f">Description <span className="muted small">(shown on the product page)</span><textarea rows={6} maxLength={4000} value={f.description} onChange={e => setF({ ...f, description: e.target.value })} placeholder="Fabric, work, drape, care…" /></label>
-          <label className="pe-check"><input type="checkbox" checked={f.best} onChange={e => setF({ ...f, best: e.target.checked })} /> Show in “Best Sellers” <span className="muted small">(the home page keeps the 10 newest)</span></label>
           <label className="f">Low-stock alert at <span className="muted small">(compared with the total across all sizes)</span><input type="number" min="0" value={f.low} onChange={e => setF({ ...f, low: e.target.value })} style={{ maxWidth: 120 }} /></label>
-          <label className="pe-check"><input type="checkbox" checked={f.featured} onChange={e => setF({ ...f, featured: e.target.checked })} /> Show in “Trending collections” <span className="muted small">(shown in Trending when no trending pieces are picked)</span></label>
           <div className="f"><span>Categories</span>
             <div className="pe-cols">{!cols.length ? <span className="muted small">No categories yet.</span> : cols.map(c => (
               <label key={c.slug} className={`pe-col ${f.collections.includes(c.slug) ? 'on' : ''}`}><input type="checkbox" checked={f.collections.includes(c.slug)} onChange={() => toggleCol(c.slug)} />{c.name}{c.status !== 'published' && <em className="muted small"> (hidden)</em>}</label>))}</div>
@@ -404,9 +402,6 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
               <label className="pe2-f">FABRIC / MATERIAL<input value={f.material} maxLength={80} onChange={e => setF({ ...f, material: e.target.value })} placeholder="e.g. Cotton" /></label>
               <label className="pe2-f">WEIGHT (GRAMS)<input inputMode="numeric" value={f.weight} onChange={e => setF({ ...f, weight: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 650" /></label>
             </div>
-            <label className="pe2-c"><input type="checkbox" checked={f.featured} onChange={e => setF({ ...f, featured: e.target.checked })} /> Show in “Trending collections”</label>
-            <label className="pe2-c"><input type="checkbox" checked={f.best} onChange={e => setF({ ...f, best: e.target.checked })} /> Show in “Best Sellers”</label>
-            <p className="pe2-hint">HOME PAGE SHOWS THE FIRST 4 TICKED, NEWEST FIRST</p>
             <h3 style={{ marginTop: 18 }}>Inventory Alerts</h3>
             <div className="pe2-g">
               {!editing && <label className="pe2-f">DEFAULT STOCK<input type="number" min="0" value={f.defStock} onChange={e => setF({ ...f, defStock: e.target.value })} /></label>}
@@ -465,11 +460,11 @@ function AlertsModal({ list, onClose, onDone, canStock, onEdit }) {
     <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Stock Alert" onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="sa">
         <div className="sa-head"><span className="sa-ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3.5 2.8 19.5h18.4z" /><path d="M12 10v4.5M12 17.4v.1" /></svg></span>
-          <div><h2>Stock Alert</h2><p>{items.length ? `${items.length} product${items.length > 1 ? 's' : ''} need attention` : 'Everything is stocked'}</p></div></div>
+          <div><h2>Stock Alert</h2><p>{items.length ? `${items.length} product(s) need attention` : 'Everything is stocked'}</p></div></div>
         <Err>{err}</Err>
         <div className="inv-al">{items.map(p => (
           <div key={p.id} className={`inv-al-c ${p.stock < 1 ? 'out' : ''}`}>
-            <div className="inv-al-h"><div><b>{p.name}</b><small>{p.category || 'Uncategorised'} · <strong>{p.stock} units in total</strong> · alert at {lowOf(p)} or fewer</small></div>{onEdit && <button type="button" className="sa-edit" onClick={() => onEdit(p)}>Edit</button>}</div>
+            <div className="inv-al-h"><div><b>{p.name}</b><small>{p.category || 'Uncategorised'} · <strong>{p.stock} units in total</strong> · alert below {lowOf(p) + 1}</small></div>{onEdit && <button type="button" className="sa-edit" onClick={() => onEdit(p)}>Edit</button>}</div>
             {p.variants.filter(v => v.active && v.stock <= 1).map(v => (
               <div key={v.id} className="inv-al-r"><span>{v.size}{v.color !== 'Default' ? ` / ${v.color}` : ''} · {v.stock < 1 ? 'sold out' : `${v.stock} left`}</span>
                 {canStock && <span>{[1, 5, 10].map(n => <button key={n} type="button" onClick={() => add(v, n)}>+{n}</button>)}</span>}</div>))}

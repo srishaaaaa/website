@@ -42,7 +42,7 @@ export default function CouponCard() {
             {!c.active && <p className="pc-warn">This coupon is not active at the moment.</p>}
           </div>
         </div>
-        <div className="pc-acts"><a className="pc-shop" href="/shop">SHOP NOW</a><button className="pc-dl" onClick={download}>⬇ Save coupon as image</button></div>
+        <div className="pc-acts"><a className="pc-shop" href="/shop">SHOP NOW</a><button className="pc-dl" onClick={() => window.print()}>⬇ Download coupon (PDF)</button></div>
         <p className="pc-foot">Show this code at the store or enter it at checkout.{d.shop.phone ? ` · ${d.shop.phone}` : ''}</p>
       </div>
     </div>
