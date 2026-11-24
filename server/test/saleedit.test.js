@@ -83,3 +83,16 @@ test('the owner can add stitching designs and sleeve options; staff can read the
   assert.equal(got.front[0].name, 'Princess cut'); assert.deepEqual(got.sleeveTypes, ['Cap sleeve']);
   assert.equal((await o('PUT', '/admin/pos/stitch-designs', { front: [{ name: 'Bad', image: 'javascript:alert(1)' }] })).status, 400);
 });
+
+test('GST inclusive: the price already contains the GST, so the total stays the price and the tax is worked out from inside it', async () => {
+  const o = await login();
+  const v = (await o('GET', '/admin/pos/catalog')).body.find(x => x.stock >= 2);
+  const price = v.price;
+  const r = await o('POST', '/admin/pos/sales', { idempotencyKey: 'inc-' + Math.random().toString(36).slice(2), channel: 'retail', items: [{ variantId: v.variantId, qty: 1, taxRate: 5 }], customerName: 'Inc', customerPhone: '9000000000', isGst: true, gstInclusive: true, paymentMode: 'cash' });
+  assert.equal(r.status, 201);
+  assert.equal(r.body.total, price, 'the customer pays the listed price');
+  assert.equal(r.body.tax, Math.round(price * 5 / 105));
+  assert.equal(r.body.subtotal + r.body.tax - r.body.discount + r.body.deliveryFee, r.body.total);
+  const e = await o('POST', '/admin/pos/sales', { idempotencyKey: 'exc-' + Math.random().toString(36).slice(2), channel: 'retail', items: [{ variantId: v.variantId, qty: 1, taxRate: 5 }], customerName: 'Exc', customerPhone: '9000000000', isGst: true, paymentMode: 'cash' });
+  assert.equal(e.body.total, price + Math.round(price * 5 / 100), 'without the flag GST is still added on top');
+});

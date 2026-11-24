@@ -16,7 +16,7 @@ export const PHONE_SQL = c => `right(regexp_replace(${c}, '\\D', '', 'g'), 10)`;
 // Bill maths, all in integer paise. Mirrors IGMOLS: taxable = subtotal - discount; total = taxable + GST + delivery.
 // The bill discount is shared across lines in proportion to their value (remainder paise go to the first lines) so GST
 // is charged on what the customer actually pays, line by line.
-export function computeBill(lines, { isGst = true, gstRate = null, discountType = 'fixed', discountValue = 0, deliveryFee = 0 } = {}) {
+export function computeBill(lines, { isGst = true, gstRate = null, discountType = 'fixed', discountValue = 0, deliveryFee = 0, inclusive = false } = {}) {
   const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const discount = discountType === 'percent' ? Math.round(subtotal * discountValue / 100) : discountValue;
   if (discountType === 'percent' && discountValue > 100) throw new HttpError(400, 'Discount cannot exceed 100%', 'bad_discount');
@@ -24,6 +24,16 @@ export function computeBill(lines, { isGst = true, gstRate = null, discountType 
   const out = lines.map(l => ({ ...l, lineTotal: l.price * l.qty, alloc: subtotal ? Math.floor(discount * l.price * l.qty / subtotal) : 0 }));
   let rest = discount - out.reduce((s, l) => s + l.alloc, 0);
   for (let i = 0; rest > 0; i = (i + 1) % out.length, rest--) out[i].alloc++;
+  if (isGst && inclusive) {
+    // Prices already include GST: the tax is the part of each (discounted) price that is GST, and the total stays what the prices add up to.
+    for (const l of out) {
+      if (gstRate != null) l.taxRate = gstRate;
+      const gross = l.lineTotal; l.tax = Math.round((gross - l.alloc) * l.taxRate / (100 + l.taxRate));
+      l.lineTotal = gross - l.tax; l.price = Math.round(l.lineTotal / l.qty);
+    }
+    const sub = out.reduce((s, l) => s + l.lineTotal, 0), tx = out.reduce((s, l) => s + l.tax, 0);
+    return { lines: out, subtotal: sub, discount, tax: tx, deliveryFee, total: sub - discount + tx + deliveryFee };
+  }
   for (const l of out) { if (isGst && gstRate != null) l.taxRate = gstRate; l.tax = isGst ? Math.round((l.lineTotal - l.alloc) * l.taxRate / 100) : 0 }
   const tax = out.reduce((s, l) => s + l.tax, 0);
   return { lines: out, subtotal, discount, tax, deliveryFee, total: subtotal - discount + tax + deliveryFee };
@@ -140,9 +150,9 @@ export async function getSale(q, invoice) {
 // free-text items carry the cashier's price. `trusted` lets server-side callers (advance orders) pass the price that was agreed at booking.
 async function resolveLines(t, items, { trusted = false, checkStock = false } = {}) {
   // Merge repeated variants, then lock in a stable order (no deadlocks between two cashiers).
-  const want = new Map(), prices = new Map(), custom = [];
+  const want = new Map(), prices = new Map(), rates = new Map(), custom = [];
   for (const it of items) {
-    if (it.variantId) { want.set(it.variantId, (want.get(it.variantId) ?? 0) + it.qty); if (trusted && it.price != null) prices.set(it.variantId, it.price) }
+    if (it.variantId) { want.set(it.variantId, (want.get(it.variantId) ?? 0) + it.qty); if (trusted && it.price != null) prices.set(it.variantId, it.price); if (it.taxRate != null) rates.set(it.variantId, it.taxRate) }
     else custom.push({ variantId: null, product_id: null, name: it.name, sku: it.sku ?? '', size: '', color: '', price: it.price, qty: it.qty, taxRate: it.taxRate ?? 0, stock: null, ...(it.measure ? { measure: it.measure } : {}) });
   }
   const ids = [...want.keys()].sort((a, b) => a - b);
@@ -156,7 +166,7 @@ async function resolveLines(t, items, { trusted = false, checkStock = false } = 
     const r = byId.get(id);
     if (!r) throw new HttpError(409, 'An item on this bill is no longer available', 'unavailable');
     if (checkStock && want.get(id) > r.stock) throw new HttpError(409, `Only ${r.stock} left of ${r.name} (${r.size}${r.color !== 'Default' ? ', ' + r.color : ''})`, 'insufficient_stock');
-    return { ...r, variantId: id, qty: want.get(id), ...(prices.has(id) ? { price: prices.get(id) } : {}) };
+    return { ...r, variantId: id, qty: want.get(id), ...(prices.has(id) ? { price: prices.get(id) } : {}), ...(rates.has(id) ? { taxRate: rates.get(id) } : {}) };
   }).concat(custom);
 }
 
@@ -182,7 +192,7 @@ export async function createSale(db, user, d) {
         ({ discount_type: discountType, discount_value: discountValue, code: couponCode } = c);
         await t.query('UPDATE pos_coupons SET used_count = used_count + 1 WHERE id = $1', [c.id]);
       }
-      const bill = computeBill(lines, { isGst: d.isGst, gstRate: d.gstRate ?? null, discountType, discountValue, deliveryFee: d.deliveryFee });
+      const bill = computeBill(lines, { isGst: d.isGst, gstRate: d.gstRate ?? null, discountType, discountValue, deliveryFee: d.deliveryFee, inclusive: !!d.gstInclusive });
       const pay = settle(bill.total, { mode: d.paymentMode, ...d.payments, tendered: d.cashTendered });
       const billDate = d.billDate ?? istDate();
       if (billDate > istDate()) throw new HttpError(400, 'Bill date cannot be in the future', 'bad_date');
@@ -477,7 +487,7 @@ const advCols = `a.code, a.status, a.customer_name AS "customerName", a.customer
 export async function createAdvance(db, user, d) {
   const code = await db.tx(async t => {
     const lines = await resolveLines(t, d.items, { checkStock: true });
-    const bill = computeBill(lines, { isGst: d.isGst, gstRate: d.gstRate ?? null, discountType: d.discountType, discountValue: d.discountValue, deliveryFee: d.deliveryFee });
+    const bill = computeBill(lines, { isGst: d.isGst, gstRate: d.gstRate ?? null, discountType: d.discountType, discountValue: d.discountValue, deliveryFee: d.deliveryFee, inclusive: !!d.gstInclusive });
     if (d.deposit > bill.total) throw new HttpError(400, 'The advance cannot be more than the bill total', 'bad_deposit');
     const dep = splitOf(d.depositMode, d.deposit, d.depositSplit, 'deposit');
     const depModes = Object.keys(dep).filter(k => dep[k] > 0);
@@ -491,10 +501,10 @@ export async function createAdvance(db, user, d) {
     if (!number) throw new HttpError(500, 'Could not create an advance order number. Please try again.');
     const items = lines.map(l => ({ variantId: l.variantId, name: l.name, sku: l.sku, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate, ...(l.measure ? { measure: l.measure } : {}) }));
     await t.query(`INSERT INTO pos_advances (code, customer_name, customer_phone, customer_address, is_gst, gst_rate, discount_type, discount_value, delivery_fee, items,
-        subtotal, discount_amount, tax_amount, total_amount, deposit, deposit_mode, delivery_date, notes, created_by)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+        subtotal, discount_amount, tax_amount, total_amount, deposit, deposit_mode, delivery_date, notes, created_by, gst_inclusive)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
       [number, d.customerName, d.customerPhone, d.customerAddress ?? '', d.isGst, d.isGst ? (d.gstRate ?? null) : null, d.discountType, d.discountValue, d.deliveryFee, JSON.stringify(items),
-        bill.subtotal, bill.discount, bill.tax, bill.total, d.deposit, depositMode, d.deliveryDate ?? null, d.notes ?? null, user.id]);
+        bill.subtotal, bill.discount, bill.tax, bill.total, d.deposit, depositMode, d.deliveryDate ?? null, d.notes ?? null, user.id, !!d.gstInclusive]);
     if (depModes.length > 1) await t.query('UPDATE pos_advances SET deposit_split = $2 WHERE code = $1', [number, JSON.stringify(dep)]);
     const ph = normPhone(d.customerPhone);
     if (ph) await t.query(`INSERT INTO pos_customers (name, phone, dob) VALUES ($1,$2,$3) ON CONFLICT (phone) DO UPDATE SET name = COALESCE(NULLIF(EXCLUDED.name, ''), pos_customers.name), dob = COALESCE(EXCLUDED.dob, pos_customers.dob), updated_at = now()`, [d.customerName, ph, d.customerDob ?? null]);
@@ -539,8 +549,8 @@ export async function finalizeAdvance(db, user, code, { balanceMode, balanceSpli
   const paymentMode = modes.length > 1 ? 'split' : (modes[0] ?? balanceMode);
   const sale = await createSale(db, user, {
     idempotencyKey: `advance-${a.id}-final`, channel: 'retail', source: 'offline', trusted: true,
-    items: a.items.map(i => i.variantId ? { variantId: i.variantId, qty: i.qty, price: i.price } : { name: i.name, sku: i.sku, price: i.price, qty: i.qty, taxRate: i.taxRate, ...(i.measure ? { measure: i.measure } : {}) }),
-    customerName: a.customer_name, customerPhone: a.customer_phone, customerAddress: a.customer_address, isGst: a.is_gst, gstRate: a.gst_rate ?? undefined,
+    items: a.items.map(i => i.variantId ? { variantId: i.variantId, qty: i.qty, price: i.price, taxRate: i.taxRate } : { name: i.name, sku: i.sku, price: i.price, qty: i.qty, taxRate: i.taxRate, ...(i.measure ? { measure: i.measure } : {}) }),
+    customerName: a.customer_name, customerPhone: a.customer_phone, customerAddress: a.customer_address, isGst: a.is_gst, gstRate: a.gst_rate ?? undefined, gstInclusive: a.gst_inclusive,
     discountType: a.discount_type, discountValue: a.discount_value, deliveryFee: a.delivery_fee, paymentMode, cashTendered: paymentMode === 'cash' ? a.total_amount : undefined,
     payments: { cash: b.cash, upi: b.upi, card: b.card }, paymentRef, notes: `Advance order ${code}${a.notes ? ' · ' + a.notes : ''}`,
   });

@@ -1,3 +1,4 @@
+import { beep, readAlerts } from '../components/PosSettingsParts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, uploadImage } from '../lib/api';
 import { inr } from '../lib/format';
@@ -211,7 +212,8 @@ function ProductsStock({ manager, stocker }) {
   const needs = useMemo(() => (list || []).filter(p => p.stock < 1 || p.stock <= lowOf(p) || p.variants.some(v => v.active && v.stock < 1)), [list]);
   useEffect(() => {
     if (!list || !needs.length) return;
-    setAlerts(true);
+    const a = readAlerts(); if (!a.on) return; // switched off in Settings → Stock alerts: no window, no sound
+    setAlerts(true); if (a.sound) beep();
   }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
   const counts = useMemo(() => ({ out: (list || []).filter(p => p.stock < 1).length, low: (list || []).filter(p => p.stock >= 1 && p.stock <= lowOf(p)).length, size: (list || []).filter(p => p.stock >= 1 && p.stock > lowOf(p) && p.variants.some(v => v.active && v.stock < 1)).length }), [list]);
   const del = async p => { if (!confirm(`Delete "${p.name}" permanently, with its sizes and photos? Past bills keep their own copy.`)) return; try { await api('/admin/products/' + p.id, { method: 'DELETE' }); toast('Product deleted.'); if (open === p.id) setOpen(null); load() } catch (e) { setErr(e.message) } };

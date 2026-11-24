@@ -22,13 +22,11 @@ export default function PageAccessCard() {
     <section className="dpos-card sa-card" style={{ marginTop: 16 }}>
       <h2><Icon n="users" />Staff permissions</h2>
       <p className="sub">Tick the pages every Staff member can open from the admin sidebar. Admins always see everything.</p>
-      <div className="sa-grid">
-        <div className="sa-head"><span>Page</span>{ROLES.map(([k, l, h]) => <span key={k} title={h}>{l}</span>)}</div>
-        {d.all.map(([path, label]) => (
-          <div className="sa-row" key={path}><span>{label}</span>
-            {ROLES.map(([k, l]) => d.can[k].includes(path)
-              ? <label key={k} className="sa-tick"><input type="checkbox" checked={cfg[k].includes(path)} onChange={() => toggle(k, path)} aria-label={`${l} can open ${label}`} /></label>
-              : <span key={k} className="sa-na" title={`${l} cannot use this page`}>—</span>)}</div>))}
+      <div className="sa-boxes">
+        {d.all.filter(([path]) => d.can.cashier.includes(path)).map(([path, label]) => (
+          <label className={`sa-box ${cfg.cashier.includes(path) ? 'on' : ''}`} key={path}>
+            <input type="checkbox" checked={cfg.cashier.includes(path)} onChange={() => toggle('cashier', path)} aria-label={`Staff can open ${label}`} /><span>{label}</span>
+          </label>))}
       </div>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       <div style={{ marginTop: 14 }}><button type="button" className="dpos-btn" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save page access'}</button></div>

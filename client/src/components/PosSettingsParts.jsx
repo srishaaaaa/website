@@ -27,8 +27,8 @@ export function AccentPicker({ value, onChange }) {
 
 // Low-stock warning for this device. The choice is kept in this browser, so each counter can decide for itself.
 const KEY = 'dhanya.pos.alerts';
-export const readAlerts = () => { try { return { on: false, sound: false, level: 5, ...JSON.parse(localStorage.getItem(KEY) || '{}') } } catch { return { on: false, sound: false, level: 5 } } };
-const beep = () => { try { const a = new (window.AudioContext || window.webkitAudioContext)(); const o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.type = 'sine'; o.frequency.value = 880; g.gain.setValueAtTime(.001, a.currentTime); g.gain.exponentialRampToValueAtTime(.3, a.currentTime + .02); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .6); o.start(); o.stop(a.currentTime + .65) } catch { /* no audio available */ } };
+export const readAlerts = () => { try { return { on: true, sound: true, level: 5, ...JSON.parse(localStorage.getItem(KEY) || '{}') } } catch { return { on: true, sound: true, level: 5 } } };
+export const beep = () => { try { const a = new (window.AudioContext || window.webkitAudioContext)(); const o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.type = 'sine'; o.frequency.value = 880; g.gain.setValueAtTime(.001, a.currentTime); g.gain.exponentialRampToValueAtTime(.3, a.currentTime + .02); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .6); o.start(); o.stop(a.currentTime + .65) } catch { /* no audio available */ } };
 const Toggle = ({ on, onChange, label, disabled }) => <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} className={`dpos-switch ${on ? 'on' : ''}`} onClick={() => onChange(!on)} />;
 
 export function StockAlertsCard() {
@@ -37,7 +37,7 @@ export function StockAlertsCard() {
   return (
     <section className="dpos-card"><h2>Stock alerts</h2>
       <p className="sub" style={{ marginBottom: 12 }}>Choose how this device warns you when products run low or go out of stock.</p>
-      <div className="pset-row"><div><b>Low-stock notification</b><p className="sub">Show a popup when items reach their low-stock alert level.</p></div><Toggle on={a.on} onChange={v => set({ on: v })} label="Low-stock notification" /></div>
+      <div className="pset-row"><div><b>Low-stock notification</b><p className="sub">ON: the Stock Alert window opens when you open Inventory. OFF: no window and no sound.</p></div><Toggle on={a.on} onChange={v => set({ on: v })} label="Low-stock notification" /></div>
       <div className={`pset-row ${a.on ? '' : 'off'}`}><div><b>Alert sound</b><p className="sub">Play a short sound with the popup.</p></div><Toggle on={a.sound} disabled={!a.on} onChange={v => set({ sound: v })} label="Alert sound" /></div>
       <label className="f">Low-stock level (units)<input inputMode="numeric" value={a.level} onChange={e => set({ level: Math.max(0, Math.min(999, Math.floor(+e.target.value.replace(/\D/g, '')) || 0)) })} /></label>
       <button type="button" className="dpos-btn ghost sm" onClick={beep}>TEST SOUND</button>
@@ -48,7 +48,7 @@ export function StockAlertsCard() {
 export function LowStockAlert() {
   const [items, setItems] = useState(null);
   useEffect(() => {
-    const a = readAlerts(); if (!a.on) return;
+    const a = readAlerts(); if (!a.on) return; if (location.pathname.includes('/billing/inventory') || location.pathname === '/admin/billing') return; // never cover the counter while billing; // Inventory shows its own Stock Alert window
     try { if (sessionStorage.getItem('dhanya.pos.alerted')) return } catch { /* ignore */ }
     api('/admin/pos/catalog?limit=300').then(r => {
       const low = r.filter(v => v.stock <= a.level).sort((x, y) => x.stock - y.stock);

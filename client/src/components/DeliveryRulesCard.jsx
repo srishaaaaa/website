@@ -29,7 +29,7 @@ export default function DeliveryRulesCard() {
     <section className="dpos-card dlv">
       <h2><Icon n="truck" />Delivery charge</h2>
       <label className="cp-sw"><input type="checkbox" checked={r.enabled} onChange={e => up({ enabled: e.target.checked })} /><span><b>Use these delivery rules at checkout</b><small>Off: the shipping method's flat fee and free-over amount are used.</small></span></label>
-      <div style={{ opacity: r.enabled ? 1 : .55, display: 'grid', gap: 14, marginTop: 12 }}>
+      <div className="dlv-body" style={{ opacity: r.enabled ? 1 : .55 }}>
         <label className="f">Shipping note shown to customers (bag and checkout)<textarea rows={2} maxLength={300} value={r.note} onChange={e => up({ note: e.target.value })} placeholder="e.g. Delivered within 5 to 7 working days across India." /></label>
         <label className="f">Product pages: Delivery &amp; Returns lines (one per line; empty = the shipping note and free-delivery line are shown)<textarea rows={3} maxLength={2000} value={r.lines} onChange={e => up({ lines: e.target.value })} placeholder={'Delivery across India in 5 to 7 working days\nFree delivery on orders above ₹5,000'} /></label>
         <div className="dlv-wt">

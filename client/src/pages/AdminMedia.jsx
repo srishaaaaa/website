@@ -143,22 +143,10 @@ export function AdminStorefront() {
         {err && <p role="alert" className="err">{err}</p>}
         {b && (
           <div className="adm-slots">
-            <Slot title="Logo" accept="image/png,image/webp,image/jpeg" busy={busy === 'logo'} value={b.logo} fallback="" alt={b.logoAlt} onAlt={v => setB({ ...b, logoAlt: v })}
-              hint="Your boutique logo, shown in the site header and menu. A square or round image works best (PNG with a transparent background is ideal). Until you add one, the DHANYA text wordmark is shown. You can replace it whenever you like."
-              onUpload={f => run('logo', async () => { const up = await uploadImage(f); const next = { ...b, logo: up.url }; await saveBranding(next); setB(next) }, 'Logo updated.')}
-              onReset={() => run('logo', async () => { const next = { ...b, logo: null, logoAlt: '' }; await saveBranding(next); setB(next) }, 'Logo removed. The text wordmark is back.')} />
             <Slot title="Hero model photo" accept="image/png,image/webp,image/jpeg" busy={busy === 'hero'} value={b.heroModel} fallback="" pos={b.heroModelPos} onPos={v => run('hero', async () => { const next = { ...b, heroModelPos: v }; await saveBranding(next); setB(next) }, 'Focus saved.')} alt={b.heroAlt} onAlt={v => setB({ ...b, heroAlt: v })}
-              hint="The photograph that fills the right half of the hero on tablets and desktops (and the arch on phones). A tall, high-quality photo works best; set the focus point so the face stays in view. Until you add one the frame stays blank."
+              hint="Tall photo shown beside the homepage headline. Click the photo to set the focus point."
               onUpload={f => run('hero', async () => { const up = await uploadImage(f); const next = { ...b, heroModel: up.url }; await saveBranding(next); setB(next) }, 'Hero model updated.')}
               onReset={() => run('hero', async () => { const next = { ...b, heroModel: null, heroAlt: '' }; await saveBranding(next); setB(next) }, 'Hero model removed.')} />
-            <Slot title="Textile close-up" accept="image/jpeg,image/png,image/webp" busy={busy === 'textile'} value={b.textileImage} fallback="" pos={b.textilePos} onPos={v => run('textile', async () => { const next = { ...b, textilePos: v }; await saveBranding(next); setB(next) }, 'Position saved.')} alt={b.textileAlt} onAlt={v => setB({ ...b, textileAlt: v })}
-              hint="A square close-up of silk, zari or pleats shown beside the headline as CRAFTED ELEGANCE."
-              onUpload={f => run('textile', async () => { const up = await uploadImage(f); const next = { ...b, textileImage: up.url }; await saveBranding(next); setB(next) }, 'Textile photo updated.')}
-              onReset={() => run('textile', async () => { const next = { ...b, textileImage: null, textileAlt: '' }; await saveBranding(next); setB(next) }, 'Textile photo removed.')} />
-            <Slot title="Editorial photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'editorial'} value={b.editorialImage} fallback="" pos={b.editorialPos} onPos={v => run('editorial', async () => { const next = { ...b, editorialPos: v }; await saveBranding(next); setB(next) }, 'Position saved.')} alt={b.editorialAlt} onAlt={v => setB({ ...b, editorialAlt: v })}
-              hint="A tall fashion photograph beside TRADITION, WOVEN INTO EVERY THREAD."
-              onUpload={f => run('editorial', async () => { const up = await uploadImage(f); const next = { ...b, editorialImage: up.url }; await saveBranding(next); setB(next) }, 'Editorial photo updated.')}
-              onReset={() => run('editorial', async () => { const next = { ...b, editorialImage: null, editorialAlt: '' }; await saveBranding(next); setB(next) }, 'Editorial photo removed.')} />
             <Slot title="Our Story photo" accept="image/jpeg,image/png,image/webp" busy={busy === 'story'} value={b.storyImage} fallback="/images/story.jpg" pos={b.storyPos} onPos={v => run('story', async () => { const next = { ...b, storyPos: v }; await saveBranding(next); setB(next) }, 'Position saved.')} alt={b.storyAlt} onAlt={v => setB({ ...b, storyAlt: v })}
               hint="A wide photograph works best (the wine-coloured text panel covers the right half)."
               onUpload={f => run('story', async () => { const up = await uploadImage(f); const next = { ...b, storyImage: up.url }; await saveBranding(next); setB(next) }, 'Story photo updated.')}
@@ -167,7 +155,7 @@ export function AdminStorefront() {
           </div>
         )}
 
-        {[['Category covers', 'categories', cats], ['More category covers', 'collections', cols]].map(([title, kind, rows]) => (
+        {[['Category covers', 'categories', cats]].map(([title, kind, rows]) => (
           <section key={kind} className="adm-block">
             <h2 className="serif adm-h2">{title}</h2>
             <p className="muted small">Click a photo on the part that must stay visible (a face, the zari border). The website frames the photo around that point.</p>
@@ -185,10 +173,6 @@ export function AdminStorefront() {
           </section>
         ))}
 
-        <HomePicks onSaved={refresh} toast={toast} />
-
-        <section className="adm-block"><h2 className="serif adm-h2">Reels &amp; photo gallery</h2>
-          <p className="muted small">Up to 6 reels (videos) and 6 photos for “Inside DHANYA BOUTIQUE” now have their own page. <Link className="link-u" to="/admin/reels">Open Reels &amp; Gallery →</Link></p></section>
       </div>
       </AdminShell>
     </Gate>

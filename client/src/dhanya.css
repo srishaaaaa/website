@@ -1053,3 +1053,137 @@ div.dpos .adm-block.tb { display: flex !important; flex-direction: column; gap: 
 .dpos-sheet:has(.dpos-box) .dpos-two button { padding: 9px 6px; font-size: 11.5px }
 .dpos-sheet:has(.dpos-box) .dpos-box { margin-bottom: 14px }
 .od-sums .bad b, .od-sums .od-total b, .od-sums .od-total span { color: #5a1560 !important }
+
+/* Stock Alert window: compact, header left-aligned */
+.sa { width: min(560px, 94vw) !important; padding: 22px 24px 18px !important; border-radius: 22px !important; text-align: left }
+.sa-head { display: flex !important; align-items: center !important; gap: 14px !important; margin: 0 0 14px !important; padding: 0 0 14px !important; border-bottom: 1px solid #efe9e0; background: none !important; text-align: left !important }
+.sa-head > div { text-align: left !important } .sa-head h2 { font-size: 20px !important; margin: 0 !important; text-align: left !important }
+.sa-head p { margin: 3px 0 0 !important; font-size: 12.5px !important; font-weight: 600 !important; letter-spacing: 0 !important; text-transform: none !important; color: #8a5a00 !important; text-align: left !important }
+.sa-ic { width: 44px !important; height: 44px !important; flex: none; display: grid; place-items: center; border-radius: 50% !important; background: #fff0cc !important; color: #b45309 !important } .sa-ic svg { width: 22px; height: 22px }
+.sa .inv-al { gap: 10px !important } .sa .inv-al-c { padding: 12px 14px !important; border-radius: 14px !important; gap: 8px !important }
+.sa .inv-al-h b { font-size: 14.5px !important } .sa .inv-al-h small { font-size: 12px !important }
+.sa .inv-al-r { font-size: 13px !important; padding-top: 8px !important } .sa .inv-al-r button { min-width: 40px !important; padding: 6px 10px !important; font-size: 12.5px !important; border-radius: 10px !important }
+.sa .sa-ed, .sa .inv-al-h button { padding: 7px 16px !important; font-size: 12px !important; border-radius: 10px !important }
+.sa-dis, .sa > button:last-child { margin-top: 12px !important; padding: 10px !important; font-size: 13px !important; border-radius: 12px !important }
+
+/* Advance order window: compact, fits the screen without scrolling */
+.dpos-modal .dpos-sheet:has(.adv-modes):not(.dpos-done) { width: min(520px, 94vw) !important; max-height: 94vh; overflow: auto; padding-bottom: 14px }
+.dpos-sheet:has(.adv-modes) .dpos-mhead { padding: 12px 18px !important } .dpos-sheet:has(.adv-modes) .dpos-mhead b { font-size: 15px !important } .dpos-sheet:has(.adv-modes) .dpos-mhead small { font-size: 11px }
+.dpos-sheet:has(.adv-modes) > * { font-size: 12.5px }
+.dpos-sheet:has(.adv-modes) .dpos-tw table th { padding: 6px 4px !important; font-size: 9.5px !important } .dpos-sheet:has(.adv-modes) .dpos-tw table td { padding: 7px 4px !important; font-size: 12.5px !important }
+.dpos-sheet:has(.adv-modes) .dpos-box { padding: 8px 12px !important; border-radius: 12px !important; margin-bottom: 8px !important }
+.dpos-sheet:has(.adv-modes) .bsum > div { padding: 3px 0 !important; font-size: 12px !important } .dpos-sheet:has(.adv-modes) .bsum .bsum-total { font-size: 14px !important }
+.adv-modes { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 6px !important }
+.adv-modes button { padding: 8px 4px !important; font-size: 11px !important; border-radius: 10px !important; min-width: 0 }
+.dpos-sheet:has(.adv-modes) .dpos-cta { padding: 10px !important; font-size: 12px !important; border-radius: 12px !important }
+.dpos-sheet:has(.adv-modes) .dpos-btn { padding: 7px 12px !important; font-size: 11.5px !important }
+.dpos-sheet:has(.adv-modes) .sub { margin: 2px 0 8px !important }
+
+/* Invoice preview: smaller, the invoice fills the window (no empty band) */
+.dpos-modal .dpos-sheet.invprev { width: min(840px, 94vw) !important; height: min(88vh, 860px) !important; display: flex !important; flex-direction: column; background: #f3f1ec; padding: 0 }
+.dpos-modal .dpos-sheet.invprev iframe { flex: 1 1 auto; min-height: 0; height: auto !important; width: 100%; display: block; border: 0 }
+.invprev-bar { padding: 10px 18px !important; flex: none } .invprev-bar b { font-size: 12px !important } .invprev-bar button { padding: 7px 14px !important; font-size: 12px !important }
+.invprev-tabs { flex: none; padding: 6px 18px !important }
+
+/* Return items: compact */
+.dpos-modal .dpos-sheet:has(.inv-rt) { width: min(560px, 94vw) !important; max-height: 94vh; overflow: auto }
+.dpos-sheet:has(.inv-rt) .dpos-mhead { padding: 12px 18px !important } .dpos-sheet:has(.inv-rt) .dpos-mhead b { font-size: 15px !important } .dpos-sheet:has(.inv-rt) .dpos-mhead small { font-size: 11px }
+.dpos-sheet:has(.inv-rt) { font-size: 12.5px } .inv-rt th { padding: 6px 6px !important; font-size: 9.5px !important } .inv-rt td { padding: 7px 6px !important; font-size: 12.5px !important }
+.dpos-sheet:has(.inv-rt) input { height: 34px !important; padding: 0 12px !important; font-size: 12.5px !important } .inv-rq input { width: 54px !important; height: 30px !important }
+.dpos-sheet:has(.inv-rt) .dpos-two button { padding: 8px 6px !important; font-size: 11.5px !important }
+.dpos-sheet:has(.inv-rt) .rw-sum { padding: 8px 14px !important; font-size: 13px } .dpos-sheet:has(.inv-rt) .rw-note { font-size: 11px !important; margin: 4px 0 0 }
+.dpos-sheet:has(.inv-rt) .rw-admin { padding: 8px 12px !important; margin-top: 8px !important } .dpos-sheet:has(.inv-rt) .rw-tick { font-size: 12px !important }
+.dpos-sheet:has(.inv-rt) .dpos-btn { padding: 8px 16px !important; font-size: 11.5px !important }
+.dpos-sheet:has(.inv-rt) .inv-l { margin: 8px 0 4px !important; font-size: 10px !important }
+
+/* One window size for every admin pop-up: 540px normal, 700px wide, 840px invoice preview */
+div.dpos-modal > .dpos-sheet:not(.invprev):not(.wide) { width: min(540px, 94vw) !important; max-width: none !important }
+div.dpos-modal > .dpos-sheet.wide { width: min(700px, 94vw) !important; max-width: none !important }
+div.dpos-modal > .dpos-sheet.dpos-done { width: min(540px, 94vw) !important }
+div.dpos-modal > .sa { width: min(540px, 94vw) !important }
+div.dpos-modal > .dpos-sheet { max-height: 94vh; overflow-y: auto }
+div.dpos-modal > .dpos-sheet.invprev { overflow: hidden }
+.dpos-incl { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; font-size: 12.5px; font-weight: 600 } .dpos-incl small { font-weight: 400; color: #7a6f80 } .dpos-incl input { width: 16px; height: 16px; accent-color: #330533 }
+.dpos-catline { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0 } .dpos-ln-gst { width: 104px !important; height: 34px !important; flex: none; font-size: 12px !important }
+
+/* Taxonomy: two aligned columns */
+.dpos-tx { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; align-items: start }
+.dpos-tx > div { display: grid; gap: 10px; align-content: start; min-width: 0 }
+.dpos-tx h2 { margin: 0 0 2px !important; font-size: 16px !important; display: flex; align-items: center; gap: 8px; min-height: 28px }
+.dpos-txc { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px !important; border-radius: 16px !important; min-height: 64px; margin: 0 !important }
+.dpos-txc b { font-size: 14.5px !important } .dpos-txc small { font-size: 10.5px !important }
+@media (max-width: 900px) { .dpos-tx { grid-template-columns: 1fr } }
+
+/* Users: compact role pill */
+div.dpos select.usr-role, span.usr-role { width: auto !important; min-width: 96px; max-width: 130px; height: 28px !important; line-height: 1 }
+span.usr-role { align-items: center; justify-content: center; padding: 0 14px !important }
+
+/* Storefront images: two photos on the left, category covers on the right */
+div.dpos .adm:has(.adm-slots) { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr) !important; gap: 16px !important; align-items: start }
+.adm-slots { display: grid; gap: 14px } .adm-slots > section, .adm-slots > div { padding: 16px 18px !important; border-radius: 18px !important }
+.adm-slots h2, .adm-slots h3 { font-size: 15px !important; margin: 0 0 4px !important } .adm-slots p, .adm-slots .hint { font-size: 12px !important }
+.adm-covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px } .adm-cover { aspect-ratio: 3 / 4; max-height: 190px }
+.adm-covers .btn, .adm-covers .adm-file { padding: 7px 14px !important; font-size: 11px !important } .adm-covers .danger { font-size: 11px !important }
+@media (max-width: 1000px) { div.dpos .adm:has(.adm-slots) { grid-template-columns: 1fr !important } }
+
+/* Reels & Gallery: clean section headers, link row on one line, equal cards */
+div.dpos .adm-h2 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 10px !important; font-size: 17px !important; font-weight: 700 }
+div.dpos .adm-h2 .muted { font-size: 12px !important; font-weight: 500 }
+.dpos-linkrow { display: flex !important; gap: 10px; align-items: center; margin: 0 0 16px }
+.dpos-linkrow input { flex: 1 1 auto; min-width: 0; height: 42px } .dpos-linkrow .dpos-btn { flex: none; height: 42px; padding: 0 20px }
+.dpos-reels { gap: 14px !important } .dpos-reel { border-radius: 18px !important; overflow: hidden }
+.dpos-reel header { padding: 10px 14px !important; font-size: 11px } .dpos-reel footer { padding: 10px 14px !important; display: flex; align-items: center; gap: 8px }
+.dpos-reel .media { aspect-ratio: 16 / 10; display: grid; place-items: center; background: #ece8e1 }
+
+/* Delivery page: every group is its own box, two columns, tidy rows */
+.dlv { padding: 18px 20px !important } .dlv > h2 { margin: 0 0 10px !important; font-size: 16px !important }
+.dlv .cp-sw { padding: 10px 14px !important; border: 1px solid #e8e2da !important; border-radius: 14px !important; background: #faf8f6 !important; margin: 0 0 12px !important; display: flex !important }
+.dlv .cp-sw small { display: block; font-size: 11.5px; color: #7a6f80 } .dlv .cp-sw b { font-size: 13.5px }
+.dlv-body { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px !important; margin-top: 0 !important; align-items: start }
+.dlv-body > * { min-width: 0; padding: 14px 16px; border: 1px solid #e8e2da; border-radius: 16px; background: #fff }
+.dlv-body > .dlv-wt { grid-column: 1 / -1; background: #faf8f6 } .dlv-body > label.f:nth-child(-n+2) { grid-column: 1 / -1 }
+.dlv-body > .dpos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px }
+.dlv-body textarea { min-height: 0; padding: 9px 12px } .dlv-body .f { font-size: 10.5px; gap: 5px }
+.dlv-h { font-size: 12px !important; margin: 0 0 8px !important } .dlv-h small { display: block; font-size: 11px; margin-top: 1px }
+.dlv-row { display: flex !important; align-items: center; gap: 8px !important; flex-wrap: nowrap !important; margin: 0 0 8px !important } .dlv-row .muted { font-size: 11px; flex: none }
+.dlv-row input { flex: 1 1 0; min-width: 0; max-width: 130px !important; height: 36px; padding: 0 10px !important; font-size: 12.5px }
+.dlv-row .dpos-btn.sm, .dlv-rh .dpos-btn.sm { width: 32px; height: 32px; padding: 0 !important; flex: none; border-radius: 10px; display: grid; place-items: center }
+.dlv-rh input { height: 38px; padding: 0 12px; font-size: 13px } .dlv-region { margin-bottom: 10px }
+@media (max-width: 900px) { .dlv-body { grid-template-columns: 1fr } }
+
+/* Staff permissions: one box per page, in the sidebar order */
+.sa-boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 10px }
+.sa-box { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border: 1px solid #e3dde6; border-radius: 12px; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color .15s, background .15s }
+.sa-box input { width: 17px; height: 17px; accent-color: #330533; flex: none; margin: 0 } .sa-box.on { border-color: #330533; background: #f6eef7 } .sa-box:hover { border-color: #5a1560 }
+
+/* ===== Billing: clean table-like item list (reference layout) ===== */
+.dpos-lines { display: grid; margin-top: 6px }
+.dpos-lh, div.dpos .dpos-line { display: grid !important; grid-template-columns: minmax(0, 1fr) 100px 132px; column-gap: 10px; align-items: center }
+.dpos-lines.gst .dpos-lh, .dpos-lines.gst div.dpos .dpos-line, div.dpos .dpos-lines.gst .dpos-line { grid-template-columns: minmax(0, 1fr) 100px 108px 132px }
+.dpos-lines.gst .dpos-lh { grid-template-columns: minmax(0, 1fr) 100px 108px 132px }
+.dpos-lh { padding: 8px 2px; border-bottom: 1px solid #e8e2da; font-size: 10px; font-weight: 700; letter-spacing: .1em; color: #6b6070 } .dpos-lh span:last-child { text-align: left }
+div.dpos .dpos-lines .dpos-line { padding: 10px 2px !important; margin: 0 !important; border: 0 !important; border-bottom: 1px solid #efeaf0 !important; border-radius: 0 !important; background: none !important; align-items: center !important }
+div.dpos .dpos-lines .dpos-line > .ln-cols, div.dpos .dpos-lines .dpos-line > .dpos-grid.ln-cols { display: contents !important }
+div.dpos .dpos-lines .dpos-line .ln-cols > input, div.dpos .dpos-lines .dpos-line .ln-cols > select { width: 100%; height: 38px; min-width: 0 }
+.ln-name b { font-size: 13px; font-weight: 600; display: block } .ln-name .small { font-size: 11px }
+.ln-price { font-size: 13px; font-weight: 600; padding-left: 4px }
+div.dpos .dpos-lines .dpos-line .msr-line { grid-column: 1 / -1 }
+div.dpos .dpos-lines .dpos-line > div:last-child { height: 38px; justify-self: start; display: flex; align-items: center; gap: 8px }
+div.dpos .dpos-lines .dpos-qty { height: 36px } div.dpos .dpos-lines .bp-trash { width: 32px; height: 32px }
+@media (max-width: 899px) {
+  .dpos-lh { display: none !important }
+  div.dpos .dpos-lines .dpos-line, div.dpos .dpos-lines.gst .dpos-line { grid-template-columns: minmax(0, 1fr) 96px !important }
+  div.dpos .dpos-lines .dpos-line > .ln-cols, div.dpos .dpos-lines .dpos-line > .dpos-grid.ln-cols { display: grid !important; grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; grid-column: 1 / -1 }
+  div.dpos .dpos-lines .dpos-line .ln-cols > :first-child { grid-column: 1 / -1 }
+  div.dpos .dpos-lines .dpos-line > div:last-child { grid-column: 1 / -1; justify-self: end }
+}
+div.dpos .dpos-lines .dpos-line > div:last-child { grid-column: -2 / -1 !important; grid-row: 1 !important }
+div.dpos .dpos-lines .dpos-line .msr-line { grid-row: 2 !important; grid-column: 1 / -1 !important }
+div.dpos .dpos-lines.gst .dpos-line { grid-template-columns: minmax(0, 1fr) 100px 108px 132px !important }
+div.dpos .dpos-lines:not(.gst) .dpos-line { grid-template-columns: minmax(0, 1fr) 100px 132px !important }
+div.dpos .dpos-lines .dpos-line > div:last-child { min-width: 0; width: 100% }
+div.dpos .dpos-lines .dpos-qty { flex: none }
+div.dpos .dpos-lines.gst .dpos-line, .dpos-lines.gst .dpos-lh { grid-template-columns: minmax(0, 1fr) 96px 104px 160px !important }
+div.dpos .dpos-lines:not(.gst) .dpos-line, .dpos-lines:not(.gst) .dpos-lh { grid-template-columns: minmax(0, 1fr) 100px 160px !important }
+div.dpos .dpos-lines .dpos-qty { width: 106px } div.dpos .dpos-lines .dpos-qty input { width: 30px !important }
+div.dpos .dpos-lines .dpos-line > div:last-child { gap: 10px !important }

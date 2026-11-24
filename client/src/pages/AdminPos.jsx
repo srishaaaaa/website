@@ -12,7 +12,7 @@ import CatalogPicker from '../components/CatalogPicker';
 import MeasureModal, { measureSummary } from '../components/MeasureModal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
-import { AccentPicker, LoginPasswordCard, StaffAccessCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
+import { LoginPasswordCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
 import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
 import PosMeasurements from './PosMeasurements';
@@ -38,10 +38,16 @@ const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `k-${Date.now()}-$
 const TABS = { billing: false, analytics: true, advance: false, orders: false, measurements: false, inventory: true, customers: false, coupons: true, birthdays: true, expenses: true, settings: true };
 
 // ---- live preview of the bill (the server recomputes everything on checkout) ----
-function preview(lines, { isGst, gstRate, discountType, discountValue, deliveryFee }) {
+function preview(lines, { isGst, gstRate, discountType, discountValue, deliveryFee, inclusive }) {
   const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const discount = Math.min(subtotal, discountType === 'percent' ? Math.round(subtotal * Math.min(discountValue, 100) / 100) : discountValue);
   let tax = 0; const by = new Map();
+  if (isGst && inclusive && subtotal) {
+    // The prices already contain GST: show the price without GST, the GST inside it, and the same grand total as the prices add up to.
+    let net = 0;
+    for (const l of lines) { const lt = l.price * l.qty, rate = gstRate ?? l.taxRate, eff = lt - Math.floor(discount * lt / subtotal), t = Math.round(eff * rate / (100 + rate)); tax += t; net += lt - t; const g = by.get(rate) || { rate, base: 0, tax: 0 }; g.base += eff - t; g.tax += t; by.set(rate, g) }
+    return { subtotal: net, discount, tax, byRate: [...by.values()].filter(g => g.rate > 0).sort((x, y) => x.rate - y.rate), deliveryFee, total: net - discount + tax + deliveryFee };
+  }
   if (isGst && subtotal) for (const l of lines) { const lt = l.price * l.qty, rate = gstRate ?? l.taxRate, base = lt - Math.floor(discount * lt / subtotal), t = Math.round(base * rate / 100); tax += t; const g = by.get(rate) || { rate, base: 0, tax: 0 }; g.base += base; g.tax += t; by.set(rate, g) }
   return { subtotal, discount, tax, byRate: [...by.values()].filter(g => g.rate > 0).sort((x, y) => x.rate - y.rate), deliveryFee, total: subtotal - discount + tax + deliveryFee };
 }
@@ -115,7 +121,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const [wsItems, setWsItems] = useState([]);
   useEffect(() => { try { const x = JSON.parse(sessionStorage.getItem('dhanya.exchange') || 'null'); if (x) { sessionStorage.removeItem('dhanya.exchange'); setCust(c => ({ ...c, name: x.name, phone: x.phone })); setNotes(x.note) } } catch { /* ignore */ } }, []); // eslint-disable-line
   const [cust, setCust] = useState({ name: '', phone: '', dob: '', address: '' }); const [billDate, setBillDate] = useState(todayStr()); const [source, setSource] = useState('offline');
-  const [isGst, setIsGst] = useState(false); const gstTouched = useRef(false); const [gstRate, setGstRate] = useState('item');
+  const [inclusive, setInclusive] = useState(() => { try { return localStorage.getItem('dhanya.gstIncl') !== '0' } catch { return true } }); const [isGst, setIsGst] = useState(false); const gstTouched = useRef(false); const [gstRate, setGstRate] = useState('item');
   const [disc, setDisc] = useState({ type: 'fixed', value: '' });
   const [coupon, setCoupon] = useState(null); const [couponIn, setCouponIn] = useState(''); const [couponMsg, setCouponMsg] = useState();
   const [delivery, setDelivery] = useState('');
@@ -139,7 +145,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const discountValue = coupon ? coupon.discountValue : disc.type === 'percent' ? Math.min(100, Math.round(parseFloat(disc.value) || 0)) : toPaise(disc.value);
   const deliveryFee = toPaise(delivery);
   const flat = isGst && gstRate !== 'item' ? +gstRate : null;
-  const bill = useMemo(() => preview(priced, { isGst, gstRate: flat, discountType, discountValue, deliveryFee }), [priced, isGst, flat, discountType, discountValue, deliveryFee]);
+  const bill = useMemo(() => preview(priced, { isGst, gstRate: flat, discountType, discountValue, deliveryFee, inclusive }), [priced, isGst, flat, discountType, discountValue, deliveryFee, inclusive]);
   const tenderedP = tendered === '' ? bill.total : toPaise(tendered);
   const splitAmt = { cash: splitOn.cash ? toPaise(split.cash) : 0, upi: splitOn.upi ? toPaise(split.upi) : 0, card: splitOn.card ? toPaise(split.card) : 0 };
   const splitSum = splitAmt.cash + splitAmt.upi + splitAmt.card;
@@ -162,14 +168,14 @@ function Billing({ channel, shop, onSale, onAdvance }) {
 
   const body = useMemo(() => ({
     channel, source: ws ? 'offline' : source, billDate,
-    items: priced.map(l => l.custom ? { name: l.name.trim(), price: l.price, qty: l.qty, taxRate: l.taxRate, ...(l.service && l.measure ? { measure: l.measure } : {}) } : { variantId: l.variantId, qty: l.qty }),
+    items: priced.map(l => l.custom ? { name: l.name.trim(), price: l.price, qty: l.qty, taxRate: l.taxRate, ...(l.service && l.measure ? { measure: l.measure } : {}) } : { variantId: l.variantId, qty: l.qty, ...(isGst && l.taxRate != null ? { taxRate: l.taxRate } : {}) }),
     customerName: cust.name.trim(), customerPhone: cust.phone.trim(), customerAddress: cust.address.trim(), ...(cust.dob && !ws ? { customerDob: cust.dob } : {}),
-    isGst, ...(flat != null ? { gstRate: flat } : {}), ...(coupon ? { couponCode: coupon.code } : { discountType: disc.type, discountValue }), deliveryFee,
+    isGst, gstInclusive: isGst && inclusive, ...(flat != null ? { gstRate: flat } : {}), ...(coupon ? { couponCode: coupon.code } : { discountType: disc.type, discountValue }), deliveryFee,
     paymentMode: mode, ...(mode === 'cash' ? { cashTendered: tenderedP } : {}),
     ...(mode === 'split' ? { payments: splitNet } : {}),
     ...(ref.trim() ? { paymentRef: ref.trim() } : {}), ...(notes.trim() ? { notes: notes.trim() } : {}),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [channel, ws, source, billDate, priced, cust, isGst, flat, coupon, disc.type, discountValue, deliveryFee, mode, tenderedP, splitNet.cash, splitNet.upi, splitNet.card, ref, notes]);
+  }), [channel, ws, source, billDate, priced, cust, isGst, inclusive, flat, coupon, disc.type, discountValue, deliveryFee, mode, tenderedP, splitNet.cash, splitNet.upi, splitNet.card, ref, notes]);
   // A new idempotency key is used whenever the bill changes; an unchanged retry (e.g. after a network drop) reuses it, so it can never double-bill.
   useEffect(() => { key.current = null }, [body]);
 
@@ -240,7 +246,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const saveAdvance = async ({ deposit, depositMode, depositSplit, deliveryDate, notes: n }) => {
     const note = [n, notes.trim()].filter(Boolean).join(' · ');
     const adv = await api('/admin/pos/advances', { method: 'POST', body: { items: body.items, ...(body.customerDob ? { customerDob: body.customerDob } : {}), customerName: body.customerName, customerPhone: body.customerPhone, customerAddress: body.customerAddress,
-      isGst, ...(flat != null ? { gstRate: flat } : {}), discountType, discountValue, deliveryFee, deposit, depositMode, ...(depositSplit ? { depositSplit } : {}), ...(deliveryDate ? { deliveryDate } : {}), ...(note ? { notes: note } : {}) } });
+      isGst, gstInclusive: isGst && inclusive, ...(flat != null ? { gstRate: flat } : {}), discountType, discountValue, deliveryFee, deposit, depositMode, ...(depositSplit ? { depositSplit } : {}), ...(deliveryDate ? { deliveryDate } : {}), ...(note ? { notes: note } : {}) } });
     setAdvOpen(false); clearOrder(); onAdvance(adv);
   };
 
@@ -248,17 +254,17 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   const lineEls = lines.map(l => (
     <div className={`dpos-line ${pulse.includes(l.variantId) ? 'dpos-flash' : ''}`} key={l.key}>
       {l.custom ? (
-        <div className="dpos-grid" style={{ gridTemplateColumns: 'minmax(150px,2fr) minmax(90px,1fr) 90px' }}>
+        <div className="dpos-grid ln-cols">
           <input aria-label="Item name or description" placeholder={l.service ? 'Service (alteration, stitching…)' : 'Item name / description…'} list={ws ? 'dpos-ws-list' : undefined} value={l.name} onChange={e => patch(l.key, { name: e.target.value })} />
           <input aria-label="Price in rupees" inputMode="decimal" placeholder="Price ₹" value={l.priceStr} onChange={e => patch(l.key, { priceStr: e.target.value })} />
-          <select aria-label="GST rate" value={l.taxRate} onChange={e => patch(l.key, { taxRate: +e.target.value })}>{GST_RATES.map(r => <option key={r} value={r}>{r}% GST</option>)}</select>
+          {isGst && <select aria-label="GST rate" value={l.taxRate} onChange={e => patch(l.key, { taxRate: +e.target.value })}>{GST_RATES.map(r => <option key={r} value={r}>{r}% GST</option>)}</select>}
           {l.service && <div className="msr-line">
             <button type="button" className="dpos-btn ghost sm" onClick={() => setMeasureFor(l.key)}>📏 {l.measure ? 'Edit measurements' : 'Add measurements'}</button>
             {l.measure && <span className="msr-sum">{measureSummary(l.measure)}</span>}
           </div>}
         </div>
       ) : (
-        <div><b>{l.name}</b><div className="muted small">{l.detail}{l.sku ? ` · ${l.sku}` : ''} · {inr(l.price)} each · {l.stock} in stock</div></div>
+        <div className="dpos-catline ln-cols"><div className="ln-name"><b>{l.name}</b><div className="muted small">{l.detail}{l.sku ? ` · ${l.sku}` : ''} · {l.stock} in stock</div></div><span className="ln-price">{inr(l.price)}</span>{isGst && <select className="dpos-ln-gst" aria-label={`GST rate for ${l.name}`} value={l.taxRate ?? 0} onChange={e => patch(l.key, { taxRate: +e.target.value })}>{GST_RATES.map(r => <option key={r} value={r}>{r}% GST</option>)}</select>}</div>
       )}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifySelf: 'end' }}>
         <div className="dpos-qty"><button aria-label="Decrease quantity" onClick={() => setQty(l, l.qty - 1)}>−</button>
@@ -290,7 +296,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
               {!ws && <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom(true)])}>✂ Add Service</button>}
               <button className="dpos-btn ghost sm" onClick={() => setLines(ls => [...ls, blankCustom()])}>+ Add {ws ? 'Item' : 'Custom Item'}</button></div></div>
           {ws && <datalist id="dpos-ws-list">{wsItems.map(i => <option key={i.id} value={[i.code, i.company, i.colour].filter(Boolean).join(' · ')} />)}</datalist>}
-          {lines.length ? lineEls : <Empty>{ws ? 'No items yet.' : 'No items yet. Press Catalog to pick products, or add a service or custom item.'}</Empty>}
+          {lines.length ? <div className={`dpos-lines ${isGst ? 'gst' : ''}`}><div className="dpos-lh"><span>ITEM NAME / DESCRIPTION</span><span>PRICE (₹)</span>{isGst && <span>GST</span>}<span>QTY</span></div>{lineEls}</div> : <Empty>{ws ? 'No items yet.' : 'No items yet. Press Catalog to pick products, or add a service or custom item.'}</Empty>}
           {catOpen && <CatalogPicker onClose={() => setCatOpen(false)} onPick={addMany} />}
           {measureLine && <MeasureModal value={measureLine.measure} onClose={() => setMeasureFor(null)} onSave={m => patch(measureLine.key, { measure: m || undefined })} />}
         </section>
@@ -312,7 +318,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
           </div>}
           <label className="f" style={{ marginBottom: 16 }}>Note (optional)<input value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} placeholder="Shown on the bill" /></label>
           <div className="dpos-ledger">
-            <div className="dpos-lrow"><span>Subtotal ({priced.reduce((t, l) => t + l.qty, 0)} items) <small className="dpos-excl">EXCL. GST</small></span><b>{inr(bill.subtotal)}</b></div>
+            <div className="dpos-lrow"><span>Subtotal ({priced.reduce((t, l) => t + l.qty, 0)} items) {isGst && <small className="dpos-excl">EXCL. GST</small>}</span><b>{inr(bill.subtotal)}</b></div>
             {bill.discount > 0 && <div className="dpos-lrow"><span>Discount</span><span>− {inr(bill.discount)}</span></div>}
             <div className="dpos-lrow"><span>Delivery</span><input aria-label="Delivery charge in rupees" inputMode="decimal" value={delivery} onChange={e => setDelivery(e.target.value)} placeholder="0" /></div>
             {(shop?.deliveryPresets || []).length > 0 && <div className="dpos-lrow"><span className="muted small">Quick pick</span><select aria-label="Delivery quick pick" value="" onChange={e => e.target.value !== '' && setDelivery(rupees(+e.target.value))}><option value="">Choose…</option>{shop.deliveryPresets.map((p, i) => <option key={i} value={p.fee}>{p.name} · {inr(p.fee)}</option>)}</select></div>}
@@ -321,7 +327,8 @@ function Billing({ channel, shop, onSale, onAdvance }) {
             <button role="radio" aria-checked={!isGst} className={!isGst ? 'on' : ''} onClick={() => { gstTouched.current = true; setIsGst(false) }}>Non-GST bill</button>
             <button role="radio" aria-checked={isGst} className={isGst ? 'on' : ''} onClick={() => { gstTouched.current = true; setIsGst(true) }}>GST invoice</button></div>
           {isGst && <>
-            <div className="dpos-gstrow"><b>GST <small>(+ ADDED)</small></b>
+            <label className="dpos-incl"><input type="checkbox" checked={inclusive} onChange={e => { setInclusive(e.target.checked); try { localStorage.setItem('dhanya.gstIncl', e.target.checked ? '1' : '0') } catch { /* ignore */ } }} /> <span>Prices include GST <small>(as entered on the product)</small></span></label>
+            <div className="dpos-gstrow"><b>GST <small>({inclusive ? 'INCLUDED' : '+ ADDED'})</small></b>
               <label className="dpos-pct"><input aria-label="GST percentage for the whole bill" inputMode="numeric" value={gstRate === 'item' ? '' : gstRate} placeholder="item" onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 2); setGstRate(v === '' ? 'item' : String(Math.min(28, +v))) }} /> %</label>
               <b className="acc">{inr(bill.tax)}</b></div>
             <p className="sub" style={{ margin: '6px 0 0' }}>{gstRate === 'item' ? 'Each item uses its own GST rate. Type a % to charge one rate on the whole bill.' : `${gstRate}% GST on the whole bill. Clear the box to use each item’s own rate.`}{shop?.gstin ? '' : ' Add your GSTIN in Delivery & GST to print it on invoices.'}</p></>}
@@ -678,7 +685,6 @@ function Settings({ onSaved }) {
       <section className="dpos-card pset-top"><span className="pset-ico"><Icon n="gear" /></span><div><h2 style={{ margin: 0 }}>Shop settings</h2><p className="sub">Update the shop profile, logo, colour and stock alerts used across the POS and invoices.</p></div></section>
       <form onSubmit={save} className="pset-grid">
         <div className="pset-col">
-          <AccentPicker value={s.accent || ''} onChange={v => setS({ ...s, accent: v })} />
           <StockAlertsCard />
         </div>
         <div className="pset-col">
@@ -706,15 +712,6 @@ function Settings({ onSaved }) {
           <label className="f" style={{ marginTop: 14 }}>Terms &amp; notes printed on the invoice (one point per line)<textarea rows={3} maxLength={600} value={s.terms || ''} onChange={e => setS({ ...s, terms: e.target.value })} placeholder="e.g. Custom-stitched and altered garments are made to order and are non-returnable." /></label>
           <p className="sub" style={{ marginTop: 12 }}>Invoice numbers are created automatically, like INV-2026-G3AKL.</p>
         </section>
-        <section className="dpos-card"><h2><Icon n="truck" />Delivery &amp; packing quick picks</h2>
-          {s.deliveryPresets.map((p, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <input aria-label="Name" value={p.name} onChange={e => preset(i, { name: e.target.value })} placeholder="e.g. Within Kumbakonam" />
-              <input aria-label="Fee in rupees" style={{ maxWidth: 140 }} inputMode="decimal" defaultValue={rupees(p.fee)} onBlur={e => preset(i, { fee: toPaise(e.target.value) })} placeholder="₹ fee" />
-              <button type="button" className="dpos-btn ghost sm" aria-label="Remove" onClick={() => setS({ ...s, deliveryPresets: s.deliveryPresets.filter((_, n) => n !== i) })}>✕</button></div>))}
-          <button type="button" className="dpos-btn ghost sm" onClick={() => setS({ ...s, deliveryPresets: [...s.deliveryPresets, { name: '', fee: 0 }] })}>+ Add delivery option</button>
-          <p className="sub" style={{ marginTop: 10 }}>These appear as a quick pick on the billing screen. Online-store shipping is managed separately.</p>
-        </section>
         <Err>{err}</Err>{ok && <p className="dpos-ok" role="status">Saved.</p>}
         <div><button className="dpos-btn" disabled={busy} type="submit">{busy ? 'Saving…' : 'Save settings'}</button></div>
         </div>
@@ -723,7 +720,6 @@ function Settings({ onSaved }) {
         <LoginPasswordCard />
         <StoreSettingsCard />
         <AlertSettingsCard />
-        <div className="pset-span"><StaffAccessCard /></div>
         <div className="pset-span"><PageAccessCard /></div>
       </div>
     </div>
