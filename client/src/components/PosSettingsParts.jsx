@@ -90,7 +90,7 @@ export function LoginPasswordCard() {
   );
 }
 
-const ROLES = [['admin', 'Admin', 'Everything, including settings and reports'], ['cashier', 'Cashier', 'Billing, advance orders, order history, customers'], ['inventory', 'Stock keeper', 'Inventory and stock adjustments']];
+const ROLES = [['admin', 'Admin', 'Everything, including settings and reports'], ['cashier', 'Staff', 'The pages ticked under Staff permissions']];
 
 // Staff accounts for the POS. Only the owner can add staff or change a role.
 export function StaffAccessCard() {
@@ -108,7 +108,7 @@ export function StaffAccessCard() {
         <ul className="pset-staff">{rows.map(u => (
           <li key={u.id}><span><b>{u.name || u.email}</b><em>{u.email}</em></span>
             {u.role === 'owner' || !owner || u.id === user.id ? <span className="dpos-pill">{u.role === 'owner' ? 'Admin' : (ROLES.find(r => r[0] === u.role)?.[1] || u.role)}</span>
-              : <select aria-label={`Role for ${u.email}`} value={u.role} onChange={e => setRole(u, e.target.value)}>{ROLES.map(r => <option key={r[0]} value={r[0]}>{r[1]}</option>)}</select>}</li>))}</ul>)}
+              : <select aria-label={`Role for ${u.email}`} value={u.role === 'inventory' ? 'cashier' : u.role} onChange={e => setRole(u, e.target.value)}>{ROLES.map(r => <option key={r[0]} value={r[0]}>{r[1]}</option>)}</select>}</li>))}</ul>)}
       <p className="pset-l" style={{ marginTop: 14 }}>NEW STAFF</p>
       <p className="sub">People are added automatically when they sign in with their email on the Sign in page. Open Users in the sidebar, find them and set their role to give them access.</p>
     </section>

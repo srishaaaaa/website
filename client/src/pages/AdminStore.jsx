@@ -86,20 +86,20 @@ export function AdminUsers() {
   useEffect(() => { if (!gate) load() }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
   if (gate) return gate;
   const isOwner = ['owner', 'admin'].includes(user.role); // admins and the owner are the same
-  const ROLE_L = { owner: 'Admin', admin: 'Admin', cashier: 'Staff · Billing', inventory: 'Staff · Stock', customer: 'Customer' };
+  const ROLE_L = { owner: 'Admin', admin: 'Admin', cashier: 'Staff', inventory: 'Staff', customer: 'Customer' };
   const shown = (list || []).filter(u => (!q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase())) && inPeriod(u.created_at, per) && (role === 'all' || (role === 'admins' ? ['owner', 'admin'].includes(u.role) : role === 'staff' ? ['cashier', 'inventory'].includes(u.role) : u.role === 'customer')));
-  const setRole = async (u, r) => { try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role: r } }); setList(l => l.map(x => x.id === u.id ? { ...x, role: r } : x)); toast(`${u.email} is now ${r}`) } catch (x) { setE(x.message) } };
+  const setRole = async (u, r) => { try { await api(`/admin/users/${u.id}/role`, { method: 'PATCH', body: { role: r } }); setList(l => l.map(x => x.id === u.id ? { ...x, role: r } : x)); toast(`${u.email} is now ${ROLE_L[r] || r}`) } catch (x) { setE(x.message) } };
   return (
-    <AdminShell title="Users & Roles" sub="Everyone who signs in appears here automatically. Change a person's role to give them access: cashiers can bill, admins manage the store.">
+    <AdminShell title="Users & Roles" sub="Staff with access to this admin. Everyone who signs in appears here automatically: set them to Staff or Admin to give access.">
       {e && <p role="alert" className="dpos-err">{e}</p>}
-      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" /><ExportCsv name="users" header={['Name', 'Email', 'Role', 'Joined']} rows={shown.map(u => [u.name || '', u.email, ROLE_L[u.role] || u.role, u.created_at ? String(u.created_at).slice(0, 10) : ''])} /><Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /><PeriodFilter value={per} onChange={setPer} /></div>
+      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" /><ExportCsv name="users" header={['Name', 'Email', 'Role', 'Joined']} rows={shown.map(u => [u.name || '', u.email, ROLE_L[u.role] || u.role, u.created_at ? String(u.created_at).slice(0, 10) : ''])} /><Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /></div>
       <Card>
         {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No users found.</p> : (
-          <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+          <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
             <tbody>{shown.map(u => (
               <tr key={u.id}><td><span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}><span className="dpos-av" style={{ width: 32, height: 32, fontSize: 13 }}>{(u.name || u.email)[0].toUpperCase()}</span><b>{u.name || '—'}</b></span></td><td>{u.email}</td>
-                <td>{u.role === 'owner' || !isOwner || u.id === user.id ? <span className={`dpos-pill ${u.role === 'customer' ? '' : 'ok'}`}>{ROLE_L[u.role] || u.role}</span>
-                  : <select aria-label={`Role for ${u.email}`} value={u.role} onChange={ev => setRole(u, ev.target.value)} style={{ maxWidth: 150 }}>{['customer', 'cashier', 'inventory', 'admin'].map(r => <option key={r} value={r}>{ROLE_L[r]}</option>)}</select>}</td><td>{when(u.created_at)}</td></tr>))}</tbody></table></div>)}
+                <td>{u.role === 'owner' || !isOwner || u.id === user.id ? <span className={`usr-role ${['owner', 'admin'].includes(u.role) ? 'adm' : ''}`}>{ROLE_L[u.role] || u.role}</span>
+                  : <select className={`usr-role ${u.role === 'admin' ? 'adm' : ''}`} aria-label={`Role for ${u.email}`} value={u.role === 'inventory' ? 'cashier' : u.role} onChange={ev => setRole(u, ev.target.value)}>{[['customer', 'Customer'], ['cashier', 'Staff'], ['admin', 'Admin']].map(([r, l]) => <option key={r} value={r}>{l}</option>)}</select>}</td><td><span className="usr-status">ACTIVE</span></td></tr>))}</tbody></table></div>)}
       </Card>
     </AdminShell>
   );

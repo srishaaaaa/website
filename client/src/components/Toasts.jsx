@@ -9,7 +9,7 @@ export default function Toasts() {
         {toasts.map(t => (
           <motion.button key={t.id} layout className={`toast ${t.type}`} onClick={() => dismissToast(t.id)} aria-label={`${t.message} Dismiss.`}
             initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.96 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-            {t.message}
+            <span className="toast-ic" aria-hidden="true">{t.type === 'warn' || t.type === 'error' ? '!' : '✓'}</span><span className="toast-tx"><b>{t.type === 'warn' || t.type === 'error' ? 'Heads up' : 'Done'}</b><span>{t.message}</span></span>
           </motion.button>
         ))}
       </AnimatePresence>
