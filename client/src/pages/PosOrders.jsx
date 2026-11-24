@@ -319,7 +319,8 @@ function AdvanceQuick({ code, onClose }) {
     items={(a?.items || []).map(i => ({ name: i.name, note: i.size ? [i.size, i.color && i.color !== 'Default' ? i.color : ''].filter(Boolean).join(', ') : '', qty: i.qty, unit: i.price, total: i.price * i.qty }))} />;
 }
 
-function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
+function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
+  const [invPv, setInvPv] = useState(null);
   const nav = useNavigate();
   const [a, setA] = useState(null); const [err, setErr] = useState(); const [pay, setPay] = useState(blankPay); const [busy, setBusy] = useState(false);
   const load = useCallback(() => api('/admin/pos/advances/' + encodeURIComponent(code)).then(x => { setA(x); setErr() }).catch(e => setErr(e.message)), [code]);
@@ -348,9 +349,10 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {open && <button className="dpos-btn ghost" disabled={busy} onClick={() => setStatus(a.status === 'pending' ? 'ready' : 'pending')}>{a.status === 'pending' ? 'Mark ready for collection' : 'Back to pending'}</button>}
             {open && manager && <button className="dpos-btn danger" disabled={busy} onClick={() => confirm(`Cancel ${a.code}? Remember to hand back the ${inr(a.deposit)} advance.`) && setStatus('cancelled')}>Cancel order</button>}
-            {a.invoiceNo && <button className="dpos-btn" onClick={() => onBilled(null, a.invoiceNo)}>View invoice</button>}
+            {a.invoiceNo && <button className="dpos-btn" onClick={() => api('/admin/pos/sales/' + encodeURIComponent(a.invoiceNo)).then(x => setInvPv({ invoiceNo: a.invoiceNo, shareToken: (x.sale || x).shareToken })).catch(e => setErr(e.message))}>View invoice</button>}
           </div>
         </div>)}
+      {invPv && <InvoicePreview row={invPv} onClose={() => setInvPv(null)} />}
     </Modal>
   );
 }
