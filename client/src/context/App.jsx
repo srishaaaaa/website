@@ -56,7 +56,13 @@ export function AppProvider({ children }) {
   // --- bag: persisted on the server (guest cookie or customer account) -----------
   const [cartState, setCart] = useState(EMPTY_CART);
   const [bagOpen, setBagOpen] = useState(false);
-  const loadCart = useCallback(pin => api('/cart' + (typeof pin === 'string' && /^\d{6}$/.test(pin) ? `?pin=${pin}` : '')).then(setCart).catch(() => {}), []);
+  // pin / region (the delivery region picked at checkout) re-price delivery
+  const loadCart = useCallback((pin, region) => {
+    const q = new URLSearchParams();
+    if (typeof pin === 'string' && /^\d{6}$/.test(pin)) q.set('pin', pin);
+    if (typeof region === 'string' && region) q.set('region', region);
+    return api('/cart' + (q.size ? `?${q}` : '')).then(setCart).catch(() => {});
+  }, []);
   useEffect(() => {
     if (!authReady) return;
     let timer;

@@ -342,3 +342,105 @@ div.dpos .dlv2-three .dlv-row { display: flex; align-items: center; gap: 6px; ma
 .msr-land .msr-two .msr-neck > * { min-width: 0 }
 .dpos-modal .od-sums.od-full > .bsum, .bsum { grid-template-columns: minmax(0, 1fr) !important }
 div.dpos .usr-seen { font-size: 12.5px; color: #3a3540; white-space: nowrap }
+
+/* ===== Phone view (admin) ===== */
+@media (max-width: 640px) {
+  div.dpos .dpos-main { min-width: 0; max-width: 100% }
+  div.dpos .dpos-main > * { min-width: 0; max-width: 100% }
+  /* page grids that sized themselves to their widest content */
+  div.dpos .msp, div.dpos .ex, div.dpos .dpos-main > div[style*="grid"], div.dpos .dpos-main > section > div[style*="grid"] { grid-template-columns: minmax(0, 1fr) !important }
+  div.dpos .dpos-main div:has(> h2):not(.dpos-card):not(.dlv2-card) { min-width: 0 }
+  /* header: title on its own line, View Store + profile underneath */
+  div.dpos .dpos-head { flex-wrap: wrap !important; gap: 10px }
+  div.dpos .dpos-head > div:first-child { flex: 1 1 100%; min-width: 0 }
+  div.dpos .dpos-head-r { margin-left: 0; justify-content: flex-start }
+  /* rows of buttons, tabs and filters wrap or scroll inside the screen */
+  div.dpos .dpos-tabs, div.dpos .inv-tabs { max-width: 100%; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none }
+  div.dpos .dpos-filterbar, div.dpos .msp-top, div.dpos .msp-tools, div.dpos .ex-top, div.dpos .dpos-bar-tools, div.dpos .sm-bar, div.dpos .inv-top, div.dpos .dlv2-bh { flex-wrap: wrap !important; gap: 8px !important }
+  div.dpos .dpos-pf { max-width: 100%; min-width: 0 } div.dpos .dpos-pg { max-width: 100% !important; overflow-x: auto; scrollbar-width: none }
+  /* stat tiles: two per row, never wider than the screen */
+  div.dpos .msp-tiles, div.dpos .ex-kpis, div.dpos .adv-kpis, div.dpos .sm-kpis, div.dpos .cp-kpis, div.dpos .an-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important }
+  div.dpos .msp-tiles > *, div.dpos .ex-kpis > *, div.dpos .adv-kpis > *, div.dpos .sm-kpis > * { min-width: 0 }
+  div.dpos .ex-kpis > .big { grid-column: 1 / -1 }
+  /* form grids: one field per row */
+  div.dpos .dpos-grid, div.dpos .msp-filters, div.dpos .dpos-filters, div.dpos .pe2-g { grid-template-columns: minmax(0, 1fr) !important }
+  div.dpos .bp-cust .dpos-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important }
+  div.dpos .bp-cust .f, div.dpos .dpos-grid > * { min-width: 0 }
+  div.dpos .dlv2-bar button { font-size: 12px }
+  div.dpos .dlv2-in input { width: 84px }
+}
+@media (max-width: 640px) {
+  div.dpos .dpos-tx { grid-template-columns: minmax(0, 1fr) !important } div.dpos .dpos-tx > div { min-width: 0 }
+  div.dpos .dpos-txc { flex-wrap: wrap } div.dpos .dpos-txc > * { min-width: 0 }
+  div.dpos .msp-tools { width: 100%; min-width: 0; flex-wrap: wrap !important } div.dpos .msp-tools .dpos-pf { flex: 1 1 100% }
+}
+@media (max-width: 640px) {
+  html body div.dpos section.bp-cust > div.dpos-grid { grid-template-columns: minmax(0, 1fr) !important }
+  html body div.dpos section.bp-cust > div.dpos-grid > * { grid-column: 1 / -1 !important }
+  html body div.dpos .dpos-tw tbody tr .dpos-rowact { flex-wrap: wrap !important; justify-content: flex-start; max-width: 100% }
+  html body div.dpos .dpos-tw tbody tr td.r { min-width: 0; max-width: 100%; justify-self: stretch; text-align: left }
+  html body div.dpos .dpos-k4 .dpos-card2 .v { font-size: 20px !important; white-space: nowrap; line-height: 1.15 }
+  html body div.dpos .dpos-k4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important } html body div.dpos .dpos-k4 > * { min-width: 0; padding: 12px !important }
+}
+@media (max-width: 640px) {
+  html body div.dpos .dpos-card2 .v { font-size: 20px !important; white-space: nowrap; line-height: 1.15 }
+  html body div.dpos .dpos-tw tbody tr .dpos-rowact { gap: 6px !important }
+  html body div.dpos .dpos-tw tbody tr .dpos-rowact .ra { width: 34px !important; height: 34px !important; min-width: 34px }
+  html body div.dpos .dpos-card h2 + div, html body div.dpos .bp-items-h, html body div.dpos .dpos-card > div:first-child { flex-wrap: wrap; gap: 6px }
+}
+@media (max-width: 640px) { html body div.dpos .dpos-card .dpos-head > div { display: flex; flex-wrap: wrap; gap: 6px; max-width: 100% } }
+@media (max-width: 640px) { html body div.dpos .dpos-card2 { grid-template-columns: minmax(0, 1fr) !important; min-width: 0 } html body div.dpos .dpos-card2 > * { min-width: 0 } html body div.dpos .dpos-card2 .t { white-space: normal } }
+@media (max-width: 640px) {
+  html body div.dpos .dlv2-tw table { min-width: 0 }
+  html body div.dpos .dlv2-tw th, html body div.dpos .dlv2-tw td { padding: 8px 6px }
+  html body div.dpos .dlv2-tw th { font-size: 9px }
+  html body div.dpos .dlv2-tw .n { width: 20px }
+  html body div.dpos .dlv2-in { gap: 3px }
+  html body div.dpos .dlv2-in input { width: 58px; padding: 0 6px !important; font-size: 13px }
+  html body div.dpos .dlv2-in em { font-size: 10px }
+  html body div.dpos .dlv2-del { width: 30px; height: 30px }
+  html body div.dpos .dlv2-body { padding: 14px 12px }
+}
+
+/* ===== Android and iPhone (admin) ===== */
+@media (max-width: 640px) {
+  /* iPhone zooms the page when a box under 16px is tapped: keep typing boxes at 16px */
+  html body div.dpos input:not([type=checkbox]):not([type=radio]), html body div.dpos select, html body div.dpos textarea,
+  html body .dpos-modal input:not([type=checkbox]):not([type=radio]), html body .dpos-modal select, html body .dpos-modal textarea,
+  html body .inv-modal select, html body .inv-modal input { font-size: 16px !important }
+  /* pop-ups fit the visible screen (the browser bars come and go) and clear the home indicator */
+  html body .dpos-modal { padding: 10px 10px calc(10px + env(safe-area-inset-bottom)) !important; align-items: center }
+  html body .dpos-modal .dpos-sheet { max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px - env(safe-area-inset-bottom)); width: 100% !important; max-width: 100% !important; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
+  html body .inv-modal .inv-ps { max-height: calc(100dvh - 32px); overflow-y: auto }
+  /* bottom bars sit above the home indicator */
+  html body .dpos-mbar { padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important }
+  html body div.dpos .dpos-main { padding-bottom: calc(90px + env(safe-area-inset-bottom)) }
+  /* taps: no grey flash, no 300 ms wait */
+  html body div.dpos button, html body div.dpos a, html body div.dpos select, html body div.dpos label { -webkit-tap-highlight-color: transparent; touch-action: manipulation }
+  /* side-scrolling rows scroll smoothly with a finger */
+  html body div.dpos .dpos-tw, html body div.dpos .dpos-tabs, html body div.dpos .inv-tabs, html body div.dpos .dpos-pg, html body div.dpos .dlv2-tw { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain }
+  /* date boxes keep their size on iPhone */
+  html body div.dpos input[type=date], html body .dpos-modal input[type=date] { -webkit-appearance: none; appearance: none; min-height: 40px; display: flex; align-items: center }
+}
+@media (max-width: 640px) {
+  html body div.dpos .inv-filters select, html body div.dpos .inv-filters input { font-size: 16px !important }
+  html body div.dpos .dpos-head div { flex-wrap: wrap }
+}
+/* the smallest phones (320–360 px wide) */
+@media (max-width: 360px) {
+  html body div.dpos .dpos-main { padding-left: 8px !important; padding-right: 8px !important }
+  html body div.dpos .an-gst, html body div.dpos .msp-st, html body div.dpos .adm-slots, html body div.dpos .adm-card, html body div.dpos .adm-block { max-width: 100%; min-width: 0; box-sizing: border-box }
+  html body div.dpos .adm-slots { grid-template-columns: minmax(0, 1fr) !important }
+  html body div.dpos .msp-st, html body div.dpos .an-gst { flex-wrap: wrap }
+  html body div.dpos .dpos-card, html body div.dpos .adm-card { padding-left: 12px !important; padding-right: 12px !important }
+}
+@media (max-width: 640px) {
+  html body div.dpos .dpos-card .dpos-head > div { flex: 1 1 100%; min-width: 0 }
+  html body div.dpos .an-pay { flex-wrap: wrap; max-width: 100%; row-gap: 6px }
+}
+@media (max-width: 640px) {
+  html body div.dpos .dpos-card .dpos-head > div { flex-wrap: wrap !important }
+  html body div.dpos .dpos-tx > div { grid-template-columns: minmax(0, 1fr) !important }
+  html body div.dpos .dpos-tx h2 { flex-wrap: wrap; min-width: 0 }
+}
+@media (max-width: 640px) { html body div.dpos .dpos-bill .dpos-card > .dpos-head > div[style] { flex-wrap: wrap !important } }

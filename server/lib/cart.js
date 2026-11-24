@@ -57,10 +57,10 @@ export function cartLines(q, cartId) {
     WHERE ci.cart_id = $1 ORDER BY ci.id`, [cartId]);
 }
 
-export async function shippingFor(q, subtotal, pin, grams = 0) {
+export async function shippingFor(q, subtotal, pin, grams = 0, region = '') {
   const m = await one(q, `SELECT id, code, name, base_amount, free_over FROM shipping_methods WHERE active ORDER BY id LIMIT 1`);
   const base = !m ? { id: null, amount: 0, name: 'Shipping' } : { id: m.id, name: m.name, amount: m.free_over != null && subtotal >= m.free_over ? 0 : m.base_amount, freeOver: m.free_over };
-  return shippingWithRules(q, subtotal, pin, base, { grams }); // the admin's delivery rules (by PIN zone and order value) when they are switched on
+  return shippingWithRules(q, subtotal, pin, base, { grams, region }); // the admin's delivery rules (by PIN zone and order value) when they are switched on
 }
 
 // Shop prices include GST. Splits the GST out of the (inclusive) line totals, grouped by rate: tax = gross x rate / (100 + rate).
@@ -82,13 +82,13 @@ export function issueFor(l) {
   return null;
 }
 
-export async function cartView(db, cart, pin) {
+export async function cartView(db, cart, pin, region = '') {
   const lines = cart ? await cartLines(db, cart.id) : [];
   const items = lines.map(l => ({ variantId: l.variantId, slug: l.slug, name: l.name, size: l.size, color: l.color, price: l.price, qty: l.qty, taxRate: l.taxRate, stock: l.stock, image: l.image, issue: issueFor(l) }));
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   // An out-of-range PIN never breaks the bag: it is shown as "blocked" with the reason, and checkout refuses it.
   const weight = lines.reduce((g, l) => g + (l.weightGrams || 0) * l.qty, 0);
-  const ship = await shippingFor(db, subtotal, pin, weight).catch(e => e.code === 'out_of_range' || e.status === 400 ? { amount: 0, freeOver: null, note: e.message, blocked: true, policy: '' } : Promise.reject(e));
+  const ship = await shippingFor(db, subtotal, pin, weight, region).catch(e => e.code === 'out_of_range' || e.status === 400 ? { amount: 0, freeOver: null, note: e.message, blocked: true, policy: '' } : Promise.reject(e));
   const shipping = { amount: items.length ? ship.amount : 0, freeOver: ship.freeOver ?? null, weightGrams: weight, km: ship.km ?? null, note: ship.note ?? null, zone: ship.zone ?? null, policy: ship.policy ?? '', blocked: !!ship.blocked };
   return { items, count: items.reduce((s, i) => s + i.qty, 0), subtotal, shipping, gst: gstSplit(items), total: subtotal + shipping.amount, hasIssues: items.some(i => i.issue) };
 }

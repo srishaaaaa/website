@@ -53,3 +53,16 @@ test('delivery by weight: bag weight, region, free-over and order tiers still ap
   assert.equal(feeFor({ ...W, orderTiers: [{ minOrder: 400000, fee: 3000 }] }, 500000, '110001', null, 1200).amount, 3000, 'a bigger order caps the fee');
   assert.equal(feeFor({ ...W, weightMode: false, bands: [{ upToKm: 5, fee: 8000 }] }, 500000, '600028', 3, 1200).amount, 8000, 'weight mode off = the distance rules, unchanged');
 });
+
+test('delivery region picked at checkout (Shalistone style): the chosen region sets the fee by weight; unknown names fall back to the PIN', () => {
+  const rules = { enabled: true, weightMode: true, weightRegions: [
+    { name: 'Tamil Nadu', active: true, prefixes: ['60'], tiers: [{ minGrams: 0, maxGrams: 500, fee: 6000 }, { minGrams: 500, maxGrams: null, fee: 9000 }] },
+    { name: 'Kerala', active: true, prefixes: ['67'], tiers: [{ minGrams: 0, maxGrams: 500, fee: 8000 }, { minGrams: 500, maxGrams: 1000, fee: 12000 }] },
+    { name: 'Closed', active: false, prefixes: [], tiers: [{ minGrams: 0, maxGrams: null, fee: 1 }] },
+  ] };
+  assert.equal(feeFor(rules, 100000, '600001', null, 300, 'Kerala').amount, 8000, 'chosen region beats the PIN');
+  assert.equal(feeFor(rules, 100000, '600001', null, 300, 'kerala ').amount, 8000, 'names match without case or spaces');
+  assert.equal(feeFor(rules, 100000, '', null, 5000, 'Kerala').amount, 12000, 'heavier than every bracket: last bracket fee');
+  assert.equal(feeFor(rules, 100000, '600001', null, 300, 'Closed').amount, 6000, 'a disabled region cannot be chosen: PIN decides');
+  assert.equal(feeFor(rules, 100000, '600001', null, 700, '').amount, 9000, 'no choice: PIN decides, as before');
+});

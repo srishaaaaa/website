@@ -144,5 +144,5 @@ test('analytics follow edits and returns: revenue, units and product totals move
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   const r2 = (await o('GET', `/admin/pos/reports?from=${today}&to=${today}&channel=retail`)).body;
   assert.ok(r2.returned.total > 0 && r2.returned.count >= 1, 'a return is counted as refunded on the day it was made');
-  assert.ok(r2.revenue <= r2.grossRevenue, 'and takes its value off that day's revenue');
+  assert.ok(r2.revenue <= r2.grossRevenue, "and takes its value off that day's revenue");
 });

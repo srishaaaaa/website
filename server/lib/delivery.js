@@ -49,19 +49,22 @@ export function weightFee(region, grams) {
   for (const t of tiers) if (grams >= t.minGrams && (t.maxGrams == null || grams < t.maxGrams)) return t.fee;
   return tiers.at(-1).fee;
 }
-export function regionFor(rules, pin) {
+// The region the customer picked at checkout (by name, like Shalistone); without one, the PIN prefix picks it.
+export function regionFor(rules, pin, chosen = '') {
   const p = String(pin ?? '').replace(/\D/g, ''); const on = (rules.weightRegions || []).filter(r => r.active !== false);
+  const want = String(chosen || '').trim().toLowerCase();
+  if (want) { const r = on.find(x => x.name.trim().toLowerCase() === want); if (r) return r }
   return (p.length === 6 ? on.find(r => r.prefixes?.some(x => x && p.startsWith(x))) : null) || on.find(r => !r.prefixes?.length) || null;
 }
 const kg = g => `${Math.round(g / 100) / 10} kg`;
 
 // Pure rule maths (unit-tested). `km` is the distance, or null when it is not known. Returns null when the rules are switched off.
-export function feeFor(rules, subtotal, pin, km = null, grams = 0) {
+export function feeFor(rules, subtotal, pin, km = null, grams = 0, chosen = '') {
   const p = String(pin ?? '').replace(/\D/g, '');
   if (!rules.enabled) return null;
   if (p.length === 6 && rules.blockedPrefixes?.some(x => x && p.startsWith(x))) throw new HttpError(400, 'Sorry, we do not deliver to that PIN code yet.', 'out_of_range');
   if (rules.freeOver != null && rules.freeOver > 0 && subtotal >= rules.freeOver) return { amount: 0, zone: null, km, note: 'Free delivery on this order' };
-  const region = rules.weightMode ? regionFor(rules, p) : null;
+  const region = rules.weightMode ? regionFor(rules, p, chosen) : null;
   if (region) {
     let fee = weightFee(region, grams);
     const tier = [...(rules.orderTiers || [])].filter(t => subtotal >= t.minOrder).sort((a, b) => b.minOrder - a.minOrder)[0];
@@ -91,13 +94,13 @@ export function feeFor(rules, subtotal, pin, km = null, grams = 0) {
 }
 
 // What the cart and checkout charge. Falls back to the shipping method (the old behaviour) when the rules are switched off.
-export async function shippingWithRules(db, subtotal, pin, fallback, { grams = 0, geo = geocode } = {}) {
+export async function shippingWithRules(db, subtotal, pin, fallback, { grams = 0, geo = geocode, region = '' } = {}) {
   const rules = await loadRules(db).catch(() => DEFAULT_RULES);
   const policy = rules.note || '';
   if (!rules.enabled) return { ...fallback, policy };
   const needKm = !rules.weightMode && rules.storePin && rules.bands?.length && /^\d{6}$/.test(String(pin ?? '').trim()) && !(rules.freeOver > 0 && subtotal >= rules.freeOver);
   let km = null;
   if (needKm) { const [a, b] = await Promise.all([geo(rules.storePin), geo(String(pin).trim())]); if (a && b) km = Math.round(haversineKm(a, b) * 10) / 10 }
-  const r = feeFor(rules, subtotal, pin, km, grams);
+  const r = feeFor(rules, subtotal, pin, km, grams, region);
   return { ...fallback, amount: r.amount, freeOver: rules.freeOver ?? null, zone: r.zone, km: r.km, note: r.note, policy, weightGrams: grams };
 }

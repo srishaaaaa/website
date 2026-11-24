@@ -12,6 +12,7 @@ const address = z.object({
   name: z.string().trim().min(1).max(100), phone: z.string().trim().min(8).max(20),
   line1: z.string().trim().min(3).max(200), line2: z.string().trim().max(200).optional(),
   city: z.string().trim().min(1).max(80), state: z.string().trim().min(1).max(80), pin: z.string().regex(/^\d{6}$/, 'PIN code must be 6 digits'),
+  region: z.string().trim().max(60).optional(), // delivery region picked at checkout
 });
 
 export function commerceRoutes(ctx) {

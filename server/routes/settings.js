@@ -68,7 +68,7 @@ export default function settingsRoutes({ db, cfg, auth }) {
   r.get('/delivery-info', wrap(async (_req, res) => {
     const d = await loadRules(db).catch(() => ({}));
     res.set('Cache-Control', 'public, max-age=30');
-    res.json({ note: d.note || '', lines: (d.productLines || []).filter(Boolean), freeOver: d.enabled && d.freeOver > 0 ? d.freeOver : null, byWeight: !!(d.enabled && d.weightMode) });
+    res.json({ note: d.note || '', lines: (d.productLines || []).filter(Boolean), freeOver: d.enabled && d.freeOver > 0 ? d.freeOver : null, byWeight: !!(d.enabled && d.weightMode), regions: d.enabled && d.weightMode ? (d.weightRegions || []).filter(r => r.active !== false && r.name).map(r => r.name) : [] });
   }));
 
   // Public: boutique location/hours/social. The map URL is only produced for a configured address.

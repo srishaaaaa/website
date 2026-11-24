@@ -57,10 +57,13 @@ const FIELDS = [['email', 'Email', 'email'], ['name', 'Full name', 'name'], ['ph
 export function Checkout() {
   const { cart, cartInfo, clearCart, loadCart, bagSubtotal, user } = useApp();
   const [f, setF] = useState({ email: user?.email || '', name: user?.name || '', phone: '', line1: '', city: '', state: '', pin: '' });
+  // Delivery region (like Shalistone): the customer picks it; its weight brackets set the delivery fee. The first one is preselected.
+  const [regions, setRegions] = useState([]); const [region, setRegion] = useState('');
+  useEffect(() => { api('/delivery-info').then(d => { const list = d?.regions || []; setRegions(list); setRegion(r => r || list[0] || '') }).catch(() => {}) }, []);
   const [err, setErr] = useState(); const [busy, setBusy] = useState(false); const [done, setDone] = useState(); const [test, setTest] = useState(false); const [ask, setAsk] = useState(false);
   const set = k => e => setF({ ...f, [k]: e.target.value });
   // Delivery is priced by PIN code: re-price the bag once a full PIN is typed.
-  useEffect(() => { if (/^\d{6}$/.test(f.pin.trim())) loadCart(f.pin.trim()) }, [f.pin, cartInfo.subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (/^\d{6}$/.test(f.pin.trim()) || region) loadCart(f.pin.trim(), region) }, [f.pin, region, cartInfo.subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
   // Signed-in customers get their saved details filled in (only into fields they have not typed in yet).
   useEffect(() => {
     if (!user) return;
@@ -75,7 +78,7 @@ export function Checkout() {
     e.preventDefault(); setErr(); setBusy(true);
     try {
       const { email, ...address } = f;
-      const o = await api('/checkout', { method: 'POST', body: { email, address } });
+      const o = await api('/checkout', { method: 'POST', body: { email, address: { ...address, ...(region ? { region } : {}) } } });
       setTest(o.testMode);
       await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = res; s.onerror = () => rej(new Error('Could not load the payment window.')); document.body.append(s) });
       new window.Razorpay({
@@ -101,6 +104,9 @@ export function Checkout() {
           <ol className="co-steps" aria-label="Steps"><li className="done">Bag</li><li className="on">Details</li><li>Payment</li></ol></div>
         {test && <p className="small gold">Test mode — no real money is moved.</p>}
         {FIELDS.map(([k, l, ac]) => <label key={k} className="field"><span>{l}</span><input required autoComplete={ac} type={k === 'email' ? 'email' : 'text'} value={f[k]} onChange={set(k)} /></label>)}
+        {regions.length > 0 && <label className="field co-region"><span>Delivery region</span>
+          <select required value={region} onChange={e => setRegion(e.target.value)}><option value="" disabled>Select your region</option>{regions.map(r => <option key={r} value={r}>{r}</option>)}</select>
+          <small className="muted">Delivery is charged by your region and the weight of your bag: {cartInfo.shipping?.amount ? inr(cartInfo.shipping.amount) : 'Complimentary'}</small></label>}
         {cartInfo.hasIssues && <p role="alert" className="err">Some items in your bag are no longer available in the requested quantity. Please review your bag.</p>}
         {err && <p role="alert" className="err">{err}</p>}
         <button className="btn solid wide" disabled={busy || cartInfo.hasIssues}>{busy ? 'PROCESSING…' : `PAY ${inr(total)}`}</button>
