@@ -1370,3 +1370,4 @@ select.adv-st.pending { background-color: #fff4d6 !important; border-color: #e6d
 .dpos-tw table:has(.adv-st) th:first-child, .dpos-tw table:has(.adv-st) td:first-child { min-width: 0 !important }
 .dpos-tw table:has(.adv-st) .adv-prod { max-width: 90px } .dpos-tw table:has(.adv-st) .adv-tpb small { max-width: 150px }
 select.adv-st { min-width: 104px !important }
+.dpos-tw table:has(.adv-st) .adv-prod { max-width: none !important; min-width: 190px; white-space: nowrap; font-size: 12px } .adv-prod > div { line-height: 1.5; overflow: hidden; text-overflow: ellipsis; max-width: 240px }
