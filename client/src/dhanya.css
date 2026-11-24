@@ -1320,3 +1320,22 @@ div.dpos .cp-code input { flex: 1 1 auto; min-width: 0; height: 40px !important;
 div.dpos .cp-code button { flex: none; height: 36px; padding: 0 16px !important; border-radius: 10px !important; background: #330533 !important; color: #fff !important; font-size: 12px !important; font-weight: 700; letter-spacing: .06em; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase }
 div.dpos .cp-code button::before { content: '✦'; font-size: 12px; color: #e9cd8d }
 div.dpos .cp-code:focus-within { border-color: #330533; box-shadow: 0 0 0 3px rgba(51, 5, 51, .1) }
+
+/* ===== Compact controls everywhere in the admin panel (reference size) ===== */
+div.dpos .dpos-two { padding: 3px !important; border-radius: 999px !important; gap: 4px !important }
+div.dpos .dpos-two button { height: 32px !important; padding: 0 12px !important; font-size: 11.5px !important; border-radius: 999px !important }
+div.dpos .dpos-modal .dpos-two button, .dpos-modal .dpos-two button { height: 32px !important; padding: 0 10px !important; font-size: 11.5px !important }
+div.dpos .adm-modes, .adv-modes, .ex-modes, .dpos-splitpick, .payp-pick { gap: 6px !important }
+div.dpos .adv-modes button, .adv-modes button, div.dpos .ex-modes button, div.dpos .dpos-splitpick button, .payp-pick button, div.dpos .dpos-pay button, div.dpos [role=radiogroup] > button:not(.dpos-btn) {
+  height: 32px !important; padding: 0 10px !important; font-size: 11.5px !important; border-radius: 10px !important; min-height: 0 !important; display: inline-flex; align-items: center; justify-content: center }
+div.dpos .dpos-chips button, div.dpos .dpos-chip, div.dpos .inv-chips button, div.dpos .an-tabrow button, div.dpos .dpos-tabs button { height: 30px !important; padding: 0 12px !important; font-size: 11px !important; line-height: 1 }
+div.dpos .dpos-btn { height: 34px; padding: 0 14px !important; font-size: 11.5px !important; border-radius: 10px }
+div.dpos .dpos-btn.sm { height: 30px; padding: 0 10px !important; font-size: 11px !important }
+div.dpos .dpos-cta { height: 42px; padding: 0 16px !important; font-size: 12.5px !important; border-radius: 12px !important }
+div.dpos .ra, div.dpos .dpos-rowact .ra { width: 30px !important; height: 30px !important; border-radius: 9px !important } div.dpos .ra svg { width: 15px !important; height: 15px !important }
+div.dpos .dpos-rowact { gap: 4px !important }
+div.dpos .bp-trash, div.dpos .dpos-trash { width: 30px !important; height: 30px !important } div.dpos .bp-trash svg, div.dpos .dpos-trash svg { width: 15px !important; height: 15px !important }
+div.dpos .dpos-qty { height: 32px !important } div.dpos .dpos-qty button { width: 26px !important; height: 26px !important }
+div.dpos .dpos-pill, div.dpos .sd-pill, div.dpos .usr-status { padding: 3px 9px !important; font-size: 10px !important }
+div.dpos .dpos-head h2 svg, div.dpos .dpos-card > h2 svg { width: 17px !important; height: 17px !important }
+.dpos-modal .dpos-btn { height: 34px; padding: 0 14px !important; font-size: 11.5px !important }

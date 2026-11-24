@@ -579,6 +579,13 @@ function Analytics({ channel, openInvoice, tick, goExpenses }) {
               <div className="dpos-bars2">{[['Offline', rep.offlineBills, '#0d0d10'], ['Online', rep.onlineBills, '#0a8a5c']].map(([l, n, c]) => <div className="dpos-b2" key={l}><span style={{ color: c }}>{l}</span><span className="tr"><i style={{ width: `${rep.bills ? n / rep.bills * 100 : 0}%` }} /></span><span className="n">{n}</span></div>)}</div></section>
             <section className="dpos-card"><h2>Top items by revenue</h2>
               {!rep.products.length ? <Empty>No sales in this period.</Empty> : <div className="dpos-rank">{rep.products.slice(0, 5).map((p, i) => <div className="dpos-rk" key={p.name}><b>{i + 1}</b><div><div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontWeight: 700 }}><span>{p.name}</span><b>{inr(p.revenue)}</b></div><div className="tr"><i style={{ width: `${p.revenue / rep.products[0].revenue * 100}%` }} /></div></div><span className="muted small">{p.qty} pcs</span></div>)}</div>}</section>
+            <section className="dpos-card"><h2>Payment methods</h2>
+              <p className="sub">Split bills are counted under each method they were paid with.</p>
+              {(() => { const ms = [['cash', 'Cash', '#f5a524'], ['upi', 'GPay / UPI', '#3b82f6'], ['card', 'Card', '#ec4899']], mx = Math.max(1, ...ms.map(([k]) => rep.byMethod?.[k]?.amount || 0)); return <div className="dpos-bars2">{ms.map(([k, l, c]) => { const m = rep.byMethod?.[k] || {}; return <div className="an-bar" key={k}><span style={{ color: c }}>{l.toUpperCase()}</span><i><u style={{ width: `${(m.amount || 0) / mx * 100}%`, background: c }} /></i><b>{inr(m.amount || 0)}</b></div> })}</div> })()}
+            </section>
+            <section className="dpos-card"><h2>GST vs Non-GST sales</h2>
+              {(() => { const t = Math.max(1, (rep.gstSales || 0) + (rep.nonGstSales || 0)); return <div className="dpos-bars2">{[['GST invoices', rep.gstSales || 0, '#330533'], ['Non-GST bills', rep.nonGstSales || 0, '#C6A052']].map(([l, n, c]) => <div className="an-bar" key={l}><span style={{ color: c }}>{l.toUpperCase()}</span><i><u style={{ width: `${n / t * 100}%`, background: c }} /></i><b>{inr(n)}</b></div>)}</div> })()}
+            </section>
           </div>
         </div>
       </>}

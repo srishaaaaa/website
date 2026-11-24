@@ -44,7 +44,7 @@ export function AdminOrders() {
         {!o ? <p className="dpos-empty">Loading…</p> : !shownO.length ? <p className="dpos-empty">No online orders here.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Email</th><th className="r">Total</th><th>Payment</th><th>Status</th><th className="r">Actions</th></tr></thead>
             <tbody>{shownO.map(x => (
-              <tr key={x.id}><td><b>{x.order_number}</b></td><td>{x.email}</td><td className="r">{inr(x.total)}</td><td><span className={`dpos-pill ${x.payment_status === 'paid' ? 'ok' : ''}`}>{x.payment_status}</span></td>
+              <tr key={x.id}><td><b>{x.invoiceNo || x.order_number}</b>{x.invoiceNo && <div className="muted small">{x.order_number}</div>}</td><td>{x.email}</td><td className="r">{inr(x.total)}</td><td><span className={`dpos-pill ${x.payment_status === 'paid' ? 'ok' : ''}`}>{x.payment_status}</span></td>
                 <td><select value={x.status} aria-label={`Status for ${x.order_number}`} onChange={async ev => { try { await api('/admin/orders/' + x.order_number, { method: 'PATCH', body: { status: ev.target.value } }); setO(list => list.map(y => y.id === x.id ? { ...y, status: ev.target.value } : y)) } catch (err) { setE(err.message) } }}>{STATUSES.map(v => <option key={v}>{v}</option>)}</select></td>
                 <td className="r"><OnlineRowTools x={{ orderNumber: x.order_number, status: x.status, invoiceNo: x.invoiceNo, shareToken: x.shareToken, phone: x.phone, customerName: x.customerName }} manager onStatus={(o, st) => setO(list => list.map(y => y.id === x.id ? { ...y, status: st } : y))} /></td></tr>))}</tbody></table></div>)}
       </Card>
