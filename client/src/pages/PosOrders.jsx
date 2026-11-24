@@ -334,9 +334,25 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
   useEffect(() => { if (a?.invoiceNo) api('/admin/pos/sales/' + encodeURIComponent(a.invoiceNo)).then(d => setSale(d.sale || d)).catch(() => {}) }, [a?.invoiceNo]);
   const [lab, tone] = a ? ADV_STATUS[a.status] : [];
   return (
-    <Modal title={a ? `Advance order ${a.code}` : 'Advance order'} sub={a ? `${a.customerName || 'Walk-in customer'}${a.customerPhone ? ' · ' + a.customerPhone : ''}` : ''} wide onClose={onClose}>
+    <Modal title={a ? (open ? 'Receive Remaining Payment' : `Advance order ${a.code}`) : 'Advance order'} sub={a ? (open ? a.code : `${a.customerName || 'Walk-in customer'}${a.customerPhone ? ' · ' + a.customerPhone : ''}`) : ''} wide onClose={onClose}>
       <Err>{err}</Err>
-      {!a ? <Empty>Loading…</Empty> : (
+      {!a ? <Empty>Loading…</Empty> : open ? (
+        <div className="rrp">
+          <div className="rrp-box"><small>CUSTOMER</small><b>{a.customerName || 'Walk-in customer'}</b>{a.customerPhone && <span>{a.customerPhone}</span>}</div>
+          {a.items.map((i, n) => <div className="rrp-box rrp-item" key={n}><div><b>{i.name}{i.size ? ` (${i.size}${i.color && i.color !== 'Default' ? `, ${i.color}` : ''})` : ''}</b><span>Qty: {i.qty} × {inr(i.price)}</span></div><b>{inr(i.price * i.qty)}</b></div>)}
+          <div className="rrp-tiles"><div><small>TOTAL</small><b>{inr(a.total)}</b></div><div className="ok"><small>PAID</small><b>{inr(a.deposit)}</b></div><div className="bad"><small>BALANCE</small><b>{inr(a.balance)}</b></div></div>
+          <div className="rrp-info">Deposit {inr(a.deposit)} via {a.depositMode === 'split' ? splitText(depSplit(a)) : (MODE[a.depositMode] || a.depositMode)}</div>
+          <p className="rrp-l">PAYMENT METHOD</p>
+          <PayPicker value={pay} onChange={setPay} amount={a.balance} label="Balance paid by" />
+          <div className="rrp-final"><small>FINAL AMOUNT TO COLLECT</small><b>{inr(a.balance)}</b></div>
+          <p className="rrp-note">Confirmation marks the order Completed, creates one official invoice, and recognizes the full {inr(a.total)} as revenue.</p>
+          <button className="dpos-cta" disabled={busy} onClick={bill}>{busy ? 'Billing…' : `Collect ${inr(a.balance)} & generate bill`}</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button className="dpos-btn ghost" disabled={busy} onClick={() => setStatus(a.status === 'pending' ? 'ready' : 'pending')}>{a.status === 'pending' ? 'Mark ready for collection' : 'Back to pending'}</button>
+            {manager && <button className="dpos-btn danger" disabled={busy} onClick={() => confirm(`Cancel ${a.code}? Remember to hand back the ${inr(a.deposit)} advance.`) && setStatus('cancelled')}>Cancel order</button>}
+          </div>
+        </div>
+      ) : (
         <div style={{ display: 'grid', gap: 14 }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}><span className={`dpos-pill ${tone}`}>{lab}</span>{a.deliveryDate && <span className="muted small">Delivery {longDate(a.deliveryDate)}</span>}{a.isGst && <span className="dpos-pill">GST</span>}{a.invoiceNo && <button className="link-u small" onClick={() => onBilled(null, a.invoiceNo)}>Billed as {a.invoiceNo}</button>}</div>
           <div className="dpos-tw"><table><thead><tr><th>Item</th><th className="r">Qty</th><th className="r">Price</th><th className="r">Amount</th></tr></thead>
@@ -362,6 +378,7 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
   const [st, setSt] = useState('all'); const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all');
   const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [sel, setSel] = useState(initialCode || null); const [view, setView] = useState(null); const [n, setN] = useState(0);
   const [invPv, setInvPv] = useState(null); const [advInv, setAdvInv] = useState(null);
+  const setAdvStatus = async (r, status) => { try { await api(`/admin/pos/advances/${encodeURIComponent(r.code)}/status`, { method: 'PATCH', body: { status } }); setN(x => x + 1) } catch (e) { setErr(e.message) } };
   const cancelAdv = async r => { if (!confirm(`Cancel ${r.code}? Remember to hand back the ${inr(r.deposit)} advance.`)) return; try { await api(`/admin/pos/advances/${encodeURIComponent(r.code)}/status`, { method: 'PATCH', body: { status: 'cancelled' } }); setN(x => x + 1) } catch (e) { setErr(e.message) } };
   useEffect(() => { const t = setTimeout(() => api('/admin/pos/advances?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), 200); return () => clearTimeout(t) }, [q, tick, n]);
   const today = todayStr();
@@ -387,12 +404,14 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
       <Err>{err}</Err>
       <section className="dpos-card">
         {!rows ? <Empty>Loading…</Empty> : !shown.length ? <Empty>No advance orders here. Add items in Billing and press “Save as advance order”.</Empty> : (
-          <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Customer</th><th>Delivery date</th><th className="r">Items</th><th className="r">Total</th><th className="r">Advance</th><th className="r">Balance</th><th>Status</th><th className="r">Actions</th></tr></thead>
+          <div className="dpos-tw"><table><thead><tr><th>Deposit ID</th><th>Customer</th><th>Product</th><th>Total / Paid / Balance</th><th>Delivery</th><th>Status</th><th className="r">Actions</th></tr></thead>
             <tbody>{shown.map(r => { const late = r.deliveryDate && r.deliveryDate < today && ['pending', 'ready'].includes(r.status); const [lab, tone] = ADV_STATUS[r.status]; return (
               <tr key={r.code} className="click" tabIndex={0} onClick={() => setSel(r.code)} onKeyDown={e => e.key === 'Enter' && setSel(r.code)}>
-                <td><b>{r.code}</b></td><td>{r.customerName || <span className="muted">Walk-in</span>}{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
+                <td><b className="oid">{r.code}</b><div className="muted small">{String(r.createdAt || '').slice(0, 10).split('-').reverse().join('/')}</div></td><td><b>{r.customerName || 'Walk-in'}</b>{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
+                <td className="adv-prod">{r.itemsText || `${r.itemCount} items`}</td>
+                <td className="adv-tpb"><div><b>Total: {inr(r.total)}</b></div><div className="ok">Paid: {inr(r.deposit)}</div><div className="bad">Balance: {inr(r.balance)}</div><small className="muted">Deposit {inr(r.deposit)} via {r.depositMode === 'split' ? splitText(depSplit(r)) : (MODE[r.depositMode] || r.depositMode)}</small></td>
                 <td>{r.deliveryDate ? longDate(r.deliveryDate) : <span className="muted">—</span>} {late && <span className="dpos-pill bad">Late</span>}</td>
-                <td className="r">{r.itemCount}</td><td className="r">{inr(r.total)}</td><td className="r">{inr(r.deposit)}</td><td className="r"><b>{inr(r.balance)}</b></td><td><span className={`dpos-pill ${tone}`}>{lab}</span></td>
+                <td onClick={e => e.stopPropagation()}>{['pending', 'ready'].includes(r.status) ? <select className={`adv-st ${r.status}`} aria-label={`Status of ${r.code}`} value={r.status} onChange={e => setAdvStatus(r, e.target.value)}><option value="pending">Pending</option><option value="ready">Ready</option></select> : <span className={`dpos-pill ${tone}`}>{lab}</span>}</td>
                 <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setView(r.code)} doc={() => r.invoiceNo ? api('/admin/pos/sales/' + encodeURIComponent(r.invoiceNo)).then(x => setInvPv({ invoiceNo: r.invoiceNo, shareToken: (x.sale || x).shareToken })).catch(e => setErr(e.message)) : setAdvInv(r.code)} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
       </section>
       {view && <AdvanceQuick code={view} onClose={() => setView(null)} />}

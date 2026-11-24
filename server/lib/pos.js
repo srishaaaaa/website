@@ -521,7 +521,7 @@ export async function getAdvance(q, code) {
 
 export const listAdvances = (db, { status = 'all', q = '' }) => {
   const like = `%${q.replace(/[\\%_]/g, m => '\\' + m)}%`;
-  return rows(db, `SELECT ${advCols}, jsonb_array_length(a.items)::int AS "itemCount" FROM pos_advances a
+  return rows(db, `SELECT ${advCols}, jsonb_array_length(a.items)::int AS "itemCount", (SELECT string_agg(((e->>'qty') || '× ' || (e->>'name')), ', ') FROM jsonb_array_elements(a.items) e) AS "itemsText" FROM pos_advances a
     WHERE ($1 = 'all' OR a.status = $1) AND ($2 = '' OR a.code ILIKE $3 OR a.customer_name ILIKE $3 OR a.customer_phone ILIKE $3 OR a.status ILIKE $3 OR a.items::text ILIKE $3)
     ORDER BY (a.status IN ('pending','ready')) DESC, a.delivery_date NULLS LAST, a.id DESC LIMIT 300`, [status, q.trim(), like]);
 };

@@ -1342,3 +1342,20 @@ div.dpos .dpos-head h2 svg, div.dpos .dpos-card > h2 svg { width: 17px !importan
 .advinv-body { flex: 1 1 auto; min-height: 0; overflow: auto; background: #fff; padding: 22px 28px } .advinv-doc { max-width: 640px; margin: 0 auto }
 .advinv-doc table { width: 100%; border-collapse: collapse } .advinv-doc th, .advinv-doc td { padding: 7px 4px; text-align: left; border-bottom: 1px solid #e8e2ea; font-size: 13px } .advinv-doc th { font-size: 10px; letter-spacing: .1em; color: #6b6070 } .advinv-doc .r { text-align: right }
 .advinv-doc h1 { margin: 0; font-size: 22px; color: #330533 }
+
+/* Advance orders table (reference): Deposit ID · Customer · Product · Total / Paid / Balance · Delivery · Status · Actions */
+.adv-prod { font-weight: 600; font-size: 12.5px; max-width: 220px } .adv-tpb { font-size: 12px; line-height: 1.5; white-space: nowrap } .adv-tpb .ok { color: #1c7a4b; font-weight: 700 } .adv-tpb .bad { color: #c1121f; font-weight: 700 } .adv-tpb small { display: block; font-size: 10.5px; white-space: normal; max-width: 220px }
+select.adv-st { min-width: 118px; height: 32px !important; font-weight: 700 !important; font-size: 11px !important; letter-spacing: .04em; text-transform: uppercase }
+select.adv-st.pending { background-color: #fff4d6 !important; border-color: #e6d4a8 !important; color: #9a5a00 !important } select.adv-st.ready { background-color: #e4f5ea !important; border-color: #b9e3cc !important; color: #1c7a4b !important }
+
+/* Receive Remaining Payment (reference layout) */
+.rrp { display: grid; gap: 10px } .rrp-box { padding: 12px 16px; border: 1px solid #e8e2ea; border-radius: 14px; display: grid; gap: 2px } .rrp-box small, .rrp-tiles small, .rrp-final small { font-size: 10px; font-weight: 700; letter-spacing: .1em; color: #8a6a60 }
+.rrp-box > b { font-size: 15px } .rrp-box > span { font-size: 12px; color: #6b6070 }
+.rrp-item { display: flex !important; justify-content: space-between; align-items: center } .rrp-item > div { display: grid; gap: 2px } .rrp-item span { font-size: 11.5px; color: #6b6070 } .rrp-item > b { font-size: 14px }
+.rrp-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px } .rrp-tiles > div { padding: 10px 12px; border-radius: 14px; border: 1px solid #e3dde6; background: #f8f6fa; text-align: center; display: grid; gap: 3px } .rrp-tiles b { font-size: 16px }
+.rrp-tiles .ok { background: #e9f8ef; border-color: #b9e3cc } .rrp-tiles .ok small, .rrp-tiles .ok b { color: #1c7a4b } .rrp-tiles .bad { background: #fdeeee; border-color: #f1c2be } .rrp-tiles .bad small, .rrp-tiles .bad b { color: #c1121f }
+.rrp-info { padding: 9px 14px; border-radius: 12px; background: #eef5fc; border: 1px solid #cfe0f3; color: #1d4f86; font-size: 12px; font-weight: 600 }
+.rrp-l { margin: 4px 0 0; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; color: #5a4a60 }
+.rrp-final { padding: 12px; border-radius: 14px; background: #e4f7ec; border: 1px solid #b9e3cc; text-align: center; display: grid; gap: 2px } .rrp-final small { color: #1c7a4b } .rrp-final b { font-size: 26px; color: #1c7a4b }
+.rrp-note { margin: 0; padding: 9px 14px; border-radius: 12px; background: #fff7d6; border: 1px solid #ecdc92; color: #6b5200; font-size: 11.5px }
+.adv-tpb, td b.oid { white-space: nowrap } td b.oid { font-size: 11.5px }
