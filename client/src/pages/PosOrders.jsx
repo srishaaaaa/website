@@ -12,6 +12,7 @@ import PayPicker, { blankPay, payParts } from '../components/PayPicker';
 import BillSummary from '../components/BillSummary';
 import ReturnWindow from '../components/ReturnWindow';
 import RowActions from '../components/RowActions';
+import OrderDetailsModal from '../components/OrderDetailsModal';
 
 // "Cash ₹500 · QR / GPay ₹500" for a {cash, upi, card} split.
 const SPLIT_L = [['cash', 'Cash'], ['upi', 'QR / GPay'], ['card', 'Card']];
@@ -135,36 +136,15 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
   );
 }
 
-// The eye button: a quick look at one invoice (who, when, what, how much) with Edit invoice and View invoice.
-function QuickDetails({ row, sale, manager, onClose, onView, onEdit }) {
-  useEffect(() => { const k = e => e.key === 'Escape' && onClose(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k) }, [onClose]);
-  const paid = sale ? (sale.payCash || 0) + (sale.payUpi || 0) + (sale.payCard || 0) : 0;
+// The eye button: a read-only "Order Details" sheet for one invoice.
+function QuickDetails({ row, sale, onClose }) {
   const varText = i => [i.variant?.size, i.variant?.color && i.variant.color !== 'Default' ? i.variant.color : ''].filter(Boolean).join(', ');
-  return (
-    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Invoice details" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <div className="dpos-sheet qd">
-        <div className="qd-top"><b>{row?.invoiceNo || sale?.invoiceNo}</b><span className="qd-tag">{(sale?.source || row?.source) === 'online' ? 'ONLINE' : 'IN-STORE'}</span><button type="button" aria-label="Close" onClick={onClose}>✕</button></div>
-        {!sale ? <p className="muted" style={{ padding: 24 }}>Loading…</p> : <>
-          <div className="qd-grid">
-            <div><small>CUSTOMER</small><b>{sale.customerName || 'Walk-in Customer'}</b></div><div><small>PHONE</small><b>{sale.customerPhone || '—'}</b></div>
-            <div><small>DATE</small><b>{longDate(sale.billDate)}</b></div><div><small>STATUS</small><b>{sale.status === 'voided' ? 'Void' : sale.returns?.length ? (sale.items.every(i => (i.returnedQty || 0) >= i.quantity) ? 'Returned' : 'Part returned') : 'Completed'}{sale.editedAt ? ' · Edited' : ''}</b></div>
-          </div>
-          <div className="qd-box">
-            {sale.items.map(i => <div className="qd-line" key={i.id}><span>{i.name}{varText(i) ? ` · ${varText(i)}` : ''} <em>× {i.quantity}</em></span><b>{inr(i.lineTotal)}</b></div>)}
-            <div className="qd-sum"><span>Subtotal</span><span className="mono">{inr(sale.subtotal)}</span></div>
-            {sale.discount > 0 && <div className="qd-sum"><span>Discount</span><span className="mono">− {inr(sale.discount)}</span></div>}
-            {sale.deliveryFee > 0 && <div className="qd-sum"><span>Delivery</span><span className="mono">{inr(sale.deliveryFee)}</span></div>}
-            <div className="qd-sum qd-total"><b>TOTAL</b><span className="mono">{inr(sale.total)}</span></div>
-            <div className="qd-sum qd-paid"><b>Paid by {MODE[sale.paymentMode] || sale.paymentMode}</b><span className="mono">{inr(paid || sale.total)}</span></div>
-            {sale.returns?.length > 0 && <div className="qd-ret"><b>Return bills</b>{sale.returns.map(x => <span key={x.returnNo}>{x.returnNo} · {inr(x.total)}</span>)}</div>}
-            <div className="qd-sum qd-due"><b>Balance Due</b><span className="mono">{inr(Math.max(0, sale.total - (paid || sale.total)))}</span></div>
-          </div>
-          <div className="qd-foot"><button type="button" className="qd-b" onClick={onClose}>CLOSE</button>
-            {manager && sale.status !== 'voided' && <button type="button" className="qd-b ghost" onClick={onEdit}>✎ EDIT INVOICE</button>}
-            <button type="button" className="qd-b solid" onClick={() => onView(row || sale)}>VIEW INVOICE</button></div></>}
-      </div>
-    </div>
-  );
+  const rows = [];
+  if (sale?.returns?.length) rows.push({ label: 'Returned (' + sale.returns.map(x => x.returnNo).join(', ') + ')', value: '-' + inr(sale.returns.reduce((t, x) => t + x.total, 0)), tone: 'bad' });
+  return <OrderDetailsModal no={row?.invoiceNo || sale?.invoiceNo} loading={!sale} onClose={onClose} customer={sale?.customerName} phone={sale?.customerPhone} address={sale?.customerAddress}
+    source={sale?.source || row?.source} isGst={sale?.isGst ?? row?.isGst} when={sale?.createdAt || row?.createdAt} subtotal={sale?.subtotal} discount={sale?.discount} delivery={sale?.deliveryFee}
+    total={sale?.total} rows={rows} notes={sale?.notes}
+    items={(sale?.items || []).map(i => ({ name: i.name, note: varText(i), qty: i.quantity, unit: i.unitPrice, total: i.lineTotal }))} />;
 }
 
 // Correct an invoice after billing: customer details, date and note (amounts, items and stock stay as billed).
@@ -329,6 +309,16 @@ export function AdvanceDone({ adv, shop, onClose, onView }) {
 
 const ADV_STATUS = { pending: ['Pending', 'warn'], ready: ['Ready', 'ok'], completed: ['Billed', 'ok'], cancelled: ['Cancelled', 'bad'] };
 
+// Advance orders: the eye opens the same read-only Order Details sheet (edit / bill lives behind the document icon).
+function AdvanceQuick({ code, onClose }) {
+  const [a, setA] = useState(null);
+  useEffect(() => { api('/admin/pos/advances/' + encodeURIComponent(code)).then(setA).catch(onClose) }, [code, onClose]);
+  return <OrderDetailsModal no={code} loading={!a} onClose={onClose} customer={a?.customerName} phone={a?.customerPhone} address={a?.customerAddress} source="offline" isGst={a?.isGst} when={a?.createdAt}
+    subtotal={a?.subtotal} discount={a?.discount} delivery={a?.deliveryFee} total={a?.total} notes={a?.notes}
+    rows={a ? [{ label: 'Advance paid', value: inr(a.deposit) }, { label: 'Balance due', value: inr(a.balance), tone: a.balance > 0 ? 'bad' : '' }] : []}
+    items={(a?.items || []).map(i => ({ name: i.name, note: i.size ? [i.size, i.color && i.color !== 'Default' ? i.color : ''].filter(Boolean).join(', ') : '', qty: i.qty, unit: i.price, total: i.price * i.qty }))} />;
+}
+
 function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
   const nav = useNavigate();
   const [a, setA] = useState(null); const [err, setErr] = useState(); const [pay, setPay] = useState(blankPay); const [busy, setBusy] = useState(false);
@@ -367,7 +357,7 @@ function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
 
 export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
   const [st, setSt] = useState('all'); const [q, setQ] = useState(''); const [per, setPer] = usePeriod('all');
-  const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [sel, setSel] = useState(initialCode || null); const [n, setN] = useState(0);
+  const [rows, setRows] = useState(null); const [err, setErr] = useState(); const [sel, setSel] = useState(initialCode || null); const [view, setView] = useState(null); const [n, setN] = useState(0);
   const cancelAdv = async r => { if (!confirm(`Cancel ${r.code}? Remember to hand back the ${inr(r.deposit)} advance.`)) return; try { await api(`/admin/pos/advances/${encodeURIComponent(r.code)}/status`, { method: 'PATCH', body: { status: 'cancelled' } }); setN(x => x + 1) } catch (e) { setErr(e.message) } };
   useEffect(() => { const t = setTimeout(() => api('/admin/pos/advances?q=' + encodeURIComponent(q)).then(r => { setRows(r); setErr() }).catch(e => setErr(e.message)), 200); return () => clearTimeout(t) }, [q, tick, n]);
   const today = todayStr();
@@ -399,8 +389,9 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
                 <td><b>{r.code}</b></td><td>{r.customerName || <span className="muted">Walk-in</span>}{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
                 <td>{r.deliveryDate ? longDate(r.deliveryDate) : <span className="muted">—</span>} {late && <span className="dpos-pill bad">Late</span>}</td>
                 <td className="r">{r.itemCount}</td><td className="r">{inr(r.total)}</td><td className="r">{inr(r.deposit)}</td><td className="r"><b>{inr(r.balance)}</b></td><td><span className={`dpos-pill ${tone}`}>{lab}</span></td>
-                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setSel(r.code)} doc={() => setSel(r.code)} edit={['pending', 'ready'].includes(r.status) ? () => setSel(r.code) : null} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
+                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setView(r.code)} doc={() => setSel(r.code)} edit={['pending', 'ready'].includes(r.status) ? () => setSel(r.code) : null} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
       </section>
+      {view && <AdvanceQuick code={view} onClose={() => setView(null)} />}
       {sel && <AdvanceDetail code={sel} manager={manager} onClose={() => setSel(null)} onChanged={() => setN(x => x + 1)} onBilled={(sale, invoiceNo) => { setSel(null); setN(x => x + 1); onBilled(sale, invoiceNo) }} />}
     </>
   );

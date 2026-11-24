@@ -458,3 +458,35 @@
 .inv-nm { align-items: start }
 .pe-sug { padding: 0 clamp(14px, 2vw, 28px) 24px }
 
+
+/* ---------- Order Details sheet (eye button) ---------- */
+.dpos-modal .dpos-sheet.od { width: min(680px, 96vw); max-width: none; padding: 0; border-radius: 22px; overflow: hidden; background: #fff; max-height: 92vh; overflow-y: auto }
+.od-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 26px 30px 18px; border-bottom: 1px solid #ececec }
+.od-head h2 { margin: 0; font-size: 22px; font-weight: 700; color: #111 } .od-head p { margin: 4px 0 0; font-size: 15px; color: #222 }
+.od-head button { width: 34px; height: 34px; border: 0; background: none; font-size: 20px; color: #111; border-radius: 50% } .od-head button:hover { background: #f3f1ee }
+.od-body { padding: 22px 30px 28px } .od-load { padding: 30px; color: #77736d }
+.od-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 32px }
+.od-grid small { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #333 }
+.od-grid b { font-size: 16px; font-weight: 500; color: #222; overflow-wrap: anywhere }
+.od-pill { display: inline-block; padding: 5px 11px; border-radius: 7px; background: #eef0f4; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #333 }
+.od-h { margin: 28px 0 0; padding-bottom: 12px; border-bottom: 1px solid #ececec; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #222 }
+.od-items { list-style: none; margin: 0; padding: 0 } .od-items li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0 6px; align-items: flex-start }
+.od-items li > span:first-child b { font-size: 16px; font-weight: 700; display: block } .od-items em { display: block; font-style: normal; font-size: 12px; color: #77736d }
+.od-amt { text-align: right } .od-amt b { display: block; font-size: 16px; font-weight: 700 } .od-amt small { font-size: 11px; color: #555 }
+.od-sums { margin-top: 18px; padding-top: 20px; border-top: 1px solid #ececec; display: grid; gap: 14px }
+.od-sums > div { display: flex; justify-content: space-between; font-size: 16px } .od-sums > div b { font-weight: 600 } .od-sums .bad b { color: #c1121f }
+.od-sums .od-total { font-size: 18px; margin-top: 4px; font-weight: 800 } .od-sums .od-total span { font-weight: 800; font-size: 20px } .od-sums .od-total b { color: #c1121f; font-size: 20px; font-weight: 800 }
+.od-note { margin: 16px 0 0; font-size: 13px; color: #77736d }
+@media (max-width: 560px) { .od-grid { grid-template-columns: 1fr } .od-head, .od-body { padding-left: 18px; padding-right: 18px } }
+
+/* ---------- Dropdowns: one look across the admin (Poppins, rounded, plum focus, custom chevron) ---------- */
+.dpos select, .dpos-modal select {
+  appearance: none; -webkit-appearance: none; font-family: 'Poppins', system-ui, sans-serif; font-weight: 500; color: #1a123c;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%231a123c' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;
+  border: 1px solid #e5e2dd; border-radius: 12px; padding-right: 38px; cursor: pointer; transition: border-color .2s, box-shadow .2s;
+}
+.dpos select:hover, .dpos-modal select:hover { border-color: var(--d-acc, #330533) }
+.dpos select:focus, .dpos-modal select:focus { outline: none; border-color: var(--d-acc, #330533); box-shadow: 0 0 0 3px rgba(51, 5, 51, .14) }
+.dpos select option, .dpos-modal select option { font-family: 'Poppins', system-ui, sans-serif; font-weight: 500; color: #1a123c; background: #fff }
+.dpos select:disabled, .dpos-modal select:disabled { opacity: .55; cursor: not-allowed }
+.dpos td select { padding-right: 34px; background-position: right 11px center }
