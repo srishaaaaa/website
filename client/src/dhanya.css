@@ -1280,3 +1280,8 @@ div.dpos-modal > .dpos-sheet.cpk { width: min(780px, 96vw) !important; border-ra
 .payp-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
 .payp-pick button { padding: 9px 6px; border-radius: 12px; border: 1px solid #d8d2da; background: #fff; font-size: 11.5px; font-weight: 700 } .payp-pick button.on { background: #f3e8f4; border-color: #5a1560; color: #330533 }
 .payp-amts { display: grid; gap: 10px; margin-top: 10px } .payp-amts label { display: grid; gap: 4px; font-size: 11px; font-weight: 700 } .payp-amts input { height: 38px }
+
+/* Window header: title left, close button centred vertically and inset from the right edge */
+.dpos-mhead { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px; padding: 14px 20px !important }
+.dpos-mhead > div { min-width: 0; text-align: left }
+.dpos-mhead > button { flex: none; width: 34px !important; height: 34px !important; margin: 0 !important; display: grid; place-items: center; border-radius: 50%; line-height: 1; font-size: 15px; align-self: center }
