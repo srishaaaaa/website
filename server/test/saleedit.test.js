@@ -107,3 +107,42 @@ test('any catalogue item can carry measurements for stitching, and the bill then
   const so = (await o('GET', '/admin/pos/stitching/orders')).body;
   assert.ok(so.orders.some(x => x.ref === r.body.invoiceNo && x.due === '2031-03-01'));
 });
+
+test('an admin can give Staff website panels; without the tick they get 403, with it they work; Users stays admin-only', async () => {
+  const o = await login();
+  const mk = async email => { const c = client(); await c('POST', '/auth/register', { email, password: 'Password123!' }); await db.query("UPDATE profiles SET role = 'cashier' WHERE email = $1", [email]); return c };
+  const s = await mk('web-staff@test.dev');
+  await o('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing'], inventory: [] });
+  assert.equal((await s('GET', '/admin/reviews')).status, 403, 'not ticked');
+  assert.equal((await s('GET', '/admin/enquiries')).status, 403);
+  const r = await o('PUT', '/admin/pos/staff-access', { cashier: ['/admin/billing', '/admin/reviews', '/admin/enquiries', '/admin/delivery', '/admin/users'], inventory: [] });
+  assert.equal(r.status, 200);
+  assert.ok(!r.body.cashier.includes('/admin/users'), 'Users can never be handed to Staff');
+  assert.equal((await s('GET', '/admin/reviews')).status, 200);
+  assert.equal((await s('GET', '/admin/enquiries')).status, 200);
+  assert.equal((await s('GET', '/admin/pos/delivery-rules')).status, 200);
+  assert.equal((await s('GET', '/admin/users')).status, 403);
+  assert.equal((await s('PUT', '/admin/pos/delivery-rules', {})).status === 403, false, 'delivery edit passes the guard (may fail validation, not permission)');
+});
+
+test('analytics follow edits and returns: revenue, units and product totals move with them', async () => {
+  const o = await login();
+  const v = (await o('GET', '/admin/pos/catalog')).body.find(x => x.stock >= 6);
+  const day = '2031-05-05';
+  const rep = async () => (await o('GET', `/admin/pos/reports?from=${day}&to=${day}&channel=retail`)).body;
+  const s = (await o('POST', '/admin/pos/sales', { idempotencyKey: 'an-' + Math.random().toString(36).slice(2), channel: 'retail', billDate: '2026-01-02', items: [{ variantId: v.variantId, qty: 3 }], customerName: 'An', customerPhone: '9000000009', isGst: false, paymentMode: 'cash' })).body;
+  const range = async () => (await o('GET', '/admin/pos/reports?from=2026-01-02&to=2026-01-02&channel=retail')).body;
+  const r0 = await range();
+  assert.ok(r0.revenue >= s.total && r0.units >= 3);
+  const ed = await o('PATCH', `/admin/pos/sales/${s.invoiceNo}`, { items: [{ id: s.items[0].id, quantity: 1 }], payment: { mode: 'cash' } });
+  assert.equal(ed.status, 200);
+  const r1 = await range();
+  assert.equal(r0.revenue - r1.revenue, s.total - ed.body.total, 'editing the bill changes revenue by the difference');
+  assert.equal(r0.units - r1.units, 2, 'and units sold');
+  const ret = await o('POST', `/admin/pos/sales/${s.invoiceNo}/returns`, { items: [{ itemId: ed.body.items[0].id, qty: 1, restock: true }], reason: 'x', refundMode: 'cash', approval: { approved: true } });
+  assert.equal(ret.status, 201);
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  const r2 = (await o('GET', `/admin/pos/reports?from=${today}&to=${today}&channel=retail`)).body;
+  assert.ok(r2.returned.total > 0 && r2.returned.count >= 1, 'a return is counted as refunded on the day it was made');
+  assert.ok(r2.revenue <= r2.grossRevenue, 'and takes its value off that day's revenue');
+});

@@ -4,6 +4,7 @@ import { one, rows } from '../db/index.js';
 import { HttpError, wrap } from '../lib/http.js';
 import bcrypt from 'bcryptjs';
 import { audit } from '../lib/orders.js';
+import { pageGuard } from '../lib/staffAccess.js';
 import { hasCostColumns, hasVariantCost } from '../lib/cost.js';
 
 // Server-side RBAC: every route sits behind a role check that reads the role fresh from the database.
@@ -11,19 +12,20 @@ export default function admin({ db, auth }) {
   const r = Router();
   const staff = auth.role('owner', 'admin');
   const stock = auth.role('owner', 'admin', 'inventory');
+  const g = page => pageGuard(db, auth, page);
 
   r.get('/stats', staff, wrap(async (_req, res) => res.json(await one(db, `
     SELECT COUNT(*)::int AS "paidOrders", COALESCE(SUM(total_amount), 0)::int AS gross,
            COALESCE(AVG(total_amount), 0)::int AS "averageOrder"
     FROM orders WHERE payment_status = 'paid'`))));
 
-  r.get('/orders', staff, wrap(async (_req, res) => res.json(await rows(db, `
+  r.get('/orders', g('/admin/orders'), wrap(async (_req, res) => res.json(await rows(db, `
     SELECT o.id, o.order_number, o.email, o.status, o.payment_status, o.total_amount AS total, o.created_at,
            (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
            s.share_token AS "shareToken", s.invoice_no AS "invoiceNo", s.customer_phone AS phone, s.customer_name AS "customerName"
     FROM orders o LEFT JOIN pos_sales s ON s.web_order_id = o.id ORDER BY o.id DESC LIMIT 200`))));
 
-  r.patch('/orders/:number', staff, wrap(async (req, res) => {
+  r.patch('/orders/:number', g('/admin/orders'), wrap(async (req, res) => {
     const { status } = z.object({ status: z.enum(['confirmed', 'packed', 'shipped', 'delivered', 'cancelled']) }).parse(req.body);
     const o = await one(db, 'SELECT status, payment_status FROM orders WHERE order_number = $1', [req.params.number]);
     if (!o) throw new HttpError(404, 'Order not found');
@@ -33,11 +35,11 @@ export default function admin({ db, auth }) {
     res.json({ ok: true });
   }));
 
-  r.get('/reviews', staff, wrap(async (_req, res) => res.json(await rows(db, `
+  r.get('/reviews', g('/admin/reviews'), wrap(async (_req, res) => res.json(await rows(db, `
     SELECT rv.id, rv.rating, rv.body, rv.status, rv.created_at, rv.is_demo, p.name AS product_name, COALESCE(pr.email, rv.author_name || ' (sample)') AS email
     FROM product_reviews rv JOIN products p ON p.id = rv.product_id LEFT JOIN profiles pr ON pr.id = rv.user_id
     ORDER BY rv.status = 'pending' DESC, rv.id DESC LIMIT 200`))));
-  r.patch('/reviews/:id', staff, wrap(async (req, res) => {
+  r.patch('/reviews/:id', g('/admin/reviews'), wrap(async (req, res) => {
     const { status } = z.object({ status: z.enum(['published', 'rejected', 'pending']) }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
     const u = await db.query('UPDATE product_reviews SET status = $2 WHERE id = $1 RETURNING id', [id, status]);
@@ -46,7 +48,7 @@ export default function admin({ db, auth }) {
     res.json({ ok: true });
   }));
 
-  r.delete('/reviews/:id', staff, wrap(async (req, res) => {
+  r.delete('/reviews/:id', g('/admin/reviews'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     const d = await db.query('DELETE FROM product_reviews WHERE id = $1 RETURNING id', [id]);
     if (!d.rows.length) throw new HttpError(404, 'Review not found');
@@ -96,7 +98,7 @@ export default function admin({ db, auth }) {
   const codeOf = v => { const c = String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); return c || null };
   const slugOf = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'item';
   const freeSlug = async (table, name) => { const base = slugOf(name); for (let i = 0; ; i++) { const slug = i ? `${base}-${i + 1}` : base; if (!(await one(db, `SELECT 1 AS x FROM ${table} WHERE slug = $1`, [slug]))) return slug } };
-  r.get('/taxonomy', staff, wrap(async (_req, res) => res.json({
+  r.get('/taxonomy', g('/admin/categories'), wrap(async (_req, res) => res.json({
     categories: await rows(db, `SELECT c.id, c.name, c.slug, c.code, c.description, c.active, (SELECT COUNT(*)::int FROM products p WHERE p.category_id = c.id) AS products FROM categories c ORDER BY c.display_order, lower(c.name)`),
     collections: await rows(db, `SELECT c.id, c.name, c.slug, c.description, c.status, (SELECT COUNT(*)::int FROM collection_products cp WHERE cp.collection_id = c.id) AS products FROM collections c ORDER BY c.display_order, lower(c.name)`),
     // the two built-in home-page shelves, with live counts (Best Sellers needs migration 028)
@@ -104,7 +106,7 @@ export default function admin({ db, auth }) {
       best: await one(db, "SELECT COUNT(*)::int AS n FROM products WHERE best_seller AND status = 'active'").then(r => r.n).catch(() => 0) },
   })));
   const nameBody = z.object({ name: z.string().trim().min(1).max(80) });
-  r.post('/categories', staff, wrap(async (req, res) => {
+  r.post('/categories', g('/admin/categories'), wrap(async (req, res) => {
     const { name } = nameBody.parse(req.body); const code = codeOf(req.body?.code);
     if (await one(db, 'SELECT 1 AS x FROM categories WHERE lower(name) = lower($1)', [name])) throw new HttpError(409, 'A category with that name already exists');
     if (code && await one(db, 'SELECT 1 AS x FROM categories WHERE upper(code) = $1', [code])) throw new HttpError(409, `The code ${code} is already used by another category`);
@@ -112,7 +114,7 @@ export default function admin({ db, auth }) {
     await audit(db, req.user.id, 'category.create', 'category', row.id, { name });
     res.status(201).json({ id: row.id });
   }));
-  r.patch('/categories/:id', staff, wrap(async (req, res) => {
+  r.patch('/categories/:id', g('/admin/categories'), wrap(async (req, res) => {
     const b = z.object({ active: z.boolean().optional(), name: z.string().trim().min(1).max(80).optional(), description: z.string().trim().max(300).optional(), code: z.string().trim().max(20).nullable().optional() }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
     const setCode = b.code !== undefined, code = codeOf(b.code);
@@ -122,21 +124,21 @@ export default function admin({ db, auth }) {
     await audit(db, req.user.id, 'category.update', 'category', id, b);
     res.json({ ok: true });
   }));
-  r.delete('/categories/:id', staff, wrap(async (req, res) => {
+  r.delete('/categories/:id', g('/admin/categories'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     const d = await db.query('DELETE FROM categories WHERE id = $1 RETURNING name', [id]);
     if (!d.rows.length) throw new HttpError(404, 'Category not found');
     await audit(db, req.user.id, 'category.delete', 'category', id, { name: d.rows[0].name });
     res.json({ ok: true });
   }));
-  r.post('/collections', staff, wrap(async (req, res) => {
+  r.post('/collections', g('/admin/categories'), wrap(async (req, res) => {
     const { name } = nameBody.parse(req.body);
     if (await one(db, 'SELECT 1 AS x FROM collections WHERE lower(name) = lower($1)', [name])) throw new HttpError(409, 'A collection with that name already exists');
     const row = await one(db, `INSERT INTO collections (name, slug, status, display_order) VALUES ($1,$2,'draft',(SELECT COALESCE(MAX(display_order), 0) + 1 FROM collections)) RETURNING id`, [name, await freeSlug('collections', name)]);
     await audit(db, req.user.id, 'collection.create', 'collection', row.id, { name });
     res.status(201).json({ id: row.id });
   }));
-  r.patch('/collections/:id', staff, wrap(async (req, res) => {
+  r.patch('/collections/:id', g('/admin/categories'), wrap(async (req, res) => {
     const b = z.object({ status: z.enum(['draft', 'published']).optional(), name: z.string().trim().min(1).max(80).optional(), description: z.string().trim().max(300).optional() }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
     const u = await db.query('UPDATE collections SET status = COALESCE($2, status), name = COALESCE($3, name), description = COALESCE($4, description) WHERE id = $1 RETURNING id', [id, b.status ?? null, b.name ?? null, b.description ?? null]);
@@ -144,7 +146,7 @@ export default function admin({ db, auth }) {
     await audit(db, req.user.id, 'collection.update', 'collection', id, b);
     res.json({ ok: true });
   }));
-  r.delete('/collections/:id', staff, wrap(async (req, res) => {
+  r.delete('/collections/:id', g('/admin/categories'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     const d = await db.query('DELETE FROM collections WHERE id = $1 RETURNING name', [id]);
     if (!d.rows.length) throw new HttpError(404, 'Collection not found');
@@ -155,12 +157,12 @@ export default function admin({ db, auth }) {
   // Which pieces sit in a collection (in order) or a category. The admin edits these in Taxonomy → Edit pieces.
   const piece = `p.id, p.slug, p.name, p.status, (SELECT image_url FROM product_images i WHERE i.product_id = p.id ORDER BY i.display_order, i.id LIMIT 1) AS image`;
   const slugsBody = z.object({ slugs: z.array(z.string().trim().min(1).max(160)).max(200) });
-  r.get('/collections/:id/products', staff, wrap(async (req, res) => {
+  r.get('/collections/:id/products', g('/admin/categories'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     if (!await one(db, 'SELECT 1 AS x FROM collections WHERE id = $1', [id])) throw new HttpError(404, 'Collection not found');
     res.json(await rows(db, `SELECT ${piece} FROM collection_products cp JOIN products p ON p.id = cp.product_id WHERE cp.collection_id = $1 ORDER BY cp.display_order, p.id`, [id]));
   }));
-  r.put('/collections/:id/products', staff, wrap(async (req, res) => {
+  r.put('/collections/:id/products', g('/admin/categories'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     const slugs = [...new Set(slugsBody.parse(req.body).slugs)];
     if (!await one(db, 'SELECT 1 AS x FROM collections WHERE id = $1', [id])) throw new HttpError(404, 'Collection not found');
@@ -171,13 +173,13 @@ export default function admin({ db, auth }) {
     await audit(db, req.user.id, 'collection.products', 'collection', id, { count: slugs.length });
     res.json({ ok: true });
   }));
-  r.get('/categories/:id/products', staff, wrap(async (req, res) => {
+  r.get('/categories/:id/products', g('/admin/categories'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     if (!await one(db, 'SELECT 1 AS x FROM categories WHERE id = $1', [id])) throw new HttpError(404, 'Category not found');
     res.json(await rows(db, `SELECT ${piece} FROM products p WHERE p.category_id = $1 ORDER BY lower(p.name)`, [id]));
   }));
   // A product has one category: adding a piece here moves it out of its old category; removing one leaves it uncategorised.
-  r.put('/categories/:id/products', staff, wrap(async (req, res) => {
+  r.put('/categories/:id/products', g('/admin/categories'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     const slugs = [...new Set(slugsBody.parse(req.body).slugs)];
     if (!await one(db, 'SELECT 1 AS x FROM categories WHERE id = $1', [id])) throw new HttpError(404, 'Category not found');

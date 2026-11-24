@@ -15,7 +15,7 @@ function useStaff() {
   const { user, authReady } = useApp();
   if (!authReady) return 'loading';
   if (!user) return 'login';
-  return ['owner', 'admin'].includes(user.role) ? 'ok' : 'denied';
+  return ['owner', 'admin', 'cashier', 'inventory'].includes(user.role) ? 'ok' : 'denied';
 }
 function Gate({ state, children }) {
   if (state === 'loading') return <div className="page-pad"><p className="muted">Loading…</p></div>;

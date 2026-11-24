@@ -1,4 +1,5 @@
 import { one } from '../db/index.js';
+import { HttpError, wrap } from './http.js';
 
 // Which admin pages each kind of staff member sees. The owner always sees everything. The owner chooses the rest in POS Settings → Staff access.
 // A page can only be switched on for a role whose server permissions can serve it (CAN below), so a ticked page always works.
@@ -13,7 +14,7 @@ export const PAGES = [
 const ALL = PAGES.map(p => p[0]);
 // What each role's server permissions can serve.
 // Pages whose server routes follow this list (so a ticked page always works for that role).
-const STAFFABLE = ['/admin/billing', '/admin/billing/analytics', '/admin/billing/advance', '/admin/billing/orders', '/admin/billing/inventory', '/admin/billing/customers', '/admin/billing/coupons',
+const STAFFABLE = ['/admin/orders', '/admin/reviews', '/admin/categories', '/admin/trending', '/admin/storefront', '/admin/reels', '/admin/enquiries', '/admin/delivery', '/admin/stitching/designs', '/admin/billing', '/admin/billing/analytics', '/admin/billing/advance', '/admin/billing/orders', '/admin/billing/inventory', '/admin/billing/customers', '/admin/billing/coupons',
   '/admin/billing/birthdays', '/admin/billing/expenses', '/admin/billing/measurements'];
 export const CAN = { admin: ALL, cashier: STAFFABLE, inventory: ['/admin/billing/inventory', '/admin/billing/analytics', '/admin/billing/coupons', '/admin/billing/birthdays', '/admin/billing/expenses'] };
 export const DEFAULTS = {
@@ -29,4 +30,10 @@ export async function loadAccess(db) {
   out.admin = ALL; // owner and admin are the same: admins always see every page
   return out;
 }
+// A route that an admin can hand to Staff: owner / admin always pass; any other staff member needs the page ticked in Settings → Staff permissions.
+export const pageGuard = (db, auth, page) => [...auth.role('owner', 'admin', 'cashier', 'inventory'), wrap(async (req, _res, next) => {
+  if (['owner', 'admin'].includes(req.user.role)) return next();
+  if ((await loadAccess(db))[req.user.role]?.includes(page)) return next();
+  throw new HttpError(403, 'Not allowed for your role');
+})];
 export const pagesFor = (access, role) => role === 'owner' || role === 'admin' ? ALL : (access[role] || []);

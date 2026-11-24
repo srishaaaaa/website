@@ -1,3 +1,4 @@
+import { pageGuard } from '../lib/staffAccess.js';
 import express, { Router } from 'express';
 import { z } from 'zod';
 import { one, rows } from '../db/index.js';
@@ -60,7 +61,7 @@ export function mediaAdmin({ db, auth }) {
   const r = Router();
   const staff = auth.role('owner', 'admin');
 
-  r.post('/media', staff, express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'], limit: MAX_BYTES }), wrap(async (req, res) => {
+  r.post('/media', pageGuard(db, auth, '/admin/storefront'), express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'], limit: MAX_BYTES }), wrap(async (req, res) => {
     if (!Buffer.isBuffer(req.body) || !req.body.length) throw new HttpError(400, 'Send the file as the request body (JPEG, PNG, WebP, MP4 or WebM, up to 4 MB)');
     const mime = sniff(req.body);
     if (!mime || mime !== req.get('content-type')?.split(';')[0]) throw new HttpError(400, 'That file is not a valid JPEG, PNG, WebP, MP4 or WebM file');
@@ -122,15 +123,15 @@ export function mediaAdmin({ db, auth }) {
   // ---- category + collection cover images ----
   const covers = (table, col, posCol, fallbackSql) => {
     // `fallback` is the product photo the site uses while no cover is uploaded, so staff can position the photo that is really shown.
-    r.get(`/${table}`, staff, wrap(async (_req, res) => res.json(await rows(db, `SELECT t.id, t.name, t.slug, t.${col} AS image, t.${posCol} AS pos, (${fallbackSql}) AS fallback FROM ${table} t ORDER BY t.display_order, t.id`))));
-    r.put(`/${table}/:id/focus`, staff, wrap(async (req, res) => {
+    r.get(`/${table}`, pageGuard(db, auth, '/admin/storefront'), wrap(async (_req, res) => res.json(await rows(db, `SELECT t.id, t.name, t.slug, t.${col} AS image, t.${posCol} AS pos, (${fallbackSql}) AS fallback FROM ${table} t ORDER BY t.display_order, t.id`))));
+    r.put(`/${table}/:id/focus`, pageGuard(db, auth, '/admin/storefront'), wrap(async (req, res) => {
       const { pos } = z.object({ pos: z.string().regex(/^\d{1,3}% \d{1,3}%$/).nullable() }).parse(req.body);
       const u = await db.query(`UPDATE ${table} SET ${posCol} = $2 WHERE id = $1 RETURNING id`, [pid.parse(req.params.id), pos]);
       if (!u.rows.length) throw new HttpError(404, 'Not found');
       await audit(db, req.user.id, `${table}.focus`, table, req.params.id);
       res.json({ ok: true });
     }));
-    r.put(`/${table}/:id/image`, staff, wrap(async (req, res) => {
+    r.put(`/${table}/:id/image`, pageGuard(db, auth, '/admin/storefront'), wrap(async (req, res) => {
       const { url } = z.object({ url: imageUrl.nullable() }).parse(req.body);
       const old = await one(db, `SELECT ${col} AS image FROM ${table} WHERE id = $1`, [pid.parse(req.params.id)]);
       if (!old) throw new HttpError(404, 'Not found');

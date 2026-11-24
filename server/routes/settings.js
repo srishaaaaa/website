@@ -1,3 +1,4 @@
+import { pageGuard } from '../lib/staffAccess.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { one } from '../db/index.js';
@@ -108,9 +109,9 @@ export default function settingsRoutes({ db, cfg, auth }) {
     await audit(db, req.user.id, 'settings.update', 'settings', key);
   };
   r.put('/admin/settings/store', staff, wrap(async (req, res) => { const v = storeSchema.parse(req.body); await save(req, 'store', v); res.json(v) }));
-  r.put('/admin/settings/social', staff, wrap(async (req, res) => { const v = socialSchema.parse(req.body); await save(req, 'social', v); await sweepMedia(db, true); res.json(v) }));
-  r.put('/admin/settings/branding', staff, wrap(async (req, res) => { const v = brandingSchema.parse(req.body); await save(req, 'branding', v); await sweepMedia(db, true); res.json(v) }));
-  r.put('/admin/settings/homepage', staff, wrap(async (req, res) => { const v = homepageSchema.parse(req.body); await save(req, 'homepage', v); res.json(v) }));
+  r.put('/admin/settings/social', pageGuard(db, auth, '/admin/reels'), wrap(async (req, res) => { const v = socialSchema.parse(req.body); await save(req, 'social', v); await sweepMedia(db, true); res.json(v) }));
+  r.put('/admin/settings/branding', pageGuard(db, auth, '/admin/storefront'), wrap(async (req, res) => { const v = brandingSchema.parse(req.body); await save(req, 'branding', v); await sweepMedia(db, true); res.json(v) }));
+  r.put('/admin/settings/homepage', pageGuard(db, auth, '/admin/trending'), wrap(async (req, res) => { const v = homepageSchema.parse(req.body); await save(req, 'homepage', v); res.json(v) }));
   r.put('/admin/settings/content', staff, wrap(async (req, res) => { const v = contentSchema.parse(req.body); await save(req, 'content', v); res.json(v) }));
   r.put('/admin/settings/flags', staff, wrap(async (req, res) => { const v = flagsSchema.parse(req.body); await save(req, 'flags', v); res.json(v) }));
   r.put('/admin/pages/:slug', staff, wrap(async (req, res) => {

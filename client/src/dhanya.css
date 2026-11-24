@@ -1438,3 +1438,33 @@ div.dpos .bp-trash, div.dpos .dpos-trash { width: 34px !important; height: 34px 
 .pe2 .pphotos label, .pe2 .pphotos [class*="drop"], .pe2 .pphotos .adm-drop { padding: 10px !important; gap: 6px !important } .pe2 .pphotos .btn, .pe2 .pphotos label .btn, .pe2 .pphotos button { padding: 8px 16px !important; font-size: 11px !important; height: auto !important }
 .pe2 .pe2-l textarea { min-height: 70px; max-height: 80px }
 div.dpos .ra.pay { background: #e4f5ea; color: #1c7a4b } div.dpos .ra.pay:hover { background: #cfeedb }
+
+/* Settings: cards may continue into the next column so both columns end together (no blank space) */
+.pset .dpos-card { break-inside: auto !important; -webkit-column-break-inside: auto }
+.pset .pset-span { column-span: all; break-inside: avoid !important }
+.pset { column-fill: balance }
+
+/* Measurements tiles: same cards as Advance Orders (purple label, big number, small caption, icon chip) */
+.msp-tile { display: flex !important; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 18px !important; border-radius: 18px !important; background: #fff !important; border: 1px solid #ece6ee !important; text-align: left; cursor: pointer }
+.msp-tile > div { display: grid; gap: 3px; min-width: 0 } .msp-tile span { font-size: 10px !important; font-weight: 800; letter-spacing: .12em; color: #5a1560 !important }
+.msp-tile b { font-size: 24px !important; line-height: 1.1; color: #1a1420 !important } .msp-tile small { font-size: 11px; color: #6b6070; font-weight: 500 }
+.msp-tile i { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; flex: none; background: #e6efff; color: #3b6fd6 }
+.msp-tile i.amber { background: #fff0cc; color: #b45309 } .msp-tile i.green { background: #e4f7ec; color: #1c9a5f } .msp-tile i.red { background: #fdeaea; color: #d4443b } .msp-tile i.plum { background: #f3e8f4; color: #5a1560 }
+.msp-tile.on { border-color: #330533 !important; box-shadow: 0 0 0 1px #330533 inset }
+.msp-tile.amber b, .msp-tile.green b, .msp-tile.red b, .msp-tile.plum b { color: #1a1420 !important }
+
+/* Add / Edit product: media gallery is its own full-width row (no tall left column, no empty right column) */
+.pe2 .pe2-media { padding: 12px 20px; border-top: 1px solid #eee7e0; background: #fff }
+.pe2 .pe2-media .pe2-gh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px }
+.pe2 .pe2-media .pe2-ph { display: flex; flex-wrap: wrap; gap: 10px }
+.pe2 .pe2-media .pphotos { display: block !important } .pe2 .pe2-media .pphotos .adm-gal { display: flex !important; flex-wrap: wrap; gap: 10px }
+.pe2 .pe2-media .pphotos .adm-gal > * { width: 130px; flex: none }
+.pe2 .pe2-top { align-items: stretch !important }
+.pe2 .pe2-l textarea { min-height: 90px; max-height: none }
+
+/* Inventory top: header row (count left, Alerts + Add right), warning banner, one tidy filter row */
+.inv-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.inv-chips button { height: 30px !important; padding: 0 12px !important; font-size: 11px !important }
+div.dpos .dpos-card:has(.inv-chips) { padding: 12px 16px !important; display: flex !important; flex-wrap: wrap; align-items: center; gap: 10px 12px }
+div.dpos .dpos-card:has(.inv-chips) select { height: 34px !important; min-width: 150px; font-size: 12px !important }
+div.dpos .dpos-card:has(.inv-chips) input[type=search] { margin-left: auto; width: 240px; height: 34px !important }

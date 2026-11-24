@@ -34,7 +34,10 @@ export default function PosMeasurements() {
           <ExportCsv name="measurements" header={['Invoice', 'Customer', 'Phone', 'Date', 'Status', 'Item', 'Front neck', 'Back neck', 'Measurements']} rows={rows} /><Link className="dpos-btn outline" to="/admin/stitching/designs">Options</Link></div></div>
       {err && <p className="dpos-err" role="alert">{err}</p>}
       <div className="msp-tiles">{TILES.map(([k, l, c]) => (
-        <button key={k} type="button" className={`msp-tile ${c} ${status === k ? 'on' : ''}`} aria-pressed={status === k} onClick={() => setStatus(k)}><span>{l}</span><b>{data ? data.counts[k] : '…'}</b></button>))}</div>
+        <button key={k} type="button" className={`msp-tile ${c} ${status === k ? 'on' : ''}`} aria-pressed={status === k} onClick={() => setStatus(k)}>
+          <div><span>{l}</span><b>{data ? data.counts[k] : '…'}</b><small>{k === 'all' ? 'Bills with measurements' : k === 'pending' ? 'Stitching in progress' : k === 'completed' ? 'Delivered / finished' : 'Cancelled bills'}</small></div>
+          <i className={c}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{k === 'completed' ? <path d="m5 12.5 4.5 4.5L19 7.5" /> : k === 'cancelled' ? <path d="M6 6l12 12M18 6 6 18" /> : k === 'pending' ? <><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></> : <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />}</svg></i>
+        </button>))}</div>
       <div className="msp-filters">
         <label>Search order ID<input value={f.q} onChange={e => setF({ ...f, q: e.target.value })} placeholder="INV-…" /></label>
         <label>Customer name<input value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></label>

@@ -1,3 +1,4 @@
+import { pageGuard } from '../lib/staffAccess.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
@@ -35,8 +36,8 @@ export function enquiryRoutes({ db, cfg }) {
 export function enquiryAdmin({ db, auth }) {
   const r = Router();
   const staff = auth.role('owner', 'admin');
-  r.get('/enquiries', staff, wrap(async (_req, res) => res.json(await rows(db, 'SELECT * FROM enquiries ORDER BY (status = \'new\') DESC, id DESC LIMIT 300'))));
-  r.patch('/enquiries/:id', staff, wrap(async (req, res) => {
+  r.get('/enquiries', pageGuard(db, auth, '/admin/enquiries'), wrap(async (_req, res) => res.json(await rows(db, 'SELECT * FROM enquiries ORDER BY (status = \'new\') DESC, id DESC LIMIT 300'))));
+  r.patch('/enquiries/:id', pageGuard(db, auth, '/admin/enquiries'), wrap(async (req, res) => {
     const { status } = z.object({ status: z.enum(['new', 'contacted', 'closed']) }).parse(req.body);
     const id = z.coerce.number().int().parse(req.params.id);
     const u = await db.query('UPDATE enquiries SET status = $2 WHERE id = $1 RETURNING id', [id, status]);
@@ -44,7 +45,7 @@ export function enquiryAdmin({ db, auth }) {
     await audit(db, req.user.id, 'enquiry.status', 'enquiry', id, { status });
     res.json({ ok: true });
   }));
-  r.delete('/enquiries/:id', staff, wrap(async (req, res) => {
+  r.delete('/enquiries/:id', pageGuard(db, auth, '/admin/enquiries'), wrap(async (req, res) => {
     const id = z.coerce.number().int().parse(req.params.id);
     const d = await db.query('DELETE FROM enquiries WHERE id = $1 RETURNING id', [id]);
     if (!d.rows.length) throw new HttpError(404, 'Enquiry not found');

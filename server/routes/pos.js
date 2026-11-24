@@ -203,7 +203,7 @@ export default function pos({ db, auth }) {
   });
   const EMPTY_DESIGNS = { front: [], back: [], sleeveTypes: [], sleeveLengths: [] };
   r.get('/pos/stitch-designs', biller, wrap(async (_req, res) => res.json({ ...EMPTY_DESIGNS, ...(await getSetting(db, 'stitch_designs', {})) })));
-  r.put('/pos/stitch-designs', manager, wrap(async (req, res) => {
+  r.put('/pos/stitch-designs', area('/admin/stitching/designs'), wrap(async (req, res) => {
     const v = designBody.parse(req.body);
     for (const d of [...v.front, ...v.back]) if (d.image && !/^(https?:\/\/|\/)/.test(d.image)) throw new HttpError(400, 'Design pictures must be uploaded images');
     await putSetting(db, 'stitch_designs', v); await audit(db, req.user.id, 'pos.stitch_designs', 'pos_settings', 'stitch_designs', { front: v.front.length, back: v.back.length });
@@ -366,8 +366,8 @@ export default function pos({ db, auth }) {
     res.json({ customer: c, totals: { bills: done.length, spent: done.reduce((s, i) => s + i.total, 0), advances: advances.length }, invoices, advances, stitching: invoices.filter(i => i.stitching) });
   }));
   // Delivery charge rules (by PIN zone and order value).
-  r.get('/pos/delivery-rules', manager, wrap(async (_req, res) => res.json(await loadRules(db))));
-  r.put('/pos/delivery-rules', manager, wrap(async (req, res) => {
+  r.get('/pos/delivery-rules', area('/admin/delivery'), wrap(async (_req, res) => res.json(await loadRules(db))));
+  r.put('/pos/delivery-rules', area('/admin/delivery'), wrap(async (req, res) => {
     const v = z.object({
       enabled: z.boolean(), note: text(300).default(''), storePin: z.string().regex(/^(\d{6})?$/, 'Shop PIN code must be 6 digits').default(''),
       defaultFee: paise, freeOver: paise.nullable(), maxKm: z.number().min(0).max(5000).default(0), perKmBeyond: paise.default(0),

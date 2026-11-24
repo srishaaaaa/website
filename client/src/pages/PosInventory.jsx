@@ -238,7 +238,6 @@ function ProductsStock({ manager, stocker }) {
         <div className="inv-chips" role="radiogroup" aria-label="Stock">{[['all', 'All'], ['best', `Best Sellers (${(list || []).filter(p => p.bestSeller).length})`], ['low', 'Low Stock'], ['out', 'Out of Stock']].map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={stock === k} className={`${stock === k ? 'on' : ''} ${k === 'best' && stock !== k ? 'hl' : ''}`} onClick={() => setStock(k)}>{l}</button>)}</div>
         <select aria-label="Category" value={catF} onChange={e => setCatF(e.target.value)}><option value="all">All categories</option>{cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select>
         <select aria-label="Sort" value={sortBy} onChange={e => setSortBy(e.target.value)}><option value="name">Name A–Z</option><option value="stock-asc">Stock low → high</option><option value="stock-desc">Stock high → low</option><option value="price-asc">Price low → high</option><option value="price-desc">Price high → low</option></select>
-        <div className="inv-vt" role="group" aria-label="View">{[['grid', 'Grid'], ['list', 'List']].map(([k, l]) => <button key={k} type="button" className={view === k ? 'on' : ''} aria-pressed={view === k} onClick={() => setView(k)}>{l}</button>)}</div>
         <label className="inv-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4-4" /></svg><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search products…" aria-label="Search products" /></label>
       </div>
       <Err>{err}</Err>
@@ -385,11 +384,6 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
             <h3>Basic Details</h3>
             <label className="pe2-f">PRODUCT NAME<input required autoFocus={!editing} value={f.name} maxLength={160} onChange={e => setF({ ...f, name: e.target.value })} placeholder="e.g. Kanjivaram Silk Saree · Maroon" /></label>
             <label className="pe2-f">DESCRIPTION<textarea rows={5} maxLength={4000} value={f.description} onChange={e => setF({ ...f, description: e.target.value })} placeholder="Tell your customers about this product…" /></label>
-            <div className="pe2-gh"><h3>Media Gallery</h3>{!editing && <button type="button" className="pe2-up" onClick={() => fileIn.current.click()}>Upload</button>}</div>
-            {editing ? <ProductPhotos product={product} onChanged={() => { reload() }} /> : (
-              <div className="pe2-ph">{files.map((x, i) => <span key={i} className="pe2-th"><img src={x.url} alt="" /><button type="button" aria-label="Remove photo" onClick={() => setFiles(fs => fs.filter((_, n) => n !== i))}>✕</button></span>)}
-                <button type="button" className="pe2-plus" aria-label="Add photos" onClick={() => fileIn.current.click()}>+</button>
-                <input ref={fileIn} type="file" hidden multiple accept="image/jpeg,image/png,image/webp" onChange={e => { pickFiles(e.target.files); e.target.value = '' }} /></div>)}
           </div>
           <div className="pe2-r">
             <h3>Organization &amp; Pricing</h3>
@@ -410,6 +404,13 @@ function ProductEditor({ product: start, categories, onClose, onDone, onPhotos }
             <p className="pe2-hint">{!editing && 'DEFAULT STOCK FILLS ANY SIZE ROW LEFT EMPTY · '}ALERT IS COMPARED AGAINST THE TOTAL ACROSS ALL VARIANTS</p>
           </div>
         </div>
+        <section className="pe2-media">
+            <div className="pe2-gh"><h3>Media Gallery</h3>{!editing && <button type="button" className="pe2-up" onClick={() => fileIn.current.click()}>Upload</button>}</div>
+            {editing ? <ProductPhotos product={product} onChanged={() => { reload() }} /> : (
+              <div className="pe2-ph">{files.map((x, i) => <span key={i} className="pe2-th"><img src={x.url} alt="" /><button type="button" aria-label="Remove photo" onClick={() => setFiles(fs => fs.filter((_, n) => n !== i))}>✕</button></span>)}
+                <button type="button" className="pe2-plus" aria-label="Add photos" onClick={() => fileIn.current.click()}>+</button>
+                <input ref={fileIn} type="file" hidden multiple accept="image/jpeg,image/png,image/webp" onChange={e => { pickFiles(e.target.files); e.target.value = '' }} /></div>)}
+        </section>
         <section className="pe2-var">
           <div className="pe2-vh"><div><h3>Product Variants</h3><p className="pe2-hint">MANAGE SIZES, COLOURS AND SPECIFIC INVENTORY</p></div>
             {!editing && <button type="button" className="dpos-btn" onClick={() => setVars(v => [...v, { size: '', color: '', sku: '', price: '', cost: '', weight: '', stock: '' }])}>+ Add Row</button>}</div>

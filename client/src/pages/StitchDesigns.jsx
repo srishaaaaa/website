@@ -12,10 +12,10 @@ import { SLEEVE_LENGTHS, SLEEVE_TYPES } from '../components/MeasureModal';
 export default function StitchDesigns() {
   const { user, authReady, toast } = useApp();
   const [d, setD] = useState(null); const [err, setErr] = useState(); const [busy, setBusy] = useState(false);
-  useEffect(() => { if (user && ['owner', 'admin'].includes(user.role)) loadDesigns(true).then(x => setD({ front: x.front || [], back: x.back || [], sleeveTypes: x.sleeveTypes || [], sleeveLengths: x.sleeveLengths || [] })).catch(e => setErr(e.message)) }, [user]);
+  useEffect(() => { if (user && ['owner', 'admin', 'cashier', 'inventory'].includes(user.role)) loadDesigns(true).then(x => setD({ front: x.front || [], back: x.back || [], sleeveTypes: x.sleeveTypes || [], sleeveLengths: x.sleeveLengths || [] })).catch(e => setErr(e.message)) }, [user]);
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!['owner', 'admin'].includes(user.role)) return <StaffOnly />;
+  if (!['owner', 'admin', 'cashier', 'inventory'].includes(user.role)) return <StaffOnly />;
   const save = async next => { setBusy(true); setErr(); try { const out = await api('/admin/pos/stitch-designs', { method: 'PUT', body: next }); setD(out); applyDesigns(out); toast('Saved.') } catch (e) { setErr(e.issues?.[0]?.message || e.message) } finally { setBusy(false) } };
   return (
     <AdminShell title="Stitching Designs" sub="Add your own neck designs and sleeve options. They appear in the measurement pickers next to the built-in ones.">

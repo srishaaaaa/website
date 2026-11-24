@@ -21,7 +21,7 @@ function useGate() {
   const { user, authReady } = useApp();
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!['owner', 'admin'].includes(user.role)) return <StaffOnly />;
+  if (!['owner', 'admin', 'cashier', 'inventory'].includes(user.role)) return <StaffOnly />;
   return null;
 }
 const Card = ({ children }) => <section className="dpos-card">{children}</section>;
@@ -85,6 +85,7 @@ export function AdminUsers() {
   const load = () => api('/admin/users').then(setList).catch(x => setE(x.message));
   useEffect(() => { if (!gate) load() }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
   if (gate) return gate;
+  if (!['owner', 'admin'].includes(user.role)) return <StaffOnly />;
   const isOwner = ['owner', 'admin'].includes(user.role); // admins and the owner are the same
   const ROLE_L = { owner: 'Admin', admin: 'Admin', cashier: 'Staff', inventory: 'Staff', customer: 'Customer' };
   const shown = (list || []).filter(u => (!q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase())) && inPeriod(u.created_at, per) && (role === 'all' || (role === 'admins' ? ['owner', 'admin'].includes(u.role) : role === 'staff' ? ['cashier', 'inventory'].includes(u.role) : u.role === 'customer')));

@@ -12,7 +12,7 @@ function useGate() {
   const { user, authReady } = useApp();
   if (!authReady) return <div className="page-pad"><p className="muted">Loading…</p></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!['owner', 'admin'].includes(user.role)) return <StaffOnly />;
+  if (!['owner', 'admin', 'cashier', 'inventory'].includes(user.role)) return <StaffOnly />;
   return null;
 }
 const Err = ({ children }) => children ? <p className="dpos-err" role="alert">{children}</p> : null;
