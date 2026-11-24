@@ -13,7 +13,7 @@ import MeasureModal, { measureSummary } from '../components/MeasureModal';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
 import { StitchingTab } from './StitchPages';
-import { LoginPasswordCard, StockAlertsCard, LowStockAlert } from '../components/PosSettingsParts';
+import { LoginPasswordCard, StockAlertsCard } from '../components/PosSettingsParts';
 import PosExpenses from './PosExpenses';
 import PosCoupons from './PosCoupons';
 import PosMeasurements from './PosMeasurements';
@@ -774,7 +774,6 @@ export default function AdminPos() {
     <AdminShell title={title} sub={sub}>
       <Err>{err}</Err>
       {body}
-      {allowed && <LowStockAlert />}
       {done && <BillDone sale={done} shop={shop} onClose={() => setDone(null)} />}
       {invPrev && <InvoicePreview row={invPrev} onClose={() => setInvPrev(null)} />}
       {advDone && <AdvanceDone adv={advDone} shop={shop} onClose={() => setAdvDone(null)} onView={() => { setAdvDone(null); nav('/admin/billing/advance') }} />}

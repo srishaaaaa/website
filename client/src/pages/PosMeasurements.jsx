@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { InvoicePreview } from './PosOrders';
+import { EyeIcon, DocIcon } from '../components/RowActions';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
 import ExportCsv from '../components/ExportCsv';
@@ -22,6 +24,7 @@ export default function PosMeasurements() {
     return () => clearTimeout(t);
   }, [from, to, status, f, n]);
   const setTailoring = async (b, s) => { try { await api(`/admin/pos/sales/${encodeURIComponent(b.invoiceNo)}/tailoring`, { method: 'PATCH', body: { status: s } }); setN(x => x + 1) } catch (e) { setErr(e.message) } };
+  const [pv, setPv] = useState(null);
   const bills = data?.bills || [];
   const rows = bills.flatMap(b => b.items.map(i => [b.invoiceNo, b.customerName, b.customerPhone, dmy(b.billDate), b.status, i.name, i.measure?.frontNeck ?? '', i.measure?.backNeck ?? '', measureSummary(i.measure)]));
   return (
@@ -46,6 +49,7 @@ export default function PosMeasurements() {
               <div className="msp-st" onClick={e => e.stopPropagation()}>
                 {b.status === 'cancelled' ? <span className="msp-pill red">Cancelled</span>
                   : <select value={b.status} aria-label={`Status of ${b.invoiceNo}`} onChange={e => setTailoring(b, e.target.value)}><option value="pending">Pending</option><option value="completed">Completed</option></select>}
+                {b.shareToken && <span className="dpos-rowact"><button type="button" className="ra eye" title="Preview invoice" aria-label="Preview invoice" onClick={() => setPv({ invoiceNo: b.invoiceNo, shareToken: b.shareToken })}><EyeIcon /></button><button type="button" className="ra doc" title="Print invoice" aria-label="Print invoice" onClick={() => window.open(`/invoice/${b.shareToken}?print=1`, '_blank')}><DocIcon /></button></span>}
                 <i aria-hidden="true">{open[b.invoiceNo] ? '▲' : '▼'}</i></div>
             </header>
             {open[b.invoiceNo] && (
@@ -64,6 +68,7 @@ export default function PosMeasurements() {
                   </section>))}
               </div>)}
           </article>))}</div>)}
+      {pv && <InvoicePreview row={pv} onClose={() => setPv(null)} />}
     </div>
   );
 }

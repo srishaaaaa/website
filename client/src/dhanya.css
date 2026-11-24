@@ -1285,3 +1285,23 @@ div.dpos-modal > .dpos-sheet.cpk { width: min(780px, 96vw) !important; border-ra
 .dpos-mhead { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px; padding: 14px 20px !important }
 .dpos-mhead > div { min-width: 0; text-align: left }
 .dpos-mhead > button { flex: none; width: 34px !important; height: 34px !important; margin: 0 !important; display: grid; place-items: center; border-radius: 50%; line-height: 1; font-size: 15px; align-self: center }
+
+/* Measurements: compact (reference) */
+.msp { gap: 10px !important }
+.msp-top { margin: 0 !important } .msp-tools { gap: 8px !important }
+.msp-tiles { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px !important }
+.msp-tile { padding: 10px 14px !important; border-radius: 14px !important; display: grid; gap: 2px; text-align: left }
+.msp-tile span { font-size: 9.5px !important; letter-spacing: .1em } .msp-tile b { font-size: 20px !important; line-height: 1.1 }
+.msp-filters { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px !important; padding: 12px 16px !important; border-radius: 16px !important }
+.msp-filters label { font-size: 9.5px !important; gap: 4px !important } .msp-filters input, .msp-filters select { height: 36px !important; font-size: 12.5px !important }
+.msp-list { gap: 8px !important }
+.msp-card { border-radius: 14px !important } .msp-card > header { padding: 10px 16px !important; display: flex; align-items: center; justify-content: space-between; gap: 12px }
+.msp-card header b { font-size: 13.5px !important } .msp-card header small { display: block; font-size: 11px !important; margin-top: 2px }
+.msp-st { display: inline-flex; align-items: center; gap: 8px } .msp-st select { height: 30px !important; font-size: 11px !important; min-width: 112px }
+.msp-st .dpos-rowact .ra { width: 30px !important; height: 30px !important; border-radius: 9px !important } .msp-st .dpos-rowact .ra svg { width: 15px !important; height: 15px !important }
+.msp-body { padding: 10px 16px 14px !important; gap: 8px !important }
+.msp-item { padding: 10px 12px !important; border-radius: 12px !important; gap: 8px !important }
+.msp-ih b { font-size: 13px !important } .msp-necks { gap: 8px 20px !important } .msp-necks em, .msp-cm em { font-size: 9px !important }
+.msp-cm { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px !important }
+.msp-cm > div { padding: 6px 10px !important; border-radius: 10px !important } .msp-cm b { font-size: 12.5px !important }
+@media (max-width: 800px) { .msp-tiles, .msp-filters, .msp-cm { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
