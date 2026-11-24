@@ -1305,3 +1305,18 @@ div.dpos-modal > .dpos-sheet.cpk { width: min(780px, 96vw) !important; border-ra
 .msp-cm { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px !important }
 .msp-cm > div { padding: 6px 10px !important; border-radius: 10px !important } .msp-cm b { font-size: 12.5px !important }
 @media (max-width: 800px) { .msp-tiles, .msp-filters, .msp-cm { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+/* Product details (inline) and editor: compact variant table and one-row "add size" form */
+form:has(> input[aria-label="New size"]), div.pe-add, form.pe-add { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) 90px auto !important; gap: 8px !important; align-items: center; margin-top: 10px }
+form:has(> input[aria-label="New size"]) input, .pe-add input { height: 34px !important; padding: 0 12px !important; font-size: 12.5px !important; width: 100% }
+form:has(> input[aria-label="New size"]) .dpos-btn, .pe-add .dpos-btn { height: 34px; padding: 0 16px !important; white-space: nowrap; border-radius: 10px !important }
+div.dpos-card .dpos-tw table:has(th) td { padding-top: 7px; padding-bottom: 7px }
+.dpos-tw:has(.pe-vars) td, .dpos-tw:has(.pe-vars) th { padding: 7px 10px !important }
+@media (max-width: 700px) { form:has(> input[aria-label="New size"]), div.pe-add, form.pe-add { grid-template-columns: repeat(2, minmax(0, 1fr)) !important } }
+
+/* Coupon code box: input fills the row, Generate is a clear pill button on the right */
+div.dpos .cp-code { display: flex !important; align-items: center; gap: 8px; padding: 4px 4px 4px 6px !important; border-radius: 14px; background: #fff !important; border: 1px solid #e3dde6 }
+div.dpos .cp-code input { flex: 1 1 auto; min-width: 0; height: 40px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 12px !important; font-size: 14px !important; letter-spacing: .06em }
+div.dpos .cp-code button { flex: none; height: 36px; padding: 0 16px !important; border-radius: 10px !important; background: #330533 !important; color: #fff !important; font-size: 12px !important; font-weight: 700; letter-spacing: .06em; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase }
+div.dpos .cp-code button::before { content: '✦'; font-size: 12px; color: #e9cd8d }
+div.dpos .cp-code:focus-within { border-color: #330533; box-shadow: 0 0 0 3px rgba(51, 5, 51, .1) }
