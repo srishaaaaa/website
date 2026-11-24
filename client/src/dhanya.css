@@ -1276,3 +1276,7 @@ div.dpos-modal > .dpos-sheet.cpk { width: min(780px, 96vw) !important; border-ra
 .dpos-modal .dpos-sheet.cpk > .cpk-foot { padding: 12px 22px !important; font-size: 12.5px }
 .cpk-foot b { font-weight: 700 } .cpk-done { height: 40px; padding: 0 28px; border-radius: 12px; background: #330533; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .06em } .cpk-done:disabled { background: #b9aebd }
 @media (max-width: 640px) { .dpos-modal .dpos-sheet.cpk > .cpk-grid { grid-template-columns: 1fr } }
+.payp-t { margin: 10px 0 6px !important; font-size: 10px !important; font-weight: 700; letter-spacing: .1em; color: #6b6070 }
+.payp-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+.payp-pick button { padding: 9px 6px; border-radius: 12px; border: 1px solid #d8d2da; background: #fff; font-size: 11.5px; font-weight: 700 } .payp-pick button.on { background: #f3e8f4; border-color: #5a1560; color: #330533 }
+.payp-amts { display: grid; gap: 10px; margin-top: 10px } .payp-amts label { display: grid; gap: 4px; font-size: 11px; font-weight: 700 } .payp-amts input { height: 38px }
