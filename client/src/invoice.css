@@ -103,12 +103,8 @@
 
 /* ---- print fit ---- */
 @media print {
-  /* A4 / A5: the bill fills the printable width and never runs past it */
-  .inv-doc { width: 100% !important; box-sizing: border-box; font-size: 11.5px; overflow: visible }
-  .inv-head, .inv-bill, .inv-foot { gap: 10px } .inv-head h1 { font-size: 20px }
-  .inv-items { width: 100%; table-layout: fixed; font-size: 11px } .inv-items th, .inv-items td { padding: 6px 4px; word-break: break-word; overflow-wrap: anywhere }
-  .inv-items th:first-child, .inv-items td.n { width: 6% } .inv-items .c { width: 11% } .inv-items .r { width: 16% }
-  .inv-sum { min-width: 0 } .inv-sum > div { gap: 8px } .inv-total b { font-size: 18px }
+  /* A4 / A5: printed at the on-screen layout, scaled to the paper (see SHEET_CSS in InvoicePage.jsx) */
+  .inv-items tr { break-inside: avoid }
   .inv-doc, .inv-doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact }
   .inv-doc { break-after: auto } .inv-foot, .inv-end { break-inside: avoid }
   /* thermal roll: 80 mm and 58 mm rolls print at their own width, in a size that fits */
@@ -120,3 +116,14 @@
   .inv-th img { max-width: 100%; height: auto }
   .inv-th * { max-width: 100% }
 }
+
+/* Print chooser dropdown */
+.inv-ps-sel { width: 100%; padding: 12px 14px; border: 1.5px solid #d9d2dc; border-radius: 10px; font: inherit; font-size: 14px; background: #fff; color: #17131a; cursor: pointer }
+.inv-ps-sel:focus { outline: 2px solid #5a1560; outline-offset: 1px }
+.inv-ps-hint { margin: 8px 0 6px; font-size: 12px; color: #6f6875 }
+label.inv-ps-l { display: block }
+
+/* Balance invoice of a pending advance order: the full invoice inside the preview window */
+.advinv-body.inv-page { min-height: 0; padding: 18px; overflow: auto }
+@media screen { .advinv-print { display: none !important } }
+@media print { .advinv-print { padding: 0; min-height: 0; background: #fff } }

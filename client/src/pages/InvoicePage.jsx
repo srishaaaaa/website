@@ -15,8 +15,17 @@ import '../invoice.css';
 const phoneShown = p => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? `+91 ${d}` : p || '' };
 const amt = v => v < 0 ? `- ${money(-v)}` : money(v);
 
-// The full A4 / A5 invoice.
-function A4Doc({ sale, shop }) {
+// The full A4 / A5 invoice. Also draws the balance invoice of an advance order that is not billed yet
+// (an advance has a deposit and no payment mode yet; see advanceAsBill).
+// An advance order (not billed yet) in the shape the invoice layouts read.
+export const advanceAsBill = a => ({
+  ...a, invoiceNo: a.code, billDate: new Date(a.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
+  items: (a.items || []).map(i => ({ name: i.name, variant: { size: i.size, color: i.color, measure: i.measure }, quantity: i.qty, unitPrice: i.price, lineTotal: i.price * i.qty, taxRate: i.taxRate })),
+  notes: [`Advance order ${a.code}`, a.deliveryDate && `Delivery ${a.deliveryDate.split('-').reverse().join('-')}`, a.notes].filter(Boolean).join(' · '),
+});
+
+export function A4Doc({ sale, shop }) {
+  const open = 'deposit' in sale && !('paymentMode' in sale);
   const showGst = shop.gstin && shop.showGst?.[sale.channel];
   const terms = String(shop.terms || '').split('\n').map(t => t.trim()).filter(Boolean);
   return (
@@ -39,7 +48,7 @@ function A4Doc({ sale, shop }) {
           <dl>
             <div><dt>Date:</dt><dd>{longDate(sale.billDate)}</dd></div>
             <div><dt>Time:</dt><dd>{clock(sale.createdAt)}</dd></div>
-            <div><dt>Payment:</dt><dd>{MODE[sale.paymentMode].toUpperCase()} • {sale.status === 'voided' ? 'VOID' : 'COMPLETED'}</dd></div>
+            <div><dt>Payment:</dt><dd>{open ? (sale.status === 'cancelled' ? 'ADVANCE • CANCELLED' : 'DEPOSIT PAID • BALANCE DUE') : `${(MODE[sale.paymentMode] || sale.paymentMode || '').toUpperCase()} • ${sale.status === 'voided' ? 'VOID' : 'COMPLETED'}`}</dd></div>
             <div><dt>Channel:</dt><dd>{CHANNEL(sale)}</dd></div>
           </dl>
         </div>
@@ -62,7 +71,7 @@ function A4Doc({ sale, shop }) {
         <div className="inv-words">
           <p className="inv-l">AMOUNT IN WORDS</p>
           <p className="inv-wd">{inWords(sale.total)}</p>
-          <p className="inv-recv">{sale.status === 'voided' ? 'VOID — this bill was cancelled' : <>Paid: <b className="mono">{money(sale.total)}</b><br /><span>{modeName(sale)}</span></>}</p>
+          <p className="inv-recv">{sale.status === 'voided' ? 'VOID — this bill was cancelled' : open ? <>Paid: <b className="mono">{money(sale.deposit)}</b> (deposit)<br /><span>Balance due: <b className="mono">{money(sale.total - sale.deposit)}</b></span></> : <>Paid: <b className="mono">{money(sale.total)}</b><br /><span>{modeName(sale)}</span></>}</p>
           {(terms.length > 0 || sale.notes) && <div className="inv-terms"><b>Terms &amp; Notes:</b>{terms.map((t, i) => <p key={i}>• {t}</p>)}{sale.notes && <p>• {sale.notes}</p>}</div>}
         </div>
         <div className="inv-sum">
@@ -83,7 +92,7 @@ function A4Doc({ sale, shop }) {
 }
 
 // The thermal roll receipt (58 or 80 mm).
-function Thermal({ sale, shop, paper }) {
+export function Thermal({ sale, shop, paper }) {
   const showGst = shop.gstin && shop.showGst?.[sale.channel];
   const row = (l, v, cls = '') => <div className={`inv-tr ${cls}`}><span>{l}</span><span>{v}</span></div>;
   return (
@@ -151,7 +160,10 @@ function ReturnDoc({ ret, shop }) {
   );
 }
 
-const PAGE = { a4: 'A4; margin: 10mm', a5: 'A5; margin: 8mm', 80: '80mm auto; margin: 2mm', 58: '58mm auto; margin: 2mm' };
+export const PAGE = { a4: 'A4; margin: 10mm', a5: 'A5; margin: 8mm', 80: '80mm auto; margin: 2mm', 58: '58mm auto; margin: 2mm' };
+// A4 / A5 print the invoice exactly as it looks on screen (860 px wide), scaled down to the printable width.
+export const FIT = { a4: 190 / 860, a5: 132 / 860 };
+export const SHEET_CSS = z => `@media print { .inv-doc { width: 860px !important; max-width: none !important; padding: 40px 44px 34px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; zoom: ${(z * 96 / 25.4).toFixed(4)} } }`;
 
 export default function InvoicePage() {
   const { token } = useParams(); const [qs] = useSearchParams(); const { user } = useApp();
@@ -163,9 +175,13 @@ export default function InvoicePage() {
   useEffect(() => { load() }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { // the paper the browser prints on
     let el = document.getElementById('inv-page-size'); if (!el) { el = document.createElement('style'); el.id = 'inv-page-size'; document.head.appendChild(el) }
-    el.textContent = `@page { size: ${PAGE[paper] || PAGE.a4} }`;
+    el.textContent = `@page { size: ${PAGE[paper] || PAGE.a4} }` + (FIT[paper] || !PAGE[paper] ? SHEET_CSS(FIT[paper] || FIT.a4) : '');
   }, [paper]);
-  useEffect(() => { if (d && qs.get('print') === '1') { const t = setTimeout(() => window.print(), 700); return () => clearTimeout(t) } }, [d]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (d && qs.get('print') === '1') { if (!qs.get('size')) { setPs(true); return } const t = setTimeout(() => window.print(), 700); return () => clearTimeout(t) } }, [d]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { // Ctrl+P / Cmd+P asks the paper first too
+    const k = e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p' && window.self === window.top) { e.preventDefault(); setPs(true) } };
+    addEventListener('keydown', k); return () => removeEventListener('keydown', k);
+  }, []);
   useEffect(() => { document.title = d ? (d.kind === 'return' ? `Return ${d.ret.returnNo} · ${d.shop.name}` : `Invoice ${d.sale.invoiceNo} · ${d.shop.name}`) : 'Invoice' }, [d]);
 
   if (err) return <div className="inv-page"><p className="inv-err">{err}</p></div>;
@@ -173,8 +189,9 @@ export default function InvoicePage() {
   const { shop } = d;
   if (d.kind === 'return') return (
     <div className="inv-page">
-      {window.self === window.top && !!user && ['owner', 'admin', 'cashier'].includes(user.role) && <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" /><button className="inv-btn dark" onClick={() => window.print()}><PrintIcon size={15} /> Print</button></div>}
+      {window.self === window.top && !!user && ['owner', 'admin', 'cashier'].includes(user.role) && <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" /><button className="inv-btn dark" onClick={() => setPs(true)}><PrintIcon size={15} /> Print</button></div>}
       <ReturnDoc ret={d.ret} shop={shop} />
+      {ps && <PrintSettings sheetOnly onClose={() => setPs(false)} onPrint={({ paper: p }) => { setPaper(p); setPs(false); setTimeout(() => window.print(), 350) }} />}
     </div>
   );
   const { sale } = d;

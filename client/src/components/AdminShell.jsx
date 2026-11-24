@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { installInstantSelect } from '../lib/instantSelect';
 import { Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useStaffAccess } from '../lib/staffAccess';
 import { useApp } from '../context/App';
@@ -82,6 +83,7 @@ export default function AdminShell({ title, sub, actions, children }) {
       if (a.left < b.left) el.scrollLeft -= b.left - a.left + 12; else if (a.right > b.right) el.scrollLeft += a.right - b.right + 12;
     }
   }, []);
+  useEffect(() => installInstantSelect(), []); // dropdowns open at once
   const { user, site } = useApp();
   const nm = site?.store?.name || 'Dhanyas Boutique';
   const manager = !!user && ['owner', 'admin'].includes(user.role);

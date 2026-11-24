@@ -7,7 +7,11 @@ import { clock, longDate } from '../../lib/invoiceFormat';
 import { istDay } from '../../components/PeriodFilter';
 import '../../pos.css';
 import '../../pos3.css';
+import '../../invoice.css';
 import { Empty, Err, dmy, inr, statusName, useMeta } from './common';
+import PrintSettings from '../../components/PrintSettings';
+
+const PAGE = { a4: 'A4; margin: 10mm', a5: 'A5; margin: 8mm', 80: '80mm auto; margin: 2mm', 58: '58mm auto; margin: 2mm' };
 
 const num = (n, unit) => `${n}${unit === 'in' ? '"' : ' cm'}`;
 
@@ -15,7 +19,14 @@ const num = (n, unit) => `${n}${unit === 'in' ? '"' : ' cm'}`;
 export default function Print() {
   const { id } = useParams(); const [sp] = useSearchParams(); const copy = sp.get('copy') === 'customer' ? 'customer' : 'job';
   const { user, authReady } = useApp(); const [meta] = useMeta();
+  const [ps, setPs] = useState(false); const [paper, setPaper] = useState('a4');
   const [o, setO] = useState(null); const [shop, setShop] = useState(null); const [err, setErr] = useState();
+  useEffect(() => { // paper size and, for a thermal roll, a narrow sheet
+    let el = document.getElementById('stc-page-size'); if (!el) { el = document.createElement('style'); el.id = 'stc-page-size'; document.head.appendChild(el) }
+    const roll = paper === '80' || paper === '58';
+    el.textContent = `@page { size: ${PAGE[paper]} }` + (roll ? `@media print { .stc-sheet { width: ${paper === '58' ? 50 : 72}mm !important; max-width: none !important; padding: 0 !important; font-size: ${paper === '58' ? 9 : 10.5}px !important } .stc-sheet .two, .stc-sheet .head { display: block !important } .stc-sheet img { max-width: 40px } .stc-sheet table { font-size: inherit } }` : paper === 'a5' ? '@media print { .stc-sheet { zoom: .7 } }' : '');
+    return () => { el.textContent = '' };
+  }, [paper]);
   useEffect(() => { document.body.classList.add('stc-printing'); return () => document.body.classList.remove('stc-printing') }, []);
   const ok = user && ['owner', 'admin', 'cashier'].includes(user.role);
   useEffect(() => { if (!ok) return; Promise.all([api(`/admin/stitching/orders/${id}`), api('/admin/pos/shop')]).then(([a, b]) => { setO(a); setShop(b) }).catch(e => setErr(e.message)) }, [id, ok]);
@@ -27,8 +38,9 @@ export default function Print() {
   const job = copy === 'job';
   return (
     <div style={{ background: '#f3f1ec', minHeight: '100vh', '--d-ink': '#121214', '--d-acc': '#330533', '--d-line': '#e7e1d6', '--d-mut': '#6f6b66' }}>
-      <div className="stc-bar-tools"><button className="dpos-btn" onClick={() => window.print()}>Print</button><Link className="dpos-btn ghost" to={`/admin/stitching/orders/${o.id}`}>← Back to order</Link>
+      <div className="stc-bar-tools"><button className="dpos-btn" onClick={() => setPs(true)}>Print</button><Link className="dpos-btn ghost" to={`/admin/stitching/orders/${o.id}`}>← Back to order</Link>
         <Link className="dpos-btn ghost" to={`/admin/stitching/print/${o.id}?copy=${job ? 'customer' : 'job'}`}>Switch to {job ? 'customer receipt' : 'job card'}</Link></div>
+      {ps && <PrintSettings onClose={() => setPs(false)} onPrint={({ paper: p }) => { setPaper(p); setPs(false); setTimeout(() => window.print(), 350) }} />}
       <article className="stc-sheet">
         <header className="head">
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}><img src={shop.logo || DEFAULT_LOGO} alt="" /><div><h1>{shop.name}</h1><div>{(shop.address || []).join(', ')}</div>{shop.phone && <div>Phone: {shop.phone}</div>}</div></div>

@@ -25,6 +25,9 @@ const Lotus = ({ className = '' }) => (
 // a textile inset, and a "For you" discovery panel layered behind. Photographs are managed in
 // Admin → Storefront images; until they are added the frames stay blank. Discovery items are real products.
 // Fades in when loaded; framed on the focus point set in Admin → Storefront images (default: keeps faces in view).
+// Shown until a hero photo is uploaded in Admin → Storefront images.
+const HERO_FALLBACK = '/images/hero-model.webp';
+
 function HeroPhoto({ src, alt, pos }) {
   const [ok, setOk] = useState(false);
   return <img src={src} alt={alt} fetchpriority="high" decoding="async" className={ok ? 'is-in' : ''} style={{ objectPosition: pos || '50% 18%' }} onLoad={() => setOk(true)} ref={el => { if (el && el.complete && el.naturalWidth && !ok) setOk(true) }} />;
@@ -39,7 +42,8 @@ export default function BoutiqueHero() {
   const b = site.branding || {};
   const picks = catalog.featured.slice(0, 6);
   const anim = d => ({ ...rise(d), animate: show ? { opacity: 1, y: 0 } : undefined });
-
+
+
 
   return (
     <section ref={ref} className="bh" data-hero aria-label="DHANYA BOUTIQUE">
@@ -97,9 +101,7 @@ export default function BoutiqueHero() {
 
         <motion.figure className="bh-model has-photo" initial={{ opacity: 0, y: 40 }} animate={show ? { opacity: 1, y: 0 } : undefined} transition={{ duration: 1.1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}>
           <span className={`bh-arch ${site.status === 'loading' ? 'skel' : ''}`}>
-            {site.status === 'loading' ? null : b.heroModel
-              ? <HeroPhoto src={b.heroModel} alt={b.heroAlt || 'A model draped in a saree'} pos={b.heroModelPos} />
-              : <BlankFrame label="Model photo" className="tall" hint="A full-length photo works best." />}
+            {site.status === 'loading' ? null : <HeroPhoto src={b.heroModel || HERO_FALLBACK} alt={b.heroAlt || 'A model in a pleated plum saree with a hand-beaded blouse'} pos={b.heroModel ? b.heroModelPos : '48% 18%'} />}
           </span>
         </motion.figure>
       </div>

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { beep, readAlerts } from '../components/PosSettingsParts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, uploadImage } from '../lib/api';
@@ -196,7 +197,7 @@ function AddModal({ categories, onClose, onDone }) {
   );
 }
 
-function ProductsStock({ manager, stocker }) {
+function ProductsStock({ manager, stocker, slot }) {
   const { toast } = useApp();
   const [q, setQ] = useState(''); const [stock, setStock] = useState('all'); const [list, setList] = useState(null); const [cats, setCats] = useState([]);
   const [view, setView] = useState('grid'); const [alerts, setAlerts] = useState(false); const [sortBy, setSortBy] = useState('name'); const [catF, setCatF] = useState('all');
@@ -226,14 +227,18 @@ function ProductsStock({ manager, stocker }) {
 
   return (
     <>
-      <div className="inv-top">
-      <p className="inv-count">{list ? `${list.length} products` : '…'} · same catalog customers see</p>
-        <div className="inv-top-r">
-<button className="dpos-btn ghost" onClick={() => setAlerts(true)} style={{ color: '#8a5a00', borderColor: '#e0b44c' }}>⚠ Alerts{needs.length > 0 && <b className="dpos-count" style={{ background: '#b3261e' }}>{needs.length}</b>}</button>
-{manager && <button className="dpos-btn" onClick={() => setModal({ t: 'add' })}><Icon n="plus" size={16} />Add product</button>}
-        </div>
-      </div>
-      {(counts.out + counts.low + counts.size) > 0 && <p className="inv-warn">⚠ {counts.out > 0 && `${counts.out} out of stock`}{counts.out > 0 && counts.low > 0 && ' · '}{counts.low > 0 && `${counts.low} running low`}{(counts.out + counts.low) > 0 && counts.size > 0 && ' · '}{counts.size > 0 && `${counts.size} with a size sold out`} — restock soon.</p>}
+      {(() => {
+        const warn = counts.out + counts.low + counts.size > 0 && [counts.out > 0 && `${counts.out} out of stock`, counts.low > 0 && `${counts.low} low`, counts.size > 0 && `${counts.size} with a size sold out`].filter(Boolean).join(' · ');
+        const top = (
+          <div className="inv-top">
+            <p className="inv-count">{list ? `${list.length} products` : '…'}{warn && <span className="inv-warn" title="Restock soon">⚠ {warn}</span>}</p>
+            <div className="inv-top-r">
+              <button className="dpos-btn ghost inv-alerts" onClick={() => setAlerts(true)}>⚠ Alerts{needs.length > 0 && <b className="dpos-count">{needs.length}</b>}</button>
+              {manager && <button className="dpos-btn" onClick={() => setModal({ t: 'add' })}><Icon n="plus" size={15} />Add product</button>}
+            </div>
+          </div>);
+        return slot ? createPortal(top, slot) : top;
+      })()}
       <div className="dpos-bar-tools inv-filters">
         <div className="inv-chips" role="radiogroup" aria-label="Stock">{[['all', 'All'], ['best', `Best Sellers (${(list || []).filter(p => p.bestSeller).length})`], ['low', 'Low Stock'], ['out', 'Out of Stock']].map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={stock === k} className={`${stock === k ? 'on' : ''} ${k === 'best' && stock !== k ? 'hl' : ''}`} onClick={() => setStock(k)}>{l}</button>)}</div>
         <select aria-label="Category" value={catF} onChange={e => setCatF(e.target.value)}><option value="all">All categories</option>{cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}</select>
@@ -477,18 +482,21 @@ function AlertsModal({ list, onClose, onDone, canStock, onEdit }) {
 }
 
 export default function PosInventory({ manager, stocker }) {
-  const [tab, setTab] = useState('products');
+  const [tab, setTab] = useState('products'); const [slot, setSlot] = useState(null);
   const snapshot = async () => {
     const list = await api('/admin/pos/products?q=');
     downloadCsv('stock-snapshot.csv', ['Product', 'Category', 'Size', 'Colour', 'SKU', 'Stock', 'Price (₹)'], list.flatMap(p => p.variants.map(v => [p.name, p.category || '', v.size, v.color, v.sku, v.stock, (p.price / 100).toFixed(2)])));
   };
   return (
     <>
+      <div className="inv-headrow">
       <div className="inv-tabs" role="tablist" aria-label="Inventory sections">
         <button role="tab" aria-selected={tab === 'products'} className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}><Icon n="box" size={16} /> Products &amp; Stock</button>
         <button role="tab" aria-selected={tab === 'moves'} className={tab === 'moves' ? 'on' : ''} onClick={() => setTab('moves')}><Icon n="clock" size={16} /> Stock Movements</button>
       </div>
-      {tab === 'products' ? <ProductsStock manager={manager} stocker={stocker} /> : <StockMovements onSnapshot={snapshot} />}
+      <div className="inv-slot" ref={setSlot} />
+      </div>
+      {tab === 'products' ? <ProductsStock manager={manager} stocker={stocker} slot={slot} /> : <StockMovements onSnapshot={snapshot} />}
     </>
   );
 }

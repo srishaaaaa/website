@@ -226,17 +226,20 @@ export function OnlineRowTools({ x, manager, onStatus, noStatus, canVoid, onChan
 // (RTN-00000001 …); every tab can be printed or saved as a PDF. "Open Full Page" goes to /invoice/<token>.
 export function InvoicePreview({ row, onClose }) {
   const nav = useNavigate();
-  const [rets, setRets] = useState([]); const [tab, setTab] = useState(row.tab || 'orig'); const frame = useRef();
+  const [rets, setRets] = useState([]); const [tab, setTab] = useState(row.tab || 'orig'); const frame = useRef(); const [ps, setPs] = useState(false); const [pq, setPq] = useState('');
   useEffect(() => { api('/admin/pos/sales/' + encodeURIComponent(row.invoiceNo)).then(d => setRets((d.sale || d).returns || [])).catch(() => {}) }, [row.invoiceNo, row.tab]);
   const cur = tab === 'orig' ? { no: row.invoiceNo, token: row.shareToken } : rets.find(r => r.returnNo === tab) ? { no: tab, token: rets.find(r => r.returnNo === tab).shareToken } : { no: row.invoiceNo, token: row.shareToken };
-  const print = () => { const w = frame.current?.contentWindow; if (!w) return; try { w.document.title = cur.no } catch { /* cross-origin */ } w.focus(); w.print() };
+  // Print asks thermal / A4 / A5 first, then reloads the invoice in that format and prints it.
+  const print = () => setPs(true);
+  const printAs = ({ type, paper }) => { setPs(false); setPq(`?fmt=${type === 'thermal' ? 'thermal' : 'a4'}&size=${paper}&print=1&t=${Date.now()}`) };
   return (
     <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Invoice preview" onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="dpos-sheet invprev">
         <div className="invprev-bar"><b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginRight: 10, verticalAlign: '-2px' }}><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z" /></svg>INVOICE PREVIEW • #{row.invoiceNo}</b><span><button type="button" onClick={print}>Print</button><button type="button" onClick={() => nav('/invoice/' + cur.token)}>Open Full Page ↗</button><button type="button" aria-label="Close" onClick={onClose}>✕</button></span></div>
-        {rets.length > 0 && <div className="invprev-tabs" role="tablist"><button type="button" role="tab" aria-selected={tab === 'orig'} className={tab === 'orig' ? 'on' : ''} onClick={() => setTab('orig')}>Original bill</button>
-          {rets.map(r => <button key={r.returnNo} type="button" role="tab" aria-selected={tab === r.returnNo} className={tab === r.returnNo ? 'on' : ''} onClick={() => setTab(r.returnNo)}>{r.returnNo}</button>)}</div>}
-        <iframe ref={frame} key={cur.token} title={`Invoice ${cur.no}`} src={`/invoice/${cur.token}`} />
+        {rets.length > 0 && <div className="invprev-tabs" role="tablist"><button type="button" role="tab" aria-selected={tab === 'orig'} className={tab === 'orig' ? 'on' : ''} onClick={() => { setTab('orig'); setPq('') }}>Original bill</button>
+          {rets.map(r => <button key={r.returnNo} type="button" role="tab" aria-selected={tab === r.returnNo} className={tab === r.returnNo ? 'on' : ''} onClick={() => { setTab(r.returnNo); setPq('') }}>{r.returnNo}</button>)}</div>}
+        <iframe ref={frame} key={cur.token + pq} title={`Invoice ${cur.no}`} src={`/invoice/${cur.token}${pq}`} />
+        {ps && <PrintSettings sheetOnly={tab !== 'orig'} onClose={() => setPs(false)} onPrint={printAs} />}
       </div>
     </div>
   );
@@ -276,11 +279,16 @@ export function AdvanceModal({ total, onClose, onSave }) {
 // Shown right after an advance order is saved: the receipt for the deposit, then the order lives in Advance Orders (and in Order History once billed).
 export function AdvanceDone({ adv, shop, onClose, onView }) {
   const who = adv.customerName?.trim() || 'Guest';
+  const [ps, setPs] = useState(false);
   const text = `Hello${adv.customerName ? ' ' + adv.customerName : ''}, your advance order ${adv.code} with ${shop?.name || 'us'} is booked. Order total ${money(adv.total)}, deposit paid ${money(adv.deposit)}, balance due ${money(adv.balance)}${adv.deliveryDate ? ', expected on ' + adv.deliveryDate : ''}. Thank you!`;
-  const print = () => {
+  // Asks thermal / A4 / A5 first, then prints the receipt sized for that paper.
+  const print = ({ paper }) => {
+    setPs(false);
     const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return;
+    const sheet = paper === 'a4' || paper === 'a5';
+    const pageCss = `<style>@page{size:${({ a4: 'A4; margin: 15mm', a5: 'A5; margin: 10mm', 80: '80mm auto; margin: 2mm', 58: '58mm auto; margin: 2mm' })[paper] || 'A4'}}body{max-width:${sheet ? (paper === 'a4' ? '170mm' : '125mm') : paper === '58' ? '50mm' : '72mm'}!important;margin:${sheet ? '0 auto' : '0'}!important;font-size:${sheet ? 15 : paper === '58' ? 10 : 12}px}${sheet ? 'h3{font-size:24px}' : ''}</style>`;
     const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-    w.document.write(`<!doctype html><title>Advance receipt ${esc(adv.code)}</title><body style="font-family:Arial,sans-serif;max-width:300px;margin:16px auto;color:#111"><h3 style="margin:0 0 4px;text-align:center">${esc(shop?.name || '')}</h3><p style="text-align:center;margin:0 0 12px;font-size:12px">ADVANCE RECEIPT · ${esc(adv.code)}</p><p style="margin:0 0 8px;font-size:13px">Customer: ${esc(who)}${adv.customerPhone ? ' · ' + esc(adv.customerPhone) : ''}</p><hr><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Order total</span><b>${money(adv.total)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Deposit paid</span><b>${money(adv.deposit)}</b></p><p style="margin:-2px 0 6px;font-size:12px;color:#555">${esc(splitText(depSplit(adv)))}</p><p style="display:flex;justify-content:space-between;margin:8px 0;font-size:16px"><b>Balance due</b><b>${money(adv.balance)}</b></p>${adv.deliveryDate ? '<p style="font-size:12px">Expected: ' + esc(adv.deliveryDate) + '</p>' : ''}<hr><p style="font-size:11px;text-align:center">Not a tax invoice. The bill is issued when the order is collected.</p><script>onload=()=>{print()}<\/script>`);
+    w.document.write(`<!doctype html><title>Advance receipt ${esc(adv.code)}</title><body style="font-family:Arial,sans-serif;max-width:300px;margin:16px auto;color:#111"><h3 style="margin:0 0 4px;text-align:center">${esc(shop?.name || '')}</h3><p style="text-align:center;margin:0 0 12px;font-size:12px">ADVANCE RECEIPT · ${esc(adv.code)}</p><p style="margin:0 0 8px;font-size:13px">Customer: ${esc(who)}${adv.customerPhone ? ' · ' + esc(adv.customerPhone) : ''}</p><hr><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Order total</span><b>${money(adv.total)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Deposit paid</span><b>${money(adv.deposit)}</b></p><p style="margin:-2px 0 6px;font-size:12px;color:#555">${esc(splitText(depSplit(adv)))}</p><p style="display:flex;justify-content:space-between;margin:8px 0;font-size:16px"><b>Balance due</b><b>${money(adv.balance)}</b></p>${adv.deliveryDate ? '<p style="font-size:12px">Expected: ' + esc(adv.deliveryDate) + '</p>' : ''}<hr><p style="font-size:11px;text-align:center">Not a tax invoice. The bill is issued when the order is collected.</p>${pageCss}<script>onload=()=>{print()}<\/script>`);
     w.document.close();
   };
   return (
@@ -298,12 +306,13 @@ export function AdvanceDone({ adv, shop, onClose, onView }) {
         </section>
         <section className="dpos-done-card items"><p className="dpos-done-l">ORDER SPLIT-UP</p><BillSummary bill={adv} /></section>
         <div className="dpos-done-act">
-          <button className="dpos-btn outline" onClick={print}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
+          <button className="dpos-btn outline" onClick={() => setPs(true)}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
           <a className="dpos-btn wa" href={waLink(adv.customerPhone, text)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp</a>
           <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
         </div>
         <p className="adv-view"><button type="button" className="link-u" onClick={onView}>View in Advance Orders →</button></p>
       </div>
+      {ps && <PrintSettings onClose={() => setPs(false)} onPrint={print} />}
     </div>
   );
 }
@@ -320,7 +329,8 @@ function AdvanceQuick({ code, onClose }) {
     items={(a?.items || []).map(i => ({ name: i.name, note: i.size ? [i.size, i.color && i.color !== 'Default' ? i.color : ''].filter(Boolean).join(', ') : '', qty: i.qty, unit: i.price, total: i.price * i.qty }))} />;
 }
 
-function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
+function AdvanceDetail({ code, manager, onClose, onChanged, onBilled }) {
+
   const [invPv, setInvPv] = useState(null);
   const nav = useNavigate();
   const [a, setA] = useState(null); const [err, setErr] = useState(); const [pay, setPay] = useState(blankPay); const [busy, setBusy] = useState(false);

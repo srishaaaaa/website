@@ -123,3 +123,26 @@
   body.dpos-printing .dpos-invoice { position: absolute; left: 0; top: 0; width: 80mm; max-width: 100%; padding: 4mm; margin: 0 }
 }
 
+
+/* Instant dropdown menu (lib/instantSelect.js) */
+.isel { position: fixed; z-index: 10000; overflow-y: auto; background: #fff; border: 1px solid #e3dde6; border-radius: 12px; box-shadow: 0 14px 36px rgba(23, 19, 26, .16); padding: 5px; font: 500 13.5px/1.3 var(--sans, 'Poppins', system-ui, sans-serif); color: #17131a; max-width: min(360px, calc(100vw - 16px)) }
+.isel-o { padding: 9px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.isel-o.on { background: #f3ecf4 } .isel-o.cur { font-weight: 700; color: #5a1560 } .isel-o.off { opacity: .4; cursor: default }
+.isel-g { padding: 8px 12px 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: #8a8290; text-transform: uppercase }
+
+/* Inventory: tabs, count, stock warning and actions share one row; the filters sit in one slim row below */
+div.dpos .inv-headrow { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 12px }
+div.dpos .inv-headrow .inv-tabs { margin: 0; padding: 4px; border-radius: 12px; gap: 4px }
+div.dpos .inv-headrow .inv-tabs button { padding: 7px 13px; font-size: 12.5px; border-radius: 9px }
+div.dpos .inv-slot { flex: 1 1 360px; min-width: 0 }
+div.dpos .inv-slot .inv-top, div.dpos .inv-top { margin: 0 0 12px; gap: 10px; flex-wrap: wrap } div.dpos .inv-slot .inv-top { margin: 0 }
+div.dpos .inv-count { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0; font-size: 13px; color: #6f6270 }
+div.dpos .inv-count .inv-warn { margin: 0; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #fff4de; color: #8a5a00 }
+div.dpos .inv-top-r { gap: 8px; margin-left: auto }
+div.dpos .inv-top-r .dpos-btn { padding: 8px 14px; font-size: 13px; border-radius: 11px }
+div.dpos .inv-top-r .inv-alerts { color: #8a5a00; border-color: #e0b44c } div.dpos .inv-top-r .inv-alerts .dpos-count { background: #b3261e }
+div.dpos .inv-filters { padding: 10px 12px !important; gap: 8px !important; border-radius: 16px; margin-bottom: 14px; flex-wrap: wrap !important }
+div.dpos .inv-filters .inv-chips { flex-wrap: wrap }
+div.dpos .inv-filters select { width: 160px; min-width: 0 !important; height: 34px; padding: 0 12px !important; font-size: 12.5px !important; border-radius: 10px !important }
+div.dpos .inv-filters .inv-search { flex: 1 1 180px; max-width: 280px; min-width: 150px; height: 34px; padding: 0 12px; border-radius: 10px }
+div.dpos .inv-filters .inv-search input { padding: 0 !important; height: 32px; font-size: 13px !important }
