@@ -11,7 +11,7 @@ export const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 
 export const waUrl = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://wa.me/${d.length === 10 ? '91' + d : ''}?text=${encodeURIComponent(text)}` };
 
 // wa: { phone, text }  ·  doc: click handler or href  ·  eye: click handler
-export default function RowActions({ wa, doc, eye, ret, edit, del, label = '' }) {
+export default function RowActions({ wa, doc, eye, ret, edit, del, pay, label = '' }) {
   const stop = e => e.stopPropagation();
   return (
     <div className="dpos-rowact" onClick={stop}>
@@ -22,6 +22,7 @@ export default function RowActions({ wa, doc, eye, ret, edit, del, label = '' })
       {eye && <button type="button" className="ra eye" title="Quick details" aria-label={`Details of ${label}`} onClick={eye}><EyeIcon /></button>}
       {ret && <button type="button" className="ra ret" title="Return items" aria-label={`Return ${label}`} onClick={ret}><RetIcon /></button>}
       {edit && <button type="button" className="ra edit" title="Edit" aria-label={`Edit ${label}`} onClick={edit}><EditIcon /></button>}
+      {pay && <button type="button" className="ra pay" title="Collect remaining payment" aria-label={`Collect payment for ${label}`} onClick={pay}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 5h10M7 9h10M9 5c4 0 6 2 6 4s-2 4-6 4H7l7 6" /></svg></button>}
       {del && <button type="button" className="ra del" title="Delete" aria-label={`Delete ${label}`} onClick={del}><TrashIcon /></button>}
     </div>
   );

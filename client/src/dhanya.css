@@ -1437,3 +1437,4 @@ div.dpos .bp-trash, div.dpos .dpos-trash { width: 34px !important; height: 34px 
 .pe2 .pphotos h3, .pe2 .pphotos b:first-child { font-size: 12.5px }
 .pe2 .pphotos label, .pe2 .pphotos [class*="drop"], .pe2 .pphotos .adm-drop { padding: 10px !important; gap: 6px !important } .pe2 .pphotos .btn, .pe2 .pphotos label .btn, .pe2 .pphotos button { padding: 8px 16px !important; font-size: 11px !important; height: auto !important }
 .pe2 .pe2-l textarea { min-height: 70px; max-height: 80px }
+div.dpos .ra.pay { background: #e4f5ea; color: #1c7a4b } div.dpos .ra.pay:hover { background: #cfeedb }
