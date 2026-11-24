@@ -193,7 +193,9 @@ export default function admin({ db, auth }) {
 
   // Users & roles. Everyone staff can see accounts; only an owner can change a role (never their own, never another owner's).
   r.get('/users', staff, wrap(async (_req, res) => res.json(await rows(db,
-    `SELECT id, email, full_name AS name, role, created_at FROM profiles ORDER BY (role = 'customer'), id LIMIT 500`))));
+    `SELECT p.id, p.email, p.full_name AS name, p.role, p.created_at,
+       (SELECT MAX(e.created_at) FROM audit_events e WHERE e.action = 'auth.login' AND e.actor_id = p.id) AS "lastLogin"
+     FROM profiles p ORDER BY (p.role = 'customer'), "lastLogin" DESC NULLS LAST, p.id LIMIT 500`))));
   r.post('/users', staff, wrap(async (req, res) => {
     const d = z.object({ name: z.string().trim().max(120).default(''), email: z.string().trim().email().max(200), password: z.string().min(8).max(200),
       role: z.enum(['customer', 'cashier', 'inventory', 'admin']) }).parse(req.body);

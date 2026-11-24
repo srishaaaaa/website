@@ -1,3 +1,4 @@
+import { audit } from '../lib/orders.js';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
@@ -21,6 +22,7 @@ export default function auth(ctx) {
   const finish = async (req, res, profile) => {
     a.issue(res, profile);
     req.user = profile;
+    await audit(db, profile.id, 'auth.login', 'user', profile.id).catch(() => {}); // shown as "Last sign-in" in Users & Roles
     await resolveCart(ctx, req, res);
     res.json({ user: publicUser(profile) });
   };

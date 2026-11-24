@@ -84,6 +84,8 @@ export function AdminUsers() {
   const gate = useGate(); const { user, toast } = useApp(); const [list, setList] = useState(null); const [q, setQ] = useState(''); const [e, setE] = useState(); const [per, setPer] = usePeriod('all'); const [role, setRole_] = useState('all');
   const load = () => api('/admin/users').then(setList).catch(x => setE(x.message));
   useEffect(() => { if (!gate) load() }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
+  // new sign-ins show up without reloading: refresh every 20 s and whenever this tab is opened again
+  useEffect(() => { if (gate) return; const t = setInterval(load, 20000); const f = () => document.visibilityState === 'visible' && load(); document.addEventListener('visibilitychange', f); return () => { clearInterval(t); document.removeEventListener('visibilitychange', f) } }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
   if (gate) return gate;
   if (!['owner', 'admin'].includes(user.role)) return <StaffOnly />;
   const isOwner = ['owner', 'admin'].includes(user.role); // admins and the owner are the same
@@ -93,12 +95,12 @@ export function AdminUsers() {
   return (
     <AdminShell title="Users & Roles" sub="Staff with access to this admin. Everyone who signs in appears here automatically: set them to Staff or Admin to give access.">
       {e && <p role="alert" className="dpos-err">{e}</p>}
-      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" /><ExportCsv name="users" header={['Name', 'Email', 'Role', 'Joined']} rows={shown.map(u => [u.name || '', u.email, ROLE_L[u.role] || u.role, u.created_at ? String(u.created_at).slice(0, 10) : ''])} /><Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /></div>
+      <div className="dpos-bar-tools"><input type="search" style={{ maxWidth: 240 }} value={q} onChange={ev => setQ(ev.target.value)} placeholder="Search users…" aria-label="Search users" /><ExportCsv name="users" header={['Name', 'Email', 'Role', 'Joined', 'Last sign-in']} rows={shown.map(u => [u.name || '', u.email, ROLE_L[u.role] || u.role, u.created_at ? String(u.created_at).slice(0, 10) : '', u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''])} /><Chips label="Show" value={role} onChange={setRole_} options={[['all', 'Everyone'], ['admins', 'Admins'], ['staff', 'Staff'], ['customer', 'Customers']]} /></div>
       <Card>
         {!list ? <p className="dpos-empty">Loading…</p> : !shown.length ? <p className="dpos-empty">No users found.</p> : (
-          <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+          <div className="dpos-tw"><table><thead><tr><th>Name</th><th>Email</th><th>Last sign-in</th><th>Role</th><th>Status</th></tr></thead>
             <tbody>{shown.map(u => (
-              <tr key={u.id}><td><span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}><span className="dpos-av" style={{ width: 32, height: 32, fontSize: 13 }}>{(u.name || u.email)[0].toUpperCase()}</span><b>{u.name || '—'}</b></span></td><td>{u.email}</td>
+              <tr key={u.id}><td><span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}><span className="dpos-av" style={{ width: 32, height: 32, fontSize: 13 }}>{(u.name || u.email)[0].toUpperCase()}</span><b>{u.name || '—'}</b></span></td><td>{u.email}</td><td className="usr-seen">{u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : <span className="muted">Not since this update</span>}</td>
                 <td>{!isOwner || u.id === user.id ? <span className={`usr-role ${['owner', 'admin'].includes(u.role) ? 'adm' : ''}`}>{ROLE_L[u.role] || u.role}</span>
                   : <select className={`usr-role ${['owner', 'admin'].includes(u.role) ? 'adm' : u.role === 'customer' ? 'cust' : 'stf'}`} aria-label={`Role for ${u.email}`} value={u.role === 'inventory' ? 'cashier' : u.role} onChange={ev => setRole(u, ev.target.value)}>{[['customer', 'Customer'], ['cashier', 'Staff'], ['admin', 'Admin']].map(([r, l]) => <option key={r} value={r}>{l}</option>)}</select>}</td><td><span className="usr-status">ACTIVE</span></td></tr>))}</tbody></table></div>)}
       </Card>
