@@ -79,7 +79,7 @@ function OrdersTable({ list, nav, onChanged }) {
             <td>{fixed ? <span className={`sd-pill ${o.status}`}>{o.kind === 'advance' ? 'Advance' : STATUS_L[o.status]}</span>
               : <select className={`sto-st ${o.status}`} aria-label={`Status of ${o.ref}`} value={o.status} onChange={e => setStatus(o, e.target.value)}><option value="pending">Pending</option><option value="completed">Completed</option></select>}</td>
             <td className="r">{o.kind === 'advance'
-              ? <RowActions label={o.ref} wa={o.customerPhone ? { phone: o.customerPhone, text: `Hello ${o.customerName || ''}, your advance order ${o.ref}${o.due ? ` is due on ${dmy(o.due)}` : ''}.` } : null} doc={() => openOrder(nav, o)} eye={() => openOrder(nav, o)} edit={() => openOrder(nav, o)} del={manager ? () => cancelAdv(o) : null} />
+              ? <RowActions label={o.ref} wa={o.customerPhone ? { phone: o.customerPhone, text: `Hello ${o.customerName || ''}, your advance order ${o.ref}${o.due ? ` is due on ${dmy(o.due)}` : ''}.` } : null} doc={() => openOrder(nav, o)} eye={() => openOrder(nav, o)} del={manager ? () => cancelAdv(o) : null} />
               : <OnlineRowTools x={{ invoiceNo: o.ref, shareToken: o.shareToken, phone: o.customerPhone, customerName: o.customerName }} manager={manager} noStatus canVoid={manager} onChanged={onChanged} waText={`Hello ${o.customerName || ''}, your stitching order ${o.ref}${o.due ? ` is due on ${dmy(o.due)}` : ''}.`} />}</td></tr>) })}</tbody></table></div></>
   );
 }
