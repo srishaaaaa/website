@@ -1371,3 +1371,69 @@ select.adv-st.pending { background-color: #fff4d6 !important; border-color: #e6d
 .dpos-tw table:has(.adv-st) .adv-prod { max-width: 90px } .dpos-tw table:has(.adv-st) .adv-tpb small { max-width: 150px }
 select.adv-st { min-width: 104px !important }
 .dpos-tw table:has(.adv-st) .adv-prod { max-width: none !important; min-width: 190px; white-space: nowrap; font-size: 12px } .adv-prod > div { line-height: 1.5; overflow: hidden; text-overflow: ellipsis; max-width: 240px }
+
+/* Split payment picker: methods on one row, amounts on the next, status line below */
+div.payp-split, .payp .payp-split { display: grid !important; grid-template-columns: 1fr !important; gap: 8px !important; margin-top: 6px }
+.payp-split .payp-pick { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important }
+.payp-split .payp-pick button { width: 100%; height: 34px !important; padding: 0 6px !important; white-space: nowrap; font-size: 11px !important; border-radius: 10px !important; display: inline-flex; align-items: center; justify-content: center }
+.payp-split .payp-amts { display: grid !important; gap: 10px; margin: 0 !important }
+.payp-split .payp-amts label { display: grid; gap: 4px; font-size: 11px; font-weight: 700; min-width: 0 }
+.payp-split .payp-amts input { width: 100% !important; height: 38px !important; max-width: none !important }
+.payp-split .payp-t, .payp-split p { margin: 2px 0 0 !important }
+.payp-split .payp-ok, .payp-split .payp-bad { font-size: 12px; font-weight: 700 }
+
+/* Delivery: small compact tier rows (fixed narrow boxes) */
+.dlv-row:has(> :nth-child(7)) { grid-template-columns: 38px 84px 28px 84px 40px 84px 32px !important; justify-content: start; gap: 6px !important }
+.dlv-row:has(> :nth-child(5)):not(:has(> :nth-child(7))) { grid-template-columns: 52px 96px 40px 96px 32px !important; justify-content: start }
+.dlv-row input { height: 32px !important; font-size: 12px !important; padding: 0 8px !important }
+.dlv-region { padding: 10px 12px !important } .dlv-rh { grid-template-columns: minmax(0, 220px) minmax(0, 1fr) auto auto !important; gap: 8px !important }
+.dlv-rh input { height: 34px !important; font-size: 12.5px !important }
+.dlv-wt .dpos-btn.ghost.sm:not([aria-label]), .dlv-body > div > .dpos-btn.ghost.sm:not([aria-label]), .dlv-body .dpos-btn.ghost.sm:not([aria-label]) { width: auto !important; height: 30px !important; padding: 0 14px !important; font-size: 11px !important }
+.dlv-wt { padding: 10px 12px !important } .dlv-body > * { padding: 10px 12px !important }
+.dlv .dpos-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 200px)) !important }
+.dlv .f input { height: 34px !important }
+
+/* Search / link boxes: compact, not full width */
+div.dpos input[type=search], div.dpos .dpos-search input, div.dpos .an-search input { height: 36px !important; font-size: 12.5px !important; padding: 0 14px !important; border-radius: 10px !important }
+div.dpos > .dpos-main > input[type=search] { max-width: 360px }
+.dpos-linkrow { max-width: 620px } .dpos-linkrow input { height: 36px !important; font-size: 12.5px !important } .dpos-linkrow .dpos-btn { height: 36px !important; padding: 0 16px !important }
+
+/* Taxonomy: departments across the top, categories in two columns below (no empty column) */
+.dpos-tx { grid-template-columns: 1fr !important }
+.dpos-tx > div:first-child { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px } .dpos-tx > div:first-child > h2 { grid-column: 1 / -1 }
+.dpos-tx > div:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px } .dpos-tx > div:last-child > h2 { grid-column: 1 / -1 } .dpos-tx > div:last-child > p { grid-column: 1 / -1 }
+@media (max-width: 900px) { .dpos-tx > div:first-child, .dpos-tx > div:last-child { grid-template-columns: 1fr } }
+
+/* Expense form + coupon form: compact boxes and buttons */
+.ex-card, .cp-card { padding: 16px 18px !important }
+.ex-l, .cp-l, .ex-card label, .cp-card label.cp-l { font-size: 10px !important; letter-spacing: .08em !important; gap: 4px !important }
+.ex-card input, .ex-card select, .cp-card input:not([type=checkbox]), .cp-card select { height: 36px !important; padding: 0 12px !important; font-size: 12.5px !important; border-radius: 10px !important }
+.ex-modes { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px !important } .ex-modes button { height: 32px !important; padding: 0 6px !important; font-size: 11px !important; border-radius: 10px !important }
+.ex-add, .cp-card .cp-submit, .cp-card button[type=submit], .cp-card > form > button:last-child { height: 40px !important; padding: 0 16px !important; font-size: 12px !important; border-radius: 12px !important; box-shadow: none !important }
+.ex-link { font-size: 11.5px !important; margin: 2px 0 !important }
+.ex-g2, .cp-grid2 { gap: 10px !important }
+.cp-card .cp-sw { padding: 8px 12px !important; border-radius: 12px !important } .cp-card .cp-sw b { font-size: 12.5px !important } .cp-card .cp-sw small { font-size: 11px !important }
+.cp-card .cp-toggle button, .cp-card .cp-type button { height: 30px !important; padding: 0 12px !important; font-size: 11px !important }
+.cp-card h2, .ex-h { font-size: 15px !important; margin-bottom: 8px !important }
+.cp-go { height: 40px !important; padding: 0 16px !important; font-size: 12px !important; border-radius: 12px !important; box-shadow: none !important }
+.cp-swrow { padding: 8px 12px !important; border-radius: 12px !important } .cp-swrow b { font-size: 12.5px !important } .cp-swrow small { font-size: 11px !important; margin-top: 1px !important }
+.cp-card .cp-l input, .cp-card .cp-l select { height: 36px !important; padding: 0 12px !important; font-size: 12.5px !important }
+.cp-card form, form.cp-card { display: grid; gap: 10px }
+.cp-card .cp-seg button, .cp-card .cp-pct button { height: 28px !important; padding: 0 10px !important; font-size: 11px !important }
+
+/* Row action icons: a little bigger again (34px) */
+div.dpos .ra, div.dpos .dpos-rowact .ra { width: 34px !important; height: 34px !important; border-radius: 10px !important } div.dpos .ra svg { width: 17px !important; height: 17px !important }
+div.dpos .dpos-rowact { gap: 6px !important }
+div.dpos .bp-trash, div.dpos .dpos-trash { width: 34px !important; height: 34px !important } div.dpos .bp-trash svg, div.dpos .dpos-trash svg { width: 17px !important; height: 17px !important }
+
+/* Edit product: photos as small thumbnails so the left column is no taller than the fields */
+.pe2 .pphotos .adm-gal { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+.pe2 .pphotos .adm-img, .pe2 .pphotos .adm-gal img { max-height: 96px; width: 100%; object-fit: cover; border-radius: 10px }
+.pe2 .pphotos p, .pe2 .pphotos .muted { font-size: 11px !important }
+.pe2 .pphotos .dpos-box, .pe2 .pphotos label { padding: 8px 10px !important }
+.pe2 .pe2-top { align-items: start !important }
+.pe2 .pe2-top { align-items: stretch !important }
+.pe2 .pphotos { padding: 10px 12px !important } .pe2 .pphotos > p, .pe2 .pphotos > .muted { display: none }
+.pe2 .pphotos h3, .pe2 .pphotos b:first-child { font-size: 12.5px }
+.pe2 .pphotos label, .pe2 .pphotos [class*="drop"], .pe2 .pphotos .adm-drop { padding: 10px !important; gap: 6px !important } .pe2 .pphotos .btn, .pe2 .pphotos label .btn, .pe2 .pphotos button { padding: 8px 16px !important; font-size: 11px !important; height: auto !important }
+.pe2 .pe2-l textarea { min-height: 70px; max-height: 80px }
