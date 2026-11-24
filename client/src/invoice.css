@@ -134,3 +134,5 @@ label.inv-ps-l { display: block }
 .inv-gst th { font-size: 9.5px; letter-spacing: .1em; text-align: left; color: #6f6875; padding: 8px 6px; border-bottom: 1px solid #ece6ee; background: #faf8fb }
 .inv-gst td { padding: 7px 6px; border-bottom: 1px solid #f3eff4 } .inv-gst .r { text-align: right } .inv-gst small { color: #8a8290; font-size: 10px }
 @media print { .inv-gst tr { break-inside: avoid } }
+/* the page colour reaches the bottom of the window on short invoices */
+html:has(.inv-page), html:has(.inv-page) body { background: #f6f6f7 }

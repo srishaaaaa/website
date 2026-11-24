@@ -11,9 +11,15 @@ const half = r => `${Number.isInteger(r / 2) ? r / 2 : (r / 2).toFixed(1)}%`;
 function gstRows(b) {
   if (!b.isGst || !(b.tax > 0)) return [];
   const byRate = new Map();
+  const noTax = (b.items || []).some(i => i.tax == null);
   for (const i of b.items || []) {
     const rate = b.gstRate ?? i.taxRate;
-    if (rate > 0) byRate.set(rate, (byRate.get(rate) ?? 0) + (i.tax ?? 0));
+    const base = (i.lineTotal ?? (i.price ?? 0) * (i.qty ?? i.quantity ?? 1)) - (i.discount ?? 0);
+    if (rate > 0) byRate.set(rate, (byRate.get(rate) ?? 0) + (i.tax ?? Math.round(base * rate / 100)));
+  }
+  if (noTax && byRate.size > 1) { // scale the estimates so they add up to the bill's GST exactly
+    const est = [...byRate.values()].reduce((s, v) => s + v, 0); let left = b.tax; const keys = [...byRate.keys()];
+    keys.forEach((r, n) => { const v = n === keys.length - 1 ? left : Math.round(byRate.get(r) * b.tax / (est || 1)); byRate.set(r, v); left -= v });
   }
   if (byRate.size === 1) { const [r] = [...byRate.keys()]; byRate.set(r, b.tax) } // one rate: the bill's tax is that rate's tax
   const out = [];

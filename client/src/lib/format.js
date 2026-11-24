@@ -1,4 +1,4 @@
-export const inr = p => '₹' + (p / 100).toLocaleString('en-IN');
+export const inr = p => { const r = p / 100; return '₹' + r.toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(r) ? 0 : 2, maximumFractionDigits: 2 }) };
 export const slugify = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 // Mirrors the server checkout rule (server/index.js). The server stays authoritative.
 export const FREE_SHIPPING_AT = 500000;

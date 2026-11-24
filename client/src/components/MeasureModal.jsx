@@ -38,7 +38,7 @@ export default function MeasureModal({ value, onSave, onClose, charge = '' }) {
   const neck = (label, key, list, step) => (
     <div className="msr-f"><span className="msr-l">{label}</span>
       <button type="button" className="msr-neck" onClick={() => setSheet(step)}>
-        {m[key] ? <>{icon(list, m[key])}<b>{m[key]}</b></> : <span className="muted">Select {label.toLowerCase()}</span>}
+        {m[key] ? <>{icon(list, m[key])}<b>{m[key]}</b></> : <span className="muted">Select…</span>}
         <span aria-hidden="true">✎</span>
       </button>
     </div>

@@ -272,3 +272,72 @@ div.dpos .dpos-pg:not(:has(button)) { display: none !important }
 .msr-charge .msr-amt { width: 140px; display: inline-flex; align-items: center; gap: 6px } .msr-charge .msr-amt em { font-style: normal; font-weight: 700; color: #5a1560 }
 .msr-charge .msr-amt input { height: 34px; width: 100%; padding: 0 10px }
 .msr-note { font-size: 11.5px; color: #6f6875 }
+
+/* Advance orders: Billed / Cancelled read like the status dropdown (same size), so the column lines up */
+div.dpos .adv-st-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 128px; height: 34px; padding: 0 16px; border-radius: 10px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border: 1px solid transparent }
+div.dpos .adv-st-pill.completed { background: #e4f5ea; color: #1c7a4b; border-color: #bfe3cd }
+div.dpos .adv-st-pill.cancelled { background: #fde8ea; color: #c0262d; border-color: #f6c6cb }
+div.dpos select.adv-st { min-width: 128px !important; height: 34px }
+
+/* Order Details: the full split-up is a list of rows, label left, amount right */
+.dpos-modal .od-sums.od-full { display: block !important }
+.dpos-modal .od-sums.od-full > .bsum { display: grid !important; gap: 2px !important; width: 100% }
+.dpos-modal .od-sums.od-full > .bsum > div { display: flex !important; justify-content: space-between !important; align-items: baseline; gap: 12px; width: 100%; font-size: 13px !important; padding: 5px 0 }
+.dpos-modal .od-sums.od-full > .bsum > div > span { flex: 1; min-width: 0 } .dpos-modal .od-sums.od-full > .bsum > div > b { white-space: nowrap }
+.dpos-modal .od-sums.od-full > .bsum > .bsum-total { padding: 10px 14px !important; border-radius: 12px; background: #f3e8f4; border: 0 !important; color: #330533; font-size: 15px !important; margin: 6px 0 }
+.dpos-modal .od-sums.od-full > .bsum > .bsum-paysub { padding: 2px 0 2px 14px !important; font-size: 12.5px !important }
+
+/* ===== Delivery & Shipping Rules ===== */
+div.dpos .dlv2 { display: grid; gap: 16px }
+div.dpos .dlv2-sample { height: 38px; padding: 0 16px; border-radius: 12px; border: 1px solid #e6cfe8; background: #f8eef9; color: #5a1560; font-size: 13px; font-weight: 700 }
+div.dpos .dlv2-ok { margin: 0; padding: 9px 14px; border-radius: 12px; background: #e4f5ea; color: #1c7a4b; font-size: 13px; font-weight: 600 }
+div.dpos .dlv2-empty { padding: 28px; text-align: center; border: 1px dashed #dccfe0; border-radius: 18px; background: #fff; color: #6f6875 }
+div.dpos .dlv2-card { background: #fff; border: 1px solid #ece6ee; border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(23, 19, 26, .04) }
+div.dpos .dlv2-card.off .dlv2-head { opacity: .7 }
+div.dpos .dlv2-head { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: none; border: 0; text-align: left; cursor: pointer; font: inherit; color: inherit }
+div.dpos .dlv2-ic { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; background: #e4f5ea; color: #1c7a4b }
+div.dpos .dlv2-card.more .dlv2-ic { background: #f1ebf3; color: #5a1560 }
+div.dpos .dlv2-t { flex: 1; min-width: 0; display: grid; gap: 4px }
+div.dpos .dlv2-t > span { display: flex; align-items: center; gap: 10px; flex-wrap: wrap } .dlv2-t b { font-size: 16px; font-weight: 700; color: #17131a }
+div.dpos .dlv2-t i { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: .08em; padding: 3px 8px; border-radius: 6px; background: #f1eef2; color: #6f6875 } div.dpos .dlv2-t i.on { background: #dcf3e5; color: #1c7a4b }
+div.dpos .dlv2-t small { font-size: 12.5px; color: #6f6875 } div.dpos .dlv2-t small.ok { color: #1c7a4b } div.dpos .dlv2-t small.warn { color: #b4690e } div.dpos .dlv2-t small em { font-style: normal; color: #8a8290 }
+div.dpos .dlv2-chev { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #f6f3f7; color: #6f6875; transition: transform .2s }
+div.dpos .dlv2-head[aria-expanded="true"] .dlv2-chev { transform: rotate(180deg) }
+div.dpos .dlv2-bar { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #f1ecf2; border-bottom: 1px solid #f1ecf2; background: #fcfbfd }
+div.dpos .dlv2-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: #3a3540; cursor: pointer }
+div.dpos .dlv2-bar button + button { border-left: 1px solid #f1ecf2 } div.dpos .dlv2-bar button:hover { background: #f6f3f7 }
+div.dpos .dlv2-bar .warn { color: #b4690e } div.dpos .dlv2-bar .bad { color: #e0313f }
+div.dpos .dlv2-body { padding: 18px 20px 20px; display: grid; gap: 14px }
+div.dpos .dlv2-bh { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap }
+div.dpos .dlv2-bh p { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .1em; color: #17131a } div.dpos .dlv2-bh small { font-size: 12.5px; color: #6f6875 }
+div.dpos .dlv2-bh .dpos-btn { height: 36px; display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-size: 13px }
+div.dpos .dlv2-tw { border: 1px solid #ece6ee; border-radius: 14px; overflow: auto }
+div.dpos .dlv2-tw table { width: 100%; border-collapse: collapse; min-width: 560px }
+div.dpos .dlv2-tw th { text-align: left; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: #6f6875; padding: 12px 16px; background: #f8f6f9; border-bottom: 1px solid #ece6ee }
+div.dpos .dlv2-tw td { padding: 10px 16px; border-bottom: 1px solid #f3eff4; vertical-align: middle } div.dpos .dlv2-tw tr:last-child td { border-bottom: 0 }
+div.dpos .dlv2-tw .n { width: 40px; color: #8a8290; font-size: 12px } div.dpos .dlv2-tw .r { text-align: right }
+div.dpos .dlv2-in { display: inline-flex; align-items: center; gap: 8px } div.dpos .dlv2-in em { font-style: normal; font-size: 12px; color: #8a8290; white-space: nowrap }
+div.dpos .dlv2-in input { width: 120px; height: 36px; padding: 0 12px !important; border: 1px solid #e3dde6 !important; border-radius: 10px !important; font-weight: 700; font-size: 14px }
+div.dpos .dlv2-in input::placeholder { font-weight: 500 }
+div.dpos .dlv2-del { width: 34px; height: 34px; display: inline-grid; place-items: center; border: 0; border-radius: 10px; background: #fde8ea; color: #e0313f; cursor: pointer; flex: none }
+div.dpos .dlv2-save { display: flex; justify-content: flex-end } div.dpos .dlv2-save .dpos-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px }
+div.dpos .dlv2-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px }
+div.dpos .dlv2-three .dlv-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px } div.dpos .dlv2-three .dlv-row input { min-width: 0; flex: 1; height: 34px }
+@media (max-width: 980px) { div.dpos .dlv2-three { grid-template-columns: 1fr } }
+.dpos-modal .dlv2-modal { width: min(460px, calc(100vw - 32px)) !important; padding: 20px 22px !important; display: grid; gap: 14px; border-radius: 18px }
+.dpos-modal .dlv2-mh { display: flex; justify-content: space-between; align-items: center } .dpos-modal .dlv2-mh b { font-size: 17px }
+.dpos-modal .dlv2-mh button { border: 0; background: none; font-size: 16px; color: #6f6875; cursor: pointer }
+.dpos-modal .dlv2-modal .f input { height: 42px; margin-top: 6px }
+.dpos-modal .dlv2-mf { display: flex; justify-content: flex-end; gap: 8px }
+.dpos-modal .od-sums.od-full > .bsum { max-width: none !important; margin: 0 !important }
+/* Measurements window: neck pickers on one line, cm boxes line up in every row */
+.msr-land .msr-two .msr-neck { min-height: 40px; padding: 6px 12px !important; font-size: 13px !important; line-height: 1.25; text-align: left }
+.msr-land .msr-two .msr-neck span, .msr-land .msr-two .msr-neck b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.msr-land .msr-grid { align-items: end }
+.msr-land .msr-grid .msr-l { min-height: 26px; display: flex; align-items: flex-end; line-height: 1.2 }
+.dpos-modal .od-sums.od-full { width: 100% !important; max-width: none !important; margin-left: 0 !important; margin-right: 0 !important }
+.msr-land .msr-two { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 10px !important }
+.msr-land .msr-two > .msr-f { min-width: 0 }
+.msr-land .msr-two .msr-neck { width: 100%; min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 8px }
+.msr-land .msr-two .msr-neck > * { min-width: 0 }
+.dpos-modal .od-sums.od-full > .bsum, .bsum { grid-template-columns: minmax(0, 1fr) !important }
