@@ -840,3 +840,8 @@ html:has(.auth2) { background: #f3e9dd }
 .toast { background: rgba(90, 21, 96, .96); color: #fff }
 .glass .muted, .glass .sub, .glass small { color: #6a4a6e }
 .pcard-actions .pcard-add.one { flex: 1 1 100%; width: 100% }
+
+/* Write a review: the window sits above its dark backdrop, so it can be tapped and typed in */
+.overlay-root > .review-modal { position: absolute; z-index: 2; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
+.overlay-root > .review-modal select, .overlay-root > .review-modal textarea, .overlay-root > .review-modal button { touch-action: manipulation }
+@media (max-width: 640px) { .overlay-root > .review-modal select, .overlay-root > .review-modal textarea { font-size: 16px } .overlay-root > .review-modal { padding: 26px 20px } .review-modal h2 { font-size: 28px } }
