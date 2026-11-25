@@ -8,7 +8,7 @@ const on = t => t ? ` · ${new Date(t).toLocaleDateString('en-IN', { day: '2-dig
 const how = s => { const m = PAY_L.filter(([k]) => s?.[k] > 0).map(([, l]) => l); return m.length > 1 ? 'Split' : m[0] || '' };
 const half = r => `${Number.isInteger(r / 2) ? r / 2 : (r / 2).toFixed(1)}%`;
 
-function gstRows(b) {
+export function gstRows(b) {
   if (!b.isGst || !(b.tax > 0)) return [];
   const byRate = new Map();
   const noTax = (b.items || []).some(i => i.tax == null);
@@ -82,3 +82,28 @@ export function payRows(b, { sale } = {}) {
 
 export const modeName = s => s.advance ? 'Advance order · deposit + balance' : s.paymentMode === 'split'
   ? `Split · ${PAY_L.filter(([k]) => ({ cash: s.payCash, upi: s.payUpi, card: s.payCard })[k] > 0).map(([, l]) => l).join(' + ')}` : MODE_L[s.paymentMode];
+
+// The complete split-up of a return invoice (credit note): bill type, what came back, the discount and GST taken back (with rates),
+// the refund total, how the original bill was paid, how the refund was paid (split amounts) and the delivery charge that is not refunded.
+export function returnRows(ret) {
+  const rows = [{ label: ret.isGst ? 'GST bill' : 'Non-GST bill', note: ret.isGst ? 'CGST + SGST REVERSED' : 'NO GST CHARGED', value: null, kind: 'muted' },
+    { label: 'Returned items value', note: ret.isGst ? 'EXCL. GST' : '', value: ret.subtotal, kind: 'row' }];
+  if (ret.discount > 0) {
+    const pct = ret.discountType === 'percent' && ret.discountValue ? ` · ${ret.discountValue}%` : '';
+    rows.push({ label: ret.couponCode ? `Coupon discount reversed (${ret.couponCode}${pct})` : `Manual discount reversed${pct ? ` (${pct.slice(3)})` : ''}`, value: -ret.discount, kind: 'row' });
+  }
+  if (ret.isGst && ret.tax > 0) {
+    rows.push({ label: 'TAXABLE VALUE', value: ret.subtotal - (ret.discount || 0), kind: 'muted' });
+    const g = gstRows({ isGst: true, tax: ret.tax, gstRate: ret.gstRate ?? null, items: (ret.returned || []).map(i => ({ lineTotal: i.amount, taxRate: i.taxRate })) });
+    rows.push(...g.map(r => ({ ...r, label: r.label.replace(/^(CGST|SGST|Total GST)/, '$1 reversed') })));
+  }
+  rows.push({ label: 'REFUND TOTAL', value: ret.total, kind: 'total' });
+  if (ret.paymentMode) rows.push({ label: `Original bill paid by ${MODE_L[ret.paymentMode] || ret.paymentMode}`, value: null, kind: 'muted' });
+  const split = { cash: ret.refundCash, upi: ret.refundUpi, card: ret.refundCard };
+  rows.push({ label: `Refund: ${ret.refundMode === 'split' ? 'Split' : MODE_L[ret.refundMode] || ret.refundMode || 'Cash'}`, value: null, kind: 'pay' });
+  if (ret.refundMode === 'split') rows.push(...modeRows(split));
+  rows.push({ label: 'Amount refunded', value: ret.total, kind: 'strong' });
+  if (ret.deliveryFee > 0) rows.push({ label: 'Delivery charge paid (not refunded)', value: ret.deliveryFee, kind: 'muted' });
+  rows.push({ label: 'Delivery charges are not refunded on returns or exchanges', value: null, kind: 'muted' });
+  return rows;
+}

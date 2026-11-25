@@ -79,13 +79,13 @@ export function LoginPasswordCard() {
   };
   const t = show ? 'text' : 'password';
   return (
-    <form className="dpos-card" onSubmit={submit}><h2>Login password <button type="button" className="link-u pset-show" onClick={() => setShow(v => !v)}>{show ? 'HIDE' : 'SHOW'}</button></h2>
+    <form className="dpos-card pwd-card" onSubmit={submit}><h2>Login password <button type="button" className="link-u pset-show" onClick={() => setShow(v => !v)}>{show ? 'HIDE' : 'SHOW'}</button></h2>
       <p className="sub" style={{ marginBottom: 10 }}>Change the password you use to sign in. It needs your current password. Staff change their own from their account page.</p>
-      <label className="f">Current password<input type={t} autoComplete="current-password" value={f.current} onChange={e => setF({ ...f, current: e.target.value })} /></label>
-      <div className="dpos-grid"><label className="f">New password<input type={t} autoComplete="new-password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} /></label>
+      <div className="pwd-grid"><label className="f">Current password<input type={t} autoComplete="current-password" value={f.current} onChange={e => setF({ ...f, current: e.target.value })} /></label>
+        <label className="f">New password<input type={t} autoComplete="new-password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} /></label>
         <label className="f">Confirm new password<input type={t} autoComplete="new-password" value={f.again} onChange={e => setF({ ...f, again: e.target.value })} /></label></div>
       {err && <p className="dpos-err" role="alert">{err}</p>}
-      <button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
+      <div className="pwd-foot"><button className="dpos-btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button></div>
     </form>
   );
 }

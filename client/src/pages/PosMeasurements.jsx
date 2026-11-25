@@ -53,7 +53,7 @@ export default function PosMeasurements() {
                 {b.status === 'cancelled' ? <span className="msp-pill red">Cancelled</span>
                   : <select value={b.status} aria-label={`Status of ${b.invoiceNo}`} onChange={e => setTailoring(b, e.target.value)}><option value="pending">Pending</option><option value="completed">Completed</option></select>}
                 {b.shareToken && <span className="dpos-rowact"><button type="button" className="ra eye" title="Preview invoice" aria-label="Preview invoice" onClick={() => setPv({ invoiceNo: b.invoiceNo, shareToken: b.shareToken })}><EyeIcon /></button><button type="button" className="ra doc" title="Print invoice" aria-label="Print invoice" onClick={() => window.open(`/invoice/${b.shareToken}?print=1`, '_blank')}><DocIcon /></button></span>}
-                <i aria-hidden="true">{open[b.invoiceNo] ? '▲' : '▼'}</i></div>
+                <button type="button" className={`msp-tog ${open[b.invoiceNo] ? 'on' : ''}`} aria-expanded={!!open[b.invoiceNo]} aria-label={open[b.invoiceNo] ? 'Hide measurements' : 'Show measurements'} onClick={() => setOpen(o => ({ ...o, [b.invoiceNo]: !o[b.invoiceNo] }))}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button></div>
             </header>
             {open[b.invoiceNo] && (
               <div className="msp-body">

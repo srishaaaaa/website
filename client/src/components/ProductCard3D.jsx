@@ -71,8 +71,9 @@ export default function ProductCard({ p, tall = false, className = '', index = n
           <HeartIcon on={liked} />
         </button>
         <div className="pcard-actions">
-          <button className="pcard-quick" onClick={() => setQuick(p)} aria-label={`Quick view ${p.name}`}>QUICK VIEW</button>
-          {!out && <button className="pcard-add" onClick={add} disabled={adding} aria-label={p.single_variant ? `Add ${p.name} to bag` : `Choose a size for ${p.name}`}>{adding ? '…' : p.single_variant ? 'ADD TO BAG' : 'CHOOSE SIZE'}</button>}
+          {/* one button: sizes → choose a size (opens the quick view), one size → straight into the bag, sold out → look closer */}
+          {out ? <button className="pcard-add one" onClick={() => setQuick(p)} aria-label={`Quick view ${p.name}`}>QUICK VIEW</button>
+            : <button className="pcard-add one" onClick={add} disabled={adding} aria-label={p.single_variant ? `Add ${p.name} to bag` : `Choose a size for ${p.name}`}>{adding ? '…' : p.single_variant ? 'ADD TO BAG' : 'CHOOSE SIZE'}</button>}
         </div>
       </div>
       <div className="pcard-meta">

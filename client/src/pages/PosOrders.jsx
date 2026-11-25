@@ -10,6 +10,7 @@ import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from 
 import { MODE, clock, longDate, money } from '../lib/invoiceFormat';
 import PayPicker, { blankPay, payParts } from '../components/PayPicker';
 import BillSummary from '../components/BillSummary';
+import { billMessage, billMessageFor, advanceMessageFor, openWhatsApp } from '../lib/waMessage';
 import ReturnWindow from '../components/ReturnWindow';
 import RowActions from '../components/RowActions';
 import AdvanceInvoice from '../components/AdvanceInvoice';
@@ -119,7 +120,7 @@ export function OrderHistory({ tick, manager, openInvoice, onChanged }) {
                 <td className="due">{inr(r.total)}</td>
                 <td className="r"><div className="dpos-rowact">
                   <span className={`dpos-pill ${r.status === 'voided' ? 'bad' : 'ok'}`}>{r.status === 'voided' ? 'Void' : 'Completed'}</span>{r.isWeb && r.status !== 'voided' && <FulfilControl r={r} />}
-                  <a className="ra wa" title="Send invoice on WhatsApp" aria-label="Send on WhatsApp" href={waLink(r.customerPhone, `Hello${r.customerName ? ' ' + r.customerName : ''}, here is your invoice ${r.invoiceNo} for ${money(r.total)}: ${invoiceUrl(r.shareToken)}`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>
+                  <button type="button" className="ra wa" title="Send invoice on WhatsApp" aria-label="Send on WhatsApp" onClick={() => openWhatsApp(r.customerPhone, () => billMessageFor(r.invoiceNo)).catch(e => setErr(e.message))}><WaIcon /></button>
                   <button className="ra doc" title="Invoice preview" aria-label="Invoice preview" onClick={() => setPreview(r)}><DocIcon /></button>
                   <button className="ra eye" title="Quick details" aria-label="Quick details" onClick={() => toggle(r.invoiceNo)}><EyeIcon /></button>
                   <button className="ra ret" title="Return items" aria-label="Return items" disabled={r.status === 'voided'} onClick={() => setReturning(r.invoiceNo)}><RetIcon /></button>
@@ -206,7 +207,9 @@ export function OnlineRowTools({ x, manager, onStatus, noStatus, canVoid, onChan
     <div className="ol-tools" onClick={e => e.stopPropagation()}>
       {!noStatus && <span className="ol-fc"><span className={`ol-fs fs-${st}`}>{st === 'shipped' ? '✓' : '▣'} {st}</span>{next && manager && <button type="button" className="ol-mark" onClick={() => mark(next)}>Mark {next}</button>}</span>}
       <div className="dpos-rowact">
-        {x.phone && <a className="ra wa" title="Send on WhatsApp" aria-label="Send on WhatsApp" href={waLink(x.phone, waText || `Hello${x.customerName ? ' ' + x.customerName : ''}, your order ${x.orderNumber} is ${st}.`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
+        {x.phone && (x.invoiceNo
+          ? <button type="button" className="ra wa" title="Send on WhatsApp" aria-label="Send on WhatsApp" onClick={() => openWhatsApp(x.phone, async () => `📦 Your order ${x.orderNumber} is ${st}.\n\n` + await billMessageFor(x.invoiceNo)).catch(e => alert(e.message))}><WaIcon /></button>
+          : <a className="ra wa" title="Send on WhatsApp" aria-label="Send on WhatsApp" href={waLink(x.phone, waText || `Hello${x.customerName ? ' ' + x.customerName : ''} 👋\n📦 Your order ${x.orderNumber} is ${st}. Thank you for shopping with us! 🛍️`)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>)}
         <button type="button" className="ra doc" title="Invoice preview" aria-label="Invoice preview" disabled={!has} onClick={() => setPreview({ invoiceNo: x.invoiceNo, shareToken: x.shareToken })}><DocIcon /></button>
         <button type="button" className="ra eye" title="Quick details" aria-label="Quick details" disabled={!has} onClick={() => load(s => setDetail(s))}><EyeIcon /></button>
         <button type="button" className="ra ret" title="Return items" aria-label="Return items" disabled={!has} onClick={() => setReturning(x.invoiceNo)}><RetIcon /></button>
@@ -282,7 +285,7 @@ export function AdvanceModal({ total, onClose, onSave }) {
 export function AdvanceDone({ adv, shop, onClose, onView }) {
   const who = adv.customerName?.trim() || 'Guest';
   const [ps, setPs] = useState(false);
-  const text = `Hello${adv.customerName ? ' ' + adv.customerName : ''}, your advance order ${adv.code} with ${shop?.name || 'us'} is booked. Order total ${money(adv.total)}, deposit paid ${money(adv.deposit)}, balance due ${money(adv.balance)}${adv.deliveryDate ? ', expected on ' + adv.deliveryDate : ''}. Thank you!`;
+  const text = billMessage(adv, { shop });
   // Asks thermal / A4 / A5 first, then prints the receipt sized for that paper.
   const print = ({ paper }) => {
     setPs(false);
@@ -424,7 +427,7 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
                 <td className="adv-tpb"><div><b>Total: {inr(r.total)}</b></div><div className="ok">Paid: {inr(r.deposit)}</div><div className="bad">Balance: {inr(r.balance)}</div><small className="muted">Deposit {inr(r.deposit)} via {r.depositMode === 'split' ? splitText(depSplit(r)) : (MODE[r.depositMode] || r.depositMode)}</small></td>
                 <td>{r.deliveryDate ? longDate(r.deliveryDate) : <span className="muted">—</span>} {late && <span className="dpos-pill bad">Late</span>}</td>
                 <td onClick={e => e.stopPropagation()}>{['pending', 'ready'].includes(r.status) ? <select className={`adv-st ${r.status}`} aria-label={`Status of ${r.code}`} value={r.status} onChange={e => setAdvStatus(r, e.target.value)}><option value="pending">Pending</option><option value="ready">Ready</option></select> : <span className={`adv-st-pill ${r.status}`}>{lab}</span>}</td>
-                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, text: `Hello${r.customerName ? ' ' + r.customerName : ''}, your advance order ${r.code} — total ${inr(r.total)}, advance paid ${inr(r.deposit)}, balance ${inr(r.balance)}.` } : null} eye={() => setView(r.code)} doc={() => r.invoiceNo ? api('/admin/pos/sales/' + encodeURIComponent(r.invoiceNo)).then(x => setInvPv({ invoiceNo: r.invoiceNo, shareToken: (x.sale || x).shareToken })).catch(e => setErr(e.message)) : setAdvInv(r.code)} pay={['pending', 'ready'].includes(r.status) ? () => setSel(r.code) : null} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
+                <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, load: () => advanceMessageFor(r.code) } : null} eye={() => setView(r.code)} doc={() => r.invoiceNo ? api('/admin/pos/sales/' + encodeURIComponent(r.invoiceNo)).then(x => setInvPv({ invoiceNo: r.invoiceNo, shareToken: (x.sale || x).shareToken })).catch(e => setErr(e.message)) : setAdvInv(r.code)} pay={['pending', 'ready'].includes(r.status) ? () => setSel(r.code) : null} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
       </section>
       {view && <AdvanceQuick code={view} onClose={() => setView(null)} />}
       {invPv && <InvoicePreview row={invPv} onClose={() => setInvPv(null)} />}
@@ -457,7 +460,7 @@ export function BillDone({ sale, shop, onClose }) {
         <div className="dpos-done-act">
           <button className="dpos-btn outline" onClick={() => setPs(true)}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
           <button className="dpos-btn outline" onClick={() => setPv({ invoiceNo: sale.invoiceNo, shareToken: sale.shareToken })}><EyeIcon />View</button>
-          <a className="dpos-btn wa" href={waLink(sale.customerPhone, `Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop?.name || 'us'} for ${money(sale.total)}: ${link}`)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp invoice</a>
+          <a className="dpos-btn wa" href={waLink(sale.customerPhone, billMessage(sale, { shop, link }))} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp invoice</a>
         </div>
         <section className="dpos-done-card items d-items">
           <p className="dpos-done-l">ITEMS SOLD</p>

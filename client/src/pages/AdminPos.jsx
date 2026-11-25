@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ExportCsv from '../components/ExportCsv';
-import AlertSettingsCard from '../components/AlertSettingsCard';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { inr } from '../lib/format';
@@ -10,6 +9,7 @@ import AdminShell, { Icon } from '../components/AdminShell';
 import Modal from '../components/Modal';
 import CatalogPicker from '../components/CatalogPicker';
 import MeasureModal, { measureSummary } from '../components/MeasureModal';
+import { billMessage } from '../lib/waMessage';
 import LogoCard from '../components/LogoCard';
 import PosInventory from './PosInventory';
 import { StitchingTab } from './StitchPages';
@@ -236,7 +236,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
     try {
       const sale = await api('/admin/pos/sales', { method: 'POST', body: { ...body, idempotencyKey: (key.current ??= uuid()) } });
       const link = `${location.origin}/invoice/${sale.shareToken}`;
-      const to = kind === 'print' ? `${link}?print=1` : kind === 'wa' ? waLink(sale.customerPhone, `Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop?.name || 'DHANYA BOUTIQUE'} for ${inr(sale.total)}: ${link}`) : null;
+      const to = kind === 'print' ? `${link}?print=1` : kind === 'wa' ? waLink(sale.customerPhone, billMessage(sale, { shop, link })) : null;
       if (to) { if (tab) tab.location.href = to; else window.open(to, '_blank') }
       toast(`Bill ${sale.invoiceNo} saved.`); onSale(sale, kind !== 'save'); clearOrder();
       if (!ws) { setQ(''); api('/admin/pos/catalog').then(setResults).catch(() => {}) }
@@ -735,7 +735,6 @@ function Settings({ onSaved }) {
       <div className="pset-flow">
         <LoginPasswordCard />
         <StoreSettingsCard />
-        <AlertSettingsCard />
         <div className="pset-span"><PageAccessCard /></div>
       </div>
     </div>

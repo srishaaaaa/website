@@ -8,7 +8,8 @@ import PrintSettings, { readPrintPrefs } from '../components/PrintSettings';
 import { PrintIcon } from '../components/PrintIcon';
 import { CHANNEL, MODE, clock, inWords, longDate, money, num2 } from '../lib/invoiceFormat';
 import { measureSummary } from '../components/MeasureModal';
-import { billRows, modeName } from '../lib/billSummary';
+import { billRows, modeName, returnRows } from '../lib/billSummary';
+import { billMessage, returnMessage } from '../lib/waMessage';
 import Modal from '../components/Modal';
 import '../invoice.css';
 
@@ -160,14 +161,39 @@ function ReturnDoc({ ret, shop }) {
           {ret.reason && <p className="inv-sm">Reason: {ret.reason}</p>}
           {ret.otherReturns?.length > 0 && <div className="inv-terms"><b>Other returns on this invoice:</b>{ret.otherReturns.map(r => <p key={r.returnNo}>• {r.returnNo} · {money(r.total)}</p>)}</div>}</div>
         <div className="inv-sum">
-          {row('Returned items value', money(ret.subtotal), 'inv-k-row')}
-          {ret.discount > 0 && row(ret.couponCode ? 'Coupon discount reversed' : 'Discount reversed', `- ${money(ret.discount)}`, 'inv-k-row')}
-          {gst && <>{row('TAXABLE VALUE', money(ret.subtotal - ret.discount), 'inv-k-muted')}{row('CGST reversed', money(half), 'inv-k-row')}{row('SGST reversed', money(ret.tax - half), 'inv-k-row')}</>}
-          <div className="inv-total"><span>REFUND TOTAL</span><b>{money(ret.total)}</b></div>
-          {ret.refundMode === 'split' ? <>{ret.refundCash > 0 && row('Refunded in cash', money(ret.refundCash), 'inv-k-pay')}{ret.refundUpi > 0 && row('Refunded by GPay / UPI', money(ret.refundUpi), 'inv-k-pay')}{ret.refundCard > 0 && row('Refunded by card', money(ret.refundCard), 'inv-k-pay')}</> : row(`Refunded by ${MODE[ret.refundMode] || ret.refundMode}`, money(ret.total), 'inv-k-pay')}
-          <p className="inv-saved">{ret.deliveryFee > 0 ? `Delivery charge ${money(ret.deliveryFee)} is never refunded` : 'Delivery charge is never refunded'}</p>{ret.approvedBy && <p className="inv-sm">Refund approved by {ret.approvedBy}</p>}</div></section>
+          {returnRows(ret).map((r, n) => r.kind === 'total'
+            ? <div key={n} className="inv-total"><span>{r.label}</span><b>{money(r.value)}</b></div>
+            : <div key={n} className={`inv-k-${r.kind}`}><span>{r.label}{r.note && <small> {r.note}</small>}</span>{r.value != null && <b className="mono">{amt(r.value)}</b>}</div>)}
+          {ret.approvedBy && <p className="inv-sm">Refund approved by {ret.approvedBy}</p>}</div></section>
       <hr className="inv-rule thin" />
       <footer className="inv-end"><p>This credit note is issued against invoice #{ret.invoiceNo}. • {shop.name}</p><div className="inv-sign"><span>Authorised Signatory</span><small>For {shop.name}</small></div></footer>
+    </article>
+  );
+}
+
+// The return (credit note) on a thermal roll.
+function ReturnThermal({ ret, shop, paper }) {
+  const row = (l, v, cls = '') => <div className={`inv-tr ${cls}`}><span>{l}</span><span>{v}</span></div>;
+  return (
+    <article className={`inv-th w${paper}`}>
+      <h1>{shop.name}</h1>
+      <p className="c">{(shop.address || []).join(', ')}</p>
+      {shop.phone && <p className="c">Ph: {phoneShown(shop.phone)}</p>}
+      <hr />
+      {row('RETURN INVOICE', `#${ret.returnNo}`, 'b')}
+      {row('Date:', `${longDate(String(ret.createdAt).slice(0, 10))} ${clock(ret.createdAt)}`)}
+      {row('Against bill:', `#${ret.invoiceNo}`)}
+      {row('Customer:', ret.customerName || 'Guest', 'cb')}
+      <hr />
+      <div className="inv-tr b"><span>Returned</span><span className="q">Qty</span><span>Amt</span></div>
+      <hr className="soft" />
+      {ret.returned.map((i, n) => <div key={n} className="inv-ti"><div className="inv-tr"><span className="nm">{i.name}</span><span className="q">{i.qty}</span><span>{num2(i.amount)}</span></div><hr className="soft" /></div>)}
+      {returnRows(ret).map((r, n) => r.kind === 'total'
+        ? <div key={n}><hr />{row(`${r.label}:`, money(r.value), 'tot')}<hr /></div>
+        : <div key={n}>{row(r.kind === 'paysub' ? `  ${r.label}` : r.label, r.value == null ? '' : r.value < 0 ? `- ${num2(-r.value)}` : num2(r.value), r.kind === 'paysub' || r.kind === 'muted' ? 'sub' : r.kind === 'pay' || r.kind === 'strong' ? 'b' : '')}</div>)}
+      {ret.reason && <p className="c words">Reason: {ret.reason}</p>}
+      <p className="c words">{inWords(ret.total).toUpperCase()}</p>
+      <p className="c thanks">Credit note against invoice #{ret.invoiceNo}</p>
     </article>
   );
 }
@@ -201,16 +227,21 @@ export default function InvoicePage() {
   const { shop } = d;
   if (d.kind === 'return') return (
     <div className="inv-page">
-      {window.self === window.top && !!user && ['owner', 'admin', 'cashier'].includes(user.role) && <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" /><button className="inv-btn dark" onClick={() => setPs(true)}><PrintIcon size={15} /> Print</button></div>}
-      <ReturnDoc ret={d.ret} shop={shop} />
-      {ps && <PrintSettings sheetOnly onClose={() => setPs(false)} onPrint={({ paper: p }) => { setPaper(p); setPs(false); setTimeout(() => window.print(), 350) }} />}
+      {window.self === window.top && !!user && ['owner', 'admin', 'cashier'].includes(user.role) && <div className="inv-bar"><Link className="inv-btn" to={`/invoice/${d.ret.invoiceNo ? '' : ''}`} onClick={e => { e.preventDefault(); history.back() }}>← Back</Link><span className="inv-grow" />{d.ret.customerPhone && <a className="inv-btn" href={`https://api.whatsapp.com/send?phone=${String(d.ret.customerPhone).replace(/\D/g, '').slice(-10).replace(/^(\d{10})$/, '91$1')}&text=${encodeURIComponent(returnMessage(d.ret, { shop, link: `${location.origin}/invoice/${token}` }))}`} target="_blank" rel="noopener noreferrer">Share WhatsApp</a>}<button className="inv-btn dark" onClick={() => setPs(true)}><PrintIcon size={15} /> Print</button></div>}
+      <p className="inv-copy-l">RETURN INVOICE · CUSTOMER COPY</p>
+      {fmt === 'thermal' ? <ReturnThermal ret={d.ret} shop={shop} paper={paper} /> : <ReturnDoc ret={d.ret} shop={shop} />}
+      {d.original && <>
+        <p className="inv-copy-l orig">COPY OF THE ORIGINAL INVOICE #{d.original.invoiceNo}</p>
+        <div className="inv-copy">{fmt === 'thermal' ? <Thermal sale={d.original} shop={shop} paper={paper} /> : <A4Doc sale={d.original} shop={shop} />}</div>
+      </>}
+      {ps && <PrintSettings onClose={() => setPs(false)} onPrint={({ type, paper: p }) => { setFmt(type === 'thermal' ? 'thermal' : 'a4'); setPaper(p); setPs(false); setTimeout(() => window.print(), 350) }} />}
     </div>
   );
   const { sale } = d;
   const staff = !!user && ['owner', 'admin', 'cashier'].includes(user.role), manager = !!user && ['owner', 'admin'].includes(user.role);
   const link = `${location.origin}/invoice/${token}`;
   const digits = String(sale.customerPhone || '').replace(/\D/g, '').slice(-10);
-  const wa = `https://api.whatsapp.com/send?phone=${digits.length === 10 ? '91' + digits : ''}&text=${encodeURIComponent(`Hello${sale.customerName ? ' ' + sale.customerName : ''}, here is your invoice ${sale.invoiceNo} from ${shop.name} for ${money(sale.total)}: ${link}`)}`;
+  const wa = `https://api.whatsapp.com/send?phone=${digits.length === 10 ? '91' + digits : ''}&text=${encodeURIComponent(billMessage(sale, { shop, link }))}`;
   const copy = async () => { try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { window.prompt('Copy this link', link) } };
   const printNow = ({ type, paper: p }) => { setFmt(type === 'thermal' ? 'thermal' : 'a4'); setPaper(p); setPs(false); setTimeout(() => window.print(), 350) };
   const voidIt = async () => {

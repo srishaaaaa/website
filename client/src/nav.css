@@ -839,3 +839,4 @@ html:has(.auth2) { background: #f3e9dd }
 .mega { background: rgba(251, 244, 234, .98); color: #2a1230 } .mega a, .mega .t { color: #2a1230 }
 .toast { background: rgba(90, 21, 96, .96); color: #fff }
 .glass .muted, .glass .sub, .glass small { color: #6a4a6e }
+.pcard-actions .pcard-add.one { flex: 1 1 100%; width: 100% }

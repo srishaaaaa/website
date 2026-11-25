@@ -11,11 +11,14 @@ export const TrashIcon = () => <Ico><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 
 export const waUrl = (phone, text) => { const d = String(phone || '').replace(/\D/g, '').slice(-10); return `https://api.whatsapp.com/send?phone=${d.length === 10 ? '91' + d : ''}&text=${encodeURIComponent(text)}` };
 
 // wa: { phone, text }  ·  doc: click handler or href  ·  eye: click handler
+import { openWhatsApp } from '../lib/waMessage';
+
 export default function RowActions({ wa, doc, eye, ret, edit, del, pay, label = '' }) {
   const stop = e => e.stopPropagation();
   return (
     <div className="dpos-rowact" onClick={stop}>
-      {wa && <a className="ra wa" title="Send on WhatsApp" aria-label={`Send ${label} on WhatsApp`} href={waUrl(wa.phone, wa.text)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
+      {wa?.load && <button type="button" className="ra wa" title="Send on WhatsApp" aria-label={`Send ${label} on WhatsApp`} onClick={() => openWhatsApp(wa.phone, wa.load).catch(e => alert(e.message))}><WaIcon /></button>}
+      {wa && !wa.load && <a className="ra wa" title="Send on WhatsApp" aria-label={`Send ${label} on WhatsApp`} href={waUrl(wa.phone, wa.text)} target="_blank" rel="noopener noreferrer"><WaIcon /></a>}
       {doc && (typeof doc === 'string'
         ? <a className="ra doc" title="Open invoice" aria-label={`Open ${label} invoice`} href={doc} target="_blank" rel="noopener noreferrer"><DocIcon /></a>
         : <button type="button" className="ra doc" title="Preview" aria-label={`Preview ${label}`} onClick={doc}><DocIcon /></button>)}

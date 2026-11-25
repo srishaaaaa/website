@@ -74,7 +74,7 @@ export async function createReturn(db, user, invoiceNo, { items, reason = '', re
 
 const retCols = `r.id, r.return_no AS "returnNo", r.reason, r.refund_mode AS "refundMode", r.subtotal, r.discount, r.tax, r.total, r.share_token AS "shareToken", r.created_at AS "createdAt",
   s.invoice_no AS "invoiceNo", s.bill_date::text AS "billDate", s.customer_name AS "customerName", s.customer_phone AS "customerPhone", s.customer_address AS "customerAddress",
-  s.is_gst AS "isGst", s.coupon_code AS "couponCode", s.id AS "saleId", s.share_token AS "origToken", s.delivery_fee AS "deliveryFee",
+  s.is_gst AS "isGst", s.coupon_code AS "couponCode", s.gst_rate AS "gstRate", s.discount_type AS "discountType", s.discount_value AS "discountValue", s.payment_mode AS "paymentMode", s.id AS "saleId", s.share_token AS "origToken", s.delivery_fee AS "deliveryFee",
   r.refund_cash AS "refundCash", r.refund_upi AS "refundUpi", r.refund_card AS "refundCard", (SELECT COALESCE(NULLIF(p.full_name, ''), p.email) FROM profiles p WHERE p.id = r.approved_by) AS "approvedBy"`;
 
 // A return with what came back (`returned`), what the customer kept after every return (`kept`) and the other returns on the same bill.

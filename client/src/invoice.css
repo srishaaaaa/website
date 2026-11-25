@@ -136,3 +136,31 @@ label.inv-ps-l { display: block }
 @media print { .inv-gst tr { break-inside: avoid } }
 /* the page colour reaches the bottom of the window on short invoices */
 html:has(.inv-page), html:has(.inv-page) body { background: #f6f6f7 }
+
+/* Return invoice: the credit note, then a copy of the original invoice (its own printed page) */
+.inv-copy-l { max-width: 860px; margin: 0 auto 10px; font-size: 11px; font-weight: 800; letter-spacing: .14em; color: #6f6875 }
+.inv-copy-l.orig { margin-top: 34px; padding-top: 18px; border-top: 2px dashed #d9d2dc }
+.inv-page:has(.inv-th) .inv-copy-l { max-width: 80mm; text-align: center }
+@media print {
+  .inv-copy-l { margin: 0 0 6px; color: #444 }
+  .inv-copy-l.orig { break-before: page; page-break-before: always; border: 0; padding-top: 0; margin-top: 0 }
+}
+
+/* Thermal receipt prints like it looks on screen: centred on the paper, same letter sizes, bold total */
+@media print {
+  .inv-page:has(.inv-th) { display: block; padding: 0 !important }
+  .inv-th, .inv-th.w80, .inv-th.w58 { margin: 0 auto !important; float: none; padding: 2mm 0 4mm !important; box-sizing: border-box }
+  .inv-th.w80 { width: 72mm !important; font-size: 12.5px !important; line-height: 1.5 !important }
+  .inv-th.w58 { width: 50mm !important; font-size: 11px !important; line-height: 1.45 !important }
+  .inv-th h1 { font-size: 24px !important; line-height: 1.15 } .inv-th.w58 h1 { font-size: 19px !important }
+  .inv-th .inv-tr.tot { font-size: 17px !important } .inv-th.w58 .inv-tr.tot { font-size: 14px !important }
+  .inv-th .words { font-size: 10.5px !important } .inv-th.w58 .words { font-size: 9.5px !important }
+  .inv-th hr { margin: 8px 0 !important }
+  .inv-page:has(.inv-th) .inv-copy-l { max-width: 72mm; margin-left: auto; margin-right: auto }
+}
+/* thermal rows: the label wraps, the amount always stays on one line on the right */
+.inv-th .inv-tr { display: flex; align-items: baseline; gap: 8px }
+.inv-th .inv-tr > span:first-child { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere }
+.inv-th .inv-tr > span:last-child { flex: none; white-space: nowrap; text-align: right; word-break: keep-all; overflow-wrap: normal }
+.inv-th .inv-tr > span.q { flex: none; width: 3ch; text-align: center }
+@media print { .inv-th .inv-tr > span:last-child, .inv-th .inv-tr > span:last-child * { white-space: nowrap !important; word-break: keep-all !important; overflow-wrap: normal !important } }
