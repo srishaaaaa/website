@@ -84,6 +84,11 @@ export default function AdminShell({ title, sub, actions, children }) {
     }
   }, []);
   useEffect(() => installInstantSelect(), []); // dropdowns open at once
+  // tapping an amount box selects its contents, so the first digit typed replaces a 0 or an auto-filled amount
+  useEffect(() => {
+    const f = e => { const t = e.target; if (t?.tagName === 'INPUT' && /^(decimal|numeric)$/.test(t.inputMode || '') && t.value) setTimeout(() => { try { t.select() } catch { /* not selectable */ } }, 0) };
+    document.addEventListener('focusin', f); return () => document.removeEventListener('focusin', f);
+  }, []);
   const { user, site } = useApp();
   const nm = site?.store?.name || 'Dhanyas Boutique';
   const manager = !!user && ['owner', 'admin'].includes(user.role);

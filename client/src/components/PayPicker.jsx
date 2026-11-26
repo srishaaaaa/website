@@ -33,7 +33,7 @@ export default function PayPicker({ value, onChange, amount, label }) {
   const parts = payParts({ ...value, on }, amount); const picked = KEYS.filter(k => on[k]);
   const setMode = v => onChange(v === 'split' ? refill({ ...value, mode: v, on, typed: {} }, amount) : { ...value, mode: v });
   const toggle = k => { if (on[k] && picked.length <= 2) return; const o = { ...on, [k]: !on[k] }; const t = { ...typed, [k]: false }; onChange(refill({ ...value, on: o, typed: t, [k]: '' }, amount)) };
-  const type = (k, val) => { const t = { ...typed, [k]: val !== '' }; onChange(refill({ ...value, [k]: val, typed: t }, amount)) };
+  const type = (k, val) => { val = String(val).replace(/[^\d.]/g, '').replace(/^0+(?=\d)/, ''); const t = { ...typed, [k]: val !== '' }; onChange(refill({ ...value, [k]: val, typed: t }, amount)) };
   return (
     <div className="payp">
       <div className="adv-modes" role="radiogroup" aria-label={label}>

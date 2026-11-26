@@ -462,3 +462,4 @@ a.insta-tile:hover { transform: translateY(-6px) } .insta-tile img { width: 100%
 
 /* Shop toolbar (count, sort, view): plain row in the page flow, not a see-through bar that sticks over the product photos */
 .toolbar { position: static; top: auto; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; z-index: auto }
+:root { color-scheme: only light } html, body { forced-color-adjust: none }

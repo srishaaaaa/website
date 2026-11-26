@@ -157,6 +157,7 @@ function Billing({ channel, shop, onSale, onAdvance }) {
   // Typing an amount keeps it; the remaining balance goes into the first box that has not been typed in.
   const touched = useRef({});
   const typeSplit = (m, val) => {
+    val = String(val).replace(/[^\d.]/g, '').replace(/^0+(?=\d)/, ''); // typing over a 0 never leaves it in front
     touched.current[m] = val !== '';
     setSplit(s => {
       const n = { ...s, [m]: val }; const on = ['cash', 'upi', 'card'].filter(x => splitOn[x]);

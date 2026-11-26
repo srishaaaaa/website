@@ -492,7 +492,7 @@ export function CouponPanel({ rep, openInvoice }) {
       </section>
       <section className="dpos-card">
         <div className="dpos-head" style={{ marginBottom: 12 }}><h2 style={{ marginBottom: 0 }}>Promo Campaign Performance</h2>
-          <label className="dpos-search"><Ico size={16}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Ico><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search code/mobile/amount…" aria-label="Search discounted orders" /></label></div>
+          <label className="dpos-search"><Ico size={16}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Ico><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Code or mobile…" aria-label="Search discounted orders" /></label></div>
         {!list.length ? <p className="dpos-empty dark">No promotional discounts given in this period.</p> : (
           <div className="dpos-tw"><table><thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Mobile</th><th>Coupon</th><th className="r">Discount</th><th className="r">Bill total</th></tr></thead>
             <tbody>{list.map(r => (

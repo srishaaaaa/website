@@ -458,3 +458,78 @@ div.dpos .msp-card header { touch-action: manipulation; -webkit-tap-highlight-co
 div.dpos .msp-st { display: flex; align-items: center; gap: 8px }
 div.dpos .msp-tog { width: 36px; height: 36px; flex: none; display: inline-grid; place-items: center; border: 0; border-radius: 10px; background: #f1ebf3; color: #5a1560; cursor: pointer; touch-action: manipulation; transition: transform .18s ease, background .15s }
 div.dpos .msp-tog svg { transition: transform .18s ease } div.dpos .msp-tog.on { background: #330533; color: #fff } div.dpos .msp-tog.on svg { transform: rotate(180deg) }
+
+/* Online orders: status, "Mark …" and the row icons stay on one line (the table scrolls sideways on phones) */
+html body div.dpos .ol-tools { display: flex !important; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: nowrap !important; white-space: nowrap }
+html body div.dpos .ol-tools .ol-fc { display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap !important; flex: none }
+html body div.dpos .ol-tools .ol-fs { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px; border-radius: 9px; font-size: 11.5px; white-space: nowrap }
+html body div.dpos .ol-tools .ol-mark { height: 32px; padding: 0 10px; border-radius: 9px; font-size: 11.5px; white-space: nowrap }
+html body div.dpos .ol-tools .dpos-rowact, html body div.dpos .dpos-tw tbody tr .ol-tools .dpos-rowact { flex-wrap: nowrap !important; flex: none; gap: 6px !important }
+html body div.dpos .ol-tools .ra { width: 32px !important; height: 32px !important; min-width: 32px }
+
+/* Invoice preview window on phones: title on one line, the buttons in a tidy row underneath */
+@media (max-width: 640px) {
+  .dpos-modal .invprev-bar { flex-wrap: wrap; gap: 8px; padding: 12px 14px !important }
+  .dpos-modal .invprev-bar > b { flex: 1 1 100%; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px !important }
+  .dpos-modal .invprev-bar > span { flex: 1 1 100%; display: flex; gap: 8px; justify-content: flex-start }
+  .dpos-modal .invprev-bar > span button { padding: 8px 12px !important; font-size: 12.5px !important; border-radius: 10px !important; white-space: nowrap }
+  .dpos-modal .invprev-bar > span button[aria-label="Close"] { margin-left: auto; width: 36px; padding: 0 !important }
+}
+
+/* ===== Phone view, round 3 ===== */
+@media (max-width: 640px) {
+  /* chip filters (Period, bill type, payment): wrap onto tidy lines instead of being cut off */
+  html body div.dpos .dpos-pg { height: auto !important; min-height: 40px; flex-wrap: wrap !important; overflow: visible !important; padding: 5px 6px 5px 12px !important; border-radius: 18px !important; row-gap: 4px !important }
+  html body div.dpos .dpos-pg > button { height: 28px !important; padding: 0 10px !important; font-size: 10.5px !important }
+  html body div.dpos .an-pay { border-radius: 16px }
+
+  /* stat tiles: a text value (like the top product) wraps instead of being cut */
+  html body div.dpos .dpos-card2 .v.txt { white-space: normal !important; font-size: 15px !important; line-height: 1.25; overflow-wrap: anywhere }
+
+  /* Promo campaign performance: title on its own line, search full width under it */
+  html body div.dpos .dpos-card > .dpos-head:has(.dpos-search) { flex-direction: column; align-items: stretch !important }
+  html body div.dpos .dpos-card > .dpos-head .dpos-search { width: 100%; max-width: none; min-width: 0 }
+  html body div.dpos .dpos-search input { min-width: 0; width: 100% }
+
+  /* Bill generated / advance saved window: everything inside the screen */
+  html body .dpos-modal .dpos-done { width: 100% !important; max-width: 100% !important; overflow-x: hidden }
+  html body .dpos-modal .dpos-done-head { flex-wrap: wrap; gap: 10px; padding: 14px 16px !important }
+  html body .dpos-modal .dpos-done-head h2 { font-size: 20px !important }
+  html body .dpos-modal .dpos-done-card { margin-left: 12px !important; margin-right: 12px !important; padding: 14px !important; min-width: 0; max-width: calc(100% - 24px); box-sizing: border-box }
+  html body .dpos-modal .dpos-done-row, html body .dpos-modal .dpos-done-item, html body .dpos-modal .dpos-done-bal { gap: 10px; min-width: 0 }
+  html body .dpos-modal .dpos-done-row b.big { font-size: 22px !important }
+  html body .dpos-modal .dpos-done-item > span:first-child { min-width: 0; overflow-wrap: anywhere }
+  html body .dpos-modal .dpos-done-act { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 12px !important }
+  html body .dpos-modal .dpos-done-act > * { min-width: 0; justify-content: center; white-space: nowrap; padding: 10px 8px !important; font-size: 11px !important; letter-spacing: .04em !important }
+  html body .dpos-modal .dpos-done-act > .wa { grid-column: 1 / -1 }
+  html body .dpos-modal .bsum > div > b { white-space: nowrap }
+
+  /* Measurements list: name + bill number + date on one line each, tools in one row on the right */
+  html body div.dpos .msp-card header { flex-wrap: wrap; gap: 8px; padding: 12px 14px !important }
+  html body div.dpos .msp-card header > div:first-child { flex: 1 1 100%; min-width: 0 }
+  html body div.dpos .msp-inv { white-space: nowrap; border-radius: 999px !important; padding: 2px 10px !important; font-size: 11px !important; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis }
+  html body div.dpos .msp-card header small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block }
+  html body div.dpos .msp-st { flex: 1 1 100%; justify-content: flex-end; flex-wrap: nowrap !important }
+  html body div.dpos .msp-st select { min-width: 0; width: 130px; height: 36px }
+}
+@media (max-width: 640px) {
+  html body div.dpos .dpos-card > .dpos-head .dpos-search { flex: none !important; height: 42px !important; align-self: stretch; display: flex !important; align-items: center }
+  .dpos-modal .invprev-bar { position: relative; padding-right: 54px !important }
+  .dpos-modal .invprev-bar > span button[aria-label="Close"] { position: absolute; top: 10px; right: 10px; margin: 0 !important; height: 34px; width: 34px }
+  .dpos-modal .invprev-bar > span { flex-wrap: nowrap }
+}
+@media (max-width: 640px) {
+  /* Analytics filters: each group on one line (channel, bill type, payment); smaller chips so they fit */
+  html body div.dpos .an-grp, html body div.dpos .an-gst .dpos-pg, html body div.dpos .an-pay { display: flex !important; flex-wrap: nowrap !important; align-items: center; gap: 4px !important; overflow-x: auto; scrollbar-width: none; max-width: 100%; white-space: nowrap }
+  html body div.dpos .an-grp::-webkit-scrollbar, html body div.dpos .an-pay::-webkit-scrollbar, html body div.dpos .an-gst .dpos-pg::-webkit-scrollbar { display: none }
+  html body div.dpos .an-grp > button, html body div.dpos .an-pay > button { flex: none; padding: 6px 9px !important; font-size: 11px !important; white-space: nowrap }
+  html body div.dpos .an-gst .dpos-pg { height: 40px !important; border-radius: 999px !important; padding: 0 4px 0 6px !important }
+  html body div.dpos .an-gst .dpos-pg > button { flex: none; padding: 0 9px !important; font-size: 10px !important }
+  html body div.dpos .an-pay { padding: 6px 10px !important } html body div.dpos .an-pay > b { flex: none; font-size: 11px; margin-right: 4px }
+}
+@media (max-width: 640px) {
+  html body div.dpos .an-all .an-pay { gap: 2px !important; padding: 5px 8px !important }
+  html body div.dpos .an-all .an-pay > button { padding: 6px 7px !important; font-size: 10.5px !important }
+  html body div.dpos .an-all .an-pay > button > i { width: 7px; height: 7px; margin-right: 4px }
+  html body div.dpos .an-all .an-pay > b { font-size: 10.5px !important; padding: 0 4px 0 2px !important; margin: 0 !important }
+}
