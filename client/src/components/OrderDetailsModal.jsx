@@ -1,39 +1,42 @@
-import { useEffect } from 'react';
 import { inr } from '../lib/format';
 import BillSummary from './BillSummary';
+import DoneSheet, { DoneCard, statsFor } from './DoneSheet';
 
-// The eye button on every admin order list: a clean read-only "Order Details" sheet (customer, bill type, items, totals).
-// bill (+ sale for a billed advance order): shows the complete split-up (discounts, GST, delivery, payments, dates) instead of the short totals.
-// rows: extra summary lines [{ label, value, tone }] shown between Discount and TOTAL (e.g. Advance paid).
+// The eye button on the admin order lists: a read-only "Order Details" window in the same layout as Bill Generated and
+// Advance Order Saved: dark header, the three figures (total · paid · balance / returned, or deposit and final balance for
+// advance orders), the customer, the items and the complete split-up.
+// bill (+ sale for a billed advance order) gives the figures and the split-up; without it the short totals are shown.
 export default function OrderDetailsModal({ no, customer, phone, address, source, isGst, when, items = [], subtotal, discount = 0, delivery = 0, total, rows = [], notes, loading, onClose, bill, sale }) {
-  useEffect(() => { const k = e => e.key === 'Escape' && onClose(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k) }, [onClose]);
   const dt = when ? new Date(when) : null;
   const sub = subtotal ?? items.reduce((t, i) => t + i.total, 0);
+  const tag = bill?.advance || sale?.advance ? 'ADVANCE · PAID' : bill && 'deposit' in bill && !('paymentMode' in bill) ? 'ADVANCE' : isGst ? 'GST INVOICE' : 'NON-GST BILL';
   return (
-    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Order details" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <div className="dpos-sheet od">
-        <div className="od-head"><div><h2>Order Details</h2><p>{no}</p></div><button type="button" aria-label="Close" onClick={onClose}>✕</button></div>
-        {loading ? <p className="od-load">Loading…</p> : <div className="od-body">
-          <div className="od-grid">
-            <div><small>Customer name</small><b>{customer || 'Walk-in Customer'}</b></div>
-            <div><small>Contact number</small><b>{phone || 'N/A'}</b></div>
-            <div><small>Address</small><b>{address || 'N/A'}</b></div>
-            <div><small>Order source</small><b>{String(source || 'offline').toUpperCase()}</b></div>
-            <div><small>Bill type</small><span className="od-pill">{isGst ? 'GST INVOICE' : 'NON-GST BILL'}</span></div>
-            <div><small>Date &amp; time</small><b>{dt && !isNaN(dt) ? dt.toLocaleString('en-US') : 'N/A'}</b></div>
+    <DoneSheet label={`Order details ${no || ''}`} title="Order Details" tag={loading ? null : tag} code={no} onClose={onClose}
+      headAction={<button type="button" className="dn-x" aria-label="Close" onClick={onClose}>✕</button>}
+      stats={!loading && bill ? statsFor(sale || bill, { sale }) : !loading && total != null ? [{ label: 'Total', value: total }] : []}>
+      {loading ? <p className="muted" style={{ padding: '8px 2px' }}>Loading…</p> : <>
+        <DoneCard title="CUSTOMER" className="dn-cust">
+          <div className="dn-grid">
+            <div><small>Name</small><b>{customer || 'Walk-in Customer'}</b></div>
+            <div><small>Contact</small><b>{phone || '—'}</b></div>
+            <div><small>Source</small><b>{String(source || 'offline').toUpperCase()}</b></div>
+            <div><small>Date &amp; time</small><b>{dt && !isNaN(dt) ? dt.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : '—'}</b></div>
+            {address && <div className="full"><small>Address</small><b>{address}</b></div>}
           </div>
-          <h3 className="od-h">Order items</h3>
-          <ul className="od-items">{items.map((i, n) => <li key={n}><span><b>{i.name}</b>{i.note && <em>{i.note}</em>}</span><span className="od-amt"><b>{inr(i.total)}</b><small>{i.qty} x {inr(i.unit)}</small></span></li>)}</ul>
-          {bill ? <div className="od-sums od-full"><BillSummary bill={bill} sale={sale} />{rows.map((r, n) => <div key={n} className={r.tone || ''}><span>{r.label}</span><b>{r.value}</b></div>)}</div> : <div className="od-sums">
-            <div><span>Subtotal</span><b>{inr(sub)}</b></div>
-            {discount > 0 && <div><span>Discount</span><b>-{inr(discount)}</b></div>}
-            {delivery > 0 && <div><span>Delivery</span><b>{inr(delivery)}</b></div>}
-            {rows.map((r, n) => <div key={n} className={r.tone || ''}><span>{r.label}</span><b>{r.value}</b></div>)}
-            <div className="od-total"><span>TOTAL</span><b>{inr(total)}</b></div>
-          </div>}
-          {notes && <p className="od-note">Note: {notes}</p>}
-        </div>}
-      </div>
-    </div>
+        </DoneCard>
+        <DoneCard title="ORDER ITEMS">{items.map((i, n) => <div key={n} className="dn-item"><span><b>{i.name}</b>{i.note && <em>{i.note}</em>}<small>{i.qty} × {inr(i.unit)}</small></span><b>{inr(i.total)}</b></div>)}</DoneCard>
+        <DoneCard title={bill && 'deposit' in bill && !('paymentMode' in bill) ? 'ORDER SPLIT-UP' : 'BILL SPLIT-UP'}>
+          {bill ? <BillSummary bill={bill} sale={sale} />
+            : <div className="bsum">
+              <div className="bsum-row"><span>Subtotal</span><b>{inr(sub)}</b></div>
+              {discount > 0 && <div className="bsum-row"><span>Discount</span><b>−{inr(discount)}</b></div>}
+              {delivery > 0 && <div className="bsum-row"><span>Delivery</span><b>{inr(delivery)}</b></div>}
+              {rows.map((r, n) => <div key={n} className="bsum-row"><span>{r.label}</span><b>{r.value}</b></div>)}
+              <div className="bsum-total"><span>TOTAL</span><b>{inr(total)}</b></div>
+            </div>}
+        </DoneCard>
+        {notes && <p className="dn-note">Note: {notes}</p>}
+      </>}
+    </DoneSheet>
   );
 }

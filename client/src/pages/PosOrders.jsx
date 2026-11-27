@@ -10,6 +10,7 @@ import { Chips, PeriodFilter, inPeriod, periodRange, todayStr, usePeriod } from 
 import { MODE, clock, longDate, money } from '../lib/invoiceFormat';
 import PayPicker, { blankPay, payParts } from '../components/PayPicker';
 import BillSummary from '../components/BillSummary';
+import DoneSheet, { DoneCard, statsFor } from '../components/DoneSheet';
 import { billMessage, billMessageFor, advanceMessageFor, openWhatsApp } from '../lib/waMessage';
 import ReturnWindow from '../components/ReturnWindow';
 import RowActions from '../components/RowActions';
@@ -296,29 +297,22 @@ export function AdvanceDone({ adv, shop, onClose, onView }) {
     w.document.write(`<!doctype html><title>Advance receipt ${esc(adv.code)}</title><body style="font-family:Arial,sans-serif;max-width:300px;margin:16px auto;color:#111"><h3 style="margin:0 0 4px;text-align:center">${esc(shop?.name || '')}</h3><p style="text-align:center;margin:0 0 12px;font-size:12px">ADVANCE RECEIPT · ${esc(adv.code)}</p><p style="margin:0 0 8px;font-size:13px">Customer: ${esc(who)}${adv.customerPhone ? ' · ' + esc(adv.customerPhone) : ''}</p><hr><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Order total</span><b>${money(adv.total)}</b></p><p style="display:flex;justify-content:space-between;margin:8px 0"><span>Deposit paid</span><b>${money(adv.deposit)}</b></p><p style="margin:-2px 0 6px;font-size:12px;color:#555">${esc(splitText(depSplit(adv)))}</p><p style="display:flex;justify-content:space-between;margin:8px 0;font-size:16px"><b>Balance due</b><b>${money(adv.balance)}</b></p>${adv.deliveryDate ? '<p style="font-size:12px">Expected: ' + esc(adv.deliveryDate) + '</p>' : ''}<hr><p style="font-size:11px;text-align:center">Not a tax invoice. The bill is issued when the order is collected.</p>${pageCss}<script>onload=()=>{print()}<\/script>`);
     w.document.close();
   };
+  const printIco = <Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>;
   return (
-    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Advance order saved" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <div className="dpos-sheet dpos-done adv-done">
-        <div className="dpos-done-head">
-          <div><h2>Advance Order Saved <span className="adv-tag">DEPOSIT</span></h2><p className="oid">#{adv.code}</p></div>
-          <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
-        </div>
-        <section className="dpos-done-card">
-          <div className="dpos-done-top"><span>ADVANCE RECEIPT — {who.toUpperCase()}</span></div>
-          <div className="dpos-done-row"><span>Order Total</span><b className="big">{money(adv.total)}</b></div>
-          <div className="dpos-done-row"><span>Deposit Paid<small className="adv-split">{splitText(depSplit(adv))}</small></span><b className="adv-paid">{money(adv.deposit)}</b></div>
-          <div className="adv-bal"><span>Balance Due</span><b>{money(adv.balance)}</b></div>
-        </section>
-        <section className="dpos-done-card items"><p className="dpos-done-l">ORDER SPLIT-UP</p><BillSummary bill={adv} /></section>
-        <div className="dpos-done-act">
-          <button className="dpos-btn outline" onClick={() => setPs(true)}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
-          <a className="dpos-btn wa" href={waLink(adv.customerPhone, text)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp</a>
-          <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
-        </div>
-        <p className="adv-view"><button type="button" className="link-u" onClick={onView}>View in Advance Orders →</button></p>
-      </div>
+    <>
+      <DoneSheet label={`Advance order saved for ${who}`} title="Advance Order Saved" tag="DEPOSIT" code={adv.code} onClose={ps ? undefined : onClose}
+        headAction={<button type="button" className="dn-new" onClick={onClose}><Icon n="plus" size={14} />New sale</button>}
+        stats={statsFor(adv)}
+        actions={<>
+          <button type="button" className="dn-btn" onClick={() => setPs(true)}>{printIco}Print receipt</button>
+          <a className="dn-btn wa" href={waLink(adv.customerPhone, text)} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp</a>
+          <button type="button" className="dn-btn dark" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
+        </>}
+        footer={<button type="button" className="link-u" onClick={onView}>View in Advance Orders →</button>}>
+        <DoneCard title="ORDER SPLIT-UP"><BillSummary bill={adv} /></DoneCard>
+      </DoneSheet>
       {ps && <PrintSettings onClose={() => setPs(false)} onPrint={print} />}
-    </div>
+    </>
   );
 }
 
@@ -424,7 +418,7 @@ export function AdvanceOrders({ manager, tick, onBilled, initialCode }) {
               <tr key={r.code} className="click" tabIndex={0} onClick={() => setSel(r.code)} onKeyDown={e => e.key === 'Enter' && setSel(r.code)}>
                 <td><b className="oid">{r.code}</b><div className="muted small">{String(r.createdAt || '').slice(0, 10).split('-').reverse().join('/')}</div></td><td><b>{r.customerName || 'Walk-in'}</b>{r.customerPhone ? <div className="muted small">{r.customerPhone}</div> : null}</td>
                 <td className="adv-prod">{r.itemsText ? r.itemsText.split(/, (?=\d+× )/).map((t, n) => <div key={n}>{t}</div>) : `${r.itemCount} items`}</td>
-                <td className="adv-tpb"><div><b>Total: {inr(r.total)}</b></div><div className="ok">Paid: {inr(r.deposit)}</div><div className="bad">Balance: {inr(r.balance)}</div><small className="muted">Deposit {inr(r.deposit)} via {r.depositMode === 'split' ? splitText(depSplit(r)) : (MODE[r.depositMode] || r.depositMode)}</small></td>
+                <td className="adv-tpb"><dl className="adv-fig"><dt>Total</dt><dd>{inr(r.total)}</dd><dt className="ok">Paid</dt><dd className="ok">{inr(r.deposit)}</dd><dt className={r.balance > 0 && r.status !== 'completed' ? 'bad' : 'ok'}>{r.status === 'completed' ? 'Settled' : 'Balance'}</dt><dd className={r.balance > 0 && r.status !== 'completed' ? 'bad' : 'ok'}>{inr(r.status === 'completed' ? 0 : r.balance)}</dd></dl><small className="adv-via">via {r.depositMode === 'split' ? splitText(depSplit(r)) : (MODE[r.depositMode] || r.depositMode)}</small></td>
                 <td>{r.deliveryDate ? longDate(r.deliveryDate) : <span className="muted">—</span>} {late && <span className="dpos-pill bad">Late</span>}</td>
                 <td onClick={e => e.stopPropagation()}>{['pending', 'ready'].includes(r.status) ? <select className={`adv-st ${r.status}`} aria-label={`Status of ${r.code}`} value={r.status} onChange={e => setAdvStatus(r, e.target.value)}><option value="pending">Pending</option><option value="ready">Ready</option></select> : <span className={`adv-st-pill ${r.status}`}>{lab}</span>}</td>
                 <td className="r"><RowActions label={r.code} wa={r.customerPhone ? { phone: r.customerPhone, load: () => advanceMessageFor(r.code) } : null} eye={() => setView(r.code)} doc={() => r.invoiceNo ? api('/admin/pos/sales/' + encodeURIComponent(r.invoiceNo)).then(x => setInvPv({ invoiceNo: r.invoiceNo, shareToken: (x.sale || x).shareToken })).catch(e => setErr(e.message)) : setAdvInv(r.code)} pay={['pending', 'ready'].includes(r.status) ? () => setSel(r.code) : null} del={manager && ['pending', 'ready'].includes(r.status) ? () => cancelAdv(r) : null} /></td></tr>) })}</tbody></table></div>)}
@@ -443,34 +437,23 @@ export function BillDone({ sale, shop, onClose }) {
   const [ps, setPs] = useState(false);
   const received = sale.paymentMode === 'cash' ? (sale.cashTendered || sale.total) : sale.total;
   const link = invoiceUrl(sale.shareToken);
-  useEffect(() => { const k = e => e.key === 'Escape' && !ps && onClose(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k) }, [onClose, ps]);
+  const printIco = <Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>;
   return (
-    <div className="dpos-modal" role="dialog" aria-modal="true" aria-label="Bill generated" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <div className="dpos-sheet dpos-done">
-        <div className="dpos-done-head">
-          <div><h2>Bill Generated <span className="dpos-tag solid">{sale.isGst ? 'GST' : 'NON-GST'}</span></h2><p className="oid">#{sale.invoiceNo}</p></div>
-          <button className="dpos-btn" onClick={onClose}><Icon n="plus" size={14} />New sale</button>
-        </div>
-        <section className="dpos-done-card d-pay">
-          <div className="dpos-done-top"><span>PAYMENT RECEIPT</span><span className="dpos-tag">{(MODE[sale.paymentMode] || '').toUpperCase()}</span></div>
-          <div className="dpos-done-row"><span>Grand Total</span><b className="big">{money(sale.total)}</b></div>
-          <div className="dpos-done-row"><span>Amount Received</span><b>{money(received)}</b></div>
-          <div className="dpos-done-bal"><span>Balance Returned</span><b>{money(sale.change || 0)}</b></div>
-        </section>
-        <div className="dpos-done-act">
-          <button className="dpos-btn outline" onClick={() => setPs(true)}><Ico size={15}><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></Ico>Print receipt</button>
-          <button className="dpos-btn outline" onClick={() => setPv({ invoiceNo: sale.invoiceNo, shareToken: sale.shareToken })}><EyeIcon />View</button>
-          <a className="dpos-btn wa" href={waLink(sale.customerPhone, billMessage(sale, { shop, link }))} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp invoice</a>
-        </div>
-        <section className="dpos-done-card items d-items">
-          <p className="dpos-done-l">ITEMS SOLD</p>
-          {sale.items.map((i, n) => <div key={n} className="dpos-done-item"><span><b>{i.name}</b> <small className="muted">× {i.quantity} piece{i.quantity > 1 ? 's' : ''}</small></span><span>{money(i.lineTotal)}</span></div>)}
-        </section>
-        <section className="dpos-done-card items d-split"><p className="dpos-done-l">BILL SPLIT-UP</p><BillSummary bill={sale} /></section>
-      </div>
+    <>
+      <DoneSheet label="Bill generated" title="Bill Generated" tag={sale.advance ? 'ADVANCE · PAID' : sale.isGst ? 'GST' : 'NON-GST'} code={sale.invoiceNo} onClose={ps || pv ? undefined : onClose}
+        headAction={<button type="button" className="dn-new" onClick={onClose}><Icon n="plus" size={14} />New sale</button>}
+        stats={statsFor(sale)}
+        actions={<>
+          <button type="button" className="dn-btn" onClick={() => setPs(true)}>{printIco}Print receipt</button>
+          <button type="button" className="dn-btn" onClick={() => setPv({ invoiceNo: sale.invoiceNo, shareToken: sale.shareToken })}><EyeIcon />View</button>
+          <a className="dn-btn wa" href={waLink(sale.customerPhone, billMessage(sale, { shop, link }))} target="_blank" rel="noopener noreferrer"><WaIcon />WhatsApp</a>
+        </>}>
+        <DoneCard title="ITEMS SOLD">{sale.items.map((i, n) => <div key={n} className="dn-item"><span><b>{i.name}</b> <small>× {i.quantity}</small></span><b>{money(i.lineTotal)}</b></div>)}</DoneCard>
+        <DoneCard title="BILL SPLIT-UP"><BillSummary bill={sale} /></DoneCard>
+      </DoneSheet>
       {pv && <InvoicePreview row={pv} onClose={() => setPv(null)} />}
       {ps && <PrintSettings onClose={() => setPs(false)} onPrint={({ type, paper }) => { setPs(false); window.open(`/invoice/${sale.shareToken}?fmt=${type === 'thermal' ? 'thermal' : 'a4'}&size=${paper}&print=1`, '_blank') }} />}
-    </div>
+    </>
   );
 }
 

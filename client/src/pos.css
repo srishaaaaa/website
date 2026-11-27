@@ -533,3 +533,62 @@ html body div.dpos .ol-tools .ra { width: 32px !important; height: 32px !importa
   html body div.dpos .an-all .an-pay > button > i { width: 7px; height: 7px; margin-right: 4px }
   html body div.dpos .an-all .an-pay > b { font-size: 10.5px !important; padding: 0 4px 0 2px !important; margin: 0 !important }
 }
+
+/* ===== Bill Generated · Advance Order Saved · Order Details (one layout) ===== */
+.dpos-modal .dpos-sheet.dn { width: min(560px, calc(100vw - 24px)) !important; max-width: none !important; padding: 0 !important; border-radius: 22px !important; overflow: hidden auto; background: #fff; box-shadow: 0 30px 80px rgba(15, 10, 20, .35) }
+.dpos-modal .dpos-sheet.dn.wide { width: min(720px, calc(100vw - 24px)) !important }
+.dn-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; background: #1d1a1f; color: #fff; position: sticky; top: 0; z-index: 2 }
+.dn-title { min-width: 0 } .dn-title h2 { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; font-size: 19px; font-weight: 800; color: #fff; letter-spacing: -.01em }
+.dn-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 6px; background: #ece9ef; color: #1d1a1f; font-size: 10px; font-weight: 800; letter-spacing: .08em }
+.dn-code { margin: 4px 0 0; color: #e0b44c; font: 700 12.5px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em }
+.dn-new { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: #fff; color: #1d1a1f; font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; flex: none }
+.dn-x { width: 36px; height: 36px; flex: none; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .14); color: #fff; font-size: 15px; cursor: pointer }
+.dn-body { padding: 18px 20px 20px; display: grid; gap: 14px }
+.dn-stats { display: grid; gap: 10px }
+.dn-stat { display: grid; align-content: center; justify-items: center; gap: 4px; min-height: 84px; padding: 12px 8px; border: 1px solid #e6e1e9; border-radius: 14px; background: #fff; text-align: center; min-width: 0 }
+.dn-stat > span { font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #6f6875 }
+.dn-stat > b { font-size: 19px; font-weight: 800; color: #17131a; white-space: nowrap; font-variant-numeric: tabular-nums }
+.dn-stat > small { font-size: 10.5px; color: #6f6875; line-height: 1.3 }
+.dn-stat.ok > b { color: #15803d }
+.dn-stat.due { background: #fdecee; border-color: #f6c6cb } .dn-stat.due > span, .dn-stat.due > b { color: #b4232c }
+.dn-card { border: 1px solid #e6e1e9; border-radius: 16px; padding: 14px 16px; background: #fff; min-width: 0 }
+.dn-l { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid #efeaf1; font-size: 10px; font-weight: 800; letter-spacing: .14em; color: #6f6875 }
+.dn-card .bsum { font-size: 13.5px } .dn-card .bsum > div { padding: 6px 0 }
+.dn-card .bsum-total { border-top: 1.5px solid #17131a !important; border-bottom: 1px solid #efeaf1; margin: 6px 0 4px !important; padding: 10px 0 !important; font-size: 15px !important }
+.dn-item { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; border-bottom: 1px solid #f3eff4; font-size: 13.5px } .dn-item:last-child { border-bottom: 0 }
+.dn-item > span { min-width: 0; display: grid; gap: 1px } .dn-item small, .dn-item em { font-size: 11.5px; color: #6f6875; font-style: normal } .dn-item > b { white-space: nowrap }
+.dn-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px } .dn-grid .full { grid-column: 1 / -1 }
+.dn-grid small { display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8a8290; margin-bottom: 2px } .dn-grid b { font-size: 13.5px; overflow-wrap: anywhere }
+.dn-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px }
+.dn-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 12px; border: 1.5px solid #d9d2dc; border-radius: 12px; background: #fff; color: #17131a; font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; white-space: nowrap; cursor: pointer }
+.dn-btn.wa { background: #16a34a; border-color: #16a34a; color: #fff } .dn-btn.dark { background: #1d1a1f; border-color: #1d1a1f; color: #fff }
+.dn-btn:hover { filter: brightness(.96) }
+.dn-foot { text-align: center } .dn-foot .link-u { font-size: 13px; font-weight: 700; color: #17131a }
+.dn-note { margin: 0; font-size: 12.5px; color: #6f6875 }
+@media (max-width: 520px) {
+  .dn-head { padding: 14px 16px } .dn-title h2 { font-size: 17px } .dn-new { padding: 0 12px; height: 32px; font-size: 10.5px }
+  .dn-body { padding: 14px 12px 16px; gap: 12px }
+  .dn-stats { gap: 6px } .dn-stat { min-height: 74px; padding: 10px 4px; border-radius: 12px } .dn-stat > b { font-size: 15px } .dn-stat > span { font-size: 8.5px; letter-spacing: .08em } .dn-stat > small { font-size: 9.5px }
+  .dn-acts { grid-template-columns: 1fr 1fr } .dn-acts > *:last-child:nth-child(odd) { grid-column: 1 / -1 } .dn-btn { height: 42px; font-size: 10.5px }
+  .dn-grid { grid-template-columns: minmax(0, 1fr) }
+}
+
+/* Advance Orders table: figures in a neat two-column list, the "via" note on one line, action icons in fixed places */
+div.dpos .adv-tpb { white-space: nowrap; vertical-align: middle }
+div.dpos .adv-fig { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 1px 12px; margin: 0; font-size: 12.5px; line-height: 1.45 }
+div.dpos .adv-fig dt { margin: 0; color: #6f6875; font-weight: 600 } div.dpos .adv-fig dd { margin: 0; text-align: right; font-weight: 800; color: #17131a; font-variant-numeric: tabular-nums }
+div.dpos .adv-fig .ok { color: #15803d !important } div.dpos .adv-fig .bad { color: #b4232c !important }
+div.dpos .adv-via { display: block; margin-top: 3px; font-size: 11px; color: #8a8290; white-space: nowrap; max-width: none !important }
+div.dpos table:has(.adv-st) td { vertical-align: middle }
+div.dpos table:has(.adv-st) .dpos-rowact { display: grid !important; grid-template-columns: repeat(5, 36px); gap: 8px !important; justify-content: end }
+div.dpos table:has(.adv-st) .dpos-rowact > .ra { grid-row: 1 }
+div.dpos table:has(.adv-st) .dpos-rowact > .wa { grid-column: 1 } div.dpos table:has(.adv-st) .dpos-rowact > .doc { grid-column: 2 } div.dpos table:has(.adv-st) .dpos-rowact > .eye { grid-column: 3 }
+div.dpos table:has(.adv-st) .dpos-rowact > .pay { grid-column: 4 } div.dpos table:has(.adv-st) .dpos-rowact > .del { grid-column: 5 }
+
+/* Analytics → Revenue: both columns end on the same line; payment methods and GST vs non-GST sit side by side underneath */
+div.dpos .an-cols { align-items: stretch !important }
+div.dpos .an-cols > div { display: flex !important; flex-direction: column; gap: 18px }
+div.dpos .an-cols > div > .dpos-card:last-child { flex: 1 1 auto }
+div.dpos .an-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; align-items: stretch }
+div.dpos .an-pair > .dpos-card { margin: 0 !important }
+@media (max-width: 900px) { div.dpos .an-pair { grid-template-columns: minmax(0, 1fr) } }
